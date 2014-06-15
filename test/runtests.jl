@@ -10,8 +10,8 @@ M=MatrixMap(A)
 @test M*v==A*v
 
 # test transposition and full
-@test M'*w==A'*w==(ctranspose(A))*w
-@test M.'*w==A.'*w==(transpose(A))*w
+@test M'*w==A'*w
+@test M.'*w==A.'*w
 
 @test full(M)==A
 @test full(M')==A'
