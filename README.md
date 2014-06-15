@@ -6,7 +6,7 @@ A Julia package for defining and working with linear maps, also known as linear 
 
 ##Installation
 
-Install with the package manager, currently `Pkg.clone("git://github.com/Jutho/LinearMaps.jl.git")` until this is registered as an official package.
+Install with the package manager, i.e. `Pkg.add("LinearMaps")`.
 
 ## Philosophy
 
