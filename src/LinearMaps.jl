@@ -25,17 +25,17 @@ end
 
 # the following for multiplying with transpose and ctranspose map are optional:
 # subtypes can overwrite nonmutating methods, implement mutating methods or do nothing
-Base.At_mul_B(A::LinearMap,x::AbstractVector)=which(Base.At_mul_B!,(typeof(x),typeof(A),typeof(x)))!=methods(Base.At_mul_B!,(AbstractVector,LinearMap,AbstractVector))[end] ? 
+Base.At_mul_B(A::LinearMap,x::AbstractVector)=(@which Base.At_mul_B!(x,A,x))!=methods(Base.At_mul_B!,(AbstractVector,LinearMap,AbstractVector))[end] ? 
     Base.At_mul_B!(similar(x,promote_type(eltype(A),eltype(x)),size(A,2)),A,x) : throw(MethodError(Base.At_mul_B,(A,x)))
 Base.At_mul_B!(y::AbstractVector,A::LinearMap,x::AbstractVector)=begin
     length(y)==size(A,2) || throw(DimensionMismatch("At_mul_B!"))
-    which(Base.At_mul_B,(typeof(x),typeof(A),typeof(x)))!=methods(Base.At_mul_B,(AbstractVector,LinearMap,AbstractVector))[end] ? copy!(y,Base.At_mul_B(A,x)) : throw(MethodError(Base.At_mul_B!,(y,A,x)))
+    (@which Base.At_mul_B(A,x))!=methods(Base.At_mul_B,(LinearMap,AbstractVector))[end] ? copy!(y,Base.At_mul_B(A,x)) : throw(MethodError(Base.At_mul_B!,(y,A,x)))
 end
-Base.Ac_mul_B(A::LinearMap,x::AbstractVector)=which(Base.Ac_mul_B!,(typeof(x),typeof(A),typeof(x)))!=methods(Base.Ac_mul_B!,(AbstractVector,LinearMap,AbstractVector))[end] ? 
+Base.Ac_mul_B(A::LinearMap,x::AbstractVector)=(@which Base.Ac_mul_B!(x,A,x))!=methods(Base.Ac_mul_B!,(AbstractVector,LinearMap,AbstractVector))[end] ? 
     Base.Ac_mul_B!(similar(x,promote_type(eltype(A),eltype(x)),size(A,2)),A,x) : throw(MethodError(Base.Ac_mul_B,(A,x)))
 Base.Ac_mul_B!(y::AbstractVector,A::LinearMap,x::AbstractVector)=begin
     length(y)==size(A,2) || throw(DimensionMismatch("At_mul_B!"))
-    which(Base.Ac_mul_B,(typeof(x),typeof(A),typeof(x)))!=methods(Base.Ac_mul_B,(AbstractVector,LinearMap,AbstractVector))[end] ? copy!(y,Base.Ac_mul_B(A,x)) : throw(MethodError(Base.Ac_mul_B!,(y,A,x)))
+    (@which Base.Ac_mul_B(A,x))!=methods(Base.Ac_mul_B,(LinearMap,AbstractVector))[end] ? copy!(y,Base.Ac_mul_B(A,x)) : throw(MethodError(Base.Ac_mul_B!,(y,A,x)))
 end
 
 # full: create matrix representation of LinearMap
