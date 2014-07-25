@@ -1,7 +1,7 @@
-type CompositeMap{T}<:LinearMap{T}
+type CompositeMap{T}<:AbstractLinearMap{T}
 #    t::Type{T} # just stores T, trick to make CompositeMap{T} actually depend on T
-    maps::Vector{LinearMap} # stored in order of application to vector
-    function CompositeMap(maps::Vector{LinearMap})
+    maps::Vector{AbstractLinearMap} # stored in order of application to vector
+    function CompositeMap(maps::Vector{AbstractLinearMap})
         N=length(maps)
         for n=2:N
             size(maps[n],2)==size(maps[n-1],1) || throw(DimensionMismatch("CompositeMap"))
@@ -14,7 +14,7 @@ type CompositeMap{T}<:LinearMap{T}
 end
 
 # basic methods
-Base.size(A::CompositeMap,n)=(n==1 ? size(A.maps[end],1) : (n==2 ? size(A.maps[1],2) : error("LinearMap objects have only 2 dimensions")))
+Base.size(A::CompositeMap,n)=(n==1 ? size(A.maps[end],1) : (n==2 ? size(A.maps[1],2) : error("AbstractLinearMap objects have only 2 dimensions")))
 Base.size(A::CompositeMap)=(size(A,1),size(A,2))
 Base.isreal(A::CompositeMap)=all(isreal,A.maps) # sufficient but not necessary
 # the following rules are sufficient but not necessary
@@ -53,30 +53,30 @@ end
 function *(A1::CompositeMap,A2::CompositeMap)
     size(A1,2)==size(A2,1) || throw(DimensionMismatch("*"))
     T=promote_type(eltype(A1),eltype(A2))
-    return CompositeMap{T}(LinearMap[A2.maps...,A1.maps...])
+    return CompositeMap{T}(AbstractLinearMap[A2.maps...,A1.maps...])
 end
-function *(A1::LinearMap,A2::CompositeMap)
+function *(A1::AbstractLinearMap,A2::CompositeMap)
     size(A1,2)==size(A2,1) || throw(DimensionMismatch("*"))
     T=promote_type(eltype(A1),eltype(A2))
-    return CompositeMap{T}(LinearMap[A2.maps...,A1])
+    return CompositeMap{T}(AbstractLinearMap[A2.maps...,A1])
 end
-function *(A1::CompositeMap,A2::LinearMap)
+function *(A1::CompositeMap,A2::AbstractLinearMap)
     size(A1,2)==size(A2,1) || throw(DimensionMismatch("*"))
     T=promote_type(eltype(A1),eltype(A2))
-    return CompositeMap{T}(LinearMap[A2,A1.maps...])
+    return CompositeMap{T}(AbstractLinearMap[A2,A1.maps...])
 end
-function *(A1::LinearMap,A2::LinearMap)
+function *(A1::AbstractLinearMap,A2::AbstractLinearMap)
     size(A1,2)==size(A2,1) || throw(DimensionMismatch("*"))
     T=promote_type(eltype(A1),eltype(A2))
-    return CompositeMap{T}(LinearMap[A2,A1])
+    return CompositeMap{T}(AbstractLinearMap[A2,A1])
 end
 
 # comparison of CompositeMap objects
 ==(A::CompositeMap,B::CompositeMap)=(eltype(A)==eltype(B) && A.maps==B.maps)
 
 # special transposition behavior
-transpose(A::CompositeMap)=CompositeMap{eltype(A)}(LinearMap[transpose(M) for M in reverse(A.maps)])
-ctranspose(A::CompositeMap)=CompositeMap{eltype(A)}(LinearMap[ctranspose(M) for M in reverse(A.maps)])
+transpose(A::CompositeMap)=CompositeMap{eltype(A)}(AbstractLinearMap[transpose(M) for M in reverse(A.maps)])
+ctranspose(A::CompositeMap)=CompositeMap{eltype(A)}(AbstractLinearMap[ctranspose(M) for M in reverse(A.maps)])
 
 # multiplication with vectors
 function Base.A_mul_B!(y::AbstractVector,A::CompositeMap,x::AbstractVector)

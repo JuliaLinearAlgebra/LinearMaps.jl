@@ -5,8 +5,8 @@ A=2*rand(Complex128,(20,10)).-1
 v=rand(Complex128,10)
 w=rand(Complex128,20)
 
-# test matrix map
-M=MatrixMap(A)
+# test wrapped map for matrix
+M=LinearMap(A)
 @test M*v==A*v
 
 # test transposition and full
@@ -18,21 +18,21 @@ M=MatrixMap(A)
 @test full(M.')==A.'
 
 # test function map
-F=FunctionMap(cumsum,2)
+F=LinearMap(cumsum,2)
 @test full(F)==[1. 0.;1. 1.]
 
 N=100
-F=FunctionMap(fft,N;isreal=false)/sqrt(N)
+F=LinearMap(fft,N;isreal=false)/sqrt(N)
 U=full(F) # will be a unitary matrix
 @test_approx_eq U'*U eye(N)
 
-F=FunctionMap(cumsum,10)
+F=LinearMap(cumsum,10)
 @test F*v==cumsum(v)
 @test_throws ErrorException F'*v
 
 # test linear combinations
 A=2*rand(Complex128,(10,10)).-1
-M=MatrixMap(A)
+M=LinearMap(A)
 v=rand(Complex128,10)
 
 @test full(3*M)==3*A
@@ -63,7 +63,7 @@ Base.A_mul_B!(w,L,v)
 @test_approx_eq w LF*v
 
 # test new type
-type SimpleFunctionMap <: LinearMap{Float64}
+type SimpleFunctionMap <: AbstractLinearMap{Float64}
     f::Function
     N::Int
 end

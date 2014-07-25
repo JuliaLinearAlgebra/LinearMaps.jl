@@ -1,7 +1,7 @@
-type LinearCombination{T}<:LinearMap{T}
-    maps::Vector{LinearMap}
+type LinearCombination{T}<:AbstractLinearMap{T}
+    maps::Vector{AbstractLinearMap}
     coeffs::Vector{T}
-    function LinearCombination(maps::Vector{LinearMap},coeffs::Vector{T})
+    function LinearCombination(maps::Vector{AbstractLinearMap},coeffs::Vector{T})
         N=length(maps)
         N==length(coeffs) || error("Number of coefficients doesn't match number of terms")
         sz=size(maps[1])
@@ -25,60 +25,60 @@ Base.isposdef(A::LinearCombination)=all(isposdef,A.maps) && all(isposdef,A.coeff
 function +(A1::LinearCombination,A2::LinearCombination)
     size(A1)==size(A2) || throw(DimensionMismatch("+"))
     T=promote_type(eltype(A1),eltype(A2))
-    return LinearCombination{T}(LinearMap[A1.maps...,A2.maps...],T[A1.coeffs...,A2.coeffs...])
+    return LinearCombination{T}(AbstractLinearMap[A1.maps...,A2.maps...],T[A1.coeffs...,A2.coeffs...])
 end
-function +(A1::LinearMap,A2::LinearCombination)
+function +(A1::AbstractLinearMap,A2::LinearCombination)
     size(A1)==size(A2) || throw(DimensionMismatch("+"))
     T=promote_type(eltype(A1),eltype(A2))
-    return LinearCombination{T}(LinearMap[A1,A2.maps...],T[one(T),A2.coeffs...])
+    return LinearCombination{T}(AbstractLinearMap[A1,A2.maps...],T[one(T),A2.coeffs...])
 end
-+(A1::LinearCombination,A2::LinearMap)=+(A2,A1)
-function +(A1::LinearMap,A2::LinearMap)
++(A1::LinearCombination,A2::AbstractLinearMap)=+(A2,A1)
+function +(A1::AbstractLinearMap,A2::AbstractLinearMap)
     size(A1)==size(A2) || throw(DimensionMismatch("+"))
     T=promote_type(eltype(A1),eltype(A2))
-    return LinearCombination{T}(LinearMap[A1,A2],T[one(T),one(T)])
+    return LinearCombination{T}(AbstractLinearMap[A1,A2],T[one(T),one(T)])
 end
 function -(A1::LinearCombination,A2::LinearCombination)
     size(A1)==size(A2) || throw(DimensionMismatch("-"))
     T=promote_type(eltype(A1),eltype(A2))
-    return LinearCombination{T}(LinearMap[A1.maps...,A2.maps...],T[A1.coeffs...,map(-,A2.coeffs)...])
+    return LinearCombination{T}(AbstractLinearMap[A1.maps...,A2.maps...],T[A1.coeffs...,map(-,A2.coeffs)...])
 end
-function -(A1::LinearMap,A2::LinearCombination)
+function -(A1::AbstractLinearMap,A2::LinearCombination)
     size(A1)==size(A2) || throw(DimensionMismatch("-"))
     T=promote_type(eltype(A1),eltype(A2))
-    return LinearCombination{T}(LinearMap[A1,A2.maps...],T[one(T),map(-,A2.coeffs)...])
+    return LinearCombination{T}(AbstractLinearMap[A1,A2.maps...],T[one(T),map(-,A2.coeffs)...])
 end
-function -(A1::LinearCombination,A2::LinearMap)
+function -(A1::LinearCombination,A2::AbstractLinearMap)
     size(A1)==size(A2) || throw(DimensionMismatch("-"))
     T=promote_type(eltype(A1),eltype(A2))
-    return LinearCombination{T}(LinearMap[A1.maps...,A2],T[A1.coeffs...,-one(T)])
+    return LinearCombination{T}(AbstractLinearMap[A1.maps...,A2],T[A1.coeffs...,-one(T)])
 end
-function -(A1::LinearMap,A2::LinearMap)
+function -(A1::AbstractLinearMap,A2::AbstractLinearMap)
     size(A1)==size(A2) || throw(DimensionMismatch("-"))
     T=promote_type(eltype(A1),eltype(A2))
-    return LinearCombination{T}(LinearMap[A1,A2],T[one(T),-one(T)])
+    return LinearCombination{T}(AbstractLinearMap[A1,A2],T[one(T),-one(T)])
 end
 
 # scalar multiplication
--(A::LinearMap)=LinearCombination{eltype(A)}(LinearMap[A],[-one(eltype(A))])
+-(A::AbstractLinearMap)=LinearCombination{eltype(A)}(AbstractLinearMap[A],[-one(eltype(A))])
 -(A::LinearCombination)=LinearCombination{eltype(A)}(A.maps,map(-,A.coeffs))
 
-function *(alpha::Number,A::LinearMap)
+function *(alpha::Number,A::AbstractLinearMap)
     T=promote_type(eltype(alpha),eltype(A))
-    return LinearCombination{T}(LinearMap[A],T[alpha])
+    return LinearCombination{T}(AbstractLinearMap[A],T[alpha])
 end
-*(A::LinearMap,alpha::Number)=*(alpha,A)
+*(A::AbstractLinearMap,alpha::Number)=*(alpha,A)
 function *(alpha::Number,A::LinearCombination)
     T=promote_type(eltype(alpha),eltype(A))
     return LinearCombination{T}(A.maps,alpha*A.coeffs)
 end
 *(A::LinearCombination,alpha::Number)=*(alpha,A)
 
-function \(alpha::Number,A::LinearMap)
+function \(alpha::Number,A::AbstractLinearMap)
     T=promote_type(eltype(alpha),eltype(A))
-    return LinearCombination{T}(LinearMap[A],T[one(T)/alpha])
+    return LinearCombination{T}(AbstractLinearMap[A],T[one(T)/alpha])
 end
-/(A::LinearMap,alpha::Number)=\(alpha,A)
+/(A::AbstractLinearMap,alpha::Number)=\(alpha,A)
 function \(alpha::Number,A::LinearCombination)
     T=promote_type(eltype(alpha),eltype(A))
     return LinearCombination{T}(A.maps,A.coeffs/alpha)
@@ -89,8 +89,8 @@ end
 ==(A::LinearCombination,B::LinearCombination)=(eltype(A)==eltype(B) && A.maps==B.maps && A.coeffs==B.coeffs)
 
 # special transposition behavior
-transpose(A::LinearCombination)=LinearCombination{eltype(A)}(LinearMap[transpose(l) for l in A.maps],A.coeffs)
-ctranspose(A::LinearCombination)=LinearCombination{eltype(A)}(LinearMap[ctranspose(l) for l in A.maps],conj(A.coeffs))
+transpose(A::LinearCombination)=LinearCombination{eltype(A)}(AbstractLinearMap[transpose(l) for l in A.maps],A.coeffs)
+ctranspose(A::LinearCombination)=LinearCombination{eltype(A)}(AbstractLinearMap[ctranspose(l) for l in A.maps],conj(A.coeffs))
 
 # multiplication with vectors
 function Base.A_mul_B!(y::AbstractVector,A::LinearCombination,x::AbstractVector)

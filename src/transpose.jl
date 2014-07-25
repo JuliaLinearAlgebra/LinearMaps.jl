@@ -1,20 +1,20 @@
-immutable TransposeMap{T}<:LinearMap{T}
-    lmap::LinearMap{T}
+immutable TransposeMap{T}<:AbstractLinearMap{T}
+    lmap::AbstractLinearMap{T}
 end
-immutable CTransposeMap{T}<:LinearMap{T}
-    lmap::LinearMap{T}
+immutable CTransposeMap{T}<:AbstractLinearMap{T}
+    lmap::AbstractLinearMap{T}
 end
 
-# transposition behavior of LinearMap objects
+# transposition behavior of AbstractLinearMap objects
 transpose(A::TransposeMap)=A.lmap
 ctranspose(A::CTransposeMap)=A.lmap
 
-transpose{T}(A::LinearMap{T})=issym(A) ? A : TransposeMap{T}(A)
-ctranspose{T<:Real}(A::LinearMap{T})=transpose(A)
-ctranspose{T}(A::LinearMap{T})=ishermitian(A) ? A : CTransposeMap{T}(A)
+transpose{T}(A::AbstractLinearMap{T})=issym(A) ? A : TransposeMap{T}(A)
+ctranspose{T<:Real}(A::AbstractLinearMap{T})=transpose(A)
+ctranspose{T}(A::AbstractLinearMap{T})=ishermitian(A) ? A : CTransposeMap{T}(A)
 
 # properties
-Base.size(A::Union(TransposeMap,CTransposeMap),n)=(n==1 ? size(A.lmap,2) : (n==2 ? size(A.lmap,1) : error("LinearMap objects have only 2 dimensions")))
+Base.size(A::Union(TransposeMap,CTransposeMap),n)=(n==1 ? size(A.lmap,2) : (n==2 ? size(A.lmap,1) : error("AbstractLinearMap objects have only 2 dimensions")))
 Base.size(A::Union(TransposeMap,CTransposeMap))=(size(A.lmap,2),size(A.lmap,1))
 Base.isreal(A::Union(TransposeMap,CTransposeMap))=isreal(A.lmap)
 Base.issym(A::Union(TransposeMap,CTransposeMap))=issym(A.lmap)

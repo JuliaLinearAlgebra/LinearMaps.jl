@@ -1,6 +1,6 @@
 typealias OptionalFunction Union(Function,Nothing)
 
-immutable FunctionMap{T}<:LinearMap{T}
+immutable FunctionMap{T}<:AbstractLinearMap{T}
     f::Function
     M::Int
     N::Int
@@ -25,7 +25,6 @@ function FunctionMap(f::Function,M::Int,N::Int=M;ismutating::Bool=false,isreal::
     FunctionMap{T}(f,M,N;ismutating=ismutating,issym=issym,ishermitian=ishermitian,isposdef=isposdef,ftranspose=ftranspose,fctranspose=fctranspose)
 end
 
-
 # show
 function Base.show{T}(io::IO,A::FunctionMap{T})
     print(io,"FunctionMap{$T}($(A.f),$(A.M),$(A.N);ismutating=$(A._ismutating),issym=$(A._issym),ishermitian=$(A._ishermitian),isposdef=$(A._isposdef),transpose=$(A._fT),ctranspose=$(A._fC))")
@@ -33,7 +32,7 @@ end
 
 
 # properties
-Base.size(A::FunctionMap,n)=(n==1 ? A.M : (n==2 ? A.N : error("LinearMap objects have only 2 dimensions")))
+Base.size(A::FunctionMap,n)=(n==1 ? A.M : (n==2 ? A.N : error("AbstractLinearMap objects have only 2 dimensions")))
 Base.size(A::FunctionMap)=(A.M,A.N)
 Base.issym(A::FunctionMap)=A._issym
 Base.ishermitian(A::FunctionMap)=A._ishermitian
