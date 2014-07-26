@@ -1,6 +1,6 @@
 # LinearMaps
 
-[![Build Status](https://travis-ci.org/Jutho/LinearMaps.jl.svg?branch=master)](https://travis-ci.org/Jutho/LinearMaps.jl)
+[![Build Status](https://travis-ci.org/Jutho/LinearMaps.jl.svg)](https://travis-ci.org/Jutho/LinearMaps.jl) [![Coverage Status](https://img.shields.io/coveralls/Jutho/LinearMaps.jl.svg)](https://coveralls.io/r/Jutho/LinearMaps.jl)
 
 A Julia package for defining and working with linear maps, also known as linear transformations or linear operators acting on vectors. The only requirement for a LinearMap is that it can act on a vector (by multiplication) efficiently.
 
