@@ -55,9 +55,7 @@ include("transpose.jl") # transposing linear maps
 include("linearcombination.jl") # defining linear combinations of linear maps
 include("composition.jl") # composition of linear maps
 include("wrappedmap.jl") # wrap a matrix of linear map in a new type, thereby allowing to alter its properties
-if VERSION.minor >= 3
-    include("identitymap.jl") # the identity map, to be able to make linear combinations of AbstractLinearMap objects and I
-end
+include("identitymap.jl") # the identity map, to be able to make linear combinations of AbstractLinearMap objects and I
 include("functionmap.jl") # using a function as linear map
 
 LinearMap{T}(A::Union(AbstractMatrix{T},AbstractLinearMap{T});isreal::Bool=Base.isreal(A),issym::Bool=Base.issym(A),ishermitian::Bool=Base.ishermitian(A),isposdef::Bool=Base.isposdef(A)) = 

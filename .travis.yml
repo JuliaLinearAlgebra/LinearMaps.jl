@@ -10,7 +10,7 @@ before_install:
   - sudo apt-get install libpcre3-dev julia -y
 env:
   matrix:
-    - JULIAVERSION="juliareleases"
+#    - JULIAVERSION="juliareleases"
     - JULIAVERSION="julianightlies"
 script:
   - julia -e 'Pkg.init(); run(`ln -s $(pwd()) $(Pkg.dir("LinearMaps"))`); Pkg.pin("LinearMaps"); Pkg.resolve()'
