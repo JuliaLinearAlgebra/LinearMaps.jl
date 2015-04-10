@@ -25,13 +25,13 @@ end
 
 # the following for multiplying with transpose and ctranspose map are optional:
 # subtypes can overwrite nonmutating methods, implement mutating methods or do nothing
-Base.At_mul_B(A::AbstractLinearMap,x::AbstractVector)=(@which Base.At_mul_B!(x,A,x))!=methods(Base.At_mul_B!,(AbstractVector,AbstractLinearMap,AbstractVector))[end] ? 
+Base.At_mul_B(A::AbstractLinearMap,x::AbstractVector)=(@which Base.At_mul_B!(x,A,x))!=methods(Base.At_mul_B!,(AbstractVector,AbstractLinearMap,AbstractVector))[end] ?
     Base.At_mul_B!(similar(x,promote_type(eltype(A),eltype(x)),size(A,2)),A,x) : throw(MethodError(Base.At_mul_B,(A,x)))
 Base.At_mul_B!(y::AbstractVector,A::AbstractLinearMap,x::AbstractVector)=begin
     length(y)==size(A,2) || throw(DimensionMismatch("At_mul_B!"))
     (@which Base.At_mul_B(A,x))!=methods(Base.At_mul_B,(AbstractLinearMap,AbstractVector))[end] ? copy!(y,Base.At_mul_B(A,x)) : throw(MethodError(Base.At_mul_B!,(y,A,x)))
 end
-Base.Ac_mul_B(A::AbstractLinearMap,x::AbstractVector)=(@which Base.Ac_mul_B!(x,A,x))!=methods(Base.Ac_mul_B!,(AbstractVector,AbstractLinearMap,AbstractVector))[end] ? 
+Base.Ac_mul_B(A::AbstractLinearMap,x::AbstractVector)=(@which Base.Ac_mul_B!(x,A,x))!=methods(Base.Ac_mul_B!,(AbstractVector,AbstractLinearMap,AbstractVector))[end] ?
     Base.Ac_mul_B!(similar(x,promote_type(eltype(A),eltype(x)),size(A,2)),A,x) : throw(MethodError(Base.Ac_mul_B,(A,x)))
 Base.Ac_mul_B!(y::AbstractVector,A::AbstractLinearMap,x::AbstractVector)=begin
     length(y)==size(A,2) || throw(DimensionMismatch("At_mul_B!"))
@@ -58,11 +58,11 @@ include("wrappedmap.jl") # wrap a matrix of linear map in a new type, thereby al
 include("identitymap.jl") # the identity map, to be able to make linear combinations of AbstractLinearMap objects and I
 include("functionmap.jl") # using a function as linear map
 
-LinearMap{T}(A::Union(AbstractMatrix{T},AbstractLinearMap{T});isreal::Bool=Base.isreal(A),issym::Bool=Base.issym(A),ishermitian::Bool=Base.ishermitian(A),isposdef::Bool=Base.isposdef(A)) = 
+LinearMap{T}(A::Union(AbstractMatrix{T},AbstractLinearMap{T});isreal::Bool=Base.isreal(A),issym::Bool=Base.issym(A),ishermitian::Bool=Base.ishermitian(A),isposdef::Bool=Base.isposdef(A)) =
     WrappedMap(A;isreal=isreal,issym=issym,ishermitian=ishermitian,isposdef=isposdef)
-LinearMap(f::Function,M::Int,N::Int=M;ismutating::Bool=false,isreal::Bool=true,issym::Bool=false,ishermitian::Bool=(isreal && issym),isposdef::Bool=false,ftranspose::OptionalFunction=nothing,fctranspose::OptionalFunction=nothing) = 
+LinearMap(f::Function,M::Int,N::Int=M;ismutating::Bool=false,isreal::Bool=true,issym::Bool=false,ishermitian::Bool=(isreal && issym),isposdef::Bool=false,ftranspose::OptionalFunction=nothing,fctranspose::OptionalFunction=nothing) =
     FunctionMap(f,M,N;ismutating=ismutating,isreal=isreal,issym=issym,ishermitian=ishermitian,isposdef=isposdef,ftranspose=ftranspose,fctranspose=fctranspose)
-LinearMap(f::Function,eltype::Type,M::Int,N::Int=M;ismutating::Bool=false,issym::Bool=false,ishermitian::Bool=(T<:Real && issym),isposdef::Bool=false,ftranspose::OptionalFunction=nothing,fctranspose::OptionalFunction=nothing) = 
+LinearMap(f::Function,eltype::Type,M::Int,N::Int=M;ismutating::Bool=false,issym::Bool=false,ishermitian::Bool=(eltype<:Real && issym),isposdef::Bool=false,ftranspose::OptionalFunction=nothing,fctranspose::OptionalFunction=nothing) = 
     FunctionMap{eltype}(f,M,N;ismutating=ismutating,issym=issym,ishermitian=ishermitian,isposdef=isposdef,ftranspose=ftranspose,fctranspose=fctranspose)
 
 
