@@ -1,6 +1,8 @@
 using LinearMaps
 using Base.Test
 
+import Base: *
+
 A=2*rand(Complex128,(20,10)).-1
 v=rand(Complex128,10)
 w=rand(Complex128,20)
