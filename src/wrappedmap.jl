@@ -4,7 +4,6 @@ immutable WrappedMap{T}<:AbstractLinearMap{T}
     _issym::Bool
     _ishermitian::Bool
     _isposdef::Bool
-    _isreal::Bool
     WrappedMap(A::Union(AbstractMatrix{T},AbstractLinearMap{T});isreal::Bool=Base.isreal(A),issym::Bool=Base.issym(A),ishermitian::Bool=Base.ishermitian(A),isposdef::Bool=Base.isposdef(A))=new(A,isreal,issym,ishermitian,isposdef)
 end
 WrappedMap{T}(A::Union(AbstractMatrix{T},AbstractLinearMap{T});isreal::Bool=Base.isreal(A),issym::Bool=Base.issym(A),ishermitian::Bool=Base.ishermitian(A),isposdef::Bool=Base.isposdef(A))=WrappedMap{T}(A;isreal=isreal,issym=issym,ishermitian=ishermitian,isposdef=isposdef)
