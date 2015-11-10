@@ -3,10 +3,10 @@ immutable IdentityMap{T}<:AbstractLinearMap{T} # T will be determined from maps 
 end
 IdentityMap(T::Type,M::Int)=IdentityMap{T}(M)
 IdentityMap(T::Type,M::Int,N::Int)=(M==N ? IdentityMap{T}(M) : error("IdenityMap needs to be square"))
-IdentityMap(T::Type,sz::(Int,Int))=(sz[1]==sz[2] ? IdentityMap{T}(sz[1]) : error("IdenityMap needs to be square"))
+IdentityMap(T::Type,sz::Tuple{Int,Int})=(sz[1]==sz[2] ? IdentityMap{T}(sz[1]) : error("IdenityMap needs to be square"))
 IdentityMap(M::Int)=IdentityMap(Bool,M)
 IdentityMap(M::Int,N::Int)=IdentityMap(Bool,M,N)
-IdentityMap(sz::(Int,Int))=IdentityMap(Bool,sz)
+IdentityMap(sz::Tuple{Int,Int})=IdentityMap(Bool,sz)
 
 # properties
 Base.size(A::IdentityMap,n)=(n==1 || n==2 ? A.M : error("AbstractLinearMap objects have only 2 dimensions"))

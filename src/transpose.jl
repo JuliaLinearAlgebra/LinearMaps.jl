@@ -6,20 +6,20 @@ immutable CTransposeMap{T}<:AbstractLinearMap{T}
 end
 
 # transposition behavior of AbstractLinearMap objects
-transpose(A::TransposeMap)=A.lmap
-ctranspose(A::CTransposeMap)=A.lmap
+Base.transpose(A::TransposeMap)=A.lmap
+Base.ctranspose(A::CTransposeMap)=A.lmap
 
-transpose{T}(A::AbstractLinearMap{T})=issym(A) ? A : TransposeMap{T}(A)
-ctranspose{T<:Real}(A::AbstractLinearMap{T})=transpose(A)
-ctranspose{T}(A::AbstractLinearMap{T})=ishermitian(A) ? A : CTransposeMap{T}(A)
+Base.transpose{T}(A::AbstractLinearMap{T})=issym(A) ? A : TransposeMap{T}(A)
+Base.ctranspose{T<:Real}(A::AbstractLinearMap{T})=transpose(A)
+Base.ctranspose{T}(A::AbstractLinearMap{T})=ishermitian(A) ? A : CTransposeMap{T}(A)
 
 # properties
-Base.size(A::Union(TransposeMap,CTransposeMap),n)=(n==1 ? size(A.lmap,2) : (n==2 ? size(A.lmap,1) : error("AbstractLinearMap objects have only 2 dimensions")))
-Base.size(A::Union(TransposeMap,CTransposeMap))=(size(A.lmap,2),size(A.lmap,1))
-Base.isreal(A::Union(TransposeMap,CTransposeMap))=isreal(A.lmap)
-Base.issym(A::Union(TransposeMap,CTransposeMap))=issym(A.lmap)
-Base.ishermitian(A::Union(TransposeMap,CTransposeMap))=ishermitian(A.lmap)
-Base.isposdef(A::Union(TransposeMap,CTransposeMap))=isposdef(A.lmap)
+Base.size(A::Union{TransposeMap,CTransposeMap},n)=(n==1 ? size(A.lmap,2) : (n==2 ? size(A.lmap,1) : error("AbstractLinearMap objects have only 2 dimensions")))
+Base.size(A::Union{TransposeMap,CTransposeMap})=(size(A.lmap,2),size(A.lmap,1))
+Base.isreal(A::Union{TransposeMap,CTransposeMap})=isreal(A.lmap)
+Base.issym(A::Union{TransposeMap,CTransposeMap})=issym(A.lmap)
+Base.ishermitian(A::Union{TransposeMap,CTransposeMap})=ishermitian(A.lmap)
+Base.isposdef(A::Union{TransposeMap,CTransposeMap})=isposdef(A.lmap)
 
 # comparison of TransposeMap objects
 ==(A::TransposeMap,B::TransposeMap)=A.lmap==B.lmap
@@ -43,4 +43,3 @@ Base.At_mul_B(A::CTransposeMap,x::AbstractVector)=isreal(A.lmap) ? *(A.lmap,x) :
 
 Base.Ac_mul_B!(y::AbstractVector,A::CTransposeMap,x::AbstractVector)=Base.A_mul_B!(y,A.lmap,x)
 Base.Ac_mul_B(A::CTransposeMap,x::AbstractVector)=*(A.lmap,x)
-

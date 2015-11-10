@@ -1,4 +1,4 @@
-typealias OptionalFunction Union(Function,Nothing)
+typealias OptionalFunction Union{Base.Callable,Void}
 
 immutable FunctionMap{T}<:AbstractLinearMap{T}
     f::Function

@@ -75,8 +75,8 @@ end
 ==(A::CompositeMap,B::CompositeMap)=(eltype(A)==eltype(B) && A.maps==B.maps)
 
 # special transposition behavior
-transpose(A::CompositeMap)=CompositeMap{eltype(A)}(AbstractLinearMap[transpose(M) for M in reverse(A.maps)])
-ctranspose(A::CompositeMap)=CompositeMap{eltype(A)}(AbstractLinearMap[ctranspose(M) for M in reverse(A.maps)])
+Base.transpose(A::CompositeMap)=CompositeMap{eltype(A)}(AbstractLinearMap[transpose(M) for M in reverse(A.maps)])
+Base.ctranspose(A::CompositeMap)=CompositeMap{eltype(A)}(AbstractLinearMap[ctranspose(M) for M in reverse(A.maps)])
 
 # multiplication with vectors
 function Base.A_mul_B!(y::AbstractVector,A::CompositeMap,x::AbstractVector)

@@ -1,12 +1,12 @@
 immutable WrappedMap{T}<:AbstractLinearMap{T}
-    lmap::Union(AbstractMatrix{T},AbstractLinearMap{T})
+    lmap::Union{AbstractMatrix{T},AbstractLinearMap{T}}
     _isreal::Bool
     _issym::Bool
     _ishermitian::Bool
     _isposdef::Bool
-    WrappedMap(A::Union(AbstractMatrix{T},AbstractLinearMap{T});isreal::Bool=Base.isreal(A),issym::Bool=Base.issym(A),ishermitian::Bool=Base.ishermitian(A),isposdef::Bool=Base.isposdef(A))=new(A,isreal,issym,ishermitian,isposdef)
+    WrappedMap(A::Union{AbstractMatrix{T},AbstractLinearMap{T}};isreal::Bool=Base.isreal(A),issym::Bool=Base.issym(A),ishermitian::Bool=Base.ishermitian(A),isposdef::Bool=Base.isposdef(A))=new(A,isreal,issym,ishermitian,isposdef)
 end
-WrappedMap{T}(A::Union(AbstractMatrix{T},AbstractLinearMap{T});isreal::Bool=Base.isreal(A),issym::Bool=Base.issym(A),ishermitian::Bool=Base.ishermitian(A),isposdef::Bool=Base.isposdef(A))=WrappedMap{T}(A;isreal=isreal,issym=issym,ishermitian=ishermitian,isposdef=isposdef)
+WrappedMap{T}(A::Union{AbstractMatrix{T},AbstractLinearMap{T}};isreal::Bool=Base.isreal(A),issym::Bool=Base.issym(A),ishermitian::Bool=Base.ishermitian(A),isposdef::Bool=Base.isposdef(A))=WrappedMap{T}(A;isreal=isreal,issym=issym,ishermitian=ishermitian,isposdef=isposdef)
 
 # properties
 Base.size(A::WrappedMap,n)=(n==1 || n==2 ? size(A.lmap,n) : error("AbstractLinearMap objects have only 2 dimensions"))

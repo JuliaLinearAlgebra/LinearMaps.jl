@@ -2,6 +2,8 @@ module LinearMaps
 
 export AbstractLinearMap, LinearMap
 
+import Base: +, -, *, \, /, ==
+
 abstract AbstractLinearMap{T}
 Base.eltype{T}(::AbstractLinearMap{T})=T
 Base.eltype{T}(::Type{AbstractLinearMap{T}})=T
@@ -58,11 +60,11 @@ include("wrappedmap.jl") # wrap a matrix of linear map in a new type, thereby al
 include("identitymap.jl") # the identity map, to be able to make linear combinations of AbstractLinearMap objects and I
 include("functionmap.jl") # using a function as linear map
 
-LinearMap{T}(A::Union(AbstractMatrix{T},AbstractLinearMap{T});isreal::Bool=Base.isreal(A),issym::Bool=Base.issym(A),ishermitian::Bool=Base.ishermitian(A),isposdef::Bool=Base.isposdef(A)) =
+LinearMap{T}(A::Union{AbstractMatrix{T},AbstractLinearMap{T}};isreal::Bool=Base.isreal(A),issym::Bool=Base.issym(A),ishermitian::Bool=Base.ishermitian(A),isposdef::Bool=Base.isposdef(A)) =
     WrappedMap(A;isreal=isreal,issym=issym,ishermitian=ishermitian,isposdef=isposdef)
 LinearMap(f::Function,M::Int,N::Int=M;ismutating::Bool=false,isreal::Bool=true,issym::Bool=false,ishermitian::Bool=(isreal && issym),isposdef::Bool=false,ftranspose::OptionalFunction=nothing,fctranspose::OptionalFunction=nothing) =
     FunctionMap(f,M,N;ismutating=ismutating,isreal=isreal,issym=issym,ishermitian=ishermitian,isposdef=isposdef,ftranspose=ftranspose,fctranspose=fctranspose)
-LinearMap(f::Function,eltype::Type,M::Int,N::Int=M;ismutating::Bool=false,issym::Bool=false,ishermitian::Bool=(eltype<:Real && issym),isposdef::Bool=false,ftranspose::OptionalFunction=nothing,fctranspose::OptionalFunction=nothing) = 
+LinearMap(f::Function,eltype::Type,M::Int,N::Int=M;ismutating::Bool=false,issym::Bool=false,ishermitian::Bool=(eltype<:Real && issym),isposdef::Bool=false,ftranspose::OptionalFunction=nothing,fctranspose::OptionalFunction=nothing) =
     FunctionMap{eltype}(f,M,N;ismutating=ismutating,issym=issym,ishermitian=ishermitian,isposdef=isposdef,ftranspose=ftranspose,fctranspose=fctranspose)
 
 

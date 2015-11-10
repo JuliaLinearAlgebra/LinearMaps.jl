@@ -89,8 +89,8 @@ end
 ==(A::LinearCombination,B::LinearCombination)=(eltype(A)==eltype(B) && A.maps==B.maps && A.coeffs==B.coeffs)
 
 # special transposition behavior
-transpose(A::LinearCombination)=LinearCombination{eltype(A)}(AbstractLinearMap[transpose(l) for l in A.maps],A.coeffs)
-ctranspose(A::LinearCombination)=LinearCombination{eltype(A)}(AbstractLinearMap[ctranspose(l) for l in A.maps],conj(A.coeffs))
+Base.transpose(A::LinearCombination)=LinearCombination{eltype(A)}(AbstractLinearMap[transpose(l) for l in A.maps],A.coeffs)
+Base.ctranspose(A::LinearCombination)=LinearCombination{eltype(A)}(AbstractLinearMap[ctranspose(l) for l in A.maps],conj(A.coeffs))
 
 # multiplication with vectors
 function Base.A_mul_B!(y::AbstractVector,A::LinearCombination,x::AbstractVector)
