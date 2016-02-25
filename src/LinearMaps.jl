@@ -64,7 +64,7 @@ LinearMap{T}(A::Union{AbstractMatrix{T},AbstractLinearMap{T}};isreal::Bool=Base.
     WrappedMap(A;isreal=isreal,issym=issym,ishermitian=ishermitian,isposdef=isposdef)
 
 function LinearMap(f,M::Int,N::Int=M;ismutating::Bool=false,isreal::Bool=true,
-        issym::Bool=false,ishermitian::Bool=(isreal && issym),isposdef::Bool=false,ftranspose::OptionalFunction=nothing,fctranspose::OptionalFunction=nothing)
+        issym::Bool=false,ishermitian::Bool=(isreal && issym),isposdef::Bool=false,ftranspose=nothing,fctranspose=nothing)
     if ismutating
         MutatingFunctionMap(f,M,N;isreal=isreal,issym=issym,ishermitian=ishermitian,isposdef=isposdef,ftranspose=ftranspose,fctranspose=fctranspose)
     else
@@ -73,7 +73,7 @@ function LinearMap(f,M::Int,N::Int=M;ismutating::Bool=false,isreal::Bool=true,
 end
 
 function LinearMap(f,eltype::Type,M::Int,N::Int=M;ismutating::Bool=false,issym::Bool=false,
-        ishermitian::Bool=(eltype<:Real && issym),isposdef::Bool=false,ftranspose::OptionalFunction=nothing,fctranspose::OptionalFunction=nothing)
+        ishermitian::Bool=(eltype<:Real && issym),isposdef::Bool=false,ftranspose=nothing,fctranspose=nothing)
     if ismutating
         FunctionMap(f,M,N;isreal=isreal,issym=issym,ishermitian=ishermitian,isposdef=isposdef,ftranspose=ftranspose,fctranspose=fctranspose)
     else
