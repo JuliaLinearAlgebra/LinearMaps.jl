@@ -1,28 +1,31 @@
 typealias OptionalFunction Union{Base.Callable,Void}
 
-immutable FunctionMap{T}<:AbstractLinearMap{T}
-    f::Function
+immutable FunctionMap{T, F, Ft, Fc}<:AbstractLinearMap{T}
+    f::F
     M::Int
     N::Int
     _ismutating::Bool
     _issym::Bool
     _ishermitian::Bool
     _isposdef::Bool
-    _fT::OptionalFunction
-    _fC::OptionalFunction
-    function FunctionMap(f::Function,M::Int,N::Int=M;ismutating::Bool=false,issym::Bool=false,ishermitian::Bool=(T<:Real && issym),isposdef::Bool=false,ftranspose::OptionalFunction=nothing,fctranspose::OptionalFunction=nothing)
+    _fT::Ft
+    _fC::Fc
+    function FunctionMap(f,M::Int,N::Int=M, ftranspose=nothing,fctranspose=nothing;ismutating::Bool=false,issym::Bool=false,ishermitian::Bool=(T<:Real && issym),isposdef::Bool=false)
         # sanity checks
         (issym || ishermitian || isposdef) && (M!=N) && error("a symmetric or hermitian map should be square")
         T<:Real && (issym!=ishermitian) && error("a real symmetric map is also hermitian")
         isposdef && !ishermitian && error("a positive definite map should be hermitian")
         # construct
-        new(f,M,N,ismutating,issym,ishermitian,isposdef,ftranspose,fctranspose)
+        new(f, M, N, ismutating, issym, ishermitian, isposdef, ftranspose, fctranspose)
     end
 end
 # additional constructor
-function FunctionMap(f::Function,M::Int,N::Int=M;ismutating::Bool=false,isreal::Bool=true,issym::Bool=false,ishermitian::Bool=(isreal && issym),isposdef::Bool=false,ftranspose::OptionalFunction=nothing,fctranspose::OptionalFunction=nothing)
+function FunctionMap(f,M::Int,N::Int=M;ismutating::Bool=false,isreal::Bool=true,issym::Bool=false,ishermitian::Bool=(isreal && issym),isposdef::Bool=false,ftranspose=nothing,fctranspose=nothing)
     T=(isreal ? Float64 : Complex128) # default assumption
-    FunctionMap{T}(f,M,N;ismutating=ismutating,issym=issym,ishermitian=ishermitian,isposdef=isposdef,ftranspose=ftranspose,fctranspose=fctranspose)
+    F = typeof(f)
+    Ft = typeof(ftranspose)
+    Fc = typeof(fctranspose)
+    FunctionMap{T, F, Ft, Fc}(f,M,N, ftranspose, fctranspose;ismutating=ismutating,issym=issym,ishermitian=ishermitian,isposdef=isposdef)
 end
 
 # show
