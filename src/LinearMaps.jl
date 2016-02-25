@@ -75,7 +75,7 @@ end
 function LinearMap(f,eltype::Type,M::Int,N::Int=M;ismutating::Bool=false,issym::Bool=false,
         ishermitian::Bool=(eltype<:Real && issym),isposdef::Bool=false,ftranspose=nothing,fctranspose=nothing)
     if ismutating
-        FunctionMap(f,M,N;isreal=isreal,issym=issym,ishermitian=ishermitian,isposdef=isposdef,ftranspose=ftranspose,fctranspose=fctranspose)
+        FunctionMap{eltype}(f,M,N;isreal=isreal,issym=issym,ishermitian=ishermitian,isposdef=isposdef,ftranspose=ftranspose,fctranspose=fctranspose)
     else
         FunctionMap{eltype}(f,M,N; issym=issym,ishermitian=ishermitian,isposdef=isposdef,ftranspose=ftranspose,fctranspose=fctranspose)
     end
