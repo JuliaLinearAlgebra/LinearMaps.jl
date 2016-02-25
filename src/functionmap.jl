@@ -98,132 +98,124 @@ end
 
 # At_mul_B!
 function Base.At_mul_B!(y::AbstractVector, A::FunctionMap, x::AbstractVector)
-    A._issym && return Base.A_mul_B!(y,A,x)
     (length(x)==A.M && length(y)==A.N) || throw(DimensionMismatch())
     copy!(y, A._fT(x))
 end
 
 function Base.At_mul_B!{T,F,Fc}(y::AbstractVector, A::FunctionMap{T,F,Void,Fc}, x::AbstractVector)
-    A._issym && return Base.A_mul_B!(y,A,x)
     (length(x)==A.M && length(y)==A.N) || throw(DimensionMismatch())
     copy!(y, conj(A._fC(conj(x))))
 end
 
 function Base.At_mul_B!{T,F}(y::AbstractVector,A::FunctionMap{T,F,Void,Void},x::AbstractVector)
+    A._issym && return Base.A_mul_B!(y,A,x)
     error("transpose not implemented for $A")
 end
 
 function Base.At_mul_B!(y::AbstractVector,A::MutatingFunctionMap,x::AbstractVector)
-    A._issym && return Base.A_mul_B!(y,A,x)
     (length(x) == A.M && length(y) == A.N) || throw(DimensionMismatch())
     A._fT(y,x)
 end
 
 function Base.At_mul_B!{T,F,Fc}(y::AbstractVector,A::MutatingFunctionMap{T,F,Void,Fc},x::AbstractVector)
-    A._issym && return Base.A_mul_B!(y,A,x)
     (length(x) == A.M && length(y) == A.N) || throw(DimensionMismatch())
     conj!(A._fC(y, conj(x)))
 end
 
 function Base.At_mul_B!{T,F}(y::AbstractVector,A::MutatingFunctionMap{T,F,Void,Void},x::AbstractVector)
+    A._issym && return Base.A_mul_B!(y,A,x)
     error("transpose not implemented for $A")
 end
 
 # At_mul_B
 function Base.At_mul_B(A::FunctionMap,x::AbstractVector)
-    A._issym && return A*x
     length(x)==A.M || throw(DimensionMismatch())
     A._fT(x)
 end
 
 function Base.At_mul_B{T,F,Fc}(A::FunctionMap{T,F,Void,Fc},x::AbstractVector)
-    A._issym && return A*x
     length(x)==A.M || throw(DimensionMismatch())
     conj(A._fC(conj(x)))
 end
 
 function Base.At_mul_B{T,F}(A::FunctionMap{T,F,Void,Void},x::AbstractVector)
+    A._issym && return A*x
     error("transpose not implemented for $A")
 end
 
 function Base.At_mul_B(A::MutatingFunctionMap,x::AbstractVector)
-    A._issym && return A*x
     length(x)==A.M || throw(DimensionMismatch())
     A._fT(similar(x,promote_type(eltype(A),eltype(x)),A.N),x)
 end
 
 function Base.At_mul_B{T,F,Fc}(A::MutatingFunctionMap{T,F,Void,Fc},x::AbstractVector)
-    A._issym && return A*x
     length(x)==A.M || throw(DimensionMismatch())
     conj!(A._fC(similar(x,promote_type(eltype(A),eltype(x)),A.N),conj(x)))
 end
 
 function Base.At_mul_B{T,F}(A::MutatingFunctionMap{T,F,Void,Void},x::AbstractVector)
+    A._issym && return A*x
     error("transpose not implemented for $A")
 end
 
 # Ac_mul_B!
 function Base.Ac_mul_B!(y::AbstractVector,A::FunctionMap,x::AbstractVector)
-    A._ishermitian && return Base.A_mul_B!(y,A,x)
     (length(x)==A.M && length(y)==A.N) || throw(DimensionMismatch())
     copy!(y,A._fC(x))
 end
 
 function Base.Ac_mul_B!{T,F,Ft}(y::AbstractVector,A::FunctionMap{T,F,Ft,Void},x::AbstractVector)
-    A._ishermitian && return Base.A_mul_B!(y,A,x)
     (length(x)==A.M && length(y)==A.N) || throw(DimensionMismatch())
     copy!(y,conj(A._fT(conj(x))))
 end
 
 function Base.Ac_mul_B!{T,F}(y::AbstractVector,A::FunctionMap{T,F,Void,Void},x::AbstractVector)
+    A._ishermitian && return Base.A_mul_B!(y,A,x)
     error("ctranspose not implemented for $A")
 end
 
 function Base.Ac_mul_B!(y::AbstractVector,A::MutatingFunctionMap,x::AbstractVector)
-    A._ishermitian && return Base.A_mul_B!(y,A,x)
     (length(x)==A.M && length(y)==A.N) || throw(DimensionMismatch())
     A._fC(y,x)
 end
 
 function Base.Ac_mul_B!{T,F,Ft}(y::AbstractVector,A::MutatingFunctionMap{T,F,Ft,Void},x::AbstractVector)
-    A._ishermitian && return Base.A_mul_B!(y,A,x)
     (length(x)==A.M && length(y)==A.N) || throw(DimensionMismatch())
     conj!(A._fT(y, conj(x)))
 end
 
 function Base.Ac_mul_B!{T,F}(y::AbstractVector,A::MutatingFunctionMap{T,F,Void,Void},x::AbstractVector)
+    A._ishermitian && return Base.A_mul_B!(y,A,x)
     error("ctranspose not implemented for $A")
 end
 
 # Ac_mul_B
 function Base.Ac_mul_B(A::FunctionMap,x::AbstractVector)
-    A._ishermitian && return A*x
     length(x)==A.M || throw(DimensionMismatch())
     A._fC(x)
 end
 
 function Base.Ac_mul_B{T,F,Ft}(A::FunctionMap{T,F,Ft,Void},x::AbstractVector)
-    A._ishermitian && return A*x
     length(x)==A.M || throw(DimensionMismatch())
     conj(A._fT(conj(x)))
 end
 
 function Base.Ac_mul_B{T,F}(A::FunctionMap{T,F,Void,Void},x::AbstractVector)
+    A._ishermitian && return A*x
     error("ctranspose not implemented for $A")
 end
 
 function Base.Ac_mul_B(A::MutatingFunctionMap,x::AbstractVector)
-    A._ishermitian && return A*x
     length(x)==A.M || throw(DimensionMismatch())
     A._fC(similar(x,promote_type(eltype(A),eltype(x)),A.N),x)
 end
 
 function Base.Ac_mul_B{T,F,Ft}(A::MutatingFunctionMap{T,F,Ft,Void},x::AbstractVector)
-    A._ishermitian && return A*x
     length(x)==A.M || throw(DimensionMismatch())
     conj!(A._fT(similar(x,promote_type(eltype(A),eltype(x)),A.N),conj(x)))
 end
 
 function Base.Ac_mul_B{T,F}(A::MutatingFunctionMap{T,F,Void,Void},x::AbstractVector)
+    A._ishermitian && return A*x
     error("ctranspose not implemented for $A")
 end
