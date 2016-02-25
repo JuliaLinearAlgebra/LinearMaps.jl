@@ -2,7 +2,7 @@ typealias OptionalFunction Union{Base.Callable,Void}
 
 abstract AbstractFunctionMap{T} <: AbstractLinearMap{T}
 
-function sanitycheck(isreal::Bool, issym::Bool, ishermitian::Bool, isposdef::Bool)
+function sanitycheck(M::Int, N::Int, isreal::Bool, issym::Bool, ishermitian::Bool, isposdef::Bool)
     (issym || ishermitian || isposdef) && (M!=N) && error("a symmetric or hermitian map should be square")
     isreal && (issym!=ishermitian) && error("a real symmetric map is also hermitian")
     isposdef && !ishermitian && error("a positive definite map should be hermitian")
@@ -18,7 +18,7 @@ immutable FunctionMap{T, F, Ft, Fc} <: AbstractFunctionMap{T}
     _fT::Ft
     _fC::Fc
     function FunctionMap(f,M::Int,N::Int=M, ftranspose=nothing,fctranspose=nothing;issym::Bool=false,ishermitian::Bool=(T<:Real && issym),isposdef::Bool=false)
-        sanitycheck(T<:Real, issym, ishermitian,isposdef)
+        sanitycheck(M, N, T<:Real, issym, ishermitian,isposdef)
         new(f, M, N, issym, ishermitian, isposdef, ftranspose, fctranspose)
     end
 end
@@ -42,7 +42,7 @@ immutable MutatingFunctionMap{T, F, Ft, Fc} <: AbstractFunctionMap{T}
     _fT::Ft
     _fC::Fc
     function MutatingFunctionMap(f,M::Int,N::Int=M, ftranspose=nothing,fctranspose=nothing;issym::Bool=false,ishermitian::Bool=(T<:Real && issym),isposdef::Bool=false)
-        checkproperties(T<:Real, issym, ishermitian,isposdef)
+        checkproperties(M, N, T<:Real, issym, ishermitian,isposdef)
         new(f, M, N, issym, ishermitian, isposdef, ftranspose, fctranspose)
     end
 end
