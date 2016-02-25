@@ -42,7 +42,7 @@ immutable MutatingFunctionMap{T, F, Ft, Fc} <: AbstractFunctionMap{T}
     _fT::Ft
     _fC::Fc
     function MutatingFunctionMap(f,M::Int,N::Int=M, ftranspose=nothing,fctranspose=nothing;issym::Bool=false,ishermitian::Bool=(T<:Real && issym),isposdef::Bool=false)
-        checkproperties(M, N, T<:Real, issym, ishermitian,isposdef)
+        sanitycheck(M, N, T<:Real, issym, ishermitian,isposdef)
         new(f, M, N, issym, ishermitian, isposdef, ftranspose, fctranspose)
     end
 end
