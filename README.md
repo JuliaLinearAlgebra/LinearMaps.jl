@@ -29,14 +29,14 @@ The LinearMaps package provides the following functionality:
 
   General purpose method to construct AbstractLinearMap objects of specific types, as described in the Types section below
   
-  ```
+  ```julia
   LinearMap(A::AbstractMatrix;isreal::Bool,issym::Bool,ishermitian::Bool,isposdef::Bool)
   LinearMap(A::AbstractLinearMap;isreal::Bool,issym::Bool,ishermitian::Bool,isposdef::Bool)
   ```
   
   Create a `WrappedMap` object that will respond to the methods `isreal`, `issym`, `ishermitian`, `isposdef` with the values provided by the keyword arguments. The default values correspond to the result of calling these methods on the argument `A`. This allows to use an `AbstractMatrix` within the `AbstractLinearMap` framework and to redefine the properties of an existing `AbstractLinearMap`.
   
-  ```
+  ```julia
   LinearMap(f::Function,M::Int,N::Int=M;ismutating::Bool,issym::Bool,ishermitian::Bool,isposdef::Bool,ftranspose,fctranspose)
   LinearMap(f::Function,eltype::Type,M::Int,N::Int=M;ismutating::Bool,issym::Bool,ishermitian::Bool,isposdef::Bool,ftranspose,fctranspose)
   ```
@@ -84,25 +84,25 @@ None of the types below need to be constructed directly; they arise from perform
 
 The `LinearMap` object combines well with the iterative eigensolver `eigs`, which is the Julia wrapper for Arpack.
 
-```
+```julia
 using LinearMaps
 
 function leftdiff!(y::Vector,x::Vector) # left difference assuming periodic boundary conditions
-length(y)==length(x) || throw(DimensionMismatch())
-N=length(x)
-@inbounds for i=1:N
-y[i]=x[i]-x[mod1(i-1,N)]
-end
-return y
+    length(y)==length(x) || throw(DimensionMismatch())
+    N=length(x)
+    @inbounds for i=1:N
+         y[i]=x[i]-x[mod1(i-1,N)]
+    end
+    return y
 end
 
 function mrightdiff!(y::Vector,x::Vector) # minus right difference
-length(y)==length(x) || throw(DimensionMismatch())
-N=length(x)
-@inbounds for i=1:N
-y[i]=x[i]-x[mod1(i+1,N)]
-end
-return y
+    length(y)==length(x) || throw(DimensionMismatch())
+    N=length(x)
+    @inbounds for i=1:N
+        y[i]=x[i]-x[mod1(i+1,N)]
+    end
+    return y
 end
 
 D=LinearMap(leftdiff!,100;ismutating=true,fctranspose=mrightdiff!)
