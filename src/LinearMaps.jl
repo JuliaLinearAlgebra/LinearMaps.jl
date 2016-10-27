@@ -11,8 +11,8 @@ Base.eltype{L<:AbstractLinearMap}(::Type{L})=eltype(super(L))
 
 Base.isreal{T<:Real}(::AbstractLinearMap{T})=true
 Base.isreal(::AbstractLinearMap)=false # standard assumptions
-Base.issym(::AbstractLinearMap)=false # standard assumptions
-Base.ishermitian{T<:Real}(A::AbstractLinearMap{T})=issym(A)
+Base.issymmetric(::AbstractLinearMap)=false # standard assumptions
+Base.ishermitian{T<:Real}(A::AbstractLinearMap{T})=issymmetric(A)
 Base.ishermitian(::AbstractLinearMap)=false # standard assumptions
 Base.isposdef(::AbstractLinearMap)=false # standard assumptions
 
@@ -47,7 +47,7 @@ function Base.full{T}(A::AbstractLinearMap{T})
     for i=1:N
         v=zeros(T,N)
         v[i]=one(T)
-        w=pointer_to_array(pointer(mat,(i-1)*M+1),M)
+        w=unsafe_wrap(Array, pointer(mat,(i-1)*M+1), M)
         A_mul_B!(w,A,v)
     end
     return mat
@@ -60,12 +60,12 @@ include("wrappedmap.jl") # wrap a matrix of linear map in a new type, thereby al
 include("identitymap.jl") # the identity map, to be able to make linear combinations of AbstractLinearMap objects and I
 include("functionmap.jl") # using a function as linear map
 
-LinearMap{T}(A::Union{AbstractMatrix{T},AbstractLinearMap{T}};isreal::Bool=Base.isreal(A),issym::Bool=Base.issym(A),ishermitian::Bool=Base.ishermitian(A),isposdef::Bool=Base.isposdef(A)) =
-    WrappedMap(A;isreal=isreal,issym=issym,ishermitian=ishermitian,isposdef=isposdef)
-LinearMap(f::Function,M::Int,N::Int=M;ismutating::Bool=false,isreal::Bool=true,issym::Bool=false,ishermitian::Bool=(isreal && issym),isposdef::Bool=false,ftranspose::OptionalFunction=nothing,fctranspose::OptionalFunction=nothing) =
-    FunctionMap(f,M,N;ismutating=ismutating,isreal=isreal,issym=issym,ishermitian=ishermitian,isposdef=isposdef,ftranspose=ftranspose,fctranspose=fctranspose)
-LinearMap(f::Function,eltype::Type,M::Int,N::Int=M;ismutating::Bool=false,issym::Bool=false,ishermitian::Bool=(eltype<:Real && issym),isposdef::Bool=false,ftranspose::OptionalFunction=nothing,fctranspose::OptionalFunction=nothing) =
-    FunctionMap{eltype}(f,M,N;ismutating=ismutating,issym=issym,ishermitian=ishermitian,isposdef=isposdef,ftranspose=ftranspose,fctranspose=fctranspose)
+LinearMap{T}(A::Union{AbstractMatrix{T},AbstractLinearMap{T}};isreal::Bool=Base.isreal(A),issymmetric::Bool=Base.issymmetric(A),ishermitian::Bool=Base.ishermitian(A),isposdef::Bool=Base.isposdef(A)) =
+    WrappedMap(A;isreal=isreal,issymmetric=issymmetric,ishermitian=ishermitian,isposdef=isposdef)
+LinearMap(f::Function,M::Int,N::Int=M;ismutating::Bool=false,isreal::Bool=true,issymmetric::Bool=false,ishermitian::Bool=(isreal && issymmetric),isposdef::Bool=false,ftranspose::OptionalFunction=nothing,fctranspose::OptionalFunction=nothing) =
+    FunctionMap(f,M,N;ismutating=ismutating,isreal=isreal,issymmetric=issymmetric,ishermitian=ishermitian,isposdef=isposdef,ftranspose=ftranspose,fctranspose=fctranspose)
+LinearMap(f::Function,eltype::Type,M::Int,N::Int=M;ismutating::Bool=false,issymmetric::Bool=false,ishermitian::Bool=(eltype<:Real && issymmetric),isposdef::Bool=false,ftranspose::OptionalFunction=nothing,fctranspose::OptionalFunction=nothing) =
+    FunctionMap{eltype}(f,M,N;ismutating=ismutating,issymmetric=issymmetric,ishermitian=ishermitian,isposdef=isposdef,ftranspose=ftranspose,fctranspose=fctranspose)
 
 
 end # module

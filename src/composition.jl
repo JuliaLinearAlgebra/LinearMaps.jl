@@ -18,10 +18,10 @@ Base.size(A::CompositeMap,n)=(n==1 ? size(A.maps[end],1) : (n==2 ? size(A.maps[1
 Base.size(A::CompositeMap)=(size(A,1),size(A,2))
 Base.isreal(A::CompositeMap)=all(isreal,A.maps) # sufficient but not necessary
 # the following rules are sufficient but not necessary
-function Base.issym(A::CompositeMap)
+function Base.issymmetric(A::CompositeMap)
     N=length(A.maps)
     if isodd(N)
-        issym(A.maps[div(N+1,2)]) || return false
+        issymmetric(A.maps[div(N+1,2)]) || return false
     end
     for n=1:div(N,2)
         A.maps[n]==transpose(A.maps[N-n+1]) || return false

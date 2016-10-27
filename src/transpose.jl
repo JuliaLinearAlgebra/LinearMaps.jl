@@ -9,7 +9,7 @@ end
 Base.transpose(A::TransposeMap)=A.lmap
 Base.ctranspose(A::CTransposeMap)=A.lmap
 
-Base.transpose{T}(A::AbstractLinearMap{T})=issym(A) ? A : TransposeMap{T}(A)
+Base.transpose{T}(A::AbstractLinearMap{T})=issymmetric(A) ? A : TransposeMap{T}(A)
 Base.ctranspose{T<:Real}(A::AbstractLinearMap{T})=transpose(A)
 Base.ctranspose{T}(A::AbstractLinearMap{T})=ishermitian(A) ? A : CTransposeMap{T}(A)
 
@@ -17,7 +17,7 @@ Base.ctranspose{T}(A::AbstractLinearMap{T})=ishermitian(A) ? A : CTransposeMap{T
 Base.size(A::Union{TransposeMap,CTransposeMap},n)=(n==1 ? size(A.lmap,2) : (n==2 ? size(A.lmap,1) : error("AbstractLinearMap objects have only 2 dimensions")))
 Base.size(A::Union{TransposeMap,CTransposeMap})=(size(A.lmap,2),size(A.lmap,1))
 Base.isreal(A::Union{TransposeMap,CTransposeMap})=isreal(A.lmap)
-Base.issym(A::Union{TransposeMap,CTransposeMap})=issym(A.lmap)
+Base.issymmetric(A::Union{TransposeMap,CTransposeMap})=issymmetric(A.lmap)
 Base.ishermitian(A::Union{TransposeMap,CTransposeMap})=ishermitian(A.lmap)
 Base.isposdef(A::Union{TransposeMap,CTransposeMap})=isposdef(A.lmap)
 
@@ -26,8 +26,8 @@ Base.isposdef(A::Union{TransposeMap,CTransposeMap})=isposdef(A.lmap)
 ==(A::CTransposeMap,B::CTransposeMap)=A.lmap==B.lmap
 
 # multiplication with vector: should be ok for all lmap values, also those for which Transpose/CTranpose should not have been created
-Base.A_mul_B!(y::AbstractVector,A::TransposeMap,x::AbstractVector)=(issym(A.lmap) ? Base.A_mul_B!(y,A.lmap,x) : Base.At_mul_B!(y,A.lmap,x))
-*(A::TransposeMap,x::AbstractVector)=(issym(A.lmap) ? *(A.lmap,x) : Base.At_mul_B(A.lmap,x))
+Base.A_mul_B!(y::AbstractVector,A::TransposeMap,x::AbstractVector)=(issymmetric(A.lmap) ? Base.A_mul_B!(y,A.lmap,x) : Base.At_mul_B!(y,A.lmap,x))
+*(A::TransposeMap,x::AbstractVector)=(issymmetric(A.lmap) ? *(A.lmap,x) : Base.At_mul_B(A.lmap,x))
 
 Base.At_mul_B!(y::AbstractVector,A::TransposeMap,x::AbstractVector)=Base.A_mul_B!(y,A.lmap,x)
 Base.At_mul_B(A::TransposeMap,x::AbstractVector)=*(A.lmap,x)

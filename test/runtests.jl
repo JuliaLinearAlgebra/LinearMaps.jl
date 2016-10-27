@@ -71,7 +71,7 @@ type SimpleFunctionMap <: AbstractLinearMap{Float64}
 end
 
 Base.size(A::SimpleFunctionMap)=(A.N,A.N)
-Base.issym(A::SimpleFunctionMap)=false
+Base.issymmetric(A::SimpleFunctionMap)=false
 *(A::SimpleFunctionMap,v::Vector)=A.f(v)
 
 F=SimpleFunctionMap(cumsum,10)
