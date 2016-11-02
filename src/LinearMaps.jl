@@ -42,13 +42,13 @@ end
 
 # full: create matrix representation of AbstractLinearMap
 function Base.full{T}(A::AbstractLinearMap{T})
-    M,N=size(A)
-    mat=zeros(T,(M,N))
+    M, N = size(A)
+    mat = zeros(T, (M, N))
+    v = zeros(T, N)
     for i=1:N
-        v=zeros(T,N)
-        v[i]=one(T)
-        w=unsafe_wrap(Array, pointer(mat,(i-1)*M+1), M)
-        A_mul_B!(w,A,v)
+        v[i] = one(T)
+        A_mul_B!(view(mat,:,i), A, v)
+        v[i] = zero(T)
     end
     return mat
 end
