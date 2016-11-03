@@ -27,6 +27,8 @@ Base.isposdef(A::Union{TransposeMap,CTransposeMap}) = isposdef(A.lmap)
 # comparison of TransposeMap objects
 ==(A::TransposeMap, B::TransposeMap) = A.lmap == B.lmap
 ==(A::CTransposeMap, B::CTransposeMap) = A.lmap == B.lmap
+==(A::TransposeMap, B::CTransposeMap) = isreal(B) && A.lmap == B.lmap
+==(A::CTransposeMap, B::TransposeMap) = isreal(A) && A.lmap == B.lmap
 ==(A::TransposeMap, B::AbstractLinearMap) = issymmetric(B) && A.lmap == B
 ==(A::CTransposeMap, B::AbstractLinearMap) = ishermitian(B) && A.lmap == B
 ==(A::AbstractLinearMap, B::TransposeMap) = issymmetric(A) && B.lmap == A
