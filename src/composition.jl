@@ -1,7 +1,7 @@
 type CompositeMap{T,As<:Tuple{Vararg{AbstractLinearMap}}} <: AbstractLinearMap{T}
     maps::As # stored in order of application to vector
     function CompositeMap(maps::As)
-        N=length(maps)
+        N = length(maps)
         for n = 2:N
             size(maps[n],2)==size(maps[n-1],1) || throw(DimensionMismatch("CompositeMap"))
         end
