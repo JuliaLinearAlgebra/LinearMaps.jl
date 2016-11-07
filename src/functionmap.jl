@@ -12,7 +12,7 @@ end
 # additional constructor
 FunctionMap{T}(f, M::Int, ::Type{T} = Float64; kwargs...) = FunctionMap(f, nothing, M, M, T; kwargs...)
 FunctionMap{T}(f, M::Int, N::Int, ::Type{T} = Float64; kwargs...) = FunctionMap(f, nothing, M, N, T; kwargs...)
-FunctionMap{T}(f, fc, M::Int, ::Type{T} = Float64; kwargs...) = FunctionMap(f, nothing, M, M, T; kwargs...)
+FunctionMap{T}(f, fc, M::Int, ::Type{T} = Float64; kwargs...) = FunctionMap(f, fc, M, M, T; kwargs...)
 
 function FunctionMap{T,F1,F2}(f::F1, fc::F2, M::Int, N::Int, ::Type{T} = Float64;
     ismutating::Bool=false, isreal::Bool=T<:Real, issymmetric::Bool=false, ishermitian::Bool=(isreal && issymmetric), isposdef::Bool=false)
