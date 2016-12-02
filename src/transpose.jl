@@ -16,8 +16,6 @@ Base.ctranspose{T<:Real}(A::AbstractLinearMap{T}) = transpose(A)
 Base.ctranspose(A::AbstractLinearMap) = CTransposeMap(A)
 
 # properties
-Base.size(A::Union{TransposeMap,CTransposeMap},n) = (n==1 ? size(A.lmap,2) :
-    (n==2 ? size(A.lmap,1) : error("AbstractLinearMap objects have only 2 dimensions")))
 Base.size(A::Union{TransposeMap,CTransposeMap}) = (size(A.lmap,2), size(A.lmap,1))
 Base.isreal(A::Union{TransposeMap,CTransposeMap}) = isreal(A.lmap)
 Base.issymmetric(A::Union{TransposeMap,CTransposeMap}) = issymmetric(A.lmap)

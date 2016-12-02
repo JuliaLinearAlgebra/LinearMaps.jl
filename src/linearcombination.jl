@@ -16,7 +16,6 @@ end
 (::Type{LinearCombination{T}}){T,As,Ts}(maps::As, coeffs::Ts) = LinearCombination{T,As,Ts}(maps, coeffs)
 
 # basic methods
-Base.size(A::LinearCombination, n) = size(A.maps[1], n)
 Base.size(A::LinearCombination) = size(A.maps[1])
 Base.isreal(A::LinearCombination) = all(isreal, A.maps) && all(isreal, A.coeffs) # sufficient but not necessary
 Base.issymmetric(A::LinearCombination) = all(issymmetric, A.maps) # sufficient but not necessary

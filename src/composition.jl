@@ -14,9 +14,8 @@ end
 (::Type{CompositeMap{T}}){T,As<:Tuple{Vararg{AbstractLinearMap}}}(maps::As) = CompositeMap{T,As}(maps)
 
 # basic methods
-Base.size(A::CompositeMap,n) = (n==1 ? size(A.maps[end],1) : (n==2 ? size(A.maps[1],2) : error("AbstractLinearMap objects have only 2 dimensions")))
-Base.size(A::CompositeMap) = (size(A,1),size(A,2))
-Base.isreal(A::CompositeMap) = all(isreal,A.maps) # sufficient but not necessary
+Base.size(A::CompositeMap) = (size(A.maps[end], 1), size(A.maps[1], 2))
+Base.isreal(A::CompositeMap) = all(isreal, A.maps) # sufficient but not necessary
 # the following rules are sufficient but not necessary
 function Base.issymmetric(A::CompositeMap)
     N = length(A.maps)
@@ -72,7 +71,7 @@ function *(A1::AbstractLinearMap, A2::AbstractLinearMap)
 end
 
 # comparison of CompositeMap objects
-==(A::CompositeMap, B::CompositeMap) = (eltype(A)==eltype(B) && A.maps == B.maps)
+==(A::CompositeMap, B::CompositeMap) = (eltype(A) == eltype(B) && A.maps == B.maps)
 
 # special transposition behavior
 Base.transpose{T}(A::CompositeMap{T}) = CompositeMap{T}(map(transpose,reverse(A.maps)))

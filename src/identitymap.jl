@@ -9,7 +9,6 @@ IdentityMap(M::Int, N::Int) = IdentityMap(Bool, M, N)
 IdentityMap(sz::Tuple{Int, Int}) = IdentityMap(Bool, sz)
 
 # properties
-Base.size(A::IdentityMap, n) = (n==1 || n==2 ? A.M : error("AbstractLinearMap objects have only 2 dimensions"))
 Base.size(A::IdentityMap) = (A.M, A.M)
 Base.isreal(::IdentityMap) = true
 Base.issymmetric(::IdentityMap) = true

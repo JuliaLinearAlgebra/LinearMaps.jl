@@ -5,13 +5,12 @@ immutable WrappedMap{T,A} <: AbstractLinearMap{T}
     _ishermitian::Bool
     _isposdef::Bool
 end
-(::Type{WrappedMap}){T,A<:Union{AbstractMatrix,AbstractLinearMap}}(lmap::A, ::Type{T} = eltype(lmap);
+(::Type{WrappedMap}){T,A<:Union{AbstractMatrix, AbstractLinearMap}}(lmap::A, ::Type{T} = eltype(lmap);
     isreal::Bool = Base.isreal(lmap), issymmetric::Bool = Base.issymmetric(lmap),
     ishermitian::Bool = Base.ishermitian(lmap), isposdef::Bool = Base.isposdef(lmap)) =
         WrappedMap{T,A}(lmap, isreal, issymmetric, ishermitian, isposdef)
 
 # properties
-Base.size(A::WrappedMap,n) = (n==1 || n==2 ? size(A.lmap,n) : error("AbstractLinearMap objects have only 2 dimensions"))
 Base.size(A::WrappedMap) = size(A.lmap)
 Base.isreal(A::WrappedMap) = A._isreal
 Base.issymmetric(A::WrappedMap) = A._issymmetric
@@ -19,8 +18,8 @@ Base.ishermitian(A::WrappedMap) = A._ishermitian
 Base.isposdef(A::WrappedMap) = A._isposdef
 
 # comparison
-==(A::WrappedMap,B::WrappedMap) = (A.lmap==B.lmap && isreal(A)==isreal(B) &&
-    issymmetric(A)==issymmetric(B) && ishermitian(A)==ishermitian(B) && isposdef(A)==isposdef(B))
+==(A::WrappedMap,B::WrappedMap) = (A.lmap == B.lmap && isreal(A) == isreal(B) &&
+    issymmetric(A) == issymmetric(B) && ishermitian(A) == ishermitian(B) && isposdef(A) == isposdef(B))
 
 # multiplication with vector
 Base.A_mul_B!(y::AbstractVector, A::WrappedMap,x::AbstractVector) = Base.A_mul_B!(y, A.lmap, x)
