@@ -17,7 +17,6 @@ Base.ctranspose(A::AbstractLinearMap) = CTransposeMap(A)
 
 # properties
 Base.size(A::Union{TransposeMap,CTransposeMap}) = (size(A.lmap,2), size(A.lmap,1))
-Base.isreal(A::Union{TransposeMap,CTransposeMap}) = isreal(A.lmap)
 Base.issymmetric(A::Union{TransposeMap,CTransposeMap}) = issymmetric(A.lmap)
 Base.ishermitian(A::Union{TransposeMap,CTransposeMap}) = ishermitian(A.lmap)
 Base.isposdef(A::Union{TransposeMap,CTransposeMap}) = isposdef(A.lmap)

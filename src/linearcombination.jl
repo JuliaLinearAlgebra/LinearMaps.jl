@@ -17,7 +17,6 @@ end
 
 # basic methods
 Base.size(A::LinearCombination) = size(A.maps[1])
-Base.isreal(A::LinearCombination) = all(isreal, A.maps) && all(isreal, A.coeffs) # sufficient but not necessary
 Base.issymmetric(A::LinearCombination) = all(issymmetric, A.maps) # sufficient but not necessary
 Base.ishermitian(A::LinearCombination) = all(ishermitian, A.maps) && all(isreal, A.coeffs) # sufficient but not necessary
 Base.isposdef(A::LinearCombination) = all(isposdef, A.maps) && all(isposdef, A.coeffs) # sufficient but not necessary

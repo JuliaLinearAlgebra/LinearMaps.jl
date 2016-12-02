@@ -15,11 +15,7 @@ FunctionMap{T}(f, M::Int, N::Int, ::Type{T} = Float64; kwargs...) = FunctionMap(
 FunctionMap{T}(f, fc, M::Int, ::Type{T} = Float64; kwargs...) = FunctionMap(f, fc, M, M, T; kwargs...)
 
 function FunctionMap{T,F1,F2}(f::F1, fc::F2, M::Int, N::Int, ::Type{T} = Float64;
-    ismutating::Bool=false, isreal::Bool=T<:Real, issymmetric::Bool=false, ishermitian::Bool=(isreal && issymmetric), isposdef::Bool=false)
-    FunctionMap{T,F1,F2}(f, fc, M, N, ismutating, issymmetric, ishermitian, isposdef)
-end
-function (::Type{FunctionMap{T}}){T,F1,F2}(f::F1, fc::F2, M::Int, N::Int;
-    ismutating::Bool=false, isreal::Bool=T<:Real, issymmetric::Bool=false, ishermitian::Bool=(isreal && issymmetric), isposdef::Bool=false)
+    ismutating::Bool = false, issymmetric::Bool = false, ishermitian::Bool=(T<:Real && issymmetric), isposdef::Bool = false)
     FunctionMap{T,F1,F2}(f, fc, M, N, ismutating, issymmetric, ishermitian, isposdef)
 end
 

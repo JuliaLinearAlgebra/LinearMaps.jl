@@ -1,6 +1,6 @@
 module LinearMaps
 
-export AbstractLinearMap, LinearMap
+export LinearMap, AbstractLinearMap
 
 import Base: +, -, *, \, /, ==
 
@@ -16,7 +16,7 @@ Base.ishermitian{T<:Real}(A::AbstractLinearMap{T}) = issymmetric(A)
 Base.ishermitian(::AbstractLinearMap) = false # standard assumptions
 Base.isposdef(::AbstractLinearMap) = false # standard assumptions
 
-Base.size(A::AbstractLinearMap,n) = (n==1 || n==2 ? size(A)[n] : error("AbstractLinearMap objects have only 2 dimensions"))
+Base.size(A::AbstractLinearMap, n) = (n==1 || n==2 ? size(A)[n] : error("AbstractLinearMap objects have only 2 dimensions"))
 
 # any AbstractLinearMap subtype will have to overwrite at least one of the two following methods to avoid running in circles
 *(A::AbstractLinearMap,x::AbstractVector)=Base.A_mul_B!(similar(x,promote_type(eltype(A),eltype(x)),size(A,1)),A,x)
@@ -60,8 +60,7 @@ include("wrappedmap.jl") # wrap a matrix of linear map in a new type, thereby al
 include("identitymap.jl") # the identity map, to be able to make linear combinations of AbstractLinearMap objects and I
 include("functionmap.jl") # using a function as linear map
 
-LinearMap{T}(A::Union{AbstractMatrix{T},AbstractLinearMap{T}};isreal::Bool=Base.isreal(A),issymmetric::Bool=Base.issymmetric(A),ishermitian::Bool=Base.ishermitian(A),isposdef::Bool=Base.isposdef(A)) =
-    WrappedMap(A;isreal=isreal,issymmetric=issymmetric,ishermitian=ishermitian,isposdef=isposdef)
+LinearMap{T}(A::Union{AbstractMatrix{T},AbstractLinearMap{T}}; kwargs...) = WrappedMap(A; kwargs...)
 LinearMap(args...; kwargs...) = FunctionMap(args...; kwargs...)
 
 

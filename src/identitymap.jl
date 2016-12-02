@@ -4,9 +4,9 @@ end
 IdentityMap(T::Type, M::Int) = IdentityMap{T}(M)
 IdentityMap(T::Type, M::Int, N::Int) = (M==N ? IdentityMap{T}(M) : error("IdenityMap needs to be square"))
 IdentityMap(T::Type, sz::Tuple{Int, Int}) = (sz[1]==sz[2] ? IdentityMap{T}(sz[1]) : error("IdenityMap needs to be square"))
-IdentityMap(M::Int) = IdentityMap(Bool, M)
-IdentityMap(M::Int, N::Int) = IdentityMap(Bool, M, N)
-IdentityMap(sz::Tuple{Int, Int}) = IdentityMap(Bool, sz)
+IdentityMap(M::Int) = IdentityMap(Int8, M)
+IdentityMap(M::Int, N::Int) = IdentityMap(Int8, M, N)
+IdentityMap(sz::Tuple{Int, Int}) = IdentityMap(Int8, sz)
 
 # properties
 Base.size(A::IdentityMap) = (A.M, A.M)
