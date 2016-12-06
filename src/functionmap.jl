@@ -39,7 +39,13 @@ function Base.A_mul_B!(y::AbstractVector, A::FunctionMap, x::AbstractVector)
 end
 function *(A::FunctionMap, x::AbstractVector)
     length(x) == A.N || throw(DimensionMismatch())
-    ismutating(A) ? A.f(similar(x, promote_type(eltype(A), eltype(x)), A.M), x) : A.f(x)
+    if ismutating(A)
+        y = similar(x, promote_type(eltype(A), eltype(x)), A.M)
+        A.f(y,x)
+    else
+        y = A.f(x)
+    end
+    return y
 end
 
 function Base.At_mul_B!(y::AbstractVector, A::FunctionMap, x::AbstractVector)
@@ -65,7 +71,12 @@ function Base.At_mul_B(A::FunctionMap, x::AbstractVector)
         if !isreal(A)
             x = conj(x)
         end
-        y = (ismutating(A) ? A.fc(similar(x, promote_type(eltype(A), eltype(x)), A.N), x) : A.fc(x))
+        if ismutating(A)
+            y = similar(x, promote_type(eltype(A), eltype(x)), A.N)
+            A.fc(y,x)
+        else
+            y = A.fc(x)
+        end
         if !isreal(A)
             conj!(y)
         end
@@ -88,7 +99,13 @@ function Base.Ac_mul_B(A::FunctionMap, x::AbstractVector)
     ishermitian(A) && return A*x
     length(x) == A.M || throw(DimensionMismatch())
     if A.fc != nothing
-        return (ismutating(A) ? A.fc(similar(x, promote_type(eltype(A), eltype(x)), A.N), x) : A.fc(x))
+        if ismutating(A)
+            y = similar(x, promote_type(eltype(A), eltype(x)), A.N)
+            A.fc(y,x)
+        else
+            y = A.fc(x)
+        end
+        return y
     else
         error("ctranspose not implemented for $A")
     end
