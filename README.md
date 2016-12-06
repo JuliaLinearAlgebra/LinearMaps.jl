@@ -39,7 +39,8 @@ The LinearMaps package provides the following functionality:
     Create a `WrappedMap` object that will respond to the methods `isreal`, `issymmetric`, `ishermitian`, `isposdef` with the values provided by the keyword arguments. The default values correspond to the result of calling these methods on the argument `A`. This allows to use an `AbstractMatrix` within the `AbstractLinearMap` framework and to redefine the properties of an existing `AbstractLinearMap`.
 
     ```
-    LinearMap(f, [fc = nothing], M::Int, [N::Int = M, eltype::Type = Float64]; ismutating::Bool, issymmetric::Bool, ishermitian::Bool, isposdef::Bool])    ```
+    LinearMap(f, [fc = nothing], M::Int, [N::Int = M, eltype::Type = Float64]; ismutating::Bool, issymmetric::Bool, ishermitian::Bool, isposdef::Bool])
+    ```
 
     Create `FunctionMap` object that wraps a function describing the action of the linear map on a vector. The corresponding properties of the linear map can also be specified. Here, `f` represents the function implementing the action of the linear map on a vector, either as returning the result (i.e. `f(src::AbstractVector) -> dest::AbstractVector`) when `ismutating = false` (default) or as a mutating function that accepts a vector for the destination (i.e. `f(dest::AbstractVector,src::AbstractVector) -> dest`).
 
