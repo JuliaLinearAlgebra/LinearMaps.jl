@@ -16,6 +16,11 @@ FunctionMap{T}(f, fc, M::Int, ::Type{T} = Float64; kwargs...) = FunctionMap(f, f
 
 function FunctionMap{T,F1,F2}(f::F1, fc::F2, M::Int, N::Int, ::Type{T} = Float64;
     ismutating::Bool = false, issymmetric::Bool = false, ishermitian::Bool=(T<:Real && issymmetric), isposdef::Bool = false)
+
+    if fc == nothing
+        warn("transpose not implemented for the map")
+    end
+
     FunctionMap{T,F1,F2}(f, fc, M, N, ismutating, issymmetric, ishermitian, isposdef)
 end
 
@@ -61,7 +66,8 @@ function Base.At_mul_B!(y::AbstractVector, A::FunctionMap, x::AbstractVector)
         end
         return y
     else
-        error("transpose not implemented for $A")
+        copy!(y, full(A)'*x)
+        return y
     end
 end
 function Base.At_mul_B(A::FunctionMap, x::AbstractVector)
@@ -82,7 +88,9 @@ function Base.At_mul_B(A::FunctionMap, x::AbstractVector)
         end
         return y
     else
-        error("transpose not implemented for $A")
+        y = similar(x, promote_type(eltype(A), eltype(x)), A.N)
+        copy!(y, full(A)'*x)
+        return y
     end
 end
 
@@ -92,7 +100,8 @@ function Base.Ac_mul_B!(y::AbstractVector, A::FunctionMap, x::AbstractVector)
     if A.fc != nothing
         return (ismutating(A) ? A.fc(y, x) : copy!(y, A.fc(x)))
     else
-        error("ctranspose not implemented for $A")
+        copy!(y, full(A)'*x)
+        return y
     end
 end
 function Base.Ac_mul_B(A::FunctionMap, x::AbstractVector)
@@ -107,6 +116,8 @@ function Base.Ac_mul_B(A::FunctionMap, x::AbstractVector)
         end
         return y
     else
-        error("ctranspose not implemented for $A")
+        y = similar(x, promote_type(eltype(A), eltype(x)), A.N)
+        copy!(y, full(A)'*x)
+        return y
     end
 end
