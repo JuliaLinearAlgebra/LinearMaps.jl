@@ -32,10 +32,10 @@ U=full(F) # will be a unitary matrix
 N=100
 F=LinearMap(fft, ifft, N, Complex128)/sqrt(N)
 B=LinearMap(ifft, ifft, N, Complex128)/sqrt(N)
-x=rand(N)
+x=rand(Complex64, N)
 @test_approx_eq (F*B*N)*x x
 U=full(F) # will be a unitary matrix
-@test_approx_eq U'*U eye(N)
+@test_approx_eq U'*U eye(Complex64, N)
 
 F=LinearMap(cumsum,10)
 @test F*v==cumsum(v)
