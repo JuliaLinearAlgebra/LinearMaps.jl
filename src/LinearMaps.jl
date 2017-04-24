@@ -4,7 +4,7 @@ export LinearMap, AbstractLinearMap
 
 import Base: +, -, *, \, /, ==
 
-abstract AbstractLinearMap{T}
+abstract type AbstractLinearMap{T} end
 Base.eltype{T}(::AbstractLinearMap{T})=T
 Base.eltype{T}(::Type{AbstractLinearMap{T}})=T
 Base.eltype{L<:AbstractLinearMap}(::Type{L})=eltype(super(L))

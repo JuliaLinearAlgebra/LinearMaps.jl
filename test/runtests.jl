@@ -26,7 +26,7 @@ F=LinearMap(cumsum,2)
 N=100
 F=LinearMap(fft, N, Complex128)/sqrt(N)
 U=full(F) # will be a unitary matrix
-@test_approx_eq U'*U eye(N)
+@test U'*U ≈ eye(N)
 
 F=LinearMap(cumsum,10)
 @test F*v==cumsum(v)
@@ -43,12 +43,12 @@ v=rand(Complex128,10)
 @test full(3*M'-F)==3*A'-full(F)
 @test (3*M-1im*F)'==3*M'+1im*F'
 
-@test_approx_eq (2*M'+3*I)*v (2*A'+3*I)*v
+@test (2*M'+3*I)*v ≈ (2*A'+3*I)*v
 
 # test composition
 @test (F*F)*v==F*(F*v)
 @test (F*A)*v==F*(A*v)
-@test_approx_eq full(M*M.') A*A.'
+@test full(M*M.') ≈ A*A.'
 @test !isposdef(M*M.')
 @test isposdef(M*M')
 @test isposdef(F.'*F)
@@ -57,12 +57,12 @@ v=rand(Complex128,10)
 
 L=3*F+1im*A+F*M'*F
 LF=3*full(F)+1im*A+full(F)*full(M)'*full(F)
-@test_approx_eq full(L) LF
+@test full(L) ≈ LF
 
 # test inplace operations
 w=similar(v)
 Base.A_mul_B!(w,L,v)
-@test_approx_eq w LF*v
+@test w ≈ LF*v
 
 # test new type
 type SimpleFunctionMap <: AbstractLinearMap{Float64}

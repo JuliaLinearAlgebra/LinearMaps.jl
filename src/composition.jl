@@ -1,6 +1,6 @@
-type CompositeMap{T,As<:Tuple{Vararg{AbstractLinearMap}}} <: AbstractLinearMap{T}
+struct CompositeMap{T,As<:Tuple{Vararg{AbstractLinearMap}}} <: AbstractLinearMap{T}
     maps::As # stored in order of application to vector
-    function CompositeMap(maps::As)
+    function CompositeMap{T}(maps::As) where {T, As<:Tuple{Vararg{AbstractLinearMap}}}
         N = length(maps)
         for n = 2:N
             size(maps[n],2)==size(maps[n-1],1) || throw(DimensionMismatch("CompositeMap"))
@@ -8,10 +8,9 @@ type CompositeMap{T,As<:Tuple{Vararg{AbstractLinearMap}}} <: AbstractLinearMap{T
         for n = 1:N
             promote_type(T, eltype(maps[n])) == T || throw(InexactError())
         end
-        new(maps)
+        new{T, As}(maps)
     end
 end
-(::Type{CompositeMap{T}}){T,As<:Tuple{Vararg{AbstractLinearMap}}}(maps::As) = CompositeMap{T,As}(maps)
 
 # basic methods
 Base.size(A::CompositeMap) = (size(A.maps[end], 1), size(A.maps[1], 2))
@@ -85,11 +84,11 @@ function Base.A_mul_B!(y::AbstractVector, A::CompositeMap, x::AbstractVector)
         Base.A_mul_B!(y, A.maps[1], x)
     else
         T = eltype(y)
-        dest = Array(T, size(A.maps[1], 1))
+        dest = Array{T}(size(A.maps[1], 1))
         Base.A_mul_B!(dest, A.maps[1], x)
         source = dest
         if N>2
-            dest = Array(T,size(A.maps[2],1))
+            dest = Array{T}(size(A.maps[2],1))
         end
         for n=2:N-1
             resize!(dest, size(A.maps[n],1))
@@ -107,11 +106,11 @@ function Base.At_mul_B!(y::AbstractVector,A::CompositeMap,x::AbstractVector)
         Base.At_mul_B!(y, A.maps[1], x)
     else
         T = eltype(y)
-        dest = Array(T, size(A.maps[N], 2))
+        dest = Array{T}(size(A.maps[N], 2))
         Base.At_mul_B!(dest, A.maps[N], x)
         source = dest
         if N>2
-            dest = Array(T, size(A.maps[N-1], 2))
+            dest = Array{T}(size(A.maps[N-1], 2))
         end
         for n = N-1:-1:2
             resize!(dest, size(A.maps[n], 2))
@@ -129,11 +128,11 @@ function Base.Ac_mul_B!(y::AbstractVector, A::CompositeMap, x::AbstractVector)
         Base.Ac_mul_B!(y, A.maps[1], x)
     else
         T = eltype(y)
-        dest = Array(T, size(A.maps[N], 2))
+        dest = Array{T}(size(A.maps[N], 2))
         Base.Ac_mul_B!(dest, A.maps[N], x)
         source = dest
         if N>2
-            dest = Array(T, size(A.maps[N-1],2))
+            dest = Array{T}(size(A.maps[N-1],2))
         end
         for n = N-1:-1:2
             resize!(dest, size(A.maps[n], 2))

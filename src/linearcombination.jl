@@ -1,7 +1,7 @@
-type LinearCombination{T, As<:Tuple{Vararg{AbstractLinearMap}}, Ts<:Tuple} <: AbstractLinearMap{T}
+struct LinearCombination{T, As<:Tuple{Vararg{AbstractLinearMap}}, Ts<:Tuple} <: AbstractLinearMap{T}
     maps::As
     coeffs::Ts
-    function LinearCombination(maps::As, coeffs::Ts)
+    function LinearCombination{T}(maps::As, coeffs::Ts) where {T, As<:Tuple{Vararg{AbstractLinearMap}}, Ts<:Tuple}
         N = length(maps)
         N == length(coeffs) || error("Number of coefficients doesn't match number of terms")
         sz = size(maps[1])
@@ -9,11 +9,10 @@ type LinearCombination{T, As<:Tuple{Vararg{AbstractLinearMap}}, Ts<:Tuple} <: Ab
             size(maps[n]) == sz || throw(DimensionMismatch("LinearCombination"))
             promote_type(T, eltype(maps[n]), typeof(coeffs[n])) == T || throw(InexactError())
         end
-        new(maps, coeffs)
+        new{T,As,Ts}(maps, coeffs)
     end
 end
 
-(::Type{LinearCombination{T}}){T,As,Ts}(maps::As, coeffs::Ts) = LinearCombination{T,As,Ts}(maps, coeffs)
 
 # basic methods
 Base.size(A::LinearCombination) = size(A.maps[1])
