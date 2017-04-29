@@ -25,8 +25,6 @@ function Base.show{T}(io::IO,A::FunctionMap{T})
 end
 
 # properties
-Base.ndims(::FunctionMap) = 2
-Base.length(A::FunctionMap) = A.M*A.N
 Base.size(A::FunctionMap) = (A.M, A.N)
 Base.issymmetric(A::FunctionMap) = A._issymmetric
 Base.ishermitian(A::FunctionMap) = A._ishermitian

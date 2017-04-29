@@ -75,7 +75,9 @@ Base.issymmetric(A::SimpleFunctionMap)=false
 *(A::SimpleFunctionMap,v::Vector)=A.f(v)
 
 F=SimpleFunctionMap(cumsum,10)
+@test ndims(F)==2
 @test size(F,1)==10
+@test length(F)==100
 w=similar(v)
 Base.A_mul_B!(w,F,v)
 @test w==F*v
