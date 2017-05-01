@@ -28,9 +28,17 @@ F=LinearMap(fft, N, Complex128)/sqrt(N)
 U=full(F) # will be a unitary matrix
 @test_approx_eq U'*U eye(N)
 
+# test complement map
+N=100
+F=LinearMap(fft, ifft, N, Complex128)/sqrt(N)
+B=LinearMap(ifft, ifft, N, Complex128)/sqrt(N)
+x=rand(Complex64, N)
+@test_approx_eq (F*B*N)*x x
+U=full(F) # will be a unitary matrix
+@test_approx_eq U'*U eye(Complex64, N)
+
 F=LinearMap(cumsum,10)
 @test F*v==cumsum(v)
-@test_throws ErrorException F'*v
 
 # test linear combinations
 A=2*rand(Complex128,(10,10)).-1
@@ -81,7 +89,3 @@ F=SimpleFunctionMap(cumsum,10)
 w=similar(v)
 Base.A_mul_B!(w,F,v)
 @test w==F*v
-@test_throws MethodError F'*v
-@test_throws MethodError F.'*v
-@test_throws MethodError Ac_mul_B!(w,F,v)
-@test_throws MethodError At_mul_B!(w,F,v)

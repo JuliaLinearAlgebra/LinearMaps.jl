@@ -3,6 +3,7 @@ immutable FunctionMap{T,F1,F2}<:AbstractLinearMap{T}
     fc::F2
     M::Int
     N::Int
+    X::Array{T,2}
     _ismutating::Bool
     _issymmetric::Bool
     _ishermitian::Bool
@@ -10,18 +11,29 @@ immutable FunctionMap{T,F1,F2}<:AbstractLinearMap{T}
 end
 
 # additional constructor
-FunctionMap{T}(f, M::Int, ::Type{T} = Float64; kwargs...) = FunctionMap(f, nothing, M, M, T; kwargs...)
-FunctionMap{T}(f, M::Int, N::Int, ::Type{T} = Float64; kwargs...) = FunctionMap(f, nothing, M, N, T; kwargs...)
-FunctionMap{T}(f, fc, M::Int, ::Type{T} = Float64; kwargs...) = FunctionMap(f, fc, M, M, T; kwargs...)
+FunctionMap{T}(f, M::Int, ::Type{T} = Float64; kwargs...) = FunctionMap(f, nothing, M, M, zeros(T, M, M), T; kwargs...)
+FunctionMap{T}(f, M::Int, N::Int, ::Type{T} = Float64; kwargs...) = FunctionMap(f, nothing, M, N, zeros(T, M, M), T; kwargs...)
+FunctionMap{T}(f, fc, M::Int, nothing, ::Type{T} = Float64; kwargs...) = FunctionMap(f, fc, M, M, zeros(T, M, M), T; kwargs...)
 
-function FunctionMap{T,F1,F2}(f::F1, fc::F2, M::Int, N::Int, ::Type{T} = Float64;
+function FunctionMap{T,F1,F2}(f::F1, fc::F2, M::Int, N::Int, X::Array{T, 2}, ::Type{T} = Float64;
     ismutating::Bool = false, issymmetric::Bool = false, ishermitian::Bool=(T<:Real && issymmetric), isposdef::Bool = false)
-    FunctionMap{T,F1,F2}(f, fc, M, N, ismutating, issymmetric, ishermitian, isposdef)
+    if fc == nothing
+        X = zeros(T, (M, N))
+        v = zeros(T, N)
+        for i=1:N
+            v[i] = one(T)
+            ismutating? f(view(X,:,i), v) : copy!(view(X,:,i), f(v))
+            v[i] = zero(T)
+        end
+        warn("transpose not implemented for the map")
+    end
+
+    FunctionMap{T,F1,F2}(f, fc, M, N, X, ismutating, issymmetric, ishermitian, isposdef)
 end
 
 # show
 function Base.show{T}(io::IO,A::FunctionMap{T})
-    print(io,"FunctionMap{$T}($(A.f), $(A.fc), $(A.M), $(A.N); ismutating=$(A._ismutating), issymmetric=$(A._issymmetric), ishermitian=$(A._ishermitian), isposdef=$(A._isposdef))")
+    print(io,"FunctionMap{$T}($(A.f), $(A.fc), $(A.M), $(A.N), $(A.X); ismutating=$(A._ismutating), issymmetric=$(A._issymmetric), ishermitian=$(A._ishermitian), isposdef=$(A._isposdef))")
 end
 
 # properties
@@ -61,7 +73,8 @@ function Base.At_mul_B!(y::AbstractVector, A::FunctionMap, x::AbstractVector)
         end
         return y
     else
-        error("transpose not implemented for $A")
+        copy!(y, (A.X)'*x)
+        return y
     end
 end
 function Base.At_mul_B(A::FunctionMap, x::AbstractVector)
@@ -82,7 +95,9 @@ function Base.At_mul_B(A::FunctionMap, x::AbstractVector)
         end
         return y
     else
-        error("transpose not implemented for $A")
+        y = similar(x, promote_type(eltype(A), eltype(x)), A.N)
+        copy!(y, (A.X)'*x)
+        return y
     end
 end
 
@@ -92,7 +107,8 @@ function Base.Ac_mul_B!(y::AbstractVector, A::FunctionMap, x::AbstractVector)
     if A.fc != nothing
         return (ismutating(A) ? A.fc(y, x) : copy!(y, A.fc(x)))
     else
-        error("ctranspose not implemented for $A")
+        copy!(y, (A.X)'*x)
+        return y
     end
 end
 function Base.Ac_mul_B(A::FunctionMap, x::AbstractVector)
@@ -107,6 +123,8 @@ function Base.Ac_mul_B(A::FunctionMap, x::AbstractVector)
         end
         return y
     else
-        error("ctranspose not implemented for $A")
+        y = similar(x, promote_type(eltype(A), eltype(x)), A.N)
+        copy!(y, (A.X)'*x)
+        return y
     end
 end
