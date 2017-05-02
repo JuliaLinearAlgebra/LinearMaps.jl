@@ -1,7 +1,7 @@
-type LinearCombination{T, As<:Tuple{Vararg{AbstractLinearMap}}, Ts<:Tuple} <: AbstractLinearMap{T}
+type LinearCombination{T, As<:Tuple{Vararg{LinearMap}}, Ts<:Tuple} <: LinearMap{T}
     maps::As
     coeffs::Ts
-    function LinearCombination(maps::As, coeffs::Ts)
+    function LinearCombination{T,As,Ts}(maps::As, coeffs::Ts) where {T,As,Ts}
         N = length(maps)
         N == length(coeffs) || error("Number of coefficients doesn't match number of terms")
         sz = size(maps[1])
@@ -9,11 +9,11 @@ type LinearCombination{T, As<:Tuple{Vararg{AbstractLinearMap}}, Ts<:Tuple} <: Ab
             size(maps[n]) == sz || throw(DimensionMismatch("LinearCombination"))
             promote_type(T, eltype(maps[n]), typeof(coeffs[n])) == T || throw(InexactError())
         end
-        new(maps, coeffs)
+        new{T,As,Ts}(maps, coeffs)
     end
 end
 
-(::Type{LinearCombination{T}}){T,As,Ts}(maps::As, coeffs::Ts) = LinearCombination{T,As,Ts}(maps, coeffs)
+(::Type{LinearCombination{T}})(maps::As, coeffs::Ts) where {T,As,Ts} = LinearCombination{T,As,Ts}(maps, coeffs)
 
 # basic methods
 Base.size(A::LinearCombination) = size(A.maps[1])
@@ -27,13 +27,13 @@ function +(A1::LinearCombination, A2::LinearCombination)
     T = promote_type(eltype(A1), eltype(A2))
     return LinearCombination{T}(tuple(A1.maps..., A2.maps...), tuple(A1.coeffs..., A2.coeffs...))
 end
-function +(A1::AbstractLinearMap, A2::LinearCombination)
+function +(A1::LinearMap, A2::LinearCombination)
     size(A1) == size(A2) || throw(DimensionMismatch("+"))
     T = promote_type(eltype(A1), eltype(A2))
     return LinearCombination{T}(tuple(A1, A2.maps...), tuple(one(T), A2.coeffs...))
 end
-+(A1::LinearCombination, A2::AbstractLinearMap) = +(A2,A1)
-function +(A1::AbstractLinearMap, A2::AbstractLinearMap)
++(A1::LinearCombination, A2::LinearMap) = +(A2,A1)
+function +(A1::LinearMap, A2::LinearMap)
     size(A1)==size(A2) || throw(DimensionMismatch("+"))
     T = promote_type(eltype(A1), eltype(A2))
     return LinearCombination{T}(tuple(A1,A2), tuple(one(T),one(T)))
@@ -43,42 +43,42 @@ function -(A1::LinearCombination, A2::LinearCombination)
     T = promote_type(eltype(A1), eltype(A2))
     return LinearCombination{T}(tuple(A1.maps..., A2.maps...), tuple(A1.coeffs..., map(-,A2.coeffs)...))
 end
-function -(A1::AbstractLinearMap, A2::LinearCombination)
+function -(A1::LinearMap, A2::LinearCombination)
     size(A1) == size(A2) || throw(DimensionMismatch("-"))
     T = promote_type(eltype(A1), eltype(A2))
     return LinearCombination{T}(tuple(A1, A2.maps...), tuple(one(T), map(-,A2.coeffs)...))
 end
-function -(A1::LinearCombination, A2::AbstractLinearMap)
+function -(A1::LinearCombination, A2::LinearMap)
     size(A1) == size(A2) || throw(DimensionMismatch("-"))
     T = promote_type(eltype(A1), eltype(A2))
     return LinearCombination{T}(tuple(A1.maps..., A2), tuple(A1.coeffs..., -one(T)))
 end
-function -(A1::AbstractLinearMap,A2::AbstractLinearMap)
+function -(A1::LinearMap,A2::LinearMap)
     size(A1) == size(A2) || throw(DimensionMismatch("-"))
     T = promote_type(eltype(A1), eltype(A2))
     return LinearCombination{T}(tuple(A1, A2), tuple(one(T), -one(T)))
 end
 
 # scalar multiplication
--(A::AbstractLinearMap) = LinearCombination{eltype(A)}(tuple(A), tuple(-one(eltype(A))))
+-(A::LinearMap) = LinearCombination{eltype(A)}(tuple(A), tuple(-one(eltype(A))))
 -(A::LinearCombination) = LinearCombination{eltype(A)}(A.maps, map(-, A.coeffs))
 
-function *(α::Number, A::AbstractLinearMap)
+function *(α::Number, A::LinearMap)
     T = promote_type(eltype(α), eltype(A))
     return LinearCombination{T}(tuple(A), tuple(α))
 end
-*(A::AbstractLinearMap, α::Number) = *(α,A)
+*(A::LinearMap, α::Number) = *(α,A)
 function *(α::Number, A::LinearCombination)
     T = promote_type(eltype(α), eltype(A))
     return LinearCombination{T}(A.maps, map(x->α*x, A.coeffs))
 end
 *(A::LinearCombination, α::Number) = *(α,A)
 
-function \(α::Number, A::AbstractLinearMap)
+function \(α::Number, A::LinearMap)
     T = promote_type(eltype(α), eltype(A))
     return LinearCombination{T}(tuple(A), tuple(1/α))
 end
-/(A::AbstractLinearMap, α::Number) = \(α, A)
+/(A::LinearMap, α::Number) = \(α, A)
 function \(α::Number, A::LinearCombination)
     T = promote_type(eltype(α), eltype(A))
     return LinearCombination{T}(A.maps, map(x->α\x, A.coeffs))

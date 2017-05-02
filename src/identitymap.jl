@@ -1,4 +1,4 @@
-immutable IdentityMap{T} <: AbstractLinearMap{T} # T will be determined from maps to which I is added
+immutable IdentityMap{T} <: LinearMap{T} # T will be determined from maps to which I is added
     M::Int
 end
 IdentityMap(T::Type, M::Int) = IdentityMap{T}(M)
@@ -25,8 +25,8 @@ Base.At_mul_B(A::IdentityMap, x::AbstractVector) = (length(x)==A.M ? x : throw(D
 Base.Ac_mul_B!(y::AbstractVector, A::IdentityMap, x::AbstractVector) = (length(x)==length(y)==A.M ? copy!(y, x) : throw(tMismatch("Ac_mul_B!")))
 Base.Ac_mul_B(A::IdentityMap, x::AbstractVector) = (length(x)==A.M ? x : throw(DimensionMismatch("Ac_mul_B")))
 
-# combine AbstractLinearMap and UniformScaling objects in linear combinations
-+{T}(A1::AbstractLinearMap, A2::UniformScaling{T}) = A1 + A2[1,1]*IdentityMap{T}(size(A1,1))
-+{T}(A1::UniformScaling{T}, A2::AbstractLinearMap) = A1[1,1]*IdentityMap{T}(size(A2,1)) + A2
--{T}(A1::AbstractLinearMap, A2::UniformScaling{T}) = A1 - A2[1,1]*IdentityMap{T}(size(A1,1))
--{T}(A1::UniformScaling{T}, A2::AbstractLinearMap) = A1[1,1]*IdentityMap{T}(size(A2,1)) - A2
+# combine LinearMap and UniformScaling objects in linear combinations
++{T}(A1::LinearMap, A2::UniformScaling{T}) = A1 + A2[1,1]*IdentityMap{T}(size(A1,1))
++{T}(A1::UniformScaling{T}, A2::LinearMap) = A1[1,1]*IdentityMap{T}(size(A2,1)) + A2
+-{T}(A1::LinearMap, A2::UniformScaling{T}) = A1 - A2[1,1]*IdentityMap{T}(size(A1,1))
+-{T}(A1::UniformScaling{T}, A2::LinearMap) = A1[1,1]*IdentityMap{T}(size(A2,1)) - A2
