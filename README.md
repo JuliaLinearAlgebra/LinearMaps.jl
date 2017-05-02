@@ -5,9 +5,9 @@
 A Julia package for defining and working with linear maps, also known as linear transformations or linear operators acting on vectors. The only requirement for a LinearMap is that it can act on a vector (by multiplication) efficiently.
 
 ## What's new.
-* Updated to the new terminology `issymmetric` instead of `issym`. Note that the corresponding keyword argument for the `LinearMap` constructor has been modified accordingly.
+*   Updated to the new terminology `issymmetric` instead of `issym`. Note that the corresponding keyword argument for the `LinearMap` constructor has been modified accordingly.
 
-* Internal changes to better ensure type stability, especially for `FunctionMap` objects, but also for linear combinations and compositions.
+*   Internal changes to better ensure type stability, especially for `FunctionMap` objects, but also for linear combinations and compositions.
 
 ## Installation
 
