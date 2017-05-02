@@ -65,7 +65,7 @@ Base.A_mul_B!(w, L, v)
 @test w ≈ LF*v
 
 # test new type
-type SimpleFunctionMap <: LinearMap{Float64}
+struct SimpleFunctionMap <: LinearMap{Float64}
     f::Function
     N::Int
 end

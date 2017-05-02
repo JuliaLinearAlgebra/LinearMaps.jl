@@ -24,14 +24,14 @@ FunctionMap(f, fc, ::Type{T}, M::Int, N::Int; kwargs...) where {T} = FunctionMap
 (::Type{FunctionMap{T}})(f, fc, M::Int; kwargs...) where {T} = FunctionMap{T}(f, fc, M, M; kwargs...)
 
 function (::Type{FunctionMap{T}})(f::F1, fc::F2, M::Int, N::Int;
-    ismutating::Bool = false, issymmetric::Bool = false, ishermitian::Bool=(T<:Real && issymmetric),
+    ismutating::Bool = _ismutating(f), issymmetric::Bool = false, ishermitian::Bool=(T<:Real && issymmetric),
     isposdef::Bool = false) where {T,F1,F2}
     FunctionMap{T,F1,F2}(f, fc, M, N, ismutating, issymmetric, ishermitian, isposdef)
 end
 
 # show
 function Base.show(io::IO,A::FunctionMap{T}) where {T}
-    print(io,"FunctionMap{$T}($(A.f), $(A.fc), $(A.M), $(A.N); ismutating=$(A._ismutating), issymmetric=$(A._issymmetric), ishermitian=$(A._ishermitian), isposdef=$(A._isposdef))")
+    print(io,"LinearMaps.FunctionMap{$T}($(A.f), $(A.fc), $(A.M), $(A.N); ismutating=$(A._ismutating), issymmetric=$(A._issymmetric), ishermitian=$(A._ishermitian), isposdef=$(A._isposdef))")
 end
 
 # properties
@@ -40,6 +40,7 @@ Base.issymmetric(A::FunctionMap) = A._issymmetric
 Base.ishermitian(A::FunctionMap) = A._ishermitian
 Base.isposdef(A::FunctionMap) = A._isposdef
 ismutating(A::FunctionMap) = A._ismutating
+_ismutating(f) = first(methods(f)).nargs == 3
 
 # multiplication with vector
 function Base.A_mul_B!(y::AbstractVector, A::FunctionMap, x::AbstractVector)

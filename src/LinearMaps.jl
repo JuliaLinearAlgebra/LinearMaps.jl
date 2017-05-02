@@ -26,23 +26,42 @@ Base.length(A::LinearMap) = reduce(*, size(A))
 # any LinearMap subtype will have to overwrite at least one of the two following methods to avoid running in circles
 *(A::LinearMap, x::AbstractVector) = Base.A_mul_B!(similar(x, promote_type(eltype(A),eltype(x)), size(A,1)), A, x)
 Base.A_mul_B!(y::AbstractVector, A::LinearMap, x::AbstractVector) = begin
-    length(y)==size(A,1) || throw(DimensionMismatch("A_mul_B!"))
-    copy!(y,A*x)
+    length(y) == size(A,1) || throw(DimensionMismatch("A_mul_B!"))
+    copy!(y, A*x)
 end
 
 # the following for multiplying with transpose and ctranspose map are optional:
 # subtypes can overwrite nonmutating methods, implement mutating methods or do nothing
-Base.At_mul_B(A::LinearMap,x::AbstractVector)=(@which Base.At_mul_B!(x,A,x))!=methods(Base.At_mul_B!,(AbstractVector,LinearMap,AbstractVector))[end] ?
-    Base.At_mul_B!(similar(x,promote_type(eltype(A),eltype(x)),size(A,2)),A,x) : throw(MethodError(Base.At_mul_B,(A,x)))
-Base.At_mul_B!(y::AbstractVector,A::LinearMap,x::AbstractVector)=begin
-    length(y)==size(A,2) || throw(DimensionMismatch("At_mul_B!"))
-    (@which Base.At_mul_B(A,x))!=methods(Base.At_mul_B,(LinearMap,AbstractVector))[end] ? copy!(y,Base.At_mul_B(A,x)) : throw(MethodError(Base.At_mul_B!,(y,A,x)))
+function Base.At_mul_B(A::LinearMap, x::AbstractVector)
+    if length(methods(Base.At_mul_B!,Tuple{AbstractVector, typeof(A), AbstractVector})) > 1
+        Base.At_mul_B!(similar(x, promote_type(eltype(A), eltype(x)), size(A,2)), A, x)
+    else
+        throw(MethodError(Base.At_mul_B, (A, x)))
+    end
 end
-Base.Ac_mul_B(A::LinearMap,x::AbstractVector)=(@which Base.Ac_mul_B!(x,A,x))!=methods(Base.Ac_mul_B!,(AbstractVector,LinearMap,AbstractVector))[end] ?
-    Base.Ac_mul_B!(similar(x,promote_type(eltype(A),eltype(x)),size(A,2)),A,x) : throw(MethodError(Base.Ac_mul_B,(A,x)))
-Base.Ac_mul_B!(y::AbstractVector,A::LinearMap,x::AbstractVector)=begin
+function Base.At_mul_B!(y::AbstractVector, A::LinearMap, x::AbstractVector)
+    length(y) == size(A, 2) || throw(DimensionMismatch("At_mul_B!"))
+    if length(methods(Base.At_mul_B,Tuple{typeof(A), AbstractVector})) > 1
+        copy!(y, Base.At_mul_B(A, x))
+    else
+        throw(MethodError(Base.At_mul_B!, (y, A, x)))
+    end
+end
+function Base.Ac_mul_B(A::LinearMap,x::AbstractVector)
+    if length(methods(Base.Ac_mul_B!,Tuple{AbstractVector, typeof(A), AbstractVector})) > 1
+        Base.Ac_mul_B!(similar(x, promote_type(eltype(A), eltype(x)), size(A,2)), A, x)
+    else
+        throw(MethodError(Base.Ac_mul_B, (A, x)))
+    end
+end
+function
+Base.Ac_mul_B!(y::AbstractVector, A::LinearMap, x::AbstractVector)
     length(y)==size(A,2) || throw(DimensionMismatch("At_mul_B!"))
-    (@which Base.Ac_mul_B(A,x))!=methods(Base.Ac_mul_B,(LinearMap,AbstractVector))[end] ? copy!(y,Base.Ac_mul_B(A,x)) : throw(MethodError(Base.Ac_mul_B!,(y,A,x)))
+    if length(methods(Base.Ac_mul_B,Tuple{typeof(A), AbstractVector})) > 1
+        copy!(y, Base.Ac_mul_B(A, x))
+    else
+        throw(MethodError(Base.Ac_mul_B!, (y, A, x)))
+    end
 end
 
 # full: create matrix representation of LinearMap
@@ -65,8 +84,14 @@ include("wrappedmap.jl") # wrap a matrix of linear map in a new type, thereby al
 include("identitymap.jl") # the identity map, to be able to make linear combinations of LinearMap objects and I
 include("functionmap.jl") # using a function as linear map
 
-LinearMap(A::Union{AbstractMatrix,LinearMap; kwargs...) = WrappedMap(A; kwargs...)
-LinearMap(args...; kwargs...) = FunctionMap(args...; kwargs...)
+LinearMap(A::Union{AbstractMatrix,LinearMap}; kwargs...) = WrappedMap(A; kwargs...)
+
+@deprecate LinearMap(f, T::Type, args...; kwargs...) LinearMap{T}(f, args...; kwargs...)
+@deprecate LinearMap(f, fc, T::Type, args...; kwargs...) LinearMap{T}(f, fc, args...; kwargs...)
+@deprecate LinearMap(f, M::Int, T::Type, args...; kwargs...) LinearMap{T}(f, M; kwargs...)
+@deprecate LinearMap(f, M::Int, N::Int, T::Type, args...; kwargs...) LinearMap{T}(f, M, N; kwargs...)
+@deprecate LinearMap(f, fc, M::Int, T::Type; kwargs...) LinearMap{T}(f, fc, M; kwargs...)
+@deprecate LinearMap(f, fc, M::Int, N::Int, T::Type; kwargs...) LinearMap{T}(f, fc, M, N; kwargs...)
 
 (::Type{LinearMap{T}})(args...; kwargs...) where {T} = FunctionMap{T}(args...; kwargs...)
 
