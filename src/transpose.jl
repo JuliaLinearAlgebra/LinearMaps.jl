@@ -1,7 +1,7 @@
-immutable TransposeMap{T, A<:LinearMap} <: LinearMap{T}
+immutable TransposeMap{T, A<:LinearMap{T}} <: LinearMap{T}
     lmap::A
 end
-immutable CTransposeMap{T, A<:LinearMap} <: LinearMap{T}
+immutable CTransposeMap{T, A<:LinearMap{T}} <: LinearMap{T}
     lmap::A
 end
 (::Type{TransposeMap}){T}(lmap::LinearMap{T}) = TransposeMap{T, typeof(lmap)}(lmap)

@@ -85,15 +85,22 @@ include("identitymap.jl") # the identity map, to be able to make linear combinat
 include("functionmap.jl") # using a function as linear map
 
 LinearMap(A::Union{AbstractMatrix,LinearMap}; kwargs...) = WrappedMap(A; kwargs...)
+LinearMap(f, M::Int) = LinearMap{Float64}(f, M)
+LinearMap(f, M::Int, N::Int) = LinearMap{Float64}(f, M, N)
+LinearMap(f, fc, M::Int) = LinearMap{Float64}(f, fc, M)
+LinearMap(f, fc, M::Int, N::Int) = LinearMap{Float64}(f, fc, M, N)
+
+(::Type{LinearMap{T}})(A::Union{AbstractMatrix,LinearMap}; kwargs...) where {T} = WrappedMap{T}(A; kwargs...)
+(::Type{LinearMap{T}})(f, args...; kwargs...) where {T} = FunctionMap{T}(f, args...; kwargs...)
 
 @deprecate LinearMap(f, T::Type, args...; kwargs...) LinearMap{T}(f, args...; kwargs...)
 @deprecate LinearMap(f, fc, T::Type, args...; kwargs...) LinearMap{T}(f, fc, args...; kwargs...)
-@deprecate LinearMap(f, M::Int, T::Type, args...; kwargs...) LinearMap{T}(f, M; kwargs...)
-@deprecate LinearMap(f, M::Int, N::Int, T::Type, args...; kwargs...) LinearMap{T}(f, M, N; kwargs...)
+
+@deprecate LinearMap(f, M::Int, T::Type; kwargs...) LinearMap{T}(f, M; kwargs...)
+@deprecate LinearMap(f, M::Int, N::Int, T::Type; kwargs...) LinearMap{T}(f, M, N; kwargs...)
 @deprecate LinearMap(f, fc, M::Int, T::Type; kwargs...) LinearMap{T}(f, fc, M; kwargs...)
 @deprecate LinearMap(f, fc, M::Int, N::Int, T::Type; kwargs...) LinearMap{T}(f, fc, M, N; kwargs...)
 
-(::Type{LinearMap{T}})(args...; kwargs...) where {T} = FunctionMap{T}(args...; kwargs...)
 
 
 end # module

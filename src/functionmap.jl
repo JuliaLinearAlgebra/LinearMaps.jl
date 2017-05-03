@@ -8,26 +8,16 @@ immutable FunctionMap{T,F1,F2}<:LinearMap{T}
     _ishermitian::Bool
     _isposdef::Bool
 end
-
-# additional constructor
-FunctionMap(f, M::Int, ::Type{T} = Float64; kwargs...) where {T} = FunctionMap{T}(f, M; kwargs...)
-FunctionMap(f, M::Int, N::Int, ::Type{T} = Float64; kwargs...) where {T} = FunctionMap{T}(f, M, N; kwargs...)
-FunctionMap(f, ::Type{T}, M::Int; kwargs...) where {T} = FunctionMap{T}(f, M; kwargs...)
-FunctionMap(f, ::Type{T}, M::Int, N::Int; kwargs...) where {T} = FunctionMap{T}(f, M, N; kwargs...)
-FunctionMap(f, fc, M::Int, ::Type{T} = Float64; kwargs...) where {T} = FunctionMap{T}(f, fc, M; kwargs...)
-FunctionMap(f, fc, M::Int, N::Int, ::Type{T} = Float64; kwargs...) where {T} = FunctionMap{T}(f, fc, M, N; kwargs...)
-FunctionMap(f, fc, ::Type{T}, M::Int; kwargs...) where {T} = FunctionMap{T}(f, fc, M; kwargs...)
-FunctionMap(f, fc, ::Type{T}, M::Int, N::Int; kwargs...) where {T} = FunctionMap{T}(f, fc, M, N; kwargs...)
-
-(::Type{FunctionMap{T}})(f, M::Int; kwargs...) where {T} = FunctionMap{T}(f, nothing, M, M; kwargs...)
-(::Type{FunctionMap{T}})(f, M::Int, N::Int; kwargs...) where {T} = FunctionMap{T}(f, nothing, M, N; kwargs...)
-(::Type{FunctionMap{T}})(f, fc, M::Int; kwargs...) where {T} = FunctionMap{T}(f, fc, M, M; kwargs...)
-
 function (::Type{FunctionMap{T}})(f::F1, fc::F2, M::Int, N::Int;
     ismutating::Bool = _ismutating(f), issymmetric::Bool = false, ishermitian::Bool=(T<:Real && issymmetric),
     isposdef::Bool = false) where {T,F1,F2}
     FunctionMap{T,F1,F2}(f, fc, M, N, ismutating, issymmetric, ishermitian, isposdef)
 end
+
+# additional constructors
+(::Type{FunctionMap{T}})(f, M::Int; kwargs...) where {T} = FunctionMap{T}(f, nothing, M, M; kwargs...)
+(::Type{FunctionMap{T}})(f, M::Int, N::Int; kwargs...) where {T} = FunctionMap{T}(f, nothing, M, N; kwargs...)
+(::Type{FunctionMap{T}})(f, fc, M::Int; kwargs...) where {T} = FunctionMap{T}(f, fc, M, M; kwargs...)
 
 # show
 function Base.show(io::IO,A::FunctionMap{T}) where {T}

@@ -24,7 +24,7 @@ F = LinearMap(cumsum,2)
 @test full(F) == [1. 0.;1. 1.]
 
 N = 100
-F = LinearMap(fft, N, Complex128)/sqrt(N)
+F = LinearMap{Complex128}(fft, N)/sqrt(N)
 U = full(F) # will be a unitary matrix
 @test U'*U ≈ eye(N)
 

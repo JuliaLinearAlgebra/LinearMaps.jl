@@ -1,4 +1,4 @@
-immutable WrappedMap{T, A<:Union{AbstractMatrix{T}, LinearMap{T}}} <: LinearMap{T}
+immutable WrappedMap{T, A<:Union{AbstractMatrix, LinearMap}} <: LinearMap{T}
     lmap::A
     _isreal::Bool
     _issymmetric::Bool
@@ -6,6 +6,11 @@ immutable WrappedMap{T, A<:Union{AbstractMatrix{T}, LinearMap{T}}} <: LinearMap{
     _isposdef::Bool
 end
 function (::Type{WrappedMap})(lmap::Union{AbstractMatrix{T}, LinearMap{T}};
+    isreal::Bool = Base.isreal(lmap), issymmetric::Bool = Base.issymmetric(lmap),
+    ishermitian::Bool = Base.ishermitian(lmap), isposdef::Bool = Base.isposdef(lmap)) where {T}
+    WrappedMap{T,typeof(lmap)}(lmap, isreal, issymmetric, ishermitian, isposdef)
+end
+function (::Type{WrappedMap{T}})(lmap::Union{AbstractMatrix, LinearMap};
     isreal::Bool = Base.isreal(lmap), issymmetric::Bool = Base.issymmetric(lmap),
     ishermitian::Bool = Base.ishermitian(lmap), isposdef::Bool = Base.isposdef(lmap)) where {T}
     WrappedMap{T,typeof(lmap)}(lmap, isreal, issymmetric, ishermitian, isposdef)
@@ -19,7 +24,7 @@ Base.ishermitian(A::WrappedMap) = A._ishermitian
 Base.isposdef(A::WrappedMap) = A._isposdef
 
 # comparison
-==(A::WrappedMap,B::WrappedMap) = (A.lmap == B.lmap && isreal(A) == isreal(B) &&
+==(A::WrappedMap, B::WrappedMap) = (A.lmap == B.lmap && eltype(A) == eltype(B) && isreal(A) == isreal(B) &&
     issymmetric(A) == issymmetric(B) && ishermitian(A) == ishermitian(B) && isposdef(A) == isposdef(B))
 
 # multiplication with vector
