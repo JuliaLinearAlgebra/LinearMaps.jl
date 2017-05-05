@@ -1,24 +1,22 @@
 immutable WrappedMap{T, A<:Union{AbstractMatrix, LinearMap}} <: LinearMap{T}
     lmap::A
-    _isreal::Bool
     _issymmetric::Bool
     _ishermitian::Bool
     _isposdef::Bool
 end
 function (::Type{WrappedMap})(lmap::Union{AbstractMatrix{T}, LinearMap{T}};
-    isreal::Bool = Base.isreal(lmap), issymmetric::Bool = Base.issymmetric(lmap),
-    ishermitian::Bool = Base.ishermitian(lmap), isposdef::Bool = Base.isposdef(lmap)) where {T}
-    WrappedMap{T,typeof(lmap)}(lmap, isreal, issymmetric, ishermitian, isposdef)
+    issymmetric::Bool = Base.issymmetric(lmap), ishermitian::Bool = Base.ishermitian(lmap),
+    isposdef::Bool = Base.isposdef(lmap)) where {T}
+    WrappedMap{T,typeof(lmap)}(lmap, issymmetric, ishermitian, isposdef)
 end
 function (::Type{WrappedMap{T}})(lmap::Union{AbstractMatrix, LinearMap};
-    isreal::Bool = Base.isreal(lmap), issymmetric::Bool = Base.issymmetric(lmap),
-    ishermitian::Bool = Base.ishermitian(lmap), isposdef::Bool = Base.isposdef(lmap)) where {T}
-    WrappedMap{T,typeof(lmap)}(lmap, isreal, issymmetric, ishermitian, isposdef)
+    issymmetric::Bool = Base.issymmetric(lmap), ishermitian::Bool = Base.ishermitian(lmap),
+    isposdef::Bool = Base.isposdef(lmap)) where {T}
+    WrappedMap{T,typeof(lmap)}(lmap, issymmetric, ishermitian, isposdef)
 end
 
 # properties
 Base.size(A::WrappedMap) = size(A.lmap)
-Base.isreal(A::WrappedMap) = A._isreal
 Base.issymmetric(A::WrappedMap) = A._issymmetric
 Base.ishermitian(A::WrappedMap) = A._ishermitian
 Base.isposdef(A::WrappedMap) = A._isposdef

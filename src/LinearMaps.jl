@@ -8,20 +8,19 @@ abstract type LinearMap{T} end
 
 const AbstractLinearMap = LinearMap # will be deprecated
 
-Base.eltype{T}(::LinearMap{T})=T
-Base.eltype{T}(::Type{LinearMap{T}})=T
-Base.eltype{L<:LinearMap}(::Type{L})=eltype(super(L))
+Base.eltype(::LinearMap{T}) where {T}=T
+Base.eltype(::Type{LinearMap{T}}) where {T}=T
+Base.eltype(::Type{L}) where {L<:LinearMap}=eltype(super(L))
 
-Base.isreal{T<:Real}(::LinearMap{T}) = true
-Base.isreal(::LinearMap) = false # standard assumptions
-Base.issymmetric(::LinearMap) = false # standard assumptions
+Base.isreal(A::LinearMap) = eltype(A) <: Real
+Base.issymmetric(::LinearMap) = false # default assumptions
 Base.ishermitian{T<:Real}(A::LinearMap{T}) = issymmetric(A)
-Base.ishermitian(::LinearMap) = false # standard assumptions
-Base.isposdef(::LinearMap) = false # standard assumptions
+Base.ishermitian(::LinearMap) = false # default assumptions
+Base.isposdef(::LinearMap) = false # default assumptions
 
 Base.ndims(::LinearMap) = 2
 Base.size(A::LinearMap, n) = (n==1 || n==2 ? size(A)[n] : error("LinearMap objects have only 2 dimensions"))
-Base.length(A::LinearMap) = reduce(*, size(A))
+Base.length(A::LinearMap) = size(A)[1] * size(A)[2]
 
 # any LinearMap subtype will have to overwrite at least one of the two following methods to avoid running in circles
 *(A::LinearMap, x::AbstractVector) = Base.A_mul_B!(similar(x, promote_type(eltype(A),eltype(x)), size(A,1)), A, x)
@@ -65,8 +64,9 @@ Base.Ac_mul_B!(y::AbstractVector, A::LinearMap, x::AbstractVector)
 end
 
 # full: create matrix representation of LinearMap
-function Base.full{T}(A::LinearMap{T})
+function Base.full(A::LinearMap)
     M, N = size(A)
+    T = eltype(A)
     mat = zeros(T, (M, N))
     v = zeros(T, N)
     for i = 1:N
@@ -100,7 +100,5 @@ LinearMap(f, fc, M::Int, N::Int; kwargs...) = LinearMap{Float64}(f, fc, M, N; kw
 @deprecate LinearMap(f, M::Int, N::Int, T::Type; kwargs...) LinearMap{T}(f, M, N; kwargs...)
 @deprecate LinearMap(f, fc, M::Int, T::Type; kwargs...) LinearMap{T}(f, fc, M; kwargs...)
 @deprecate LinearMap(f, fc, M::Int, N::Int, T::Type; kwargs...) LinearMap{T}(f, fc, M, N; kwargs...)
-
-
 
 end # module
