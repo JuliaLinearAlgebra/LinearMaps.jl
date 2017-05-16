@@ -1,7 +1,7 @@
 type LinearCombination{T, As<:Tuple{Vararg{AbstractLinearMap}}, Ts<:Tuple} <: AbstractLinearMap{T}
     maps::As
     coeffs::Ts
-    function LinearCombination(maps::As, coeffs::Ts)
+    function (::Type{LinearCombination{T}}){T,As,Ts}(maps::As, coeffs::Ts)
         N = length(maps)
         N == length(coeffs) || error("Number of coefficients doesn't match number of terms")
         sz = size(maps[1])
@@ -9,17 +9,21 @@ type LinearCombination{T, As<:Tuple{Vararg{AbstractLinearMap}}, Ts<:Tuple} <: Ab
             size(maps[n]) == sz || throw(DimensionMismatch("LinearCombination"))
             promote_type(T, eltype(maps[n]), typeof(coeffs[n])) == T || throw(InexactError())
         end
-        new(maps, coeffs)
+        new{T, As, Ts}(maps, coeffs)
     end
 end
 
-(::Type{LinearCombination{T}}){T,As,Ts}(maps::As, coeffs::Ts) = LinearCombination{T,As,Ts}(maps, coeffs)
+#(::Type{LinearCombination{T}}){T,As,Ts}(maps::As, coeffs::Ts) =
+#    LinearCombination{T,As,Ts}(maps, coeffs)
 
 # basic methods
 Base.size(A::LinearCombination) = size(A.maps[1])
-Base.issymmetric(A::LinearCombination) = all(issymmetric, A.maps) # sufficient but not necessary
-Base.ishermitian(A::LinearCombination) = all(ishermitian, A.maps) && all(isreal, A.coeffs) # sufficient but not necessary
-Base.isposdef(A::LinearCombination) = all(isposdef, A.maps) && all(isposdef, A.coeffs) # sufficient but not necessary
+Base.issymmetric(A::LinearCombination) =
+    all(issymmetric, A.maps) # sufficient but not necessary
+Base.ishermitian(A::LinearCombination) =
+    all(ishermitian, A.maps) && all(isreal, A.coeffs) # sufficient but not necessary
+Base.isposdef(A::LinearCombination) =
+    all(isposdef, A.maps) && all(isposdef, A.coeffs) # sufficient but not necessary
 
 # adding linear maps
 function +(A1::LinearCombination, A2::LinearCombination)
@@ -41,7 +45,8 @@ end
 function -(A1::LinearCombination, A2::LinearCombination)
     size(A1) == size(A2) || throw(DimensionMismatch("-"))
     T = promote_type(eltype(A1), eltype(A2))
-    return LinearCombination{T}(tuple(A1.maps..., A2.maps...), tuple(A1.coeffs..., map(-,A2.coeffs)...))
+    return LinearCombination{T}(tuple(A1.maps..., A2.maps...),
+                                tuple(A1.coeffs..., map(-,A2.coeffs)...))
 end
 function -(A1::AbstractLinearMap, A2::LinearCombination)
     size(A1) == size(A2) || throw(DimensionMismatch("-"))
@@ -86,11 +91,14 @@ end
 /(A::LinearCombination, α::Number) = \(α,A)
 
 # comparison of LinearCombination objects
-==(A::LinearCombination, B::LinearCombination) = (eltype(A)==eltype(B) && A.maps==B.maps && A.coeffs==B.coeffs)
+==(A::LinearCombination, B::LinearCombination) =
+    (eltype(A)==eltype(B) && A.maps==B.maps && A.coeffs==B.coeffs)
 
 # special transposition behavior
-Base.transpose(A::LinearCombination) = LinearCombination{eltype(A)}(map(transpose, A.maps), A.coeffs)
-Base.ctranspose(A::LinearCombination) = LinearCombination{eltype(A)}(map(ctranspose, A.maps), map(conj, A.coeffs))
+Base.transpose(A::LinearCombination) =
+    LinearCombination{eltype(A)}(map(transpose, A.maps), A.coeffs)
+Base.ctranspose(A::LinearCombination) =
+    LinearCombination{eltype(A)}(map(ctranspose, A.maps), map(conj, A.coeffs))
 
 # multiplication with vectors
 function Base.A_mul_B!(y::AbstractVector, A::LinearCombination, x::AbstractVector)

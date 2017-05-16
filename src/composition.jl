@@ -1,6 +1,6 @@
 type CompositeMap{T,As<:Tuple{Vararg{AbstractLinearMap}}} <: AbstractLinearMap{T}
     maps::As # stored in order of application to vector
-    function CompositeMap(maps::As)
+    function (::Type{CompositeMap{T}}){T,As<:Tuple{Vararg{AbstractLinearMap}}}(maps::As)
         N = length(maps)
         for n = 2:N
             size(maps[n],2)==size(maps[n-1],1) || throw(DimensionMismatch("CompositeMap"))
@@ -8,10 +8,11 @@ type CompositeMap{T,As<:Tuple{Vararg{AbstractLinearMap}}} <: AbstractLinearMap{T
         for n = 1:N
             promote_type(T, eltype(maps[n])) == T || throw(InexactError())
         end
-        new(maps)
+        new{T,As}(maps)
     end
 end
-(::Type{CompositeMap{T}}){T,As<:Tuple{Vararg{AbstractLinearMap}}}(maps::As) = CompositeMap{T,As}(maps)
+#(::Type{CompositeMap{T}}){T,As<:Tuple{Vararg{AbstractLinearMap}}}(maps::As) =
+#    CompositeMap{T,As}(maps)
 
 # basic methods
 Base.size(A::CompositeMap) = (size(A.maps[end], 1), size(A.maps[1], 2))
