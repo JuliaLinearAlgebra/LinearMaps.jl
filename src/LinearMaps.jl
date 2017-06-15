@@ -9,7 +9,8 @@ eval(Expr(:abstract, :(LinearMap{T} <: Any)))
 const AbstractLinearMap = LinearMap # will be deprecated
 
 Base.eltype{T}(::LinearMap{T}) = T
-Base.eltype{T,L<:LinearMap{T}}(::Type{L})=T
+Base.eltype{T}(::Type{LinearMap{T}}) = T
+Base.eltype{L<:LinearMap}(::Type{L}) = eltype(super(L))
 
 Base.isreal(A::LinearMap) = eltype(A) <: Real
 Base.issymmetric(::LinearMap) = false # default assumptions
