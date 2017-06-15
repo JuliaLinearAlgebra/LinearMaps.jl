@@ -4,7 +4,7 @@ export LinearMap, AbstractLinearMap
 
 import Base: +, -, *, \, /, ==
 
-abstract type LinearMap{T} end
+eval(Expr(:abstract, :(AbstractLinearMap{T} <: Any)))
 
 const AbstractLinearMap = LinearMap # will be deprecated
 
