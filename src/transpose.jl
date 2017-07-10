@@ -1,11 +1,11 @@
-immutable TransposeMap{T, A<:LinearMap{T}} <: LinearMap{T}
+struct TransposeMap{T, A<:LinearMap{T}} <: LinearMap{T}
     lmap::A
 end
-immutable CTransposeMap{T, A<:LinearMap{T}} <: LinearMap{T}
+struct CTransposeMap{T, A<:LinearMap{T}} <: LinearMap{T}
     lmap::A
 end
-(::Type{TransposeMap}){T}(lmap::LinearMap{T}) = TransposeMap{T, typeof(lmap)}(lmap)
-(::Type{CTransposeMap}){T}(lmap::LinearMap{T}) = CTransposeMap{T, typeof(lmap)}(lmap)
+(::Type{TransposeMap})(lmap::LinearMap{T}) where {T} = TransposeMap{T, typeof(lmap)}(lmap)
+(::Type{CTransposeMap})(lmap::LinearMap{T}) where {T} = CTransposeMap{T, typeof(lmap)}(lmap)
 
 # transposition behavior of LinearMap objects
 Base.transpose(A::TransposeMap) = A.lmap

@@ -1,7 +1,10 @@
 # LinearMaps
 
-[![LinearMaps](http://pkg.julialang.org/badges/LinearMaps_0.5.svg)](http://pkg.julialang.org/?pkg=LinearMaps) [![Build Status](https://travis-ci.org/Jutho/LinearMaps.jl.svg?branch=master)](https://travis-ci.org/Jutho/LinearMaps.jl) [![License](http://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat)](LICENSE.md) [![Coverage Status](https://coveralls.io/repos/github/Jutho/LinearMaps.jl/badge.svg?branch=master)](https://coveralls.io/github/Jutho/LinearMaps.jl?branch=master) [![codecov.io](http://codecov.io/github/Jutho/LinearMaps.jl/coverage.svg?branch=master)](http://codecov.io/github/Jutho/LinearMaps.jl?branch=master)
-
+[![LinearMaps](http://pkg.julialang.org/badges/LinearMaps_0.6.svg)](http://pkg.julialang.org/?pkg=LinearMaps)
+[![Build Status](https://travis-ci.org/Jutho/LinearMaps.jl.svg?branch=master)](https://travis-ci.org/Jutho/LinearMaps.jl)
+[![License](http://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat)](LICENSE.md)
+[![Coverage Status](https://coveralls.io/repos/github/Jutho/LinearMaps.jl/badge.svg?branch=master)](https://coveralls.io/github/Jutho/LinearMaps.jl?branch=master)
+[![codecov.io](http://codecov.io/github/Jutho/LinearMaps.jl/coverage.svg?branch=master)](http://codecov.io/github/Jutho/LinearMaps.jl?branch=master)
 A Julia package for defining and working with linear maps, also known as linear transformations or linear operators acting on vectors. The only requirement for a LinearMap is that it can act on a vector (by multiplication) efficiently.
 
 ## What's new.

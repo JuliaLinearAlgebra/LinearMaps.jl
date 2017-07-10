@@ -1,4 +1,4 @@
-type LinearCombination{T, As<:Tuple{Vararg{LinearMap}}, Ts<:Tuple} <: LinearMap{T}
+struct LinearCombination{T, As<:Tuple{Vararg{LinearMap}}, Ts<:Tuple} <: LinearMap{T}
     maps::As
     coeffs::Ts
     function LinearCombination{T,As,Ts}(maps::As, coeffs::Ts) where {T,As,Ts}

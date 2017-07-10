@@ -4,13 +4,12 @@ export LinearMap, AbstractLinearMap
 
 import Base: +, -, *, \, /, ==
 
-eval(Expr(:abstract, :(LinearMap{T} <: Any)))
+abstract type LinearMap{T} end
 
 const AbstractLinearMap = LinearMap # will be deprecated
 
 Base.eltype{T}(::LinearMap{T}) = T
-Base.eltype{T}(::Type{LinearMap{T}}) = T
-Base.eltype{L<:LinearMap}(::Type{L}) = eltype(super(L))
+Base.eltype{T,L<:LinearMap{T}}(::Type{L}) = T
 
 Base.isreal(A::LinearMap) = eltype(A) <: Real
 Base.issymmetric(::LinearMap) = false # default assumptions
@@ -90,8 +89,8 @@ LinearMap(f, M::Int, N::Int; kwargs...) = LinearMap{Float64}(f, M, N; kwargs...)
 LinearMap(f, fc, M::Int; kwargs...) = LinearMap{Float64}(f, fc, M; kwargs...)
 LinearMap(f, fc, M::Int, N::Int; kwargs...) = LinearMap{Float64}(f, fc, M, N; kwargs...)
 
-(::Type{LinearMap{T}}){T}(A::Union{AbstractMatrix,LinearMap}; kwargs...) = WrappedMap{T}(A; kwargs...)
-(::Type{LinearMap{T}}){T}(f, args...; kwargs...) = FunctionMap{T}(f, args...; kwargs...)
+(::Type{LinearMap{T}})(A::Union{AbstractMatrix,LinearMap}; kwargs...) where {T} = WrappedMap{T}(A; kwargs...)
+(::Type{LinearMap{T}})(f, args...; kwargs...) where {T} = FunctionMap{T}(f, args...; kwargs...)
 
 @deprecate LinearMap(f, T::Type, args...; kwargs...) LinearMap{T}(f, args...; kwargs...)
 @deprecate LinearMap(f, fc, T::Type, args...; kwargs...) LinearMap{T}(f, fc, args...; kwargs...)

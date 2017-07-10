@@ -3,6 +3,11 @@ using Base.Test
 
 import Base: *
 
+if VERSION >= v"0.7-"
+    Pkg.add("FFTW")
+    using FFTW
+end
+
 A = 2*rand(Complex128,(20,10)).-1
 v = rand(Complex128,10)
 w = rand(Complex128,20)

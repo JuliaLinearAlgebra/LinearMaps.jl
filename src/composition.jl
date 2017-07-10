@@ -1,4 +1,4 @@
-type CompositeMap{T,As<:Tuple{Vararg{LinearMap}}} <: LinearMap{T}
+struct CompositeMap{T,As<:Tuple{Vararg{LinearMap}}} <: LinearMap{T}
     maps::As # stored in order of application to vector
     function CompositeMap{T,As}(maps::As) where {T,As}
         N = length(maps)
@@ -11,11 +11,12 @@ type CompositeMap{T,As<:Tuple{Vararg{LinearMap}}} <: LinearMap{T}
         new{T,As}(maps)
     end
 end
-(::Type{CompositeMap{T}}){T,As<:Tuple{Vararg{LinearMap}}}(maps::As) = CompositeMap{T,As}(maps)
+(::Type{CompositeMap{T}})(maps::As) where {T,As<:Tuple{Vararg{LinearMap}}} = CompositeMap{T,As}(maps)
 
 # basic methods
 Base.size(A::CompositeMap) = (size(A.maps[end], 1), size(A.maps[1], 2))
 Base.isreal(A::CompositeMap) = all(isreal, A.maps) # sufficient but not necessary
+
 # the following rules are sufficient but not necessary
 function Base.issymmetric(A::CompositeMap)
     N = length(A.maps)
@@ -70,12 +71,9 @@ function *(A1::LinearMap, A2::LinearMap)
     return CompositeMap{T}(tuple(A2, A1))
 end
 
-# comparison of CompositeMap objects
-==(A::CompositeMap, B::CompositeMap) = (eltype(A) == eltype(B) && A.maps == B.maps)
-
 # special transposition behavior
-Base.transpose{T}(A::CompositeMap{T}) = CompositeMap{T}(map(transpose,reverse(A.maps)))
-Base.ctranspose{T}(A::CompositeMap{T}) = CompositeMap{T}(map(ctranspose,reverse(A.maps)))
+Base.transpose(A::CompositeMap{T}) where {T} = CompositeMap{T}(map(transpose,reverse(A.maps)))
+Base.ctranspose(A::CompositeMap{T}) where {T} = CompositeMap{T}(map(ctranspose,reverse(A.maps)))
 
 # multiplication with vectors
 function Base.A_mul_B!(y::AbstractVector, A::CompositeMap, x::AbstractVector)

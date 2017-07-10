@@ -1,4 +1,4 @@
-immutable FunctionMap{T,F1,F2}<:LinearMap{T}
+struct FunctionMap{T,F1,F2} <: LinearMap{T}
     f::F1
     fc::F2
     M::Int
@@ -20,7 +20,7 @@ end
 (::Type{FunctionMap{T}})(f, fc, M::Int; kwargs...) where {T} = FunctionMap{T}(f, fc, M, M; kwargs...)
 
 # show
-function Base.show(io::IO,A::FunctionMap{T}) where {T}
+function Base.show(io::IO, A::FunctionMap{T}) where {T}
     print(io,"LinearMaps.FunctionMap{$T}($(A.f), $(A.fc), $(A.M), $(A.N); ismutating=$(A._ismutating), issymmetric=$(A._issymmetric), ishermitian=$(A._ishermitian), isposdef=$(A._isposdef))")
 end
 

@@ -1,4 +1,4 @@
-immutable WrappedMap{T, A<:Union{AbstractMatrix, LinearMap}} <: LinearMap{T}
+struct WrappedMap{T, A<:Union{AbstractMatrix, LinearMap}} <: LinearMap{T}
     lmap::A
     _issymmetric::Bool
     _ishermitian::Bool
@@ -20,10 +20,6 @@ Base.size(A::WrappedMap) = size(A.lmap)
 Base.issymmetric(A::WrappedMap) = A._issymmetric
 Base.ishermitian(A::WrappedMap) = A._ishermitian
 Base.isposdef(A::WrappedMap) = A._isposdef
-
-# comparison
-==(A::WrappedMap, B::WrappedMap) = (A.lmap == B.lmap && eltype(A) == eltype(B) && isreal(A) == isreal(B) &&
-    issymmetric(A) == issymmetric(B) && ishermitian(A) == ishermitian(B) && isposdef(A) == isposdef(B))
 
 # multiplication with vector
 Base.A_mul_B!(y::AbstractVector, A::WrappedMap, x::AbstractVector) = Base.A_mul_B!(y, A.lmap, x)
