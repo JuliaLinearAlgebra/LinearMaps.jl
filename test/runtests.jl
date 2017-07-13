@@ -3,9 +3,17 @@ using Base.Test
 
 import Base: *
 
-if VERSION >= v"0.7-"
-    Pkg.add("FFTW")
-    using FFTW
+function myft(v::AbstractVector)
+    # not so fast fourier transform
+    N = length(v)
+    w = zeros(complex(eltype(v)), N)
+    for k = 1:N
+        kappa = (2*(k-1)/N)*pi
+        for n = 1:N
+            w[k] += v[n]*exp(kappa*(n-1)*im)
+        end
+    end
+    return w
 end
 
 A = 2*rand(Complex128,(20,10)).-1
@@ -29,7 +37,7 @@ F = LinearMap(cumsum,2)
 @test full(F) == [1. 0.;1. 1.]
 
 N = 100
-F = LinearMap{Complex128}(fft, N)/sqrt(N)
+F = LinearMap{Complex128}(myft, N)/sqrt(N)
 U = full(F) # will be a unitary matrix
 @test U'*U ≈ eye(N)
 
