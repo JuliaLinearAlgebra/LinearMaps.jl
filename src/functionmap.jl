@@ -1,4 +1,4 @@
-immutable FunctionMap{T,F1,F2}<:AbstractLinearMap{T}
+struct FunctionMap{T,F1,F2} <: LinearMap{T}
     f::F1
     fc::F2
     M::Int
@@ -8,26 +8,20 @@ immutable FunctionMap{T,F1,F2}<:AbstractLinearMap{T}
     _ishermitian::Bool
     _isposdef::Bool
 end
-
-# additional constructor
-FunctionMap{T}(f, M::Int, ::Type{T} = Float64; kwargs...) = FunctionMap(f, nothing, M, M, T; kwargs...)
-FunctionMap{T}(f, M::Int, N::Int, ::Type{T} = Float64; kwargs...) = FunctionMap(f, nothing, M, N, T; kwargs...)
-FunctionMap{T}(f, fc, M::Int, ::Type{T} = Float64; kwargs...) = FunctionMap(f, fc, M, M, T; kwargs...)
-
-FunctionMap{T}(f, ::Type{T}, M::Int; kwargs...) = FunctionMap(f, nothing, M, M, T; kwargs...)
-FunctionMap{T}(f, ::Type{T}, M::Int, N::Int; kwargs...) = FunctionMap(f, nothing, M, N, T; kwargs...)
-FunctionMap{T}(f, fc, ::Type{T}, M::Int; kwargs...) = FunctionMap(f, fc, M, M, T; kwargs...)
-FunctionMap{T}(f, fc, ::Type{T}, M::Int, N::Int; kwargs...) = FunctionMap(f, fc, M, N, T; kwargs...)
-
-
-function FunctionMap{T,F1,F2}(f::F1, fc::F2, M::Int, N::Int, ::Type{T} = Float64;
-    ismutating::Bool = false, issymmetric::Bool = false, ishermitian::Bool=(T<:Real && issymmetric), isposdef::Bool = false)
+function (::Type{FunctionMap{T}})(f::F1, fc::F2, M::Int, N::Int;
+    ismutating::Bool = _ismutating(f), issymmetric::Bool = false, ishermitian::Bool=(T<:Real && issymmetric),
+    isposdef::Bool = false) where {T,F1,F2}
     FunctionMap{T,F1,F2}(f, fc, M, N, ismutating, issymmetric, ishermitian, isposdef)
 end
 
+# additional constructors
+(::Type{FunctionMap{T}})(f, M::Int; kwargs...) where {T} = FunctionMap{T}(f, nothing, M, M; kwargs...)
+(::Type{FunctionMap{T}})(f, M::Int, N::Int; kwargs...) where {T} = FunctionMap{T}(f, nothing, M, N; kwargs...)
+(::Type{FunctionMap{T}})(f, fc, M::Int; kwargs...) where {T} = FunctionMap{T}(f, fc, M, M; kwargs...)
+
 # show
-function Base.show{T}(io::IO,A::FunctionMap{T})
-    print(io,"FunctionMap{$T}($(A.f), $(A.fc), $(A.M), $(A.N); ismutating=$(A._ismutating), issymmetric=$(A._issymmetric), ishermitian=$(A._ishermitian), isposdef=$(A._isposdef))")
+function Base.show(io::IO, A::FunctionMap{T}) where {T}
+    print(io,"LinearMaps.FunctionMap{$T}($(A.f), $(A.fc), $(A.M), $(A.N); ismutating=$(A._ismutating), issymmetric=$(A._issymmetric), ishermitian=$(A._ishermitian), isposdef=$(A._isposdef))")
 end
 
 # properties
@@ -36,6 +30,7 @@ Base.issymmetric(A::FunctionMap) = A._issymmetric
 Base.ishermitian(A::FunctionMap) = A._ishermitian
 Base.isposdef(A::FunctionMap) = A._isposdef
 ismutating(A::FunctionMap) = A._ismutating
+_ismutating(f) = first(methods(f)).nargs == 3
 
 # multiplication with vector
 function Base.A_mul_B!(y::AbstractVector, A::FunctionMap, x::AbstractVector)
