@@ -83,6 +83,34 @@ include("wrappedmap.jl") # wrap a matrix of linear map in a new type, thereby al
 include("identitymap.jl") # the identity map, to be able to make linear combinations of LinearMap objects and I
 include("functionmap.jl") # using a function as linear map
 
+"""
+    LinearMap(A; kwargs...)
+    LinearMap{T=Float64}(f, [fc,], M::Int, N::Int = M; kwargs...)
+
+Construct a linear map object, either from an existing `LinearMap` or `AbstractMatrix` `A`,
+with the purpose of redefining its properties via the keyword arguments `kwargs`, or
+from a function or callable object `f`. In the latter case, one also needs to specialize
+the size of the equivalent matrix representation `(M,N)`, i.e. for functions `f` acting
+on length `N` vectors and producing length `M` vectors (with default value `N=M`). Preferably,
+also the `eltype` `T` of the corresponding matrix representation needs to be specified, i.e.
+whether the action of `f` on a vector will be similar to e.g. multiplying by numbers of type `T`.
+If not specified, the devault value `T=Float64` will be assumed. Optionally, a corresponding
+function `fc` can be specified that implements the (conjugate) transpose of `f`.
+
+The keyword arguments and their default values for functions `f` are
+*   issymmetric::Bool = false : whether `A` or `f` acts as a symmetric matrix
+*   ishermitian::Bool = issymmetric & T<:Real : whether `A` or `f` acts as a Hermitian matrix
+*   isposdef::Bool = false : whether `A` or `f` acts as a positive definite matrix.
+For existing linear maps or matrices `A`, the default values will be taken by calling
+`issymmetric`, `ishermitian` and `isposdef` on the exising object `A`.
+
+For functions `f`, there is one more keyword arguments
+*   ismutating::Bool : flags whether the function acts as a mutating matrix multiplication
+    `f(y,x)` where the result vector `y` is the first argument (in case of `true`),
+    or as a normal matrix multiplication that is called as `y=f(x)` (in case of `false`).
+    The default value is guessed by looking at the number of arguments of the first occurence
+    of `f` in the method table.
+"""
 LinearMap(A::Union{AbstractMatrix,LinearMap}; kwargs...) = WrappedMap(A; kwargs...)
 LinearMap(f, M::Int; kwargs...) = LinearMap{Float64}(f, M; kwargs...)
 LinearMap(f, M::Int, N::Int; kwargs...) = LinearMap{Float64}(f, M, N; kwargs...)
