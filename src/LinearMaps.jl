@@ -8,12 +8,12 @@ abstract type LinearMap{T} end
 
 const AbstractLinearMap = LinearMap # will be deprecated
 
-Base.eltype{T}(::LinearMap{T}) = T
-Base.eltype{T,L<:LinearMap{T}}(::Type{L}) = T
+Base.eltype(::LinearMap{T}) where {T} = T
+Base.eltype(::Type{L}) where {T,L<:LinearMap{T}} = T
 
 Base.isreal(A::LinearMap) = eltype(A) <: Real
 Base.issymmetric(::LinearMap) = false # default assumptions
-Base.ishermitian{T<:Real}(A::LinearMap{T}) = issymmetric(A)
+Base.ishermitian(A::LinearMap{<:Real}) = issymmetric(A)
 Base.ishermitian(::LinearMap) = false # default assumptions
 Base.isposdef(::LinearMap) = false # default assumptions
 
