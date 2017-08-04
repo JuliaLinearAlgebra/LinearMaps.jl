@@ -12,7 +12,7 @@ Base.transpose(A::TransposeMap) = A.lmap
 Base.ctranspose(A::CTransposeMap) = A.lmap
 
 Base.transpose(A::LinearMap) = TransposeMap(A)
-Base.ctranspose{T<:Real}(A::LinearMap{T}) = transpose(A)
+Base.ctranspose(A::LinearMap{<:Real}) = transpose(A)
 Base.ctranspose(A::LinearMap) = CTransposeMap(A)
 
 # properties
