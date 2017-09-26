@@ -5,7 +5,7 @@ export LinearMap, AbstractLinearMap
 
 import Base: +, -, *, \, /, ==, transpose
 
-if VERSION >= v"0.7.0-"
+if VERSION >= v"0.7.0-DEV.1415"
     const adjoint = Base.adjoint
 else
     const adjoint = Base.ctranspose
