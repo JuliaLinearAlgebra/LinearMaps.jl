@@ -34,7 +34,7 @@ function Base.ishermitian(A::CompositeMap)
         ishermitian(A.maps[div(N+1,2)]) || return false
     end
     for n = 1:div(N,2)
-        A.maps[n] == ctranspose(A.maps[N-n+1]) || return false
+        A.maps[n] == adjoint(A.maps[N-n+1]) || return false
     end
     return true
 end
@@ -44,7 +44,7 @@ function Base.isposdef(A::CompositeMap)
         isposdef(A.maps[div(N+1,2)]) || return false
     end
     for n = 1:div(N,2)
-        A.maps[n]==ctranspose(A.maps[N-n+1]) || return false
+        A.maps[n] == adjoint(A.maps[N-n+1]) || return false
     end
     return true
 end
@@ -72,8 +72,8 @@ function *(A1::LinearMap, A2::LinearMap)
 end
 
 # special transposition behavior
-Base.transpose(A::CompositeMap{T}) where {T} = CompositeMap{T}(map(transpose,reverse(A.maps)))
-Base.ctranspose(A::CompositeMap{T}) where {T} = CompositeMap{T}(map(ctranspose,reverse(A.maps)))
+transpose(A::CompositeMap{T}) where {T} = CompositeMap{T}(map(transpose, reverse(A.maps)))
+adjoint(A::CompositeMap{T}) where {T} = CompositeMap{T}(map(adjoint, reverse(A.maps)))
 
 # multiplication with vectors
 function Base.A_mul_B!(y::AbstractVector, A::CompositeMap, x::AbstractVector)

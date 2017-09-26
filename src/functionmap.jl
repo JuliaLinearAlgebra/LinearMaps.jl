@@ -93,7 +93,7 @@ function Base.Ac_mul_B!(y::AbstractVector, A::FunctionMap, x::AbstractVector)
     if A.fc != nothing
         return (ismutating(A) ? A.fc(y, x) : copy!(y, A.fc(x)))
     else
-        error("ctranspose not implemented for $A")
+        error("adjoint not implemented for $A")
     end
 end
 function Base.Ac_mul_B(A::FunctionMap, x::AbstractVector)
@@ -108,6 +108,6 @@ function Base.Ac_mul_B(A::FunctionMap, x::AbstractVector)
         end
         return y
     else
-        error("ctranspose not implemented for $A")
+        error("adjoint not implemented for $A")
     end
 end

@@ -1,8 +1,16 @@
+__precompile__(true)
 module LinearMaps
 
 export LinearMap, AbstractLinearMap
 
-import Base: +, -, *, \, /, ==
+import Base: +, -, *, \, /, ==, transpose
+
+if VERSION >= v"0.7.0-"
+    const adjoint = Base.adjoint
+else
+    const adjoint = Base.ctranspose
+end
+
 
 abstract type LinearMap{T} end
 
@@ -28,7 +36,7 @@ Base.A_mul_B!(y::AbstractVector, A::LinearMap, x::AbstractVector) = begin
     copy!(y, A*x)
 end
 
-# the following for multiplying with transpose and ctranspose map are optional:
+# the following for multiplying with transpose and adjoint map are optional:
 # subtypes can overwrite nonmutating methods, implement mutating methods or do nothing
 function Base.At_mul_B(A::LinearMap, x::AbstractVector)
     if length(methods(Base.At_mul_B!,Tuple{AbstractVector, typeof(A), AbstractVector})) > 1
