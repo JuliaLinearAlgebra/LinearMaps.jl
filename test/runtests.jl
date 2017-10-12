@@ -1,5 +1,9 @@
+if VERSION < v"0.7.0-DEV.2005"
+    const Test = Base.Test
+end
+
+using Test
 using LinearMaps
-using Base.Test
 
 import Base: *
 
@@ -44,6 +48,11 @@ U = full(F) # will be a unitary matrix
 F = LinearMap(cumsum,10)
 @test F*v == cumsum(v)
 @test_throws ErrorException F'*v
+
+# Test fallback methods:
+L = LinearMap(x->x,x->x,10)
+v = randn(10);
+@test (2*L)'*v ≈ 2*v
 
 # test linear combinations
 A = 2*rand(Complex128,(10,10)).-1

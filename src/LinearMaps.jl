@@ -39,7 +39,8 @@ end
 # the following for multiplying with transpose and adjoint map are optional:
 # subtypes can overwrite nonmutating methods, implement mutating methods or do nothing
 function Base.At_mul_B(A::LinearMap, x::AbstractVector)
-    if length(methods(Base.At_mul_B!,Tuple{AbstractVector, typeof(A), AbstractVector})) > 1
+    l = methods(Base.At_mul_B!,Tuple{AbstractVector, typeof(A), AbstractVector})
+    if length(l) > 0 && first(l.ms).sig.parameters[3] != LinearMap
         Base.At_mul_B!(similar(x, promote_type(eltype(A), eltype(x)), size(A,2)), A, x)
     else
         throw(MethodError(Base.At_mul_B, (A, x)))
@@ -47,14 +48,16 @@ function Base.At_mul_B(A::LinearMap, x::AbstractVector)
 end
 function Base.At_mul_B!(y::AbstractVector, A::LinearMap, x::AbstractVector)
     length(y) == size(A, 2) || throw(DimensionMismatch("At_mul_B!"))
-    if length(methods(Base.At_mul_B,Tuple{typeof(A), AbstractVector})) > 1
+    l = methods(Base.At_mul_B,Tuple{typeof(A), AbstractVector})
+    if length(l) > 0 && first(l.ms).sig.parameters[2] != LinearMap
         copy!(y, Base.At_mul_B(A, x))
     else
         throw(MethodError(Base.At_mul_B!, (y, A, x)))
     end
 end
 function Base.Ac_mul_B(A::LinearMap,x::AbstractVector)
-    if length(methods(Base.Ac_mul_B!,Tuple{AbstractVector, typeof(A), AbstractVector})) > 1
+    l = methods(Base.Ac_mul_B!,Tuple{AbstractVector, typeof(A), AbstractVector})
+    if length(l) > 0 && first(l.ms).sig.parameters[3] != LinearMap
         Base.Ac_mul_B!(similar(x, promote_type(eltype(A), eltype(x)), size(A,2)), A, x)
     else
         throw(MethodError(Base.Ac_mul_B, (A, x)))
@@ -63,7 +66,8 @@ end
 function
 Base.Ac_mul_B!(y::AbstractVector, A::LinearMap, x::AbstractVector)
     length(y)==size(A,2) || throw(DimensionMismatch("At_mul_B!"))
-    if length(methods(Base.Ac_mul_B,Tuple{typeof(A), AbstractVector})) > 1
+    l = methods(Base.Ac_mul_B,Tuple{typeof(A), AbstractVector})
+    if length(l) > 0 && first(l.ms).sig.parameters[2] != LinearMap
         copy!(y, Base.Ac_mul_B(A, x))
     else
         throw(MethodError(Base.Ac_mul_B!, (y, A, x)))
