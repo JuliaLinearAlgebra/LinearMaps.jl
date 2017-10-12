@@ -126,3 +126,28 @@ function Base.Ac_mul_B!(y::AbstractVector, A::LinearCombination, x::AbstractVect
     end
     return y
 end
+
+function Base.At_mul_B( A::LinearCombination, x::AbstractVector)
+    y=Vector{eltype(A)}(size(A,2))
+    # no size checking, will be done by individual maps
+    Base.At_mul_B!(y, A.maps[1], x)
+    A.coeffs[1] == 1 || scale!(A.coeffs[1], y)
+    z = similar(y)
+    for n = 2:length(A.maps)
+        Base.At_mul_B!(z, A.maps[n], x)
+        Base.axpy!(A.coeffs[n], z, y)
+    end
+    return y
+end
+function Base.Ac_mul_B( A::LinearCombination, x::AbstractVector)
+    y=Vector{eltype(A)}(size(A,2))
+    # no size checking, will be done by individual maps
+    Base.Ac_mul_B!(y, A.maps[1], x)
+    A.coeffs[1] == 1 || scale!(conj(A.coeffs[1]), y)
+    z = similar(y)
+    for n=2:length(A.maps)
+        Base.Ac_mul_B!(z, A.maps[n], x)
+        Base.axpy!(conj(A.coeffs[n]), z, y)
+    end
+    return y
+end
