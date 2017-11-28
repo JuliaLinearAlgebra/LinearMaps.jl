@@ -28,13 +28,15 @@ w = rand(Complex128,20)
 M = LinearMap(A)
 @test M*v == A*v
 
-# test transposition and full
+# test transposition, full and sparse
 @test M'*w == A'*w
 @test M.'*w == A.'*w
 
 @test full(M) == A
 @test full(M') == A'
 @test full(M.') == A.'
+
+@test sparse(M) == sparse(full(M))
 
 # test function map
 F = LinearMap(cumsum,2)
