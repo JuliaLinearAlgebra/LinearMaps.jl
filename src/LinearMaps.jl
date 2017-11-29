@@ -92,20 +92,25 @@ end
 function Base.sparse(A::LinearMap)
     M, N = size(A)
     T = eltype(A)
-    Is = Int[]
-    Js = Int[]
-    Vs = T[]
+    rowind = Int[]
+    nzval = T[]
+    colptr = Vector{Int}(N+1)
     v = zeros(T, N)
+
     for i = 1:N
         v[i] = one(T)
         Lv = A*v
-        Ii = find(Lv)
-        append!(Js, fill(i, length(Ii)))
-        append!(Is, Ii)
-        append!(Vs, Lv[Ii])
+        js = find(Lv)
+        colptr[i] = length(nzval)+1
+        if length(js) > 0
+            append!(rowind, js)
+            append!(nzval, Lv[js])
+        end
         v[i] = zero(T)
     end
-    return sparse(Is, Js, Vs)
+    colptr[N+1] = length(nzval)+1
+    
+    return SparseMatrixCSC(M, N, colptr, rowind, nzval)
 end
 
 include("transpose.jl") # transposing linear maps
