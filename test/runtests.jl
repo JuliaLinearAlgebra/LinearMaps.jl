@@ -36,6 +36,14 @@ M = LinearMap(A)
 @test full(M') == A'
 @test full(M.') == A.'
 
+# test sparse conversions
+@test sparse(M) == sparse(full(M))
+
+B = copy(A)
+B[rand(1:length(A), 30)] = 0.
+MS = LinearMap(B)
+@test sparse(MS) == sparse(full(MS))
+
 # test function map
 F = LinearMap(cumsum,2)
 @test full(F) == [1. 0.;1. 1.]

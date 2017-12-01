@@ -88,6 +88,31 @@ function Base.full(A::LinearMap)
     return mat
 end
 
+# sparse: create sparse matrix representtion of LinearMap
+function Base.sparse(A::LinearMap)
+    M, N = size(A)
+    T = eltype(A)
+    rowind = Int[]
+    nzval = T[]
+    colptr = Vector{Int}(N+1)
+    v = zeros(T, N)
+
+    for i = 1:N
+        v[i] = one(T)
+        Lv = A*v
+        js = find(Lv)
+        colptr[i] = length(nzval)+1
+        if length(js) > 0
+            append!(rowind, js)
+            append!(nzval, Lv[js])
+        end
+        v[i] = zero(T)
+    end
+    colptr[N+1] = length(nzval)+1
+    
+    return SparseMatrixCSC(M, N, colptr, rowind, nzval)
+end
+
 include("transpose.jl") # transposing linear maps
 include("linearcombination.jl") # defining linear combinations of linear maps
 include("composition.jl") # composition of linear maps
