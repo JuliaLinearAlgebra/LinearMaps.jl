@@ -37,11 +37,11 @@ The LinearMaps package provides the following functionality:
     General purpose method to construct `LinearMap` objects of specific types, as described in the Types section below
 
     ```
-    LinearMap{T}(A::AbstractMatrix[; isreal::Bool, issymmetric::Bool, ishermitian::Bool, isposdef::Bool])
-    LinearMap{T}(A::LinearMap[; isreal::Bool, issym::Bool, ishermitian::Bool, isposdef::Bool])
+    LinearMap{T}(A::AbstractMatrix[; issymmetric::Bool, ishermitian::Bool, isposdef::Bool])
+    LinearMap{T}(A::LinearMap[; issym::Bool, ishermitian::Bool, isposdef::Bool])
     ```
 
-    Create a `WrappedMap` object that will respond to the methods `isreal`, `issymmetric`, `ishermitian`, `isposdef` with the values provided by the keyword arguments, and to `eltype` with the value `T`. The default values correspond to the result of calling these methods on the argument `A`; in particular `{T}` does not need to be specified and is set as `eltype(A)`. This allows to use an `AbstractMatrix` within the `LinearMap` framework and to redefine the properties of an existing `LinearMap`.
+    Create a `WrappedMap` object that will respond to the methods `issymmetric`, `ishermitian`, `isposdef` with the values provided by the keyword arguments, and to `eltype` with the value `T`. The default values correspond to the result of calling these methods on the argument `A`; in particular `{T}` does not need to be specified and is set as `eltype(A)`. This allows to use an `AbstractMatrix` within the `LinearMap` framework and to redefine the properties of an existing `LinearMap`.
 
     ```
     LinearMap{T}(f, [fc = nothing], M::Int, [N::Int = M]; ismutating::Bool, issymmetric::Bool, ishermitian::Bool, isposdef::Bool])
