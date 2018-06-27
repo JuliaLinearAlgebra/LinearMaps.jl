@@ -5,8 +5,8 @@ struct AdjointMap{T, A<:LinearMap{T}} <: LinearMap{T}
     lmap::A
 end
 
-(::Type{TransposeMap})(lmap::LinearMap{T}) where {T}    = TransposeMap{T, typeof(lmap)}(lmap)
-(::Type{AdjointMap})(lmap::LinearMap{T}) where {T}      = AdjointMap{T, typeof(lmap)}(lmap)
+TransposeMap(lmap::LinearMap{T}) where {T} = TransposeMap{T, typeof(lmap)}(lmap)
+AdjointMap(lmap::LinearMap{T}) where {T}   = AdjointMap{T, typeof(lmap)}(lmap)
 
 # transposition behavior of LinearMap objects
 transpose(A::TransposeMap) = A.lmap
