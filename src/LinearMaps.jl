@@ -3,14 +3,13 @@ module LinearMaps
 
 export LinearMap, AbstractLinearMap
 
-import Base: +, -, *, \, /, ==, transpose
+import LinearAlgebra, SparseArrays
 
-if VERSION >= v"0.7.0-DEV.1415"
-    const adjoint = Base.adjoint
-else
-    const adjoint = Base.ctranspose
-end
-
+import Base: +, -, *, \, /, ==
+import LinearAlgebra: transpose, adjoint
+import LinearAlgebra: issymmetric, ishermitian, isposdef
+import LinearAlgebra: BLAS.axpy!, mul!, lmul!, UniformScaling
+import SparseArrays: sparse
 
 abstract type LinearMap{T} end
 
@@ -20,87 +19,55 @@ Base.eltype(::LinearMap{T}) where {T} = T
 Base.eltype(::Type{L}) where {T,L<:LinearMap{T}} = T
 
 Base.isreal(A::LinearMap) = eltype(A) <: Real
-Base.issymmetric(::LinearMap) = false # default assumptions
-Base.ishermitian(A::LinearMap{<:Real}) = issymmetric(A)
-Base.ishermitian(::LinearMap) = false # default assumptions
-Base.isposdef(::LinearMap) = false # default assumptions
+issymmetric(::LinearMap) = false # default assumptions
+ishermitian(A::LinearMap{<:Real}) = issymmetric(A)
+ishermitian(::LinearMap) = false # default assumptions
+isposdef(::LinearMap) = false # default assumptions
 
 Base.ndims(::LinearMap) = 2
 Base.size(A::LinearMap, n) = (n==1 || n==2 ? size(A)[n] : error("LinearMap objects have only 2 dimensions"))
 Base.length(A::LinearMap) = size(A)[1] * size(A)[2]
 
-# any LinearMap subtype will have to overwrite at least one of the two following methods to avoid running in circles
-*(A::LinearMap, x::AbstractVector) = Base.A_mul_B!(similar(x, promote_type(eltype(A),eltype(x)), size(A,1)), A, x)
-Base.A_mul_B!(y::AbstractVector, A::LinearMap, x::AbstractVector) = begin
-    length(y) == size(A,1) || throw(DimensionMismatch("A_mul_B!"))
-    copy!(y, A*x)
+*(A::LinearMap, x::AbstractVector) = mul!(similar(x, promote_type(eltype(A),eltype(x)), size(A,1)), A, x)
+mul!(y::AbstractVector, A::LinearMap, x::AbstractVector) = begin
+    length(y) == size(A,1) || throw(DimensionMismatch("mul!"))
+    A_mul_B!(y, A, x)
 end
 
-# the following for multiplying with transpose and adjoint map are optional:
-# subtypes can overwrite nonmutating methods, implement mutating methods or do nothing
-function Base.At_mul_B(A::LinearMap, x::AbstractVector)
-    l = methods(Base.At_mul_B!,Tuple{AbstractVector, typeof(A), AbstractVector})
-    if length(l) > 0 && first(l.ms).sig.parameters[3] != LinearMap
-        Base.At_mul_B!(similar(x, promote_type(eltype(A), eltype(x)), size(A,2)), A, x)
-    else
-        throw(MethodError(Base.At_mul_B, (A, x)))
-    end
-end
-function Base.At_mul_B!(y::AbstractVector, A::LinearMap, x::AbstractVector)
-    length(y) == size(A, 2) || throw(DimensionMismatch("At_mul_B!"))
-    l = methods(Base.At_mul_B,Tuple{typeof(A), AbstractVector})
-    if length(l) > 0 && first(l.ms).sig.parameters[2] != LinearMap
-        copy!(y, Base.At_mul_B(A, x))
-    else
-        throw(MethodError(Base.At_mul_B!, (y, A, x)))
-    end
-end
-function Base.Ac_mul_B(A::LinearMap,x::AbstractVector)
-    l = methods(Base.Ac_mul_B!,Tuple{AbstractVector, typeof(A), AbstractVector})
-    if length(l) > 0 && first(l.ms).sig.parameters[3] != LinearMap
-        Base.Ac_mul_B!(similar(x, promote_type(eltype(A), eltype(x)), size(A,2)), A, x)
-    else
-        throw(MethodError(Base.Ac_mul_B, (A, x)))
-    end
-end
-function
-Base.Ac_mul_B!(y::AbstractVector, A::LinearMap, x::AbstractVector)
-    length(y)==size(A,2) || throw(DimensionMismatch("At_mul_B!"))
-    l = methods(Base.Ac_mul_B,Tuple{typeof(A), AbstractVector})
-    if length(l) > 0 && first(l.ms).sig.parameters[2] != LinearMap
-        copy!(y, Base.Ac_mul_B(A, x))
-    else
-        throw(MethodError(Base.Ac_mul_B!, (y, A, x)))
-    end
-end
+A_mul_B!(y::AbstractVector, A::AbstractMatrix, x::AbstractVector) = mul!(y, A, x)
+A_mul_B(A, x) = A * x
+At_mul_B!(y::AbstractVector, A::AbstractMatrix, x::AbstractVector) = mul!(y, transpose(A), x)
+At_mul_B(A, x) = transpose(A) * x
+Ac_mul_B!(y::AbstractVector, A::AbstractMatrix, x::AbstractVector) = mul!(y, adjoint(A), x)
+Ac_mul_B(A, x) = adjoint(A) * x
 
-# full: create matrix representation of LinearMap
-function Base.full(A::LinearMap)
+# Array: create matrix representation of LinearMap (shall we call it Base.Matrix?)
+function Base.Array(A::LinearMap)
     M, N = size(A)
     T = eltype(A)
-    mat = zeros(T, (M, N))
-    v = zeros(T, N)
+    mat = Matrix{T}(undef, (M, N))
+    v = fill(zero(T), N)
     for i = 1:N
         v[i] = one(T)
-        A_mul_B!(view(mat,:,i), A, v)
+        mul!(view(mat,:,i), A, v)
         v[i] = zero(T)
     end
     return mat
 end
 
-# sparse: create sparse matrix representtion of LinearMap
-function Base.sparse(A::LinearMap)
+# sparse: create sparse matrix representation of LinearMap
+function SparseArrays.sparse(A::LinearMap)
     M, N = size(A)
     T = eltype(A)
     rowind = Int[]
     nzval = T[]
-    colptr = Vector{Int}(N+1)
-    v = zeros(T, N)
+    colptr = Vector{Int}(undef, N+1)
+    v = fill(zero(T), N)
 
     for i = 1:N
         v[i] = one(T)
         Lv = A*v
-        js = find(Lv)
+        js = findall(!iszero, Lv)
         colptr[i] = length(nzval)+1
         if length(js) > 0
             append!(rowind, js)
@@ -109,8 +76,8 @@ function Base.sparse(A::LinearMap)
         v[i] = zero(T)
     end
     colptr[N+1] = length(nzval)+1
-    
-    return SparseMatrixCSC(M, N, colptr, rowind, nzval)
+
+    return SparseArrays.SparseMatrixCSC(M, N, colptr, rowind, nzval)
 end
 
 include("transpose.jl") # transposing linear maps
@@ -156,13 +123,5 @@ LinearMap(f, fc, M::Int, N::Int; kwargs...) = LinearMap{Float64}(f, fc, M, N; kw
 
 (::Type{LinearMap{T}})(A::Union{AbstractMatrix,LinearMap}; kwargs...) where {T} = WrappedMap{T}(A; kwargs...)
 (::Type{LinearMap{T}})(f, args...; kwargs...) where {T} = FunctionMap{T}(f, args...; kwargs...)
-
-@deprecate LinearMap(f, T::Type, args...; kwargs...) LinearMap{T}(f, args...; kwargs...)
-@deprecate LinearMap(f, fc, T::Type, args...; kwargs...) LinearMap{T}(f, fc, args...; kwargs...)
-
-@deprecate LinearMap(f, M::Int, T::Type; kwargs...) LinearMap{T}(f, M; kwargs...)
-@deprecate LinearMap(f, M::Int, N::Int, T::Type; kwargs...) LinearMap{T}(f, M, N; kwargs...)
-@deprecate LinearMap(f, fc, M::Int, T::Type; kwargs...) LinearMap{T}(f, fc, M; kwargs...)
-@deprecate LinearMap(f, fc, M::Int, N::Int, T::Type; kwargs...) LinearMap{T}(f, fc, M, N; kwargs...)
 
 end # module

@@ -3,7 +3,7 @@ struct CompositeMap{T,As<:Tuple{Vararg{LinearMap}}} <: LinearMap{T}
     function CompositeMap{T,As}(maps::As) where {T,As}
         N = length(maps)
         for n = 2:N
-            size(maps[n],2)==size(maps[n-1],1) || throw(DimensionMismatch("CompositeMap"))
+            size(maps[n],2) == size(maps[n-1],1) || throw(DimensionMismatch("CompositeMap"))
         end
         for n = 1:N
             promote_type(T, eltype(maps[n])) == T || throw(InexactError())
@@ -18,17 +18,17 @@ Base.size(A::CompositeMap) = (size(A.maps[end], 1), size(A.maps[1], 2))
 Base.isreal(A::CompositeMap) = all(isreal, A.maps) # sufficient but not necessary
 
 # the following rules are sufficient but not necessary
-function Base.issymmetric(A::CompositeMap)
+function issymmetric(A::CompositeMap)
     N = length(A.maps)
     if isodd(N)
         issymmetric(A.maps[div(N+1,2)]) || return false
     end
     for n = 1:div(N,2)
-        A.maps[n]==transpose(A.maps[N-n+1]) || return false
+        A.maps[n] == transpose(A.maps[N-n+1]) || return false
     end
     return true
 end
-function Base.ishermitian(A::CompositeMap)
+function ishermitian(A::CompositeMap)
     N = length(A.maps)
     if isodd(N)
         ishermitian(A.maps[div(N+1,2)]) || return false
@@ -38,7 +38,7 @@ function Base.ishermitian(A::CompositeMap)
     end
     return true
 end
-function Base.isposdef(A::CompositeMap)
+function isposdef(A::CompositeMap)
     N = length(A.maps)
     if isodd(N)
         isposdef(A.maps[div(N+1,2)]) || return false
@@ -73,72 +73,72 @@ end
 
 # special transposition behavior
 transpose(A::CompositeMap{T}) where {T} = CompositeMap{T}(map(transpose, reverse(A.maps)))
-adjoint(A::CompositeMap{T}) where {T} = CompositeMap{T}(map(adjoint, reverse(A.maps)))
+adjoint(A::CompositeMap{T}) where {T}   = CompositeMap{T}(map(adjoint, reverse(A.maps)))
 
 # multiplication with vectors
-function Base.A_mul_B!(y::AbstractVector, A::CompositeMap, x::AbstractVector)
+function A_mul_B!(y::AbstractVector, A::CompositeMap, x::AbstractVector)
     # no size checking, will be done by individual maps
     N = length(A.maps)
     if N==1
-        Base.A_mul_B!(y, A.maps[1], x)
+        A_mul_B!(y, A.maps[1], x)
     else
         T = eltype(y)
-        dest = Array{T}(size(A.maps[1], 1))
-        Base.A_mul_B!(dest, A.maps[1], x)
+        dest = Array{T}(undef, size(A.maps[1], 1))
+        A_mul_B!(dest, A.maps[1], x)
         source = dest
         if N>2
-            dest = Array{T}(size(A.maps[2],1))
+            dest = Array{T}(undef, size(A.maps[2],1))
         end
         for n=2:N-1
             resize!(dest, size(A.maps[n],1))
-            Base.A_mul_B!(dest, A.maps[n], source)
-            dest,source = source,dest # alternate dest and source
+            A_mul_B!(dest, A.maps[n], source)
+            dest, source = source, dest # alternate dest and source
         end
-        Base.A_mul_B!(y, A.maps[N], source)
+        A_mul_B!(y, A.maps[N], source)
     end
     return y
 end
-function Base.At_mul_B!(y::AbstractVector,A::CompositeMap,x::AbstractVector)
+function At_mul_B!(y::AbstractVector, A::CompositeMap, x::AbstractVector)
     # no size checking, will be done by individual maps
     N = length(A.maps)
     if N == 1
-        Base.At_mul_B!(y, A.maps[1], x)
+        At_mul_B!(y, A.maps[1], x)
     else
         T = eltype(y)
         dest = Array{T}(size(A.maps[N], 2))
-        Base.At_mul_B!(dest, A.maps[N], x)
+        At_mul_B!(dest, A.maps[N], x)
         source = dest
         if N>2
             dest = Array{T}(size(A.maps[N-1], 2))
         end
         for n = N-1:-1:2
             resize!(dest, size(A.maps[n], 2))
-            Base.At_mul_B!(dest, A.maps[n], source)
+            At_mul_B!(dest, A.maps[n], source)
             dest, source = source, dest # alternate dest and source
         end
-        Base.At_mul_B!(y, A.maps[1], source)
+        At_mul_B!(y, A.maps[1], source)
     end
     return y
 end
-function Base.Ac_mul_B!(y::AbstractVector, A::CompositeMap, x::AbstractVector)
+function Ac_mul_B!(y::AbstractVector, A::CompositeMap, x::AbstractVector)
     # no size checking, will be done by individual maps
     N = length(A.maps)
     if N == 1
-        Base.Ac_mul_B!(y, A.maps[1], x)
+        Ac_mul_B!(y, A.maps[1], x)
     else
         T = eltype(y)
         dest = Array{T}(size(A.maps[N], 2))
-        Base.Ac_mul_B!(dest, A.maps[N], x)
+        Ac_mul_B!(dest, A.maps[N], x)
         source = dest
         if N>2
-            dest = Array{T}(size(A.maps[N-1],2))
+            dest = Array{T}(size(A.maps[N-1], 2))
         end
         for n = N-1:-1:2
             resize!(dest, size(A.maps[n], 2))
-            Base.Ac_mul_B!(dest, A.maps[n], source)
+            Ac_mul_B!(dest, A.maps[n], source)
             dest, source = source, dest # alternate dest and source
         end
-        Base.Ac_mul_B!(y, A.maps[1], source)
+        Ac_mul_B!(y, A.maps[1], source)
     end
     return y
 end

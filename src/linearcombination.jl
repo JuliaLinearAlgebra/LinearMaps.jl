@@ -17,9 +17,9 @@ end
 
 # basic methods
 Base.size(A::LinearCombination) = size(A.maps[1])
-Base.issymmetric(A::LinearCombination) = all(issymmetric, A.maps) # sufficient but not necessary
-Base.ishermitian(A::LinearCombination) = all(ishermitian, A.maps) && all(isreal, A.coeffs) # sufficient but not necessary
-Base.isposdef(A::LinearCombination) = all(isposdef, A.maps) && all(isposdef, A.coeffs) # sufficient but not necessary
+issymmetric(A::LinearCombination) = all(issymmetric, A.maps) # sufficient but not necessary
+ishermitian(A::LinearCombination) = all(ishermitian, A.maps) && all(isreal, A.coeffs) # sufficient but not necessary
+isposdef(A::LinearCombination) = all(isposdef, A.maps) && all(isposdef, A.coeffs) # sufficient but not necessary
 
 # adding linear maps
 function +(A1::LinearCombination, A2::LinearCombination)
@@ -36,17 +36,17 @@ end
 function +(A1::LinearMap, A2::LinearMap)
     size(A1)==size(A2) || throw(DimensionMismatch("+"))
     T = promote_type(eltype(A1), eltype(A2))
-    return LinearCombination{T}(tuple(A1,A2), tuple(one(T),one(T)))
+    return LinearCombination{T}(tuple(A1, A2), tuple(one(T), one(T)))
 end
 function -(A1::LinearCombination, A2::LinearCombination)
     size(A1) == size(A2) || throw(DimensionMismatch("-"))
     T = promote_type(eltype(A1), eltype(A2))
-    return LinearCombination{T}(tuple(A1.maps..., A2.maps...), tuple(A1.coeffs..., map(-,A2.coeffs)...))
+    return LinearCombination{T}(tuple(A1.maps..., A2.maps...), tuple(A1.coeffs..., map(-, A2.coeffs)...))
 end
 function -(A1::LinearMap, A2::LinearCombination)
     size(A1) == size(A2) || throw(DimensionMismatch("-"))
     T = promote_type(eltype(A1), eltype(A2))
-    return LinearCombination{T}(tuple(A1, A2.maps...), tuple(one(T), map(-,A2.coeffs)...))
+    return LinearCombination{T}(tuple(A1, A2.maps...), tuple(one(T), map(-, A2.coeffs)...))
 end
 function -(A1::LinearCombination, A2::LinearMap)
     size(A1) == size(A2) || throw(DimensionMismatch("-"))
@@ -72,7 +72,7 @@ function *(α::Number, A::LinearCombination)
     T = promote_type(eltype(α), eltype(A))
     return LinearCombination{T}(A.maps, map(x->α*x, A.coeffs))
 end
-*(A::LinearCombination, α::Number) = *(α,A)
+*(A::LinearCombination, α::Number) = *(α, A)
 
 function \(α::Number, A::LinearMap)
     T = promote_type(eltype(α), eltype(A))
@@ -93,36 +93,36 @@ transpose(A::LinearCombination) = LinearCombination{eltype(A)}(map(transpose, A.
 adjoint(A::LinearCombination) = LinearCombination{eltype(A)}(map(adjoint, A.maps), map(conj, A.coeffs))
 
 # multiplication with vectors
-function Base.A_mul_B!(y::AbstractVector, A::LinearCombination, x::AbstractVector)
+function A_mul_B!(y::AbstractVector, A::LinearCombination, x::AbstractVector)
     # no size checking, will be done by individual maps
-    Base.A_mul_B!(y, A.maps[1], x)
-    A.coeffs[1] == 1 || scale!(A.coeffs[1], y)
+    A_mul_B!(y, A.maps[1], x)
+    A.coeffs[1] == 1 || lmul!(A.coeffs[1], y)
     z = similar(y)
     for n=2:length(A.maps)
-        Base.A_mul_B!(z, A.maps[n], x)
-        Base.axpy!(A.coeffs[n], z, y)
+        A_mul_B!(z, A.maps[n], x)
+        axpy!(A.coeffs[n], z, y)
     end
     return y
 end
-function Base.At_mul_B!(y::AbstractVector, A::LinearCombination, x::AbstractVector)
+function At_mul_B!(y::AbstractVector, A::LinearCombination, x::AbstractVector)
     # no size checking, will be done by individual maps
-    Base.At_mul_B!(y, A.maps[1], x)
-    A.coeffs[1] == 1 || scale!(A.coeffs[1], y)
+    At_mul_B!(y, A.maps[1], x)
+    A.coeffs[1] == 1 || lmul!(A.coeffs[1], y)
     z = similar(y)
     for n = 2:length(A.maps)
-        Base.At_mul_B!(z, A.maps[n], x)
-        Base.axpy!(A.coeffs[n], z, y)
+        At_mul_B!(z, A.maps[n], x)
+        axpy!(A.coeffs[n], z, y)
     end
     return y
 end
-function Base.Ac_mul_B!(y::AbstractVector, A::LinearCombination, x::AbstractVector)
+function Ac_mul_B!(y::AbstractVector, A::LinearCombination, x::AbstractVector)
     # no size checking, will be done by individual maps
-    Base.Ac_mul_B!(y, A.maps[1], x)
-    A.coeffs[1] == 1 || scale!(conj(A.coeffs[1]), y)
+    Ac_mul_B!(y, A.maps[1], x)
+    A.coeffs[1] == 1 || lmul!(conj(A.coeffs[1]), y)
     z = similar(y)
     for n=2:length(A.maps)
-        Base.Ac_mul_B!(z, A.maps[n], x)
-        Base.axpy!(conj(A.coeffs[n]), z, y)
+        Ac_mul_B!(z, A.maps[n], x)
+        axpy!(conj(A.coeffs[n]), z, y)
     end
     return y
 end
