@@ -27,11 +27,11 @@ function Base.show(io::IO, A::FunctionMap{T}) where {T}
 end
 
 # properties
-Base.size(A::FunctionMap)    = (A.M, A.N)
-issymmetric(A::FunctionMap)  = A._issymmetric
-ishermitian(A::FunctionMap)  = A._ishermitian
-isposdef(A::FunctionMap)     = A._isposdef
-ismutating(A::FunctionMap)   = A._ismutating
+Base.size(A::FunctionMap) = (A.M, A.N)
+LinearAlgebra.issymmetric(A::FunctionMap) = A._issymmetric
+LinearAlgebra.ishermitian(A::FunctionMap) = A._ishermitian
+LinearAlgebra.isposdef(A::FunctionMap)    = A._isposdef
+ismutating(A::FunctionMap) = A._ismutating
 _ismutating(f) = first(methods(f)).nargs == 3
 
 # multiplication with vector
@@ -40,7 +40,7 @@ function A_mul_B!(y::AbstractVector, A::FunctionMap, x::AbstractVector)
     ismutating(A) ? A.f(y, x) : copyto!(y, A.f(x))
     return y
 end
-function *(A::FunctionMap, x::AbstractVector)
+function Base.:(*)(A::FunctionMap, x::AbstractVector)
     length(x) == A.N || throw(DimensionMismatch())
     if ismutating(A)
         y = similar(x, promote_type(eltype(A), eltype(x)), A.M)

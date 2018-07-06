@@ -19,9 +19,9 @@ end
 
 # properties
 Base.size(A::WrappedMap) = size(A.lmap)
-issymmetric(A::WrappedMap) = A._issymmetric
-ishermitian(A::WrappedMap) = A._ishermitian
-isposdef(A::WrappedMap) = A._isposdef
+LinearAlgebra.issymmetric(A::WrappedMap) = A._issymmetric
+LinearAlgebra.ishermitian(A::WrappedMap) = A._ishermitian
+LinearAlgebra.isposdef(A::WrappedMap) = A._isposdef
 
 # multiplication with vector
 A_mul_B!(y::AbstractVector, A::WrappedMap, x::AbstractVector) = A_mul_B!(y, A.lmap, x)
@@ -38,10 +38,10 @@ Ac_mul_B(A::WrappedMap, x::AbstractVector) =
     ishermitian(A) ? *(A.lmap, x) : Ac_mul_B(A.lmap, x)
 
 # combine LinearMap and Matrix objects: linear combinations and map composition
-+(A1::LinearMap, A2::AbstractMatrix) = +(A1, WrappedMap(A2))
-+(A1::AbstractMatrix, A2::LinearMap) = +(WrappedMap(A1), A2)
--(A1::LinearMap, A2::AbstractMatrix) = -(A1, WrappedMap(A2))
--(A1::AbstractMatrix, A2::LinearMap) = -(WrappedMap(A1), A2)
+Base.:(+)(A1::LinearMap, A2::AbstractMatrix) = +(A1, WrappedMap(A2))
+Base.:(+)(A1::AbstractMatrix, A2::LinearMap) = +(WrappedMap(A1), A2)
+Base.:(-)(A1::LinearMap, A2::AbstractMatrix) = -(A1, WrappedMap(A2))
+Base.:(-)(A1::AbstractMatrix, A2::LinearMap) = -(WrappedMap(A1), A2)
 
-*(A1::LinearMap, A2::AbstractMatrix) = *(A1, WrappedMap(A2))
-*(A1::AbstractMatrix, A2::LinearMap) = *(WrappedMap(A1) ,A2)
+Base.:(*)(A1::LinearMap, A2::AbstractMatrix) = *(A1, WrappedMap(A2))
+Base.:(*)(A1::AbstractMatrix, A2::LinearMap) = *(WrappedMap(A1) ,A2)

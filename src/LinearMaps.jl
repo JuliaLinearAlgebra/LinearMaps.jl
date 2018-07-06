@@ -3,13 +3,10 @@ module LinearMaps
 
 export LinearMap, AbstractLinearMap
 
-import LinearAlgebra, SparseArrays
+using LinearAlgebra
+import SparseArrays
 
 import Base: +, -, *, \, /, ==
-import LinearAlgebra: transpose, adjoint
-import LinearAlgebra: issymmetric, ishermitian, isposdef
-import LinearAlgebra: BLAS.axpy!, mul!, lmul!, UniformScaling
-import SparseArrays: sparse
 
 abstract type LinearMap{T} end
 
@@ -19,17 +16,17 @@ Base.eltype(::LinearMap{T}) where {T} = T
 Base.eltype(::Type{L}) where {T,L<:LinearMap{T}} = T
 
 Base.isreal(A::LinearMap) = eltype(A) <: Real
-issymmetric(::LinearMap) = false # default assumptions
-ishermitian(A::LinearMap{<:Real}) = issymmetric(A)
-ishermitian(::LinearMap) = false # default assumptions
-isposdef(::LinearMap) = false # default assumptions
+LinearAlgebra.issymmetric(::LinearMap) = false # default assumptions
+LinearAlgebra.ishermitian(A::LinearMap{<:Real}) = issymmetric(A)
+LinearAlgebra.ishermitian(::LinearMap) = false # default assumptions
+LinearAlgebra.isposdef(::LinearMap) = false # default assumptions
 
 Base.ndims(::LinearMap) = 2
 Base.size(A::LinearMap, n) = (n==1 || n==2 ? size(A)[n] : error("LinearMap objects have only 2 dimensions"))
 Base.length(A::LinearMap) = size(A)[1] * size(A)[2]
 
-*(A::LinearMap, x::AbstractVector) = mul!(similar(x, promote_type(eltype(A),eltype(x)), size(A,1)), A, x)
-mul!(y::AbstractVector, A::LinearMap, x::AbstractVector) = begin
+Base.:(*)(A::LinearMap, x::AbstractVector) = mul!(similar(x, promote_type(eltype(A),eltype(x)), size(A,1)), A, x)
+function LinearAlgebra.mul!(y::AbstractVector, A::LinearMap, x::AbstractVector)
     length(y) == size(A,1) || throw(DimensionMismatch("mul!"))
     A_mul_B!(y, A, x)
 end
@@ -41,8 +38,8 @@ At_mul_B(A, x) = transpose(A) * x
 Ac_mul_B!(y::AbstractVector, A::AbstractMatrix, x::AbstractVector) = mul!(y, adjoint(A), x)
 Ac_mul_B(A, x) = adjoint(A) * x
 
-# Array: create matrix representation of LinearMap (shall we call it Base.Matrix?)
-function Base.Array(A::LinearMap)
+# Matrix: create matrix representation of LinearMap
+function Base.Matrix(A::LinearMap)
     M, N = size(A)
     T = eltype(A)
     mat = Matrix{T}(undef, (M, N))
@@ -54,6 +51,8 @@ function Base.Array(A::LinearMap)
     end
     return mat
 end
+
+Base.Array(A::LinearMap) = Base.Matrix(A)
 
 # sparse: create sparse matrix representation of LinearMap
 function SparseArrays.sparse(A::LinearMap)
@@ -106,7 +105,7 @@ The keyword arguments and their default values for functions `f` are
 *   ishermitian::Bool = issymmetric & T<:Real : whether `A` or `f` acts as a Hermitian matrix
 *   isposdef::Bool = false : whether `A` or `f` acts as a positive definite matrix.
 For existing linear maps or matrices `A`, the default values will be taken by calling
-`issymmetric`, `ishermitian` and `isposdef` on the exising object `A`.
+`issymmetric`, `ishermitian` and `isposdef` on the existing object `A`.
 
 For functions `f`, there is one more keyword arguments
 *   ismutating::Bool : flags whether the function acts as a mutating matrix multiplication

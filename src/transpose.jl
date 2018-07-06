@@ -5,32 +5,32 @@ struct AdjointMap{T, A<:LinearMap{T}} <: LinearMap{T}
     lmap::A
 end
 
-TransposeMap(lmap::LinearMap{T}) where {T} = TransposeMap{T, typeof(lmap)}(lmap)
-AdjointMap(lmap::LinearMap{T}) where {T}   = AdjointMap{T, typeof(lmap)}(lmap)
+# TransposeMap(lmap::LinearMap{T}) where {T} = TransposeMap{T, typeof(lmap)}(lmap)
+# AdjointMap(lmap::LinearMap{T}) where {T}   = AdjointMap{T, typeof(lmap)}(lmap)
 
 # transposition behavior of LinearMap objects
-transpose(A::TransposeMap) = A.lmap
-adjoint(A::AdjointMap) = A.lmap
+LinearAlgebra.transpose(A::TransposeMap) = A.lmap
+LinearAlgebra.adjoint(A::AdjointMap) = A.lmap
 
-transpose(A::LinearMap) = TransposeMap(A)
-adjoint(A::LinearMap{<:Real}) = transpose(A)
-adjoint(A::LinearMap) = AdjointMap(A)
+LinearAlgebra.transpose(A::LinearMap) = TransposeMap(A)
+LinearAlgebra.adjoint(A::LinearMap{<:Real}) = transpose(A)
+LinearAlgebra.adjoint(A::LinearMap) = AdjointMap(A)
 
 # properties
 Base.size(A::Union{TransposeMap,AdjointMap}) = (size(A.lmap,2), size(A.lmap,1))
-issymmetric(A::Union{TransposeMap,AdjointMap}) = issymmetric(A.lmap)
-ishermitian(A::Union{TransposeMap,AdjointMap}) = ishermitian(A.lmap)
-isposdef(A::Union{TransposeMap,AdjointMap}) = isposdef(A.lmap)
+LinearAlgebra.issymmetric(A::Union{TransposeMap,AdjointMap}) = issymmetric(A.lmap)
+LinearAlgebra.ishermitian(A::Union{TransposeMap,AdjointMap}) = ishermitian(A.lmap)
+LinearAlgebra.isposdef(A::Union{TransposeMap,AdjointMap}) = isposdef(A.lmap)
 
 # comparison of TransposeMap objects
-==(A::TransposeMap, B::TransposeMap)    = A.lmap == B.lmap
-==(A::AdjointMap, B::AdjointMap)        = A.lmap == B.lmap
-==(A::TransposeMap, B::AdjointMap)      = isreal(B) && A.lmap == B.lmap
-==(A::AdjointMap, B::TransposeMap)      = isreal(A) && A.lmap == B.lmap
-==(A::TransposeMap, B::LinearMap)       = issymmetric(B) && A.lmap == B
-==(A::AdjointMap, B::LinearMap)         = ishermitian(B) && A.lmap == B
-==(A::LinearMap, B::TransposeMap)       = issymmetric(A) && B.lmap == A
-==(A::LinearMap, B::AdjointMap)         = ishermitian(A) && B.lmap == A
+Base.:(==)(A::TransposeMap, B::TransposeMap) = A.lmap == B.lmap
+Base.:(==)(A::AdjointMap, B::AdjointMap)     = A.lmap == B.lmap
+Base.:(==)(A::TransposeMap, B::AdjointMap)   = isreal(B) && A.lmap == B.lmap
+Base.:(==)(A::AdjointMap, B::TransposeMap)   = isreal(A) && A.lmap == B.lmap
+Base.:(==)(A::TransposeMap, B::LinearMap)    = issymmetric(B) && A.lmap == B
+Base.:(==)(A::AdjointMap, B::LinearMap)      = ishermitian(B) && A.lmap == B
+Base.:(==)(A::LinearMap, B::TransposeMap)    = issymmetric(A) && B.lmap == A
+Base.:(==)(A::LinearMap, B::AdjointMap)      = ishermitian(A) && B.lmap == A
 
 # multiplication with vector
 A_mul_B!(y::AbstractVector, A::TransposeMap, x::AbstractVector) =

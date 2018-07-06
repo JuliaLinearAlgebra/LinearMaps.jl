@@ -49,6 +49,7 @@ MS = LinearMap(B)
 
 # test function map
 F = LinearMap(cumsum,2)
+@test Matrix(F) == [1. 0.;1. 1.]
 @test Array(F) == [1. 0.;1. 1.]
 
 N = 100
@@ -57,6 +58,10 @@ U = Array(F) # will be a unitary matrix
 @test U'*U ≈ Matrix{eltype(U)}(I, N, N)
 
 F = LinearMap(cumsum,10)
+@test F*v == cumsum(v)
+@test_throws ErrorException F'*v
+
+F = LinearMap((y,x) -> y .= cumsum(x),10)
 @test F*v == cumsum(v)
 @test_throws ErrorException F'*v
 

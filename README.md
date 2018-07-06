@@ -98,7 +98,7 @@ None of the types below need to be constructed directly; they arise from perform
 
 ## Examples
 
-The `LinearMap` object combines well with the iterative eigensolver `eigs`, which is the Julia wrapper for Arpack, and with iterative solvers from [IterativeSolvers.jl](https://github.com/JuliaMath/IterativeSolvers.jl).
+The `LinearMap` object combines well with the iterative eigensolver `eigs` from [Arpack.jl](https://github.com/JuliaLinearAlgebra/Arpack.jl) and with iterative solvers from [IterativeSolvers.jl](https://github.com/JuliaMath/IterativeSolvers.jl).
 
 ```
 using LinearMaps

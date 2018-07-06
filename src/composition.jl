@@ -18,7 +18,7 @@ Base.size(A::CompositeMap) = (size(A.maps[end], 1), size(A.maps[1], 2))
 Base.isreal(A::CompositeMap) = all(isreal, A.maps) # sufficient but not necessary
 
 # the following rules are sufficient but not necessary
-function issymmetric(A::CompositeMap)
+function LinearAlgebra.issymmetric(A::CompositeMap)
     N = length(A.maps)
     if isodd(N)
         issymmetric(A.maps[div(N+1,2)]) || return false
@@ -28,7 +28,7 @@ function issymmetric(A::CompositeMap)
     end
     return true
 end
-function ishermitian(A::CompositeMap)
+function LinearAlgebra.ishermitian(A::CompositeMap)
     N = length(A.maps)
     if isodd(N)
         ishermitian(A.maps[div(N+1,2)]) || return false
@@ -38,7 +38,7 @@ function ishermitian(A::CompositeMap)
     end
     return true
 end
-function isposdef(A::CompositeMap)
+function LinearAlgebra.isposdef(A::CompositeMap)
     N = length(A.maps)
     if isodd(N)
         isposdef(A.maps[div(N+1,2)]) || return false
@@ -50,30 +50,30 @@ function isposdef(A::CompositeMap)
 end
 
 # composition of linear maps
-function *(A1::CompositeMap, A2::CompositeMap)
+function Base.:(*)(A1::CompositeMap, A2::CompositeMap)
     size(A1,2) == size(A2,1) || throw(DimensionMismatch("*"))
     T = promote_type(eltype(A1),eltype(A2))
     return CompositeMap{T}(tuple(A2.maps..., A1.maps...))
 end
-function *(A1::LinearMap, A2::CompositeMap)
+function Base.:(*)(A1::LinearMap, A2::CompositeMap)
     size(A1,2) == size(A2,1) || throw(DimensionMismatch("*"))
     T = promote_type(eltype(A1),eltype(A2))
     return CompositeMap{T}(tuple(A2.maps..., A1))
 end
-function *(A1::CompositeMap, A2::LinearMap)
+function Base.:(*)(A1::CompositeMap, A2::LinearMap)
     size(A1,2) == size(A2,1) || throw(DimensionMismatch("*"))
     T = promote_type(eltype(A1),eltype(A2))
     return CompositeMap{T}(tuple(A2, A1.maps...))
 end
-function *(A1::LinearMap, A2::LinearMap)
+function Base.:(*)(A1::LinearMap, A2::LinearMap)
     size(A1,2) == size(A2,1) || throw(DimensionMismatch("*"))
     T = promote_type(eltype(A1),eltype(A2))
     return CompositeMap{T}(tuple(A2, A1))
 end
 
 # special transposition behavior
-transpose(A::CompositeMap{T}) where {T} = CompositeMap{T}(map(transpose, reverse(A.maps)))
-adjoint(A::CompositeMap{T}) where {T}   = CompositeMap{T}(map(adjoint, reverse(A.maps)))
+LinearAlgebra.transpose(A::CompositeMap{T}) where {T} = CompositeMap{T}(map(transpose, reverse(A.maps)))
+LinearAlgebra.adjoint(A::CompositeMap{T}) where {T}   = CompositeMap{T}(map(adjoint, reverse(A.maps)))
 
 # multiplication with vectors
 function A_mul_B!(y::AbstractVector, A::CompositeMap, x::AbstractVector)

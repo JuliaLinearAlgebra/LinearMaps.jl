@@ -11,9 +11,9 @@ IdentityMap(sz::Tuple{Int, Int}) = IdentityMap(Int8, sz)
 # properties
 Base.size(A::IdentityMap) = (A.M, A.M)
 Base.isreal(::IdentityMap) = true
-issymmetric(::IdentityMap) = true
-ishermitian(::IdentityMap) = true
-isposdef(::IdentityMap) = true
+LinearAlgebra.issymmetric(::IdentityMap) = true
+LinearAlgebra.ishermitian(::IdentityMap) = true
+LinearAlgebra.isposdef(::IdentityMap) = true
 
 # multiplication with vector
 A_mul_B!(y::AbstractVector, A::IdentityMap, x::AbstractVector) = (length(x)==length(y)==A.M ? copyto!(y, x) : throw(DimensionMismatch("A_mul_B!")))
@@ -26,7 +26,7 @@ Ac_mul_B!(y::AbstractVector, A::IdentityMap, x::AbstractVector) = (length(x)==le
 Ac_mul_B(A::IdentityMap, x::AbstractVector) = (length(x)==A.M ? x : throw(DimensionMismatch("Ac_mul_B")))
 
 # combine LinearMap and UniformScaling objects in linear combinations
-+(A1::LinearMap, A2::UniformScaling{T}) where {T}  = A1 + A2[1,1] * IdentityMap{T}(size(A1, 1))
-+(A1::UniformScaling{T}, A2::LinearMap) where {T}  = A1[1,1] * IdentityMap{T}(size(A2, 1)) + A2
--(A1::LinearMap, A2::UniformScaling{T}) where {T}  = A1 - A2[1,1] * IdentityMap{T}(size(A1, 1))
--(A1::UniformScaling{T}, A2::LinearMap) where {T}  = A1[1,1] * IdentityMap{T}(size(A2, 1)) - A2
+Base.:(+)(A1::LinearMap, A2::UniformScaling{T}) where {T}  = A1 + A2[1,1] * IdentityMap{T}(size(A1, 1))
+Base.:(+)(A1::UniformScaling{T}, A2::LinearMap) where {T}  = A1[1,1] * IdentityMap{T}(size(A2, 1)) + A2
+Base.:(-)(A1::LinearMap, A2::UniformScaling{T}) where {T}  = A1 - A2[1,1] * IdentityMap{T}(size(A1, 1))
+Base.:(-)(A1::UniformScaling{T}, A2::LinearMap) where {T}  = A1[1,1] * IdentityMap{T}(size(A2, 1)) - A2
