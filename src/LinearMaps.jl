@@ -32,11 +32,8 @@ function LinearAlgebra.mul!(y::AbstractVector, A::LinearMap, x::AbstractVector)
 end
 
 A_mul_B!(y::AbstractVector, A::AbstractMatrix, x::AbstractVector) = mul!(y, A, x)
-A_mul_B(A, x) = A * x
 At_mul_B!(y::AbstractVector, A::AbstractMatrix, x::AbstractVector) = mul!(y, transpose(A), x)
-At_mul_B(A, x) = transpose(A) * x
 Ac_mul_B!(y::AbstractVector, A::AbstractMatrix, x::AbstractVector) = mul!(y, adjoint(A), x)
-Ac_mul_B(A, x) = adjoint(A) * x
 
 # Matrix: create matrix representation of LinearMap
 function Base.Matrix(A::LinearMap)

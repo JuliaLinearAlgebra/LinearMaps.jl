@@ -67,7 +67,7 @@ function Base.:(*)(α::Number, A::LinearMap)
     T = promote_type(eltype(α), eltype(A))
     return LinearCombination{T}(tuple(A), tuple(α))
 end
-Base.:(*)(A::LinearMap, α::Number) = *(α,A)
+Base.:(*)(A::LinearMap, α::Number) = *(α, A)
 function *(α::Number, A::LinearCombination)
     T = promote_type(eltype(α), eltype(A))
     return LinearCombination{T}(A.maps, map(x->α*x, A.coeffs))
@@ -90,7 +90,7 @@ Base.:(==)(A::LinearCombination, B::LinearCombination) = (eltype(A)==eltype(B) &
 
 # special transposition behavior
 LinearAlgebra.transpose(A::LinearCombination) = LinearCombination{eltype(A)}(map(transpose, A.maps), A.coeffs)
-LinearAlgebra.adjoint(A::LinearCombination) = LinearCombination{eltype(A)}(map(adjoint, A.maps), map(conj, A.coeffs))
+LinearAlgebra.adjoint(A::LinearCombination)   = LinearCombination{eltype(A)}(map(adjoint, A.maps), map(conj, A.coeffs))
 
 # multiplication with vectors
 function A_mul_B!(y::AbstractVector, A::LinearCombination, x::AbstractVector)

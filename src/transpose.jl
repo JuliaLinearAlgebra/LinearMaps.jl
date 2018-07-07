@@ -5,9 +5,6 @@ struct AdjointMap{T, A<:LinearMap{T}} <: LinearMap{T}
     lmap::A
 end
 
-# TransposeMap(lmap::LinearMap{T}) where {T} = TransposeMap{T, typeof(lmap)}(lmap)
-# AdjointMap(lmap::LinearMap{T}) where {T}   = AdjointMap{T, typeof(lmap)}(lmap)
-
 # transposition behavior of LinearMap objects
 LinearAlgebra.transpose(A::TransposeMap) = A.lmap
 LinearAlgebra.adjoint(A::AdjointMap) = A.lmap
@@ -34,21 +31,17 @@ Base.:(==)(A::LinearMap, B::AdjointMap)      = ishermitian(A) && B.lmap == A
 
 # multiplication with vector
 A_mul_B!(y::AbstractVector, A::TransposeMap, x::AbstractVector) =
-    (issymmetric(A.lmap) ? A_mul_B!(y, A.lmap, x) : At_mul_B!(y, A.lmap, x))
+    issymmetric(A.lmap) ? A_mul_B!(y, A.lmap, x) : At_mul_B!(y, A.lmap, x)
 
 At_mul_B!(y::AbstractVector, A::TransposeMap, x::AbstractVector) = A_mul_B!(y, A.lmap, x)
-At_mul_B(A::TransposeMap, x::AbstractVector) = *(A.lmap, x)
 
 Ac_mul_B!(y::AbstractVector, A::TransposeMap, x::AbstractVector) =
     isreal(A.lmap) ? A_mul_B!(y, A.lmap, x) : (A_mul_B!(y, A.lmap, conj(x)); conj!(y))
-Ac_mul_B(A::TransposeMap, x::AbstractVector) = isreal(A.lmap) ? *(A.lmap, x) : conj!(*(A.lmap, conj(x)))
 
 A_mul_B!(y::AbstractVector, A::AdjointMap, x::AbstractVector) =
-    (ishermitian(A.lmap) ? A_mul_B!(y, A.lmap, x) : Ac_mul_B!(y, A.lmap, x))
+    ishermitian(A.lmap) ? A_mul_B!(y, A.lmap, x) : Ac_mul_B!(y, A.lmap, x)
 
 At_mul_B!(y::AbstractVector, A::AdjointMap, x::AbstractVector) =
     isreal(A.lmap) ? A_mul_B!(y, A.lmap, x) : (A_mul_B!(y, A.lmap, conj(x)); conj!(y))
-At_mul_B(A::AdjointMap, x::AbstractVector) = isreal(A.lmap) ? *(A.lmap, x) : conj!(*(A.lmap, conj(x)))
 
 Ac_mul_B!(y::AbstractVector, A::AdjointMap, x::AbstractVector) = A_mul_B!(y, A.lmap, x)
-Ac_mul_B(A::AdjointMap, x::AbstractVector) = *(A.lmap, x)

@@ -67,48 +67,12 @@ function At_mul_B!(y::AbstractVector, A::FunctionMap, x::AbstractVector)
         error("transpose not implemented for $A")
     end
 end
-function At_mul_B(A::FunctionMap, x::AbstractVector)
-    issymmetric(A) && return A*x
-    length(x) == A.M || throw(DimensionMismatch())
-    if A.fc != nothing
-        if !isreal(A)
-            x = conj(x)
-        end
-        if ismutating(A)
-            y = similar(x, promote_type(eltype(A), eltype(x)), A.N)
-            A.fc(y,x)
-        else
-            y = A.fc(x)
-        end
-        if !isreal(A)
-            conj!(y)
-        end
-        return y
-    else
-        error("transpose not implemented for $A")
-    end
-end
 
 function Ac_mul_B!(y::AbstractVector, A::FunctionMap, x::AbstractVector)
     ishermitian(A) && return A_mul_B!(y, A, x)
     (length(x) == A.M && length(y) == A.N) || throw(DimensionMismatch())
     if A.fc != nothing
         return (ismutating(A) ? A.fc(y, x) : copyto!(y, A.fc(x)))
-    else
-        error("adjoint not implemented for $A")
-    end
-end
-function Ac_mul_B(A::FunctionMap, x::AbstractVector)
-    ishermitian(A) && return A*x
-    length(x) == A.M || throw(DimensionMismatch())
-    if A.fc != nothing
-        if ismutating(A)
-            y = similar(x, promote_type(eltype(A), eltype(x)), A.N)
-            A.fc(y,x)
-        else
-            y = A.fc(x)
-        end
-        return y
     else
         error("adjoint not implemented for $A")
     end

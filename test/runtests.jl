@@ -1,6 +1,6 @@
-if VERSION < v"0.7.0-DEV.2005"
-    const Test = Base.Test
-end
+# if VERSION < v"0.7.0-DEV.2005"
+#     const Test = Base.Test
+# end
 
 using Test
 using LinearMaps
@@ -31,13 +31,22 @@ w = rand(ComplexF64,20)
 M = LinearMap(A)
 @test M*v == A*v
 
-# test transposition and Array
+# test transposition and Matrix
 @test M'*w == A'*w
 @test transpose(M)*w == transpose(A)*w
 
+@test Matrix(M) == A
 @test Array(M) == A
-@test Array(M') == A'
-@test Array(transpose(M)) == copy(transpose(A))
+@test Matrix(M') == A'
+@test Matrix(transpose(M)) == copy(transpose(A))
+
+B = LinearMap(Symmetric(rand(10, 10)))
+@test transpose(B) == B
+@test B == transpose(B)
+
+B = LinearMap(Hermitian(rand(ComplexF64, 10, 10)))
+@test adjoint(B) == B
+@test B == B'
 
 # test sparse conversions
 @test sparse(M) == SparseArrays.sparse(Array(M))
@@ -54,15 +63,17 @@ F = LinearMap(cumsum,2)
 
 N = 100
 F = LinearMap{ComplexF64}(myft, N) / sqrt(N)
-U = Array(F) # will be a unitary matrix
+U = Matrix(F) # will be a unitary matrix
 @test U'*U ≈ Matrix{eltype(U)}(I, N, N)
 
 F = LinearMap(cumsum,10)
 @test F*v == cumsum(v)
+@test *(F, v) == cumsum(v)
 @test_throws ErrorException F'*v
 
 F = LinearMap((y,x) -> y .= cumsum(x),10)
 @test F*v == cumsum(v)
+@test *(F, v) == cumsum(v)
 @test_throws ErrorException F'*v
 
 # Test fallback methods:
@@ -75,9 +86,9 @@ A = 2*rand(ComplexF64,(10,10)) .- 1
 M = LinearMap(A)
 v = rand(ComplexF64,10)
 
-@test Array(3*M)  ==  3*A
+@test Matrix(3*M)  ==  3*A
 @test Array(M+A) == 2*A
-@test Array(-M) == -A
+@test Matrix(-M) == -A
 @test Array(3*M'-F) == 3*A'-Array(F)
 @test (3*M-1im*F)' == 3*M'+1im*F'
 
@@ -86,7 +97,7 @@ v = rand(ComplexF64,10)
 # test composition
 @test (F*F)*v == F*(F*v)
 @test (F*A)*v == F*(A*v)
-@test Array(M*transpose(M)) ≈ A*transpose(A)
+@test Matrix(M*transpose(M)) ≈ A*transpose(A)
 @test !isposdef(M*transpose(M))
 @test isposdef(M*M')
 @test isposdef(transpose(F)*F)
@@ -94,7 +105,7 @@ v = rand(ComplexF64,10)
 @test transpose(M*F) == transpose(F)*transpose(M)
 
 L = 3*F+1im*A + F*M'*F
-LF = 3*Array(F) + 1im*A + Array(F)*Array(M)'*Array(F)
+LF = 3*Matrix(F) + 1im*A + Matrix(F)*Matrix(M)'*Matrix(F)
 @test Array(L) ≈ LF
 
 # test inplace operations

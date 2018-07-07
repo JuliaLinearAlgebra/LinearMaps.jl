@@ -29,13 +29,9 @@ A_mul_B!(y::AbstractVector, A::WrappedMap, x::AbstractVector) = A_mul_B!(y, A.lm
 
 At_mul_B!(y::AbstractVector, A::WrappedMap, x::AbstractVector) =
     (issymmetric(A) || (isreal(A) && ishermitian(A))) ? A_mul_B!(y, A.lmap, x) : At_mul_B!(y, A.lmap, x)
-At_mul_B(A::WrappedMap, x::AbstractVector) =
-    (issymmetric(A) || (isreal(A) && ishermitian(A))) ? *(A.lmap, x) : At_mul_B(A.lmap, x)
 
 Ac_mul_B!(y::AbstractVector, A::WrappedMap, x::AbstractVector) =
     ishermitian(A) ? A_mul_B!(y, A.lmap, x) : Ac_mul_B!(y, A.lmap, x)
-Ac_mul_B(A::WrappedMap, x::AbstractVector) =
-    ishermitian(A) ? *(A.lmap, x) : Ac_mul_B(A.lmap, x)
 
 # combine LinearMap and Matrix objects: linear combinations and map composition
 Base.:(+)(A1::LinearMap, A2::AbstractMatrix) = +(A1, WrappedMap(A2))
