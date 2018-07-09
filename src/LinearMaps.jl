@@ -6,8 +6,6 @@ export LinearMap
 using LinearAlgebra
 import SparseArrays
 
-import Base: +, -, *, \, /, ==
-
 abstract type LinearMap{T} end
 
 Base.eltype(::LinearMap{T}) where {T} = T
@@ -86,7 +84,7 @@ include("functionmap.jl") # using a function as linear map
 
 Construct a linear map object, either from an existing `LinearMap` or `AbstractMatrix` `A`,
 with the purpose of redefining its properties via the keyword arguments `kwargs`, or
-from a function or callable object `f`. In the latter case, one also needs to specialize
+from a function or callable object `f`. In the latter case, one also needs to specify
 the size of the equivalent matrix representation `(M, N)`, i.e. for functions `f` acting
 on length `N` vectors and producing length `M` vectors (with default value `N=M`). Preferably,
 also the `eltype` `T` of the corresponding matrix representation needs to be specified, i.e.
