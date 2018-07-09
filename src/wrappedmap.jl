@@ -4,13 +4,13 @@ struct WrappedMap{T, A<:Union{AbstractMatrix, LinearMap}} <: LinearMap{T}
     _ishermitian::Bool
     _isposdef::Bool
 end
-function (::Type{WrappedMap})(lmap::Union{AbstractMatrix{T}, LinearMap{T}};
+function WrappedMap(lmap::Union{AbstractMatrix{T}, LinearMap{T}};
     issymmetric::Bool = issymmetric(lmap),
     ishermitian::Bool = ishermitian(lmap),
     isposdef::Bool = isposdef(lmap)) where {T}
     WrappedMap{T,typeof(lmap)}(lmap, issymmetric, ishermitian, isposdef)
 end
-function (::Type{WrappedMap{T}})(lmap::Union{AbstractMatrix, LinearMap};
+function WrappedMap{T}(lmap::Union{AbstractMatrix, LinearMap};
     issymmetric::Bool = issymmetric(lmap),
     ishermitian::Bool = ishermitian(lmap),
     isposdef::Bool = isposdef(lmap)) where {T}

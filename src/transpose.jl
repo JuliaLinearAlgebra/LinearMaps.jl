@@ -14,10 +14,10 @@ LinearAlgebra.adjoint(A::LinearMap{<:Real}) = transpose(A)
 LinearAlgebra.adjoint(A::LinearMap) = AdjointMap(A)
 
 # properties
-Base.size(A::Union{TransposeMap,AdjointMap}) = (size(A.lmap,2), size(A.lmap,1))
-LinearAlgebra.issymmetric(A::Union{TransposeMap,AdjointMap}) = issymmetric(A.lmap)
-LinearAlgebra.ishermitian(A::Union{TransposeMap,AdjointMap}) = ishermitian(A.lmap)
-LinearAlgebra.isposdef(A::Union{TransposeMap,AdjointMap}) = isposdef(A.lmap)
+Base.size(A::Union{TransposeMap, AdjointMap}) = (size(A.lmap,2), size(A.lmap,1))
+LinearAlgebra.issymmetric(A::Union{TransposeMap, AdjointMap}) = issymmetric(A.lmap)
+LinearAlgebra.ishermitian(A::Union{TransposeMap, AdjointMap}) = ishermitian(A.lmap)
+LinearAlgebra.isposdef(A::Union{TransposeMap, AdjointMap}) = isposdef(A.lmap)
 
 # comparison of TransposeMap objects
 Base.:(==)(A::TransposeMap, B::TransposeMap) = A.lmap == B.lmap

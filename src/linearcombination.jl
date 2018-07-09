@@ -13,7 +13,7 @@ struct LinearCombination{T, As<:Tuple{Vararg{LinearMap}}, Ts<:Tuple} <: LinearMa
     end
 end
 
-(::Type{LinearCombination{T}})(maps::As, coeffs::Ts) where {T,As,Ts} = LinearCombination{T,As,Ts}(maps, coeffs)
+LinearCombination{T}(maps::As, coeffs::Ts) where {T, As, Ts} = LinearCombination{T, As, Ts}(maps, coeffs)
 
 # basic methods
 Base.size(A::LinearCombination) = size(A.maps[1])

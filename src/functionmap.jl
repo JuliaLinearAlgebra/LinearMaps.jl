@@ -8,18 +8,18 @@ struct FunctionMap{T,F1,F2} <: LinearMap{T}
     _ishermitian::Bool
     _isposdef::Bool
 end
-function (::Type{FunctionMap{T}})(f::F1, fc::F2, M::Int, N::Int;
-    ismutating::Bool    = _ismutating(f),
-    issymmetric::Bool   = false,
-    ishermitian::Bool   = (T<:Real && issymmetric),
-    isposdef::Bool      = false) where {T,F1,F2}
+function FunctionMap{T}(f::F1, fc::F2, M::Int, N::Int;
+    ismutating::Bool  = _ismutating(f),
+    issymmetric::Bool = false,
+    ishermitian::Bool = (T<:Real && issymmetric),
+    isposdef::Bool    = false) where {T,F1,F2}
     FunctionMap{T,F1,F2}(f, fc, M, N, ismutating, issymmetric, ishermitian, isposdef)
 end
 
 # additional constructors
-(::Type{FunctionMap{T}})(f, M::Int; kwargs...) where {T}         = FunctionMap{T}(f, nothing, M, M; kwargs...)
-(::Type{FunctionMap{T}})(f, M::Int, N::Int; kwargs...) where {T} = FunctionMap{T}(f, nothing, M, N; kwargs...)
-(::Type{FunctionMap{T}})(f, fc, M::Int; kwargs...) where {T}     = FunctionMap{T}(f, fc, M, M; kwargs...)
+FunctionMap{T}(f, M::Int; kwargs...) where {T}         = FunctionMap{T}(f, nothing, M, M; kwargs...)
+FunctionMap{T}(f, M::Int, N::Int; kwargs...) where {T} = FunctionMap{T}(f, nothing, M, N; kwargs...)
+FunctionMap{T}(f, fc, M::Int; kwargs...) where {T}     = FunctionMap{T}(f, fc, M, M; kwargs...)
 
 # show
 function Base.show(io::IO, A::FunctionMap{T}) where {T}

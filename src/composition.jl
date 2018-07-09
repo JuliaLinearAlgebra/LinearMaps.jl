@@ -1,6 +1,6 @@
-struct CompositeMap{T,As<:Tuple{Vararg{LinearMap}}} <: LinearMap{T}
+struct CompositeMap{T, As<:Tuple{Vararg{LinearMap}}} <: LinearMap{T}
     maps::As # stored in order of application to vector
-    function CompositeMap{T,As}(maps::As) where {T,As}
+    function CompositeMap{T, As}(maps::As) where {T, As}
         N = length(maps)
         for n = 2:N
             size(maps[n],2) == size(maps[n-1],1) || throw(DimensionMismatch("CompositeMap"))
@@ -11,7 +11,7 @@ struct CompositeMap{T,As<:Tuple{Vararg{LinearMap}}} <: LinearMap{T}
         new{T,As}(maps)
     end
 end
-(::Type{CompositeMap{T}})(maps::As) where {T,As<:Tuple{Vararg{LinearMap}}} = CompositeMap{T,As}(maps)
+CompositeMap{T}(maps::As) where {T, As<:Tuple{Vararg{LinearMap}}} = CompositeMap{T, As}(maps)
 
 # basic methods
 Base.size(A::CompositeMap) = (size(A.maps[end], 1), size(A.maps[1], 2))
