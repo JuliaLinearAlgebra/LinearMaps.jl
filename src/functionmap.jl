@@ -22,6 +22,9 @@ FunctionMap{T}(f, M::Int, N::Int; kwargs...) where {T} = FunctionMap{T}(f, nothi
 FunctionMap{T}(f, fc, M::Int; kwargs...) where {T}     = FunctionMap{T}(f, fc, M, M; kwargs...)
 
 # show
+function Base.show(io::IO, A::FunctionMap{T,F,Nothing}) where {T,F}
+    print(io,"LinearMaps.FunctionMap{$T}($(A.f), $(A.M), $(A.N); ismutating=$(A._ismutating), issymmetric=$(A._issymmetric), ishermitian=$(A._ishermitian), isposdef=$(A._isposdef))")
+end
 function Base.show(io::IO, A::FunctionMap{T}) where {T}
     print(io,"LinearMaps.FunctionMap{$T}($(A.f), $(A.fc), $(A.M), $(A.N); ismutating=$(A._ismutating), issymmetric=$(A._issymmetric), ishermitian=$(A._ishermitian), isposdef=$(A._isposdef))")
 end

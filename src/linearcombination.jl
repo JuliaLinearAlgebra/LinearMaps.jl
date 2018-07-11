@@ -68,7 +68,7 @@ function Base.:(*)(α::Number, A::LinearMap)
     return LinearCombination{T}(tuple(A), tuple(α))
 end
 Base.:(*)(A::LinearMap, α::Number) = *(α, A)
-function *(α::Number, A::LinearCombination)
+function Base.:(*)(α::Number, A::LinearCombination)
     T = promote_type(eltype(α), eltype(A))
     return LinearCombination{T}(A.maps, map(x->α*x, A.coeffs))
 end
@@ -79,7 +79,7 @@ function Base.:(\)(α::Number, A::LinearMap)
     return LinearCombination{T}(tuple(A), tuple(1/α))
 end
 Base.:(/)(A::LinearMap, α::Number) = \(α, A)
-function \(α::Number, A::LinearCombination)
+function Base.:(\)(α::Number, A::LinearCombination)
     T = promote_type(eltype(α), eltype(A))
     return LinearCombination{T}(A.maps, map(x->α\x, A.coeffs))
 end

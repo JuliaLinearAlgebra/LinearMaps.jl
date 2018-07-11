@@ -25,7 +25,7 @@ LinearAlgebra.isposdef(A::WrappedMap) = A._isposdef
 
 # multiplication with vector
 A_mul_B!(y::AbstractVector, A::WrappedMap, x::AbstractVector) = A_mul_B!(y, A.lmap, x)
-*(A::WrappedMap, x::AbstractVector) = *(A.lmap, x)
+Base.:(*)(A::WrappedMap, x::AbstractVector) = *(A.lmap, x)
 
 At_mul_B!(y::AbstractVector, A::WrappedMap, x::AbstractVector) =
     (issymmetric(A) || (isreal(A) && ishermitian(A))) ? A_mul_B!(y, A.lmap, x) : At_mul_B!(y, A.lmap, x)
