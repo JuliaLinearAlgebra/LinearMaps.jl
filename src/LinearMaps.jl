@@ -25,6 +25,16 @@ function LinearAlgebra.mul!(y::AbstractVector, A::LinearMap, x::AbstractVector)
     length(y) == size(A, 1) || throw(DimensionMismatch("mul!"))
     A_mul_B!(y, A, x)
 end
+# the following is of interested in, e.g., subspace-iterative methods
+function LinearAlgebra.mul!(Y::AbstractMatrix, A::LinearMap, X::AbstractMatrix)
+    (size(Y, 1) == size(A, 1) && size(X, 1) == size(A, 2) && size(Y, 2) == size(X, 2)) || throw(DimensionMismatch("mul!"))
+    Y .= Matrix(A * X)
+    return Y
+end
+# the following is required for TSVD.jl
+function LinearAlgebra.mul!(α::Number, A::LinearMap, x::Vector, β::Number, y::Vector)
+    y .= α * A * x + β * y
+end
 
 A_mul_B!(y::AbstractVector, A::AbstractMatrix, x::AbstractVector) = mul!(y, A, x)
 At_mul_B!(y::AbstractVector, A::AbstractMatrix, x::AbstractVector) = mul!(y, transpose(A), x)
@@ -45,6 +55,8 @@ function Base.Matrix(A::LinearMap)
 end
 
 Base.Array(A::LinearMap) = Base.Matrix(A)
+Base.convert(::Type{Matrix}, A:: LinearMap) = Matrix(A)
+Base.convert(::Type{Array}, A:: LinearMap) = Matrix(A)
 
 # sparse: create sparse matrix representation of LinearMap
 function SparseArrays.sparse(A::LinearMap)

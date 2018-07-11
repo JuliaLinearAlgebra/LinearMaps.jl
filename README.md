@@ -5,14 +5,11 @@
 [![License](http://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat)](LICENSE.md)
 [![Coverage Status](https://coveralls.io/repos/github/Jutho/LinearMaps.jl/badge.svg?branch=master)](https://coveralls.io/github/Jutho/LinearMaps.jl?branch=master)
 [![codecov.io](http://codecov.io/github/Jutho/LinearMaps.jl/coverage.svg?branch=master)](http://codecov.io/github/Jutho/LinearMaps.jl?branch=master)
+
 A Julia package for defining and working with linear maps, also known as linear transformations or linear operators acting on vectors. The only requirement for a LinearMap is that it can act on a vector (by multiplication) efficiently.
 
 ## What's new.
-*   Fully julia v0.7 compatible; dropped compatibility for previous versions of Julia.
-
-*   `LinearMap` is now the name of the abstract type on top (used to be `AbstractLinearMap` because you could not have a function/constructor with the same name as an abstract type in older julia versions)
-
-*   Specifying the `eltype` of a function to be used as linear map should now use the constructor `LinearMap{T}(f, ...)`.
+*   Fully Julia v0.7 compatible; dropped compatibility for previous versions of Julia from LinearMaps.jl version 2.+ on.
 
 ## Installation
 
@@ -24,9 +21,11 @@ Several iterative linear algebra methods such as linear solvers or eigensolvers 
 
 The LinearMaps package provides the following functionality:
 
-1.  An abstract type `LinearMap` that shares with the `AbstractMatrix` type that it responds to the functions `size`, `eltype`, `isreal`, `issymmetric`, `ishermitian` and `isposdef`, `transpose` and `adjoint` and multiplication with a vector using both `*` or the in-place version `mul!`. Linear algebra functions that uses duck-typing for its arguments can handle `LinearMap` objects similar to `AbstractMatrix` objects, provided that they can be written using the above methods. Unlike `AbstractMatrix` types, `LinearMap` objects cannot be indexed, neither using `getindex` or `setindex!`. The type `LinearMap` acts as a general purpose constructor and allows to construct linear map objects from functions, or to wrap objects of type `AbstractMatrix` or `LinearMap`. The latter functionality is useful to (re)define the properties (`isreal`, `issymmetric`, `ishermitian`, `isposdef`) of the existing matrix or linear map.
+1.  A `LinearMap` type that shares with the `AbstractMatrix` type that it responds to the functions `size`, `eltype`, `isreal`, `issymmetric`, `ishermitian` and `isposdef`, `transpose` and `adjoint` and multiplication with a vector using both `*` or the in-place version `mul!`. Linear algebra functions that uses duck-typing for its arguments can handle `LinearMap` objects similar to `AbstractMatrix` objects, provided that they can be written using the above methods. Unlike `AbstractMatrix` types, `LinearMap` objects cannot be indexed, neither using `getindex` or `setindex!`.
 
-2.  A framework for combining objects of type `LinearMap` and of type `AbstractMatrix` using linear combinations, transposition and composition, where the linear map resulting from these operations is never explicitly evaluated but only its matrix vector product is defined (i.e. lazy evaluation). The matrix vector product is written to minimize memory allocation by using a minimal number of temporary vectors. There is full support for the in-place version `mul!`, which should be preferred for higher efficiency in critical algorithms. In addition, it tries to recognize the properties of combinations of linear maps. In particular, compositions such as `A'*A` for arbitrary `A` or even `A'*B*C*B'*A` with arbitrary `A` and `B` and positive definite `C` are recognized as being positive definite and hermitian. In case a certain property of the resulting `LinearMap` object is not correctly inferred, the `LinearMap` method can be called to redefine the properties.
+2.  A single method `LinearMap` function that acts as a general purpose constructor (though it is only an abstract type) and allows to construct linear map objects from functions, or to wrap objects of type `AbstractMatrix` or `LinearMap`. The latter functionality is useful to (re)define the properties (`isreal`, `issymmetric`, `ishermitian`, `isposdef`) of the existing matrix or linear map.
+
+3.  A framework for combining objects of type `LinearMap` and of type `AbstractMatrix` using linear combinations, transposition and composition, where the linear map resulting from these operations is never explicitly evaluated but only its matrix vector product is defined (i.e. lazy evaluation). The matrix vector product is written to minimize memory allocation by using a minimal number of temporary vectors. There is full support for the in-place version `mul!`, which should be preferred for higher efficiency in critical algorithms. In addition, it tries to recognize the properties of combinations of linear maps. In particular, compositions such as `A'*A` for arbitrary `A` or even `A'*B*C*B'*A` with arbitrary `A` and `B` and positive definite `C` are recognized as being positive definite and hermitian. In case a certain property of the resulting `LinearMap` object is not correctly inferred, the `LinearMap` method can be called to redefine the properties.
 
 ## Methods
 
@@ -55,20 +54,28 @@ The LinearMaps package provides the following functionality:
 
     In summary, the keyword arguments and their default values are:
 
-    *   `ismutating`: `false` if the function `f` accepts a single vector argument corresponding to the input, and `true` if they accept two vector arguments where the first will be mutated so as to contain the result. In both cases, the resulting `A::FunctionMap` will support both the mutating as non-mutating matrix vector multiplication. Default value is guessed based on the number of arguments for the first method in the method list of `f`; it is not possible to use `f` and `fc` where only one of the two is mutating and the other is not.
-    *   `issymmetric [=false]`: whether the function represents the multiplication with a symmetric matrix. If `true`, this will automatically enable `A'*x` and `A.'*x`.
-    *   `ishermitian [=T<:Real && issymmetric]`: whether the function represents the multiplication with a hermitian matrix. If `true`, this will automatically enable `A'*x` and `A.'*x`.
+    *   `ismutating`: `false` if the function `f` accepts a single vector argument corresponding to the input, and `true` if it accepts two vector arguments where the first will be mutated so as to contain the result. In both cases, the resulting `A::FunctionMap` will support both the mutating and non-mutating matrix vector multiplication. Default value is guessed based on the number of arguments for the first method in the method list of `f`; it is not possible to use `f` and `fc` where only one of the two is mutating and the other is not.
+    *   `issymmetric [=false]`: whether the function represents the multiplication with a symmetric matrix. If `true`, this will automatically enable `A' * x` and `transpose(A) * x`.
+    *   `ishermitian [=T<:Real && issymmetric]`: whether the function represents the multiplication with a hermitian matrix. If `true`, this will automatically enable `A' * x` and `transpose(A) * x`.
     *   `isposdef [=false]`: whether the function represents the multiplication with a positive definite matrix.
 
-*   `Base.Array(linearmap)`
+*   `Base.Array(A::LinearMap)`, `Base.Matrix(A::LinearMap)`, `Base.convert(Matrix, A::LinearMap)` and `Base.convert(Array, A::LinearMap)`
 
-    Creates a dense matrix representation of the `linearmap` object, by multiplying it with the successive basis vectors. This is mostly for testing purposes or if you want to have the explicit matrix representation of a linear map for which you only have a function definition (e.g. to be able to use its `transpose` or `adjoint`).
+    Creates a dense matrix representation of the `LinearMap` object, by multiplying it with the successive basis vectors. This is mostly for testing purposes or if you want to have the explicit matrix representation of a linear map for which you only have a function definition (e.g. to be able to use its `transpose` or `adjoint`). This way, one may conveniently make `A` act on the columns of a matrix `X`, instead of interpreting `A * X` as a composed linear map: `Matrix(A * X)`.
 
-*   `SparseArrays.sparse(linearmap)`
 
-    Creates a sparse matrix representation of the `linearmap` object, by multiplying it with the successive basis vectors. This is mostly for testing purposes or if you want to have the explicit sparse matrix representation of a linear map for which you only have a function definition (e.g. to be able to use its `transpose` or `adjoint`).
+*   `SparseArrays.sparse(::LinearMap)`
 
-*   All matrix multiplication methods and the corresponding mutating versions.
+    Creates a sparse matrix representation of the `LinearMap` object, by multiplying it with the successive basis vectors. This is mostly for testing purposes or if you want to have the explicit sparse matrix representation of a linear map for which you only have a function definition (e.g. to be able to use its `transpose` or `adjoint`).
+
+*   The following matrix multiplication methods.
+
+    * `A * x`: applies `A` to `x` and returns the result;
+    * `mul!(y::AbstractVector, A::LinearMap, x::AbstractVector)`: applies `A` to `x` and stores the result in `y`;
+    * `mul!(Y::AbstractMatrix, A::LinearMap, X::AbstractMatrix)`: applies `A` to each column of `X` and stores the results in the corresponding columns of `Y`;
+    * `mul!(α::Number, A::LinearMap, x::Vector, β::Number, y::Vector)`: computes `α * A * x + β * y` and stores the result in `y`.
+
+    Applying the adjoint or tranpose of `A` (if defined) to `x` works exactly as in the usual matrix case.
 
 ## Types
 
@@ -94,31 +101,36 @@ None of the types below need to be constructed directly; they arise from perform
 
     Used to add and multiply `LinearMap` objects, don't need to be constructed explicitly.
 
-## Examples
+## Example
 
 The `LinearMap` object combines well with the iterative eigensolver `eigs` from [Arpack.jl](https://github.com/JuliaLinearAlgebra/Arpack.jl) and with iterative solvers from [IterativeSolvers.jl](https://github.com/JuliaMath/IterativeSolvers.jl).
 
 ```
 using LinearMaps
+import Arpack, IterativeSolvers
 
 function leftdiff!(y::AbstractVector, x::AbstractVector) # left difference assuming periodic boundary conditions
-    N=length(x)
-    length(y)==N || throw(DimensionMismatch())
-        @inbounds for i=1:N
-    y[i]=x[i]-x[mod1(i-1,N)]
+    N = length(x)
+    length(y) == N || throw(DimensionMismatch())
+    @inbounds for i=1:N
+        y[i] = x[i] - x[mod1(i-1, N)]
     end
     return y
 end
 
 function mrightdiff!(y::AbstractVector, x::AbstractVector) # minus right difference
-    N=length(x)
-    length(y)==N || throw(DimensionMismatch())
+    N = length(x)
+    length(y) == N || throw(DimensionMismatch())
     @inbounds for i=1:N
-        y[i]=x[i]-x[mod1(i+1,N)]
+        y[i] = x[i] - x[mod1(i+1, N)]
     end
     return y
 end
 
-D=LinearMap(leftdiff!, mrightdiff!, 100; ismutating=true)
-eigs(D'*D;nev=3,which=:SR)
+D = LinearMap(leftdiff!, mrightdiff!, 100; ismutating=true) # by default has eltype(D) = Float64
+
+Arpack.eigs(D' * D; nev=3, which=:SR) # note that D' * D is recognized as symmetric => real eigenfact
+Arpack.svds(D; nsv=3)
+
+Σ, L = IterativeSolvers.svdl(D; nsv=3)
 ```
