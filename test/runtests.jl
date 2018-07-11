@@ -1,3 +1,7 @@
+# if VERSION < v"0.7.0-DEV.2005"
+#     const Test = Base.Test
+# end
+
 using Test
 using LinearMaps
 using SparseArrays
@@ -19,32 +23,20 @@ function myft(v::AbstractVector)
     return w
 end
 
-A = 2 * rand(ComplexF64, (20, 10)) .- 1
-v = rand(ComplexF64, 10)
-w = rand(ComplexF64, 20)
-V = rand(ComplexF64, 10, 3)
-W = rand(ComplexF64, 20, 3)
+A = 2*rand(ComplexF64,(20,10)).-1
+v = rand(ComplexF64,10)
+w = rand(ComplexF64,20)
 
 # test wrapped map for matrix
 M = LinearMap(A)
-@test M * v == A * v
-mul!(W, M, V)
-@test W ≈ A * V
-@test typeof(M * V) <: LinearMap
+@test M*v == A*v
 
 # test transposition and Matrix
-@test M' * w == A' * w
-mul!(V, adjoint(M), W)
-@test V ≈ A' * W
-
-@test transpose(M) * w == transpose(A) * w
-mul!(V, transpose(M), W)
-@test V ≈ transpose(A) * W
+@test M'*w == A'*w
+@test transpose(M)*w == transpose(A)*w
 
 @test Matrix(M) == A
 @test Array(M) == A
-@test convert(Matrix, M) == A
-@test convert(Array, M) == A
 @test Matrix(M') == A'
 @test Matrix(transpose(M)) == copy(transpose(A))
 
