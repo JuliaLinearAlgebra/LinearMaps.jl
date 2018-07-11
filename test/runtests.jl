@@ -45,6 +45,7 @@ mul!(V, transpose(M), W)
 @test Array(M) == A
 @test convert(Matrix, M) == A
 @test convert(Array, M) == A
+
 @test Matrix(M') == A'
 @test Matrix(transpose(M)) == copy(transpose(A))
 

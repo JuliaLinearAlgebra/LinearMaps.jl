@@ -25,6 +25,7 @@ function LinearAlgebra.mul!(y::AbstractVector, A::LinearMap, x::AbstractVector)
     length(y) == size(A, 1) || throw(DimensionMismatch("mul!"))
     A_mul_B!(y, A, x)
 end
+
 # the following is of interested in, e.g., subspace-iterative methods
 function LinearAlgebra.mul!(Y::AbstractMatrix, A::LinearMap, X::AbstractMatrix)
     (size(Y, 1) == size(A, 1) && size(X, 1) == size(A, 2) && size(Y, 2) == size(X, 2)) || throw(DimensionMismatch("mul!"))
