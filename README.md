@@ -9,7 +9,6 @@
 A Julia package for defining and working with linear maps, also known as linear transformations or linear operators acting on vectors. The only requirement for a LinearMap is that it can act on a vector (by multiplication) efficiently.
 
 ## What's new.
-
 *   Fully Julia v0.7 compatible; dropped compatibility for previous versions of Julia from LinearMaps.jl version 2.+ on.
 
 ## Installation
@@ -60,7 +59,6 @@ The LinearMaps package provides the following functionality:
     *   `ishermitian [=T<:Real && issymmetric]`: whether the function represents the multiplication with a hermitian matrix. If `true`, this will automatically enable `A' * x` and `transpose(A) * x`.
     *   `isposdef [=false]`: whether the function represents the multiplication with a positive definite matrix.
 
-
 *   `Base.Array(A::LinearMap)`, `Base.Matrix(A::LinearMap)`, `Base.convert(Matrix, A::LinearMap)` and `Base.convert(Array, A::LinearMap)`
 
     Creates a dense matrix representation of the `LinearMap` object, by multiplying it with the successive basis vectors. This is mostly for testing purposes or if you want to have the explicit matrix representation of a linear map for which you only have a function definition (e.g. to be able to use its `transpose` or `adjoint`). This way, one may conveniently make `A` act on the columns of a matrix `X`, instead of interpreting `A * X` as a composed linear map: `Matrix(A * X)`.
@@ -109,7 +107,7 @@ The `LinearMap` object combines well with the iterative eigensolver `eigs` from 
 
 ```
 using LinearMaps
-import Arpack, IterativeSolvers
+import Arpack, IterativeSolvers, TSVD
 
 function leftdiff!(y::AbstractVector, x::AbstractVector) # left difference assuming periodic boundary conditions
     N = length(x)

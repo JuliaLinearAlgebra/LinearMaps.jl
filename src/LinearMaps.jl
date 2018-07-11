@@ -25,16 +25,22 @@ function LinearAlgebra.mul!(y::AbstractVector, A::LinearMap, x::AbstractVector)
     length(y) == size(A, 1) || throw(DimensionMismatch("mul!"))
     A_mul_B!(y, A, x)
 end
-
 # the following is of interested in, e.g., subspace-iterative methods
 function LinearAlgebra.mul!(Y::AbstractMatrix, A::LinearMap, X::AbstractMatrix)
     (size(Y, 1) == size(A, 1) && size(X, 1) == size(A, 2) && size(Y, 2) == size(X, 2)) || throw(DimensionMismatch("mul!"))
-    Y .= Matrix(A * X)
+    @inbounds @views for i=1:size(X, 2)
+        mul!(Y[:, i], A, X[:, i])
+    end
     return Y
 end
 # the following is required for TSVD.jl
-function LinearAlgebra.mul!(α::Number, A::LinearMap, x::Vector, β::Number, y::Vector)
-    y .= α * A * x + β * y
+function LinearAlgebra.mul!(α::Number, A::LinearMap, x::AbstractVector, β::Number, y::AbstractVector)
+    if β != one(β)
+        β == zero(β) ? fill!(y, zero(eltype(y))) : rmul!(y, β)
+    end
+    α == zero(α) && return y
+    rmul!(x, α)
+    y .+= A * x # the rhs allocates
 end
 
 A_mul_B!(y::AbstractVector, A::AbstractMatrix, x::AbstractVector) = mul!(y, A, x)
