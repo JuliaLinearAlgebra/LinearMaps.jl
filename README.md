@@ -59,15 +59,23 @@ The LinearMaps package provides the following functionality:
     *   `ishermitian [=T<:Real && issymmetric]`: whether the function represents the multiplication with a hermitian matrix. If `true`, this will automatically enable `A' * x` and `transpose(A) * x`.
     *   `isposdef [=false]`: whether the function represents the multiplication with a positive definite matrix.
 
-*   `Base.Array(A::LinearMap)` and `Base.Matrix(A::LinearMap)``
+*   `Base.Array(A::LinearMap)`, `Base.Matrix(A::LinearMap)`, `Base.convert(Matrix, A::LinearMap)` and `Base.convert(Array, A::LinearMap)`
 
-    Creates a dense matrix representation of the `LinearMap` object, by multiplying it with the successive basis vectors. This is mostly for testing purposes or if you want to have the explicit matrix representation of a linear map for which you only have a function definition (e.g. to be able to use its `transpose` or `adjoint`).
+    Creates a dense matrix representation of the `LinearMap` object, by multiplying it with the successive basis vectors. This is mostly for testing purposes or if you want to have the explicit matrix representation of a linear map for which you only have a function definition (e.g. to be able to use its `transpose` or `adjoint`). This way, one may conveniently make `A` act on the columns of a matrix `X`, instead of interpreting `A * X` as a composed linear map: `Matrix(A * X)`.
+
 
 *   `SparseArrays.sparse(::LinearMap)`
 
     Creates a sparse matrix representation of the `LinearMap` object, by multiplying it with the successive basis vectors. This is mostly for testing purposes or if you want to have the explicit sparse matrix representation of a linear map for which you only have a function definition (e.g. to be able to use its `transpose` or `adjoint`).
 
-*   All matrix multiplication methods and the corresponding mutating versions.
+*   The following matrix multiplication methods.
+
+    * `A * x`: applies `A` to `x` and returns the result;
+    * `mul!(y::AbstractVector, A::LinearMap, x::AbstractVector)`: applies `A` to `x` and stores the result in `y`;
+    * `mul!(Y::AbstractMatrix, A::LinearMap, X::AbstractMatrix)`: applies `A` to each column of `X` and stores the results in the corresponding columns of `Y`;
+    * `mul!(α::Number, A::LinearMap, x::Vector, β::Number, y::Vector)`: computes `α * A * x + β * y` and stores the result in `y`.
+
+    Applying the adjoint or tranpose of `A` (if defined) to `x` works exactly as in the usual matrix case.
 
 ## Types
 
@@ -121,8 +129,8 @@ end
 
 D = LinearMap(leftdiff!, mrightdiff!, 100; ismutating=true) # by default has eltype(D) = Float64
 
-Arpack.eigs(D' * D; nev=3, which=:SR) # note that D' * D is recognized as symmetric
-# Arpack.svds(D; nsv=3) # does not work yet, WIP @Arpack.jl
+Arpack.eigs(D' * D; nev=3, which=:SR) # note that D' * D is recognized as symmetric => real eigenfact
+Arpack.svds(D; nsv=3)
 
 Σ, L = IterativeSolvers.svdl(D; nsv=3)
 ```
