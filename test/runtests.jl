@@ -38,13 +38,13 @@ mul!(W, M, V)
 @test W ≈ A * V
 @test typeof(M * V) <: LinearMap
 mul!(wdest, M, v, α, β)
-@test wdest == α * A * v + β * wsrc
+@test wdest ≈ α * A * v + β * wsrc
 mul!(wdest, M, v, α)
-@test wdest == α * A * v
+@test wdest ≈ α * A * v
 mul!(Wdest, M, V, α, β)
-@test Wdest == α * A * V + β * Wsrc
+@test Wdest ≈ α * A * V + β * Wsrc
 mul!(Wdest, M, V, α)
-@test Wdest == α * A * V
+@test Wdest ≈ α * A * V
 
 # test transposition and Matrix
 @test M' * w == A' * w
