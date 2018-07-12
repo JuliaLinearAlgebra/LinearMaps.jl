@@ -21,26 +21,37 @@ Base.size(A::LinearMap, n) = (n==1 || n==2 ? size(A)[n] : error("LinearMap objec
 Base.length(A::LinearMap) = size(A)[1] * size(A)[2]
 
 Base.:(*)(A::LinearMap, x::AbstractVector) = mul!(similar(x, promote_type(eltype(A), eltype(x)), size(A, 1)), A, x)
-function LinearAlgebra.mul!(y::AbstractVector, A::LinearMap, x::AbstractVector)
+function LinearAlgebra.mul!(y::AbstractVector, A::LinearMap, x::AbstractVector, α::Number=1, β::Number=0)
     length(y) == size(A, 1) || throw(DimensionMismatch("mul!"))
-    A_mul_B!(y, A, x)
+    if α == one(α)
+        β == zero(β) && (A_mul_B!(y, A, x); return y)
+        β == one(β) && (y .+= A * x; return y)
+        # β != 0, 1
+        rmul!(y, β)
+        y .+= A * x
+        return y
+    elseif α == zero(α)
+        β == zero(β) && (fill!(y, zero(eltype(y))); return y)
+        β == one(β) && return y
+        rmul!(y, β)
+        return y
+    else # α != 0, 1
+        rmul!(x, α)
+        β == zero(β) && (A_mul_B!(y, A, x); return y)
+        β == one(β) && (y .+= A * x; return y)
+        # β != 0, 1
+        rmul!(y, β)
+        y .+= A * x
+        return y
+    end
 end
 # the following is of interest in, e.g., subspace-iterative methods
-function LinearAlgebra.mul!(Y::AbstractMatrix, A::LinearMap, X::AbstractMatrix)
+function LinearAlgebra.mul!(Y::AbstractMatrix, A::LinearMap, X::AbstractMatrix, α::Number=1, β::Number=0)
     (size(Y, 1) == size(A, 1) && size(X, 1) == size(A, 2) && size(Y, 2) == size(X, 2)) || throw(DimensionMismatch("mul!"))
     @inbounds @views for i = 1:size(X, 2)
-        mul!(Y[:, i], A, X[:, i])
+        mul!(Y[:, i], A, X[:, i], α, β)
     end
     return Y
-end
-# the following is required, e.g., for TSVD.jl
-function LinearAlgebra.mul!(y::AbstractVector, A::LinearMap, x::AbstractVector, α::Number=1, β::Number=0)
-    if β != one(β)
-        β == zero(β) ? fill!(y, zero(eltype(y))) : rmul!(y, β)
-    end
-    α == zero(α) && return y
-    rmul!(x, α)
-    y .+= A * x # the rhs allocates
 end
 
 A_mul_B!(y::AbstractVector, A::AbstractMatrix, x::AbstractVector)  = mul!(y, A, x)
