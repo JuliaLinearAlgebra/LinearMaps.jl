@@ -22,8 +22,14 @@ end
 A = 2 * rand(ComplexF64, (20, 10)) .- 1
 v = rand(ComplexF64, 10)
 w = rand(ComplexF64, 20)
+wsrc = copy(w)
+wdest = copy(w)
 V = rand(ComplexF64, 10, 3)
 W = rand(ComplexF64, 20, 3)
+Wsrc = copy(W)
+Wdest = copy(W)
+α = rand()
+β = rand()
 
 # test wrapped map for matrix
 M = LinearMap(A)
@@ -31,6 +37,14 @@ M = LinearMap(A)
 mul!(W, M, V)
 @test W ≈ A * V
 @test typeof(M * V) <: LinearMap
+mul!(wdest, M, v, α, β)
+@test wdest == α * A * v + β * wsrc
+mul!(wdest, M, v, α)
+@test wdest == α * A * v
+mul!(Wdest, M, V, α, β)
+@test Wdest == α * A * V + β * Wsrc
+mul!(Wdest, M, V, α)
+@test Wdest == α * A * V
 
 # test transposition and Matrix
 @test M' * w == A' * w
