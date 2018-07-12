@@ -43,6 +43,9 @@ wdest = copy(w)
 mul!(wdest, M, v, 0, 1)
 @test wdest == w
 wdest = copy(w)
+mul!(wdest, M, v, 0, β)
+@test wdest == β * w
+wdest = copy(w)
 mul!(wdest, M, v, 1, 1)
 @test wdest ≈ A * v + w
 wdest = copy(w)
