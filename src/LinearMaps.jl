@@ -33,6 +33,7 @@ function LinearAlgebra.mul!(y::AbstractVector, A::LinearMap{T}, x::AbstractVecto
     elseif α == zero(α)
         β == zero(β) && (fill!(y, zero(eltype(y))); return y)
         β == one(β) && return y
+        # β != 0, 1
         rmul!(y, β)
         return y
     else # α != 0, 1
@@ -44,7 +45,7 @@ function LinearAlgebra.mul!(y::AbstractVector, A::LinearMap{T}, x::AbstractVecto
         return y
     end
 end
-# the following is of interest in, e.g., subspace-iterative methods
+# the following is of interest in, e.g., subspace-iteration methods
 function LinearAlgebra.mul!(Y::AbstractMatrix, A::LinearMap{T}, X::AbstractMatrix, α::Number=one(T), β::Number=zero(T)) where {T}
     (size(Y, 1) == size(A, 1) && size(X, 1) == size(A, 2) && size(Y, 2) == size(X, 2)) || throw(DimensionMismatch("mul!"))
     @inbounds @views for i = 1:size(X, 2)
