@@ -102,7 +102,10 @@ None of the types below need to be constructed directly; they arise from perform
 
 ## Example
 
-The `LinearMap` object combines well with the iterative eigensolver `eigs` from [Arpack.jl](https://github.com/JuliaLinearAlgebra/Arpack.jl) and with iterative solvers from [IterativeSolvers.jl](https://github.com/JuliaMath/IterativeSolvers.jl).
+The `LinearMap` object combines well with methods of the following packages:
+* [Arpack.jl](https://github.com/JuliaLinearAlgebra/Arpack.jl): iterative eigensolver `eigs` and SVD `svds`;
+* [IterativeSolvers.jl](https://github.com/JuliaMath/IterativeSolvers.jl): iterative solvers, eigensolvers, and SVD;
+* [TSVD.jl](https://github.com/andreasnoack/TSVD.jl): truncated SVD `tsvd`.
 
 ```
 using LinearMaps
@@ -128,7 +131,7 @@ end
 
 D = LinearMap(leftdiff!, mrightdiff!, 100; ismutating=true) # by default has eltype(D) = Float64
 
-Arpack.eigs(D' * D; nev=3, which=:SR) # note that D' * D is recognized as symmetric => real eigenfact
+Arpack.eigs(D'D; nev=3, which=:SR) # note that D'D is recognized as symmetric => real eigenfact
 Arpack.svds(D; nsv=3)
 
 Σ, L = IterativeSolvers.svdl(D; nsv=3)
