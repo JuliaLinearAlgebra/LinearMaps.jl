@@ -28,7 +28,7 @@ Several iterative linear algebra methods such as linear solvers or eigensolvers 
 
 The LinearMaps package provides the following functionality:
 
-1.  A `LinearMap` type that shares with the `AbstractMatrix` type that it responds to the functions `size`, `eltype`, `isreal`, `issymmetric`, `ishermitian` and `isposdef`, `transpose` and `adjoint` and multiplication with a vector using both `*` or the in-place version `mul!`. Linear algebra functions that uses duck-typing for its arguments can handle `LinearMap` objects similar to `AbstractMatrix` objects, provided that they can be written using the above methods. Unlike `AbstractMatrix` types, `LinearMap` objects cannot be indexed, neither using `getindex` or `setindex!`.
+1.  A `LinearMap` type that shares with the `AbstractMatrix` type that it responds to the functions `size`, `eltype`, `isreal`, `issymmetric`, `ishermitian` and `isposdef`, `transpose` and `adjoint` and multiplication with a vector using both `*` or the in-place version `mul!`. Linear algebra functions that use duck-typing for their arguments can handle `LinearMap` objects similar to `AbstractMatrix` objects, provided that they can be written using the above methods. Unlike `AbstractMatrix` types, `LinearMap` objects cannot be indexed, neither using `getindex` or `setindex!`.
 
 2.  A single method `LinearMap` function that acts as a general purpose constructor (though it is only an abstract type) and allows to construct linear map objects from functions, or to wrap objects of type `AbstractMatrix` or `LinearMap`. The latter functionality is useful to (re)define the properties (`isreal`, `issymmetric`, `ishermitian`, `isposdef`) of the existing matrix or linear map.
 
@@ -68,20 +68,20 @@ The LinearMaps package provides the following functionality:
 
 *   `Base.Array(A::LinearMap)`, `Base.Matrix(A::LinearMap)`, `Base.convert(Matrix, A::LinearMap)` and `Base.convert(Array, A::LinearMap)`
 
-    Creates a dense matrix representation of the `LinearMap` object, by multiplying it with the successive basis vectors. This is mostly for testing purposes or if you want to have the explicit matrix representation of a linear map for which you only have a function definition (e.g. to be able to use its `transpose` or `adjoint`). This way, one may conveniently make `A` act on the columns of a matrix `X`, instead of interpreting `A * X` as a composed linear map: `Matrix(A * X)`.
+    Create a dense matrix representation of the `LinearMap` object, by multiplying it with the successive basis vectors. This is mostly for testing purposes or if you want to have the explicit matrix representation of a linear map for which you only have a function definition (e.g. to be able to use its `transpose` or `adjoint`). This way, one may conveniently make `A` act on the columns of a matrix `X`, instead of interpreting `A * X` as a composed linear map: `Matrix(A * X)`.
 
 *   `SparseArrays.sparse(::LinearMap)`
 
-    Creates a sparse matrix representation of the `LinearMap` object, by multiplying it with the successive basis vectors. This is mostly for testing purposes or if you want to have the explicit sparse matrix representation of a linear map for which you only have a function definition (e.g. to be able to use its `transpose` or `adjoint`).
+    Create a sparse matrix representation of the `LinearMap` object, by multiplying it with the successive basis vectors. This is mostly for testing purposes or if you want to have the explicit sparse matrix representation of a linear map for which you only have a function definition (e.g. to be able to use its `transpose` or `adjoint`).
 
 *   The following matrix multiplication methods.
 
     * `A * x`: applies `A` to `x` and returns the result;
     * `mul!(y::AbstractVector, A::LinearMap, x::AbstractVector)`: applies `A` to `x` and stores the result in `y`;
     * `mul!(Y::AbstractMatrix, A::LinearMap, X::AbstractMatrix)`: applies `A` to each column of `X` and stores the results in the corresponding columns of `Y`;
-    * `mul!(y::AbstractVector, A::LinearMap, x::AbstractVector, α::Number=1, β::Number=0)`: computes `α * A * x + β * y` and stores the result in `y`.
+    * `mul!(y::AbstractVector, A::LinearMap, x::AbstractVector, α::Number=1, β::Number=0)`: computes `α * A * x + β * y` and stores the result in `y`. Analogously for `X,Y::AbstractMatrix`.
 
-    Applying the adjoint or transpose of `A` (if defined) to `x` works exactly as in the usual matrix case.
+    Applying the adjoint or transpose of `A` (if defined) to `x` works exactly as in the usual matrix case: `transpose(A) * x` and `mul!(y, A', x)`, for instance.
 
 ## Types
 
