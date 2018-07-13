@@ -1,5 +1,6 @@
 # LinearMaps
 
+[![LinearMaps](http://pkg.julialang.org/badges/LinearMaps_0.6.svg)](http://pkg.julialang.org/?pkg=LinearMaps)
 [![LinearMaps](http://pkg.julialang.org/badges/LinearMaps_0.7.svg)](http://pkg.julialang.org/?pkg=LinearMaps)
 [![Build Status](https://travis-ci.org/Jutho/LinearMaps.jl.svg?branch=master)](https://travis-ci.org/Jutho/LinearMaps.jl)
 [![License](http://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat)](LICENSE.md)
@@ -8,8 +9,14 @@
 
 A Julia package for defining and working with linear maps, also known as linear transformations or linear operators acting on vectors. The only requirement for a LinearMap is that it can act on a vector (by multiplication) efficiently.
 
-## What's new.
-*   Fully Julia v0.7 compatible; dropped compatibility for previous versions of Julia from LinearMaps.jl version 2.+ on.
+## What's new in v2.1.0
+*   Fully Julia v0.7 compatible; dropped compatibility for previous versions of Julia from LinearMaps.jl v2.0.0 on.
+*   A 5-argument version for `mul!(y, A::LinearMap, x, α=1, β=0)`, which computes `y := α * A * x + β * y` and implements the usual 3-argument `mul!(y, A, x)` for the default `α` and `β`.
+*   Synonymous `convert(Matrix, A::LinearMap)` and `convert(Array, A::LinearMap)` functions, that call the `Matrix` constructor and return the matrix representation of `A`.
+*   Multiplication with matrices, interpreted as a block vector of vectors:
+    * `mul!(Y::AbstractArray, A::LinearMap, X::AbstractArray, α=1, β=0)`: applies `A` to each column of `X` and stores the result inplace in the corresponding column of `Y`;
+    * for the not-inplace multiplication, the approach is to compute `convert(Matrix, A * X)`; this is equivalent to applying `A` to each column of `X`. In generic code which handles both `A::AbstractMatrix` and `A::LinearMap`, the additional call to `convert` is a noop when `A` is a matrix.
+*   Full compatibility with [Arpack.jl](https://github.com/JuliaLinearAlgebra/Arpack.jl)'s `eigs` and `svds`; previously only `eigs` was working. For more nicely collaborating packages see the [Example](@ref) section.
 
 ## Installation
 
