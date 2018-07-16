@@ -21,12 +21,40 @@ Base.size(A::LinearMap, n) = (n==1 || n==2 ? size(A)[n] : error("LinearMap objec
 Base.length(A::LinearMap) = size(A)[1] * size(A)[2]
 
 Base.:(*)(A::LinearMap, x::AbstractVector) = mul!(similar(x, promote_type(eltype(A), eltype(x)), size(A, 1)), A, x)
-function LinearAlgebra.mul!(y::AbstractVector, A::LinearMap, x::AbstractVector)
+function LinearAlgebra.mul!(y::AbstractVector, A::LinearMap{T}, x::AbstractVector, α::Number=one(T), β::Number=zero(T)) where {T}
     length(y) == size(A, 1) || throw(DimensionMismatch("mul!"))
-    A_mul_B!(y, A, x)
+    if α == one(α)
+        β == zero(β) && (A_mul_B!(y, A, x); return y)
+        β == one(β) && (y .+= A * x; return y)
+        # β != 0, 1
+        rmul!(y, β)
+        y .+= A * x
+        return y
+    elseif α == zero(α)
+        β == zero(β) && (fill!(y, zero(eltype(y))); return y)
+        β == one(β) && return y
+        # β != 0, 1
+        rmul!(y, β)
+        return y
+    else # α != 0, 1
+        β == zero(β) && (A_mul_B!(y, A, x); rmul!(y, α); return y)
+        β == one(β) && (y .+= rmul!(A * x, α); return y)
+        # β != 0, 1
+        rmul!(y, β)
+        y .+= rmul!(A * x, α)
+        return y
+    end
+end
+# the following is of interest in, e.g., subspace-iteration methods
+function LinearAlgebra.mul!(Y::AbstractMatrix, A::LinearMap{T}, X::AbstractMatrix, α::Number=one(T), β::Number=zero(T)) where {T}
+    (size(Y, 1) == size(A, 1) && size(X, 1) == size(A, 2) && size(Y, 2) == size(X, 2)) || throw(DimensionMismatch("mul!"))
+    @inbounds @views for i = 1:size(X, 2)
+        mul!(Y[:, i], A, X[:, i], α, β)
+    end
+    return Y
 end
 
-A_mul_B!(y::AbstractVector, A::AbstractMatrix, x::AbstractVector) = mul!(y, A, x)
+A_mul_B!(y::AbstractVector, A::AbstractMatrix, x::AbstractVector)  = mul!(y, A, x)
 At_mul_B!(y::AbstractVector, A::AbstractMatrix, x::AbstractVector) = mul!(y, transpose(A), x)
 Ac_mul_B!(y::AbstractVector, A::AbstractMatrix, x::AbstractVector) = mul!(y, adjoint(A), x)
 
@@ -36,7 +64,7 @@ function Base.Matrix(A::LinearMap)
     T = eltype(A)
     mat = Matrix{T}(undef, (M, N))
     v = fill(zero(T), N)
-    for i = 1:N
+    @inbounds for i = 1:N
         v[i] = one(T)
         mul!(view(mat, :, i), A, v)
         v[i] = zero(T)
@@ -45,6 +73,8 @@ function Base.Matrix(A::LinearMap)
 end
 
 Base.Array(A::LinearMap) = Base.Matrix(A)
+Base.convert(::Type{Matrix}, A:: LinearMap) = Matrix(A)
+Base.convert(::Type{Array}, A:: LinearMap) = Matrix(A)
 
 # sparse: create sparse matrix representation of LinearMap
 function SparseArrays.sparse(A::LinearMap)
