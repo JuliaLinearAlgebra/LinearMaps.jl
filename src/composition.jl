@@ -87,7 +87,7 @@ function A_mul_B!(y::AbstractVector, A::CompositeMap, x::AbstractVector)
         A_mul_B!(dest, A.maps[1], x)
         source = dest
         if N>2
-            dest = Array{T}(undef, size(A.maps[2],1))
+            dest = Array{T}(undef, size(A.maps[2], 1))
         end
         for n=2:N-1
             resize!(dest, size(A.maps[n],1))
