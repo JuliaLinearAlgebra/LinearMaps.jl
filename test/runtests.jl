@@ -95,7 +95,8 @@ B = LinearMap(Hermitian(rand(ComplexF64, 10, 10)))
 @test B == B'
 
 # test sparse conversions
-@test sparse(M) == SparseArrays.sparse(Array(M))
+@test sparse(M) == sparse(Array(M))
+@test convert(SparseMatrixCSC, M) == sparse(Array(M))
 
 B = copy(A)
 B[rand(1:length(A), 30)] .= 0.

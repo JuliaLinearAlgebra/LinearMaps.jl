@@ -9,6 +9,10 @@
 
 A Julia package for defining and working with linear maps, also known as linear transformations or linear operators acting on vectors. The only requirement for a LinearMap is that it can act on a vector (by multiplication) efficiently.
 
+## What's new in v2.2.0
+*   Fully Julia v0.7/v1.0 compatible.
+*   A `convert(SparseMatrixCSC, A::LinearMap)` function, that calls the `sparse` matrix generating function.
+
 ## What's new in v2.1.0
 *   Fully Julia v0.7 compatible; dropped compatibility for previous versions of Julia from LinearMaps.jl v2.0.0 on.
 *   A 5-argument version for `mul!(y, A::LinearMap, x, α=1, β=0)`, which computes `y := α * A * x + β * y` and implements the usual 3-argument `mul!(y, A, x)` for the default `α` and `β`.
