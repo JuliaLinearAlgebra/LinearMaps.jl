@@ -8,13 +8,13 @@ function WrappedMap(lmap::Union{AbstractMatrix{T}, LinearMap{T}};
     issymmetric::Bool = issymmetric(lmap),
     ishermitian::Bool = ishermitian(lmap),
     isposdef::Bool = isposdef(lmap)) where {T}
-    WrappedMap{T,typeof(lmap)}(lmap, issymmetric, ishermitian, isposdef)
+    WrappedMap{T, typeof(lmap)}(lmap, issymmetric, ishermitian, isposdef)
 end
 function WrappedMap{T}(lmap::Union{AbstractMatrix, LinearMap};
     issymmetric::Bool = issymmetric(lmap),
     ishermitian::Bool = ishermitian(lmap),
     isposdef::Bool = isposdef(lmap)) where {T}
-    WrappedMap{T,typeof(lmap)}(lmap, issymmetric, ishermitian, isposdef)
+    WrappedMap{T, typeof(lmap)}(lmap, issymmetric, ishermitian, isposdef)
 end
 
 # properties

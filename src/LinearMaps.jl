@@ -1,10 +1,9 @@
-__precompile__(true)
 module LinearMaps
 
 export LinearMap
 
 using LinearAlgebra
-import SparseArrays
+using SparseArrays
 
 abstract type LinearMap{T} end
 
@@ -72,33 +71,34 @@ function Base.Matrix(A::LinearMap)
     return mat
 end
 
-Base.Array(A::LinearMap) = Base.Matrix(A)
-Base.convert(::Type{Matrix}, A:: LinearMap) = Matrix(A)
-Base.convert(::Type{Array}, A:: LinearMap) = Matrix(A)
+Base.Array(A::LinearMap) = Matrix(A)
+Base.convert(::Type{Matrix}, A::LinearMap) = Matrix(A)
+Base.convert(::Type{Array}, A::LinearMap) = Matrix(A)
+Base.convert(::Type{SparseMatrixCSC}, A::LinearMap) = sparse(A)
 
 # sparse: create sparse matrix representation of LinearMap
-function SparseArrays.sparse(A::LinearMap)
+function SparseArrays.sparse(A::LinearMap{T}) where {T}
     M, N = size(A)
-    T = eltype(A)
     rowind = Int[]
     nzval = T[]
     colptr = Vector{Int}(undef, N+1)
     v = fill(zero(T), N)
+    Av = Vector{T}(undef, M)
 
     for i = 1:N
         v[i] = one(T)
-        Lv = A * v
-        js = findall(!iszero, Lv)
+        mul!(Av, A, v)
+        js = findall(!iszero, Av)
         colptr[i] = length(nzval) + 1
         if length(js) > 0
             append!(rowind, js)
-            append!(nzval, Lv[js])
+            append!(nzval, Av[js])
         end
         v[i] = zero(T)
     end
     colptr[N+1] = length(nzval) + 1
 
-    return SparseArrays.SparseMatrixCSC(M, N, colptr, rowind, nzval)
+    return SparseMatrixCSC(M, N, colptr, rowind, nzval)
 end
 
 include("transpose.jl") # transposing linear maps
@@ -120,7 +120,7 @@ on length `N` vectors and producing length `M` vectors (with default value `N=M`
 also the `eltype` `T` of the corresponding matrix representation needs to be specified, i.e.
 whether the action of `f` on a vector will be similar to e.g. multiplying by numbers of type `T`.
 If not specified, the devault value `T=Float64` will be assumed. Optionally, a corresponding
-function `fc` can be specified that implements the (conjugate) transpose of `f`.
+function `fc` can be specified that implements the transpose/adjoint of `f`.
 
 The keyword arguments and their default values for functions `f` are
 *   issymmetric::Bool = false : whether `A` or `f` acts as a symmetric matrix

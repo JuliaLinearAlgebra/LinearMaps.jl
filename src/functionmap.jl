@@ -1,4 +1,4 @@
-struct FunctionMap{T,F1,F2} <: LinearMap{T}
+struct FunctionMap{T, F1, F2} <: LinearMap{T}
     f::F1
     fc::F2
     M::Int
@@ -12,8 +12,8 @@ function FunctionMap{T}(f::F1, fc::F2, M::Int, N::Int;
     ismutating::Bool  = _ismutating(f),
     issymmetric::Bool = false,
     ishermitian::Bool = (T<:Real && issymmetric),
-    isposdef::Bool    = false) where {T,F1,F2}
-    FunctionMap{T,F1,F2}(f, fc, M, N, ismutating, issymmetric, ishermitian, isposdef)
+    isposdef::Bool    = false) where {T, F1, F2}
+    FunctionMap{T, F1, F2}(f, fc, M, N, ismutating, issymmetric, ishermitian, isposdef)
 end
 
 # additional constructors
@@ -22,11 +22,11 @@ FunctionMap{T}(f, M::Int, N::Int; kwargs...) where {T} = FunctionMap{T}(f, nothi
 FunctionMap{T}(f, fc, M::Int; kwargs...) where {T}     = FunctionMap{T}(f, fc, M, M; kwargs...)
 
 # show
-function Base.show(io::IO, A::FunctionMap{T,F,Nothing}) where {T,F}
-    print(io,"LinearMaps.FunctionMap{$T}($(A.f), $(A.M), $(A.N); ismutating=$(A._ismutating), issymmetric=$(A._issymmetric), ishermitian=$(A._ishermitian), isposdef=$(A._isposdef))")
+function Base.show(io::IO, A::FunctionMap{T, F, Nothing}) where {T, F}
+    print(io, "LinearMaps.FunctionMap{$T}($(A.f), $(A.M), $(A.N); ismutating=$(A._ismutating), issymmetric=$(A._issymmetric), ishermitian=$(A._ishermitian), isposdef=$(A._isposdef))")
 end
 function Base.show(io::IO, A::FunctionMap{T}) where {T}
-    print(io,"LinearMaps.FunctionMap{$T}($(A.f), $(A.fc), $(A.M), $(A.N); ismutating=$(A._ismutating), issymmetric=$(A._issymmetric), ishermitian=$(A._ishermitian), isposdef=$(A._isposdef))")
+    print(io, "LinearMaps.FunctionMap{$T}($(A.f), $(A.fc), $(A.M), $(A.N); ismutating=$(A._ismutating), issymmetric=$(A._issymmetric), ishermitian=$(A._ishermitian), isposdef=$(A._isposdef))")
 end
 
 # properties
@@ -61,7 +61,7 @@ function At_mul_B!(y::AbstractVector, A::FunctionMap, x::AbstractVector)
         if !isreal(A)
             x = conj(x)
         end
-        (ismutating(A) ? A.fc(y,x) : copyto!(y, A.fc(x)))
+        (ismutating(A) ? A.fc(y, x) : copyto!(y, A.fc(x)))
         if !isreal(A)
             conj!(y)
         end
