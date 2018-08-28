@@ -1,7 +1,7 @@
 struct LinearCombination{T, As<:Tuple{Vararg{LinearMap}}, Ts<:Tuple} <: LinearMap{T}
     maps::As
     coeffs::Ts
-    function LinearCombination{T,As,Ts}(maps::As, coeffs::Ts) where {T,As,Ts}
+    function LinearCombination{T, As, Ts}(maps::As, coeffs::Ts) where {T, As, Ts}
         N = length(maps)
         N == length(coeffs) || error("Number of coefficients doesn't match number of terms")
         sz = size(maps[1])
@@ -9,7 +9,7 @@ struct LinearCombination{T, As<:Tuple{Vararg{LinearMap}}, Ts<:Tuple} <: LinearMa
             size(maps[n]) == sz || throw(DimensionMismatch("LinearCombination"))
             promote_type(T, eltype(maps[n]), typeof(coeffs[n])) == T || throw(InexactError())
         end
-        new{T,As,Ts}(maps, coeffs)
+        new{T, As, Ts}(maps, coeffs)
     end
 end
 
@@ -32,7 +32,7 @@ function Base.:(+)(A1::LinearMap, A2::LinearCombination)
     T = promote_type(eltype(A1), eltype(A2))
     return LinearCombination{T}(tuple(A1, A2.maps...), tuple(one(T), A2.coeffs...))
 end
-Base.:(+)(A1::LinearCombination, A2::LinearMap) = +(A2,A1)
+Base.:(+)(A1::LinearCombination, A2::LinearMap) = +(A2, A1)
 function Base.:(+)(A1::LinearMap, A2::LinearMap)
     size(A1)==size(A2) || throw(DimensionMismatch("+"))
     T = promote_type(eltype(A1), eltype(A2))
@@ -53,7 +53,7 @@ function Base.:(-)(A1::LinearCombination, A2::LinearMap)
     T = promote_type(eltype(A1), eltype(A2))
     return LinearCombination{T}(tuple(A1.maps..., A2), tuple(A1.coeffs..., -one(T)))
 end
-function Base.:(-)(A1::LinearMap,A2::LinearMap)
+function Base.:(-)(A1::LinearMap, A2::LinearMap)
     size(A1) == size(A2) || throw(DimensionMismatch("-"))
     T = promote_type(eltype(A1), eltype(A2))
     return LinearCombination{T}(tuple(A1, A2), tuple(one(T), -one(T)))
@@ -83,7 +83,7 @@ function Base.:(\)(α::Number, A::LinearCombination)
     T = promote_type(eltype(α), eltype(A))
     return LinearCombination{T}(A.maps, map(x->α\x, A.coeffs))
 end
-Base.:(/)(A::LinearCombination, α::Number) = \(α,A)
+Base.:(/)(A::LinearCombination, α::Number) = \(α, A)
 
 # comparison of LinearCombination objects
 Base.:(==)(A::LinearCombination, B::LinearCombination) = (eltype(A)==eltype(B) && A.maps==B.maps && A.coeffs==B.coeffs)
