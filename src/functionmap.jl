@@ -57,7 +57,7 @@ end
 function At_mul_B!(y::AbstractVector, A::FunctionMap, x::AbstractVector)
     issymmetric(A) && return A_mul_B!(y, A, x)
     (length(x) == A.M && length(y) == A.N) || throw(DimensionMismatch())
-    if A.fc != nothing
+    if A.fc !== nothing
         if !isreal(A)
             x = conj(x)
         end
@@ -74,7 +74,7 @@ end
 function Ac_mul_B!(y::AbstractVector, A::FunctionMap, x::AbstractVector)
     ishermitian(A) && return A_mul_B!(y, A, x)
     (length(x) == A.M && length(y) == A.N) || throw(DimensionMismatch())
-    if A.fc != nothing
+    if A.fc !== nothing
         return (ismutating(A) ? A.fc(y, x) : copyto!(y, A.fc(x)))
     else
         error("adjoint not implemented for $A")
