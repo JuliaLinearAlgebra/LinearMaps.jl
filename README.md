@@ -24,7 +24,7 @@ A Julia package for defining and working with linear maps, also known as linear 
 
 ## Installation
 
-Install with the package manager, i.e. `Pkg.add("LinearMaps")`.
+Install with the package manager, i.e., `]add LinearMaps` (or `Pkg.add("LinearMaps")` in Julia versions below 0.7).
 
 ## Philosophy
 
