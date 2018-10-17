@@ -1,7 +1,5 @@
 # LinearMaps
 
-[![LinearMaps](http://pkg.julialang.org/badges/LinearMaps_0.6.svg)](http://pkg.julialang.org/?pkg=LinearMaps)
-[![LinearMaps](http://pkg.julialang.org/badges/LinearMaps_0.7.svg)](http://pkg.julialang.org/?pkg=LinearMaps)
 [![Build Status](https://travis-ci.org/Jutho/LinearMaps.jl.svg?branch=master)](https://travis-ci.org/Jutho/LinearMaps.jl)
 [![License](http://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat)](LICENSE.md)
 [![Coverage Status](https://coveralls.io/repos/github/Jutho/LinearMaps.jl/badge.svg?branch=master)](https://coveralls.io/github/Jutho/LinearMaps.jl?branch=master)
