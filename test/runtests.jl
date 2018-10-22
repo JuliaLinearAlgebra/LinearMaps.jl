@@ -30,6 +30,7 @@ W = rand(ComplexF64, 20, 3)
 # test wrapped map for matrix
 M = LinearMap(A)
 @test M * v == A * v
+@test mul!(w, M, v) == A * v
 @test mul!(copy(W), M, V) ≈ A * V
 @test typeof(M * V) <: LinearMap
 
@@ -106,7 +107,9 @@ v = randn(10);
 
 # test linear combinations
 A = 2 * rand(ComplexF64, (10, 10)) .- 1
+B = rand(size(A)...)
 M = LinearMap(A)
+N = LinearMap(B)
 v = rand(ComplexF64, 10)
 
 @test Matrix(3 * M) == 3 * A
@@ -125,17 +128,24 @@ v = rand(ComplexF64, 10)
 @test Matrix(M * transpose(M)) ≈ A * transpose(A)
 @test !isposdef(M * transpose(M))
 @test isposdef(M * M')
+@test issymmetric(N * N')
+@test ishermitian(N * N')
+@test !issymmetric(M' * M)
+@test ishermitian(M' * M)
 @test isposdef(transpose(F) * F)
 @test isposdef((M * F)' * M * F)
 @test transpose(M * F) == transpose(F) * transpose(M)
 L = 3 * F + 1im * A + F * M' * F
 LF = 3 * Matrix(F) + 1im * A + Matrix(F) * Matrix(M)' * Matrix(F)
 @test Array(L) ≈ LF
-R1 = rand(ComplexF64, 10, 10); R2 = rand(ComplexF64, 10, 10)
-Lt = transpose(LinearMap(LinearMap(R1) * R2))
-@test Lt * v ≈ transpose(R2) * transpose(R1) * v
-Lc = adjoint(LinearMap(LinearMap(R1) * R2))
-@test Lc * v ≈ R2' * R1' * v
+R1 = rand(ComplexF64, 10, 10)
+R2 = rand(ComplexF64, 10, 10)
+R3 = rand(ComplexF64, 10, 10)
+CompositeR = prod(R -> LinearMap(R), [R1, R2, R3])
+Lt = transpose(LinearMap(CompositeR))
+@test Lt * v ≈ transpose(R3) * transpose(R2) * transpose(R1) * v
+Lc = adjoint(LinearMap(CompositeR))
+@test Lc * v ≈ R3' * R2' * R1' * v
 
 # test inplace operations
 w = similar(v)
