@@ -33,6 +33,7 @@ M = LinearMap(A)
 @test mul!(w, M, v) == A * v
 @test mul!(copy(W), M, V) ≈ A * V
 @test typeof(M * V) <: LinearMap
+@test LinearMap(M) * v == A * v
 
 # test of mul!
 @test mul!(copy(w), M, v, 0, 0) == zero(w)
