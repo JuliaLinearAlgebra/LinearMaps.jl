@@ -90,7 +90,11 @@ function A_mul_B!(y::AbstractVector, A::CompositeMap, x::AbstractVector)
             dest = Array{T}(undef, size(A.maps[2], 1))
         end
         for n=2:N-1
-            resize!(dest, size(A.maps[n], 1))
+            try
+                resize!(dest, size(A.maps[n], 1))
+            catch err
+                dest = Array{T}(undef, size(A.maps[n], 1))
+            end
             A_mul_B!(dest, A.maps[n], source)
             dest, source = source, dest # alternate dest and source
         end
@@ -112,7 +116,11 @@ function At_mul_B!(y::AbstractVector, A::CompositeMap, x::AbstractVector)
             dest = Array{T}(undef, size(A.maps[N-1], 2))
         end
         for n = N-1:-1:2
-            resize!(dest, size(A.maps[n], 2))
+            try
+                resize!(dest, size(A.maps[n], 2))
+            catch err
+                dest = Array{T}(undef, size(A.maps[n], 2))
+            end
             At_mul_B!(dest, A.maps[n], source)
             dest, source = source, dest # alternate dest and source
         end
@@ -134,7 +142,11 @@ function Ac_mul_B!(y::AbstractVector, A::CompositeMap, x::AbstractVector)
             dest = Array{T}(undef, size(A.maps[N-1], 2))
         end
         for n = N-1:-1:2
-            resize!(dest, size(A.maps[n], 2))
+            try
+                resize!(dest, size(A.maps[n], 2))
+            catch err
+                dest = Array{T}(undef, size(A.maps[n], 2))
+            end
             Ac_mul_B!(dest, A.maps[n], source)
             dest, source = source, dest # alternate dest and source
         end
