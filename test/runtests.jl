@@ -22,61 +22,39 @@ end
 A = 2 * rand(ComplexF64, (20, 10)) .- 1
 v = rand(ComplexF64, 10)
 w = rand(ComplexF64, 20)
-wdest = copy(w)
 V = rand(ComplexF64, 10, 3)
 W = rand(ComplexF64, 20, 3)
-Wdest = copy(W)
 α = rand()
 β = rand()
 
 # test wrapped map for matrix
 M = LinearMap(A)
 @test M * v == A * v
-mul!(Wdest, M, V)
-@test Wdest ≈ A * V
+@test mul!(w, M, v) == A * v
+@test mul!(copy(W), M, V) ≈ A * V
 @test typeof(M * V) <: LinearMap
+@test LinearMap(M) * v == A * v
 
 # test of mul!
-mul!(wdest, M, v, 0, 0)
-@test wdest == zero(w)
-wdest = copy(w)
-mul!(wdest, M, v, 0, 1)
-@test wdest == w
-wdest = copy(w)
-mul!(wdest, M, v, 0, β)
-@test wdest == β * w
-wdest = copy(w)
-mul!(wdest, M, v, 1, 1)
-@test wdest ≈ A * v + w
-wdest = copy(w)
-mul!(wdest, M, v, 1, β)
-@test wdest ≈ A * v + β * w
-wdest = copy(w)
-mul!(wdest, M, v, α, 1)
-@test wdest ≈ α * A * v + w
-wdest = copy(w)
-mul!(wdest, M, v, α, β)
-@test wdest ≈ α * A * v + β * w
-wdest = copy(w)
-mul!(wdest, M, v, α)
-@test wdest ≈ α * A * v
+@test mul!(copy(w), M, v, 0, 0) == zero(w)
+@test mul!(copy(w), M, v, 0, 1) == w
+@test mul!(copy(w), M, v, 0, β) == β * w
+@test mul!(copy(w), M, v, 1, 1) ≈ A * v + w
+@test mul!(copy(w), M, v, 1, β) ≈ A * v + β * w
+@test mul!(copy(w), M, v, α, 1) ≈ α * A * v + w
+@test mul!(copy(w), M, v, α, β) ≈ α * A * v + β * w
+@test mul!(copy(w), M, v, α)    ≈ α * A * v
 
 # test matrix-mul!
-Wdest = copy(W)
-mul!(Wdest, M, V, α, β)
-@test Wdest ≈ α * A * V + β * W
-Wdest = copy(W)
-mul!(Wdest, M, V, α)
-@test Wdest ≈ α * A * V
+@test mul!(copy(W), M, V, α, β) ≈ α * A * V + β * W
+@test mul!(copy(W), M, V, α) ≈ α * A * V
 
 # test transposition and Matrix
 @test M' * w == A' * w
-mul!(V, adjoint(M), W)
-@test V ≈ A' * W
-
+@test mul!(copy(V), adjoint(M), W) ≈ A' * W
 @test transpose(M) * w == transpose(A) * w
-mul!(V, transpose(M), W)
-@test V ≈ transpose(A) * W
+@test transpose(M') * v ≈ transpose(A') * v
+@test mul!(copy(V), transpose(M), W) ≈ transpose(A) * W
 
 @test Matrix(M) == A
 @test Array(M) == A
@@ -99,7 +77,7 @@ B = LinearMap(Hermitian(rand(ComplexF64, 10, 10)))
 @test convert(SparseMatrixCSC, M) == sparse(Array(M))
 
 B = copy(A)
-B[rand(1:length(A), 30)] .= 0.
+B[rand(1:length(A), 30)] .= 0
 MS = LinearMap(B)
 @test sparse(MS) == sparse(Array(MS))
 
@@ -130,7 +108,9 @@ v = randn(10);
 
 # test linear combinations
 A = 2 * rand(ComplexF64, (10, 10)) .- 1
+B = rand(size(A)...)
 M = LinearMap(A)
+N = LinearMap(B)
 v = rand(ComplexF64, 10)
 
 @test Matrix(3 * M) == 3 * A
@@ -140,6 +120,8 @@ v = rand(ComplexF64, 10)
 @test (3 * M - 1im * F)' == 3 * M' + 1im * F'
 
 @test (2 * M' + 3 * I) * v ≈ (2 * A' + 3 * I) * v
+@test transpose(LinearMap(2 * M' + 3 * I)) * v ≈ transpose(2 * A' + 3 * I) * v
+@test LinearMap(2 * M' + 3 * I)' * v ≈ (2 * A' + 3 * I)' * v
 
 # test composition
 @test (F * F) * v == F * (F * v)
@@ -147,13 +129,24 @@ v = rand(ComplexF64, 10)
 @test Matrix(M * transpose(M)) ≈ A * transpose(A)
 @test !isposdef(M * transpose(M))
 @test isposdef(M * M')
+@test issymmetric(N * N')
+@test ishermitian(N * N')
+@test !issymmetric(M' * M)
+@test ishermitian(M' * M)
 @test isposdef(transpose(F) * F)
 @test isposdef((M * F)' * M * F)
 @test transpose(M * F) == transpose(F) * transpose(M)
-
 L = 3 * F + 1im * A + F * M' * F
 LF = 3 * Matrix(F) + 1im * A + Matrix(F) * Matrix(M)' * Matrix(F)
 @test Array(L) ≈ LF
+R1 = rand(ComplexF64, 10, 10)
+R2 = rand(ComplexF64, 10, 10)
+R3 = rand(ComplexF64, 10, 10)
+CompositeR = prod(R -> LinearMap(R), [R1, R2, R3])
+Lt = transpose(LinearMap(CompositeR))
+@test Lt * v ≈ transpose(R3) * transpose(R2) * transpose(R1) * v
+Lc = adjoint(LinearMap(CompositeR))
+@test Lc * v ≈ R3' * R2' * R1' * v
 
 # test inplace operations
 w = similar(v)

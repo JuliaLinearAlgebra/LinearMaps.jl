@@ -24,7 +24,7 @@ At_mul_B!(y::AbstractVector, A::IdentityMap, x::AbstractVector) =
     (length(x) == length(y) == A.M ? copyto!(y, x) : throw(DimensionMismatch("At_mul_B!")))
 
 Ac_mul_B!(y::AbstractVector, A::IdentityMap, x::AbstractVector) =
-    (length(x) == length(y) == A.M ? copyto!(y, x) : throw(tMismatch("Ac_mul_B!")))
+    (length(x) == length(y) == A.M ? copyto!(y, x) : throw(DimensionMismatch("Ac_mul_B!")))
 
 # combine LinearMap and UniformScaling objects in linear combinations
 Base.:(+)(A1::LinearMap, A2::UniformScaling{T}) where {T} = A1 + A2[1,1] * IdentityMap{T}(size(A1, 1))
