@@ -93,7 +93,11 @@ function A_mul_B!(y::AbstractVector, A::CompositeMap, x::AbstractVector)
             try
                 resize!(dest, size(A.maps[n], 1))
             catch err
-                dest = Array{T}(undef, size(A.maps[n], 1))
+                if err == ErrorException("cannot resize array with shared data")
+                    dest = Array{T}(undef, size(A.maps[n], 1))
+                else
+                    rethrow(err)
+                end
             end
             A_mul_B!(dest, A.maps[n], source)
             dest, source = source, dest # alternate dest and source
@@ -119,7 +123,11 @@ function At_mul_B!(y::AbstractVector, A::CompositeMap, x::AbstractVector)
             try
                 resize!(dest, size(A.maps[n], 2))
             catch err
-                dest = Array{T}(undef, size(A.maps[n], 2))
+                if err == ErrorException("cannot resize array with shared data")
+                    dest = Array{T}(undef, size(A.maps[n], 2))
+                else
+                    rethrow(err)
+                end
             end
             At_mul_B!(dest, A.maps[n], source)
             dest, source = source, dest # alternate dest and source
@@ -145,7 +153,11 @@ function Ac_mul_B!(y::AbstractVector, A::CompositeMap, x::AbstractVector)
             try
                 resize!(dest, size(A.maps[n], 2))
             catch err
-                dest = Array{T}(undef, size(A.maps[n], 2))
+                if err == ErrorException("cannot resize array with shared data")
+                    dest = Array{T}(undef, size(A.maps[n], 2))
+                else
+                    rethrow(err)
+                end
             end
             Ac_mul_B!(dest, A.maps[n], source)
             dest, source = source, dest # alternate dest and source
