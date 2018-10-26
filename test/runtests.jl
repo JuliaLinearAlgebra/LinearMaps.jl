@@ -29,25 +29,29 @@ W = rand(ComplexF64, 20, 3)
 
 # test wrapped map for matrix
 M = LinearMap(A)
-@test M * v == A * v
-@test mul!(w, M, v) == A * v
-@test mul!(copy(W), M, V) ≈ A * V
+N = LinearMap(M)
+Av = A * v
+AV = A * V
+@test M * v == Av
+@test N * v == Av
+@test mul!(copy(w), M, v) == Av
+@test mul!(copy(w), N, v) == Av
+@test mul!(copy(W), M, V) ≈ AV
 @test typeof(M * V) <: LinearMap
-@test LinearMap(M) * v == A * v
 
 # test of mul!
 @test mul!(copy(w), M, v, 0, 0) == zero(w)
 @test mul!(copy(w), M, v, 0, 1) == w
 @test mul!(copy(w), M, v, 0, β) == β * w
-@test mul!(copy(w), M, v, 1, 1) ≈ A * v + w
-@test mul!(copy(w), M, v, 1, β) ≈ A * v + β * w
-@test mul!(copy(w), M, v, α, 1) ≈ α * A * v + w
-@test mul!(copy(w), M, v, α, β) ≈ α * A * v + β * w
-@test mul!(copy(w), M, v, α)    ≈ α * A * v
+@test mul!(copy(w), M, v, 1, 1) ≈ Av + w
+@test mul!(copy(w), M, v, 1, β) ≈ Av + β * w
+@test mul!(copy(w), M, v, α, 1) ≈ α * Av + w
+@test mul!(copy(w), M, v, α, β) ≈ α * Av + β * w
+@test mul!(copy(w), M, v, α)    ≈ α * Av
 
 # test matrix-mul!
-@test mul!(copy(W), M, V, α, β) ≈ α * A * V + β * W
-@test mul!(copy(W), M, V, α) ≈ α * A * V
+@test mul!(copy(W), M, V, α, β) ≈ α * AV + β * W
+@test mul!(copy(W), M, V, α) ≈ α * AV
 
 # test transposition and Matrix
 @test M' * w == A' * w
