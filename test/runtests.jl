@@ -193,26 +193,26 @@ for (fi, i) in [ (Symbol("f$i"), i) for i in 1:N]
         function ($fi)(source)
             dest = ones(prod(sizes[$i+1]))
             tmp = reshape(source, sizes[$i])
-            return $i*dest
+            return conj.($i*dest)
         end
         insert!(Lf, 1, LinearMap($fi, prod(sizes[$i+1]), prod(sizes[$i])))
-        insert!(Lt, 1, transpose(LinearMap(x -> x, $fi, prod(sizes[$i]), prod(sizes[$i+1]))))
-        insert!(Lc, 1, adjoint(LinearMap{ComplexF64}(x -> x, $fi, prod(sizes[$i]), prod(sizes[$i+1]))))
+        insert!(Lt, 1, LinearMap(x -> x, $fi, prod(sizes[$i]), prod(sizes[$i+1])))
+        insert!(Lc, 1, LinearMap{ComplexF64}(x -> x, $fi, prod(sizes[$i]), prod(sizes[$i+1])))
     end
 end
 
 # multiply as composition and as recursion
 v1 = ones(prod(sizes[1]))
 u1 = ones(prod(sizes[1]))
-w1 = ones(ComplexF64, prod(sizes[1]))
+w1 = im.*ones(ComplexF64, prod(sizes[1]))
 for i = N:-1:1
     v2 = prod(Lf[i:N])*ones(prod(sizes[1]))
-    u2 = prod(Lt[i:N])*ones(prod(sizes[1]))
-    w2 = prod(Lc[i:N])*ones(prod(sizes[1]))
+    u2 = transpose(prod(Lt[N:-1:i]))*ones(prod(sizes[1]))
+    w2 = adjoint(prod(Lc[N:-1:i]))*ones(prod(sizes[1]))
 
     global v1 = Lf[i]*v1
-    global u1 = Lt[i]*u1
-    global w1 = Lc[i]*w1
+    global u1 = transpose(Lt[i])*u1
+    global w1 = adjoint(Lc[i])*w1
 
     @test v1 == v2
     @test u1 == u2
