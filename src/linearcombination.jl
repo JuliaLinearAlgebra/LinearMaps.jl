@@ -3,7 +3,7 @@ struct LinearCombination{T, As<:Tuple{Vararg{LinearMap}}, Ts<:Tuple} <: LinearMa
     coeffs::Ts
     function LinearCombination{T, As, Ts}(maps::As, coeffs::Ts) where {T, As, Ts}
         N = length(maps)
-        N == length(coeffs) || error("Number of coefficients doesn't match number of terms")
+        N == length(coeffs) || error("number of coefficients doesn't match number of linear maps")
         sz = size(maps[1])
         for n = 1:N
             size(maps[n]) == sz || throw(DimensionMismatch("LinearCombination"))
@@ -97,10 +97,13 @@ function A_mul_B!(y::AbstractVector, A::LinearCombination, x::AbstractVector)
     # no size checking, will be done by individual maps
     A_mul_B!(y, A.maps[1], x)
     A.coeffs[1] == 1 || lmul!(A.coeffs[1], y)
-    z = similar(y)
-    for n=2:length(A.maps)
-        A_mul_B!(z, A.maps[n], x)
-        axpy!(A.coeffs[n], z, y)
+    l = length(A.maps)
+    if l>1
+        z = similar(y)
+        for n=2:l
+            A_mul_B!(z, A.maps[n], x)
+            axpy!(A.coeffs[n], z, y)
+        end
     end
     return y
 end
@@ -108,10 +111,13 @@ function At_mul_B!(y::AbstractVector, A::LinearCombination, x::AbstractVector)
     # no size checking, will be done by individual maps
     At_mul_B!(y, A.maps[1], x)
     A.coeffs[1] == 1 || lmul!(A.coeffs[1], y)
-    z = similar(y)
-    for n = 2:length(A.maps)
-        At_mul_B!(z, A.maps[n], x)
-        axpy!(A.coeffs[n], z, y)
+    l = length(A.maps)
+    if l>1
+        z = similar(y)
+        for n = 2:l
+            At_mul_B!(z, A.maps[n], x)
+            axpy!(A.coeffs[n], z, y)
+        end
     end
     return y
 end
@@ -119,10 +125,13 @@ function Ac_mul_B!(y::AbstractVector, A::LinearCombination, x::AbstractVector)
     # no size checking, will be done by individual maps
     Ac_mul_B!(y, A.maps[1], x)
     A.coeffs[1] == 1 || lmul!(conj(A.coeffs[1]), y)
-    z = similar(y)
-    for n=2:length(A.maps)
-        Ac_mul_B!(z, A.maps[n], x)
-        axpy!(conj(A.coeffs[n]), z, y)
+    l = length(A.maps)
+    if l>1
+        z = similar(y)
+        for n=2:l
+            Ac_mul_B!(z, A.maps[n], x)
+            axpy!(conj(A.coeffs[n]), z, y)
+        end
     end
     return y
 end
