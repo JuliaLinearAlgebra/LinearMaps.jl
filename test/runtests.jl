@@ -46,7 +46,7 @@ AV = A * V
 @testset "mul! and *" begin
     @test M * v == Av
     @test N * v == Av
-    @test mul!(copy(w), M, v) == Av
+    @test mul!(copy(w), M, v) == mul!(copy(w), A, v)
     @test ((@allocated mul!(w, M, v)) == 0)
     @test mul!(copy(w), N, v) == Av
 
@@ -82,7 +82,15 @@ end
     @test ishermitian(transpose(Mherm))
     @test ishermitian(Mherm')
     @test isposdef(Mherm)
+    @test isposdef(transpose(Mherm))
+    @test isposdef(adjoint(Mherm))
+    @test !(transpose(M) == adjoint(M))
+    @test !(adjoint(M) == transpose(M))
     @test transpose(M') * v ≈ transpose(A') * v
+    @test transpose(LinearMap(M')) * v ≈ transpose(A') * v
+    @test LinearMap(transpose(M))' * v ≈ copy(transpose(A))' * v
+    @test transpose(LinearMap(transpose(M))) * v ≈ Av
+    @test adjoint(LinearMap(adjoint(M))) * v ≈ Av
     @test mul!(copy(V), transpose(M), W) ≈ transpose(A) * W
 
     B = LinearMap(Symmetric(rand(10, 10)))
@@ -113,25 +121,37 @@ end
     @test U'U ≈ Matrix{eltype(U)}(I, N, N)
 
     CS = LinearMap(cumsum, 2)
+    @test size(CS) == (2, 2)
+    @test !issymmetric(CS)
+    @test !ishermitian(CS)
+    @test !isposdef(CS)
+    @test !(LinearMaps.ismutating(CS))
     @test Matrix(CS) == [1. 0.; 1. 1.]
     @test Array(CS) == [1. 0.; 1. 1.]
     CS = LinearMap(cumsum, 10; ismutating=false)
     v = rand(ComplexF64, 10)
-    @test CS * v == cumsum(v)
-    @test *(CS, v) == cumsum(v)
+    cv = cumsum(v)
+    @test CS * v == cv
+    @test *(CS, v) == cv
     @test_throws ErrorException CS' * v
 
     CS! = LinearMap(cumsum!, 10; ismutating=true)
-    cv = cumsum(v)
+    @test LinearMaps.ismutating(CS!)
     @test CS! * v == cv
     @test *(CS!, v) == cv
-    @test mul!(copy(v), CS!, v) == cv
+    @test mul!(similar(v), CS!, v) == cv
     @test_throws ErrorException CS!'v
+    @test_throws ErrorException transpose(CS!) * v
 
     # Test fallback methods:
     L = LinearMap(x -> x, x -> x, 10)
-    v = randn(10);
+    v = randn(10)
     @test (2 * L)' * v ≈ 2 * v
+    @test transpose(2 * L) * v ≈ 2 * v
+    L = LinearMap{ComplexF64}(x -> x, x -> x, 10)
+    v = rand(ComplexF64, 10)
+    @test (2 * L)' * v ≈ 2 * v
+    @test transpose(2 * L) * v ≈ 2 * v
 end
 
 CS! = LinearMap(cumsum!, 10; ismutating=true)
@@ -142,7 +162,7 @@ mul!(u, CS!, v)
 
 A = 2 * rand(ComplexF64, (10, 10)) .- 1
 B = rand(size(A)...)
-M = 1 * LinearMap(A)
+M = LinearMap(A)
 N = LinearMap(B)
 LC = M + N
 v = rand(ComplexF64, 10)
@@ -154,8 +174,9 @@ mul!(w, M, v)
     @test size(3M + 2.0N) == size(A)
     # addition
     @test convert(Matrix, LC) == A + B
-    @test convert(Matrix, LC + LC) == 2A + 2B
-    @test convert(Matrix, M + LC) == 2A + B
+    @test convert(Matrix, LC + LC) ≈ 2A + 2B
+    @test convert(Matrix, M + LC) ≈ 2A + B
+    @test convert(Matrix, M + M) ≈ 2A
     # subtraction
     @test Matrix(LC - LC) == zeros(size(LC))
     @test Matrix(LC - M) == B
@@ -198,6 +219,7 @@ mul!(y::Vector, A::SimpleFunctionMap, x::Vector) = copyto!(y, *(A, x))
     @test (F * F) * v == F * (F * v)
     @test (F * A) * v == F * (A * v)
     @test (A * F) * v == A * (F * v)
+    @test A * (F * F) * v == A * (F * (F * v))
     @test (F * F) * (F * F) * v == F * (F * (F * (F * v)))
     @test Matrix(M * transpose(M)) ≈ A * transpose(A)
     @test !isposdef(M * transpose(M))
@@ -305,6 +327,13 @@ LC = M + N
 v = rand(ComplexF64, 10)
 w = similar(v)
 @testset "identity map" begin
+    Id = LinearMaps.IdentityMap(10)
+    @test size(Id) == (10, 10)
+    @test isreal(Id)
+    @test issymmetric(Id)
+    @test ishermitian(Id)
+    @test isposdef(Id)
+    @test Id * v == v
     @test (2 * M' + 3 * I) * v == 2 * A'v + 3v
     @test (3 * I + 2 * M') * v == 2 * A'v + 3v
     @test (2 * M' - 3 * I) * v == 2 * A'v - 3v
