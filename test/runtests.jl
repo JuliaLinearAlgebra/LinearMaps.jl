@@ -35,6 +35,7 @@ AV = A * V
 @test M * v == Av
 @test N * v == Av
 @test mul!(copy(w), M, v) == Av
+@test ((@allocated mul!(w, M, v)) == 0)
 @test mul!(copy(w), N, v) == Av
 @test mul!(copy(W), M, V) ≈ AV
 @test typeof(M * V) <: LinearMap
@@ -100,22 +101,27 @@ F = LinearMap(cumsum, 10; ismutating=false)
 @test *(F, v) == cumsum(v)
 @test_throws ErrorException F' * v
 
-F = LinearMap((y,x) -> y .= cumsum(x), 10; ismutating=true)
-@test F * v == cumsum(v)
-@test *(F, v) == cumsum(v)
+F = LinearMap(cumsum!, 10; ismutating=true)
+cv = cumsum(v)
+@test F * v == cv
+@test *(F, v) == cv
+@test mul!(copy(v), F, v) == cv
+u = similar(v)
+@test ((@allocated mul!(u, F, v)) == 0)
 @test_throws ErrorException F'v
 
 # Test fallback methods:
-L = LinearMap(x -> x, x-> x, 10)
+L = LinearMap(x -> x, x -> x, 10)
 v = randn(10);
 @test (2*L)' * v ≈ 2 * v
 
 # test linear combinations
 A = 2 * rand(ComplexF64, (10, 10)) .- 1
 B = rand(size(A)...)
-M = LinearMap(A)
+M = 1 * LinearMap(A)
 N = LinearMap(B)
 v = rand(ComplexF64, 10)
+w = similar(v)
 
 @test Matrix(3 * M) == 3 * A
 @test Array(M + A) == 2 * A
@@ -126,6 +132,9 @@ v = rand(ComplexF64, 10)
 @test (2 * M' + 3 * I) * v ≈ (2 * A' + 3 * I) * v
 @test transpose(LinearMap(2 * M' + 3 * I)) * v ≈ transpose(2 * A' + 3 * I) * v
 @test LinearMap(2 * M' + 3 * I)' * v ≈ (2 * A' + 3 * I)' * v
+
+mul!(w, M, v)
+@test ((@allocated mul!(w, M, v)) == 0)
 
 # test composition
 @test (F * F) * v == F * (F * v)
