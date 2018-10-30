@@ -68,7 +68,6 @@ AV = A * V
 end
 
 @testset "transpose/adjoint" begin
-
     @test M' * w == A' * w
     @test mul!(copy(V), adjoint(M), W) ≈ A' * W
     @test transpose(M) * w == transpose(A) * w
