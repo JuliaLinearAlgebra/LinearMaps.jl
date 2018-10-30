@@ -22,8 +22,8 @@ LinearAlgebra.isposdef(A::Union{TransposeMap, AdjointMap}) = isposdef(A.lmap)
 # comparison of TransposeMap objects
 Base.:(==)(A::TransposeMap, B::TransposeMap) = A.lmap == B.lmap
 Base.:(==)(A::AdjointMap, B::AdjointMap)     = A.lmap == B.lmap
-Base.:(==)(A::TransposeMap, B::AdjointMap)   = isreal(B) && A.lmap == B.lmap
-Base.:(==)(A::AdjointMap, B::TransposeMap)   = isreal(A) && A.lmap == B.lmap
+Base.:(==)(A::TransposeMap, B::AdjointMap)   = false # isreal(B) && A.lmap == B.lmap # isreal(::AdjointMap) == false
+Base.:(==)(A::AdjointMap, B::TransposeMap)   = false # isreal(A) && A.lmap == B.lmap # isreal(::AdjointMap) == false
 Base.:(==)(A::TransposeMap, B::LinearMap)    = issymmetric(B) && A.lmap == B
 Base.:(==)(A::AdjointMap, B::LinearMap)      = ishermitian(B) && A.lmap == B
 Base.:(==)(A::LinearMap, B::TransposeMap)    = issymmetric(A) && B.lmap == A
