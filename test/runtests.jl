@@ -3,6 +3,23 @@ using LinearMaps
 using SparseArrays
 using LinearAlgebra
 
+# adopted from: https://discourse.julialang.org/t/way-to-return-the-number-of-allocations/5167/10
+macro numalloc(expr)
+    return quote
+        let
+            local f
+            function f()
+                n1 = Base.gc_num()
+                $(expr)
+                n2 = Base.gc_num()
+                diff = Base.GC_Diff(n2, n1)
+                Base.gc_alloc_count(diff)
+            end
+            f()
+        end
+    end
+end
+
 import Base: *
 import LinearAlgebra: issymmetric, mul!
 
@@ -185,10 +202,14 @@ end
 end
 
 CS! = LinearMap(cumsum!, 10; ismutating=true)
-v = rand(ComplexF64, 10)
+v = rand(10)
 u = similar(v)
 mul!(u, CS!, v)
 @test ((@allocated mul!(u, CS!, v)) == 0)
+n = 10
+L = sum(fill(CS!, n))
+@test mul!(u, L, v) ≈ n * cumsum(v)
+@test ((@numalloc mul!(u, L, v)) <= 1)
 
 A = 2 * rand(ComplexF64, (10, 10)) .- 1
 B = rand(size(A)...)
