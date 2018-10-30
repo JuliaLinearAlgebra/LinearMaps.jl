@@ -10,6 +10,10 @@ abstract type LinearMap{T} end
 Base.eltype(::LinearMap{T}) where {T} = T
 
 Base.isreal(A::LinearMap) = eltype(A) <: Real
+LinearAlgebra.issymmetric(::LinearMap) = false # default assumptions
+LinearAlgebra.ishermitian(A::LinearMap{<:Real}) = issymmetric(A)
+LinearAlgebra.ishermitian(::LinearMap) = false # default assumptions
+LinearAlgebra.isposdef(::LinearMap) = false # default assumptions
 
 Base.ndims(::LinearMap) = 2
 Base.size(A::LinearMap, n) = (n==1 || n==2 ? size(A)[n] : error("LinearMap objects have only 2 dimensions"))

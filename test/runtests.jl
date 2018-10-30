@@ -235,10 +235,13 @@ struct SimpleFunctionMap <: LinearMap{Float64}
     f::Function
     N::Int
 end
-Base.size(A::SimpleFunctionMap) = (A.N, A.N)
-LinearAlgebra.issymmetric(A::SimpleFunctionMap) = false
-*(A::SimpleFunctionMap, v::Vector) = A.f(v)
-mul!(y::Vector, A::SimpleFunctionMap, x::Vector) = copyto!(y, *(A, x))
+struct SimpleComplexFunctionMap <: LinearMap{Complex{Float64}}
+    f::Function
+    N::Int
+end
+Base.size(A::Union{SimpleFunctionMap,SimpleComplexFunctionMap}) = (A.N, A.N)
+*(A::Union{SimpleFunctionMap,SimpleComplexFunctionMap}, v::Vector) = A.f(v)
+mul!(y::Vector, A::Union{SimpleFunctionMap,SimpleComplexFunctionMap}, x::Vector) = copyto!(y, *(A, x))
 
 @testset "composition" begin
     F = LinearMap(cumsum, 10; ismutating=false)
@@ -279,11 +282,15 @@ mul!(y::Vector, A::SimpleFunctionMap, x::Vector) = copyto!(y, *(A, x))
     @test w ≈ LF * v
 
     # test new type
-
     F = SimpleFunctionMap(cumsum, 10)
+    FC = SimpleComplexFunctionMap(cumsum, 10)
     @test ndims(F) == 2
     @test size(F, 1) == 10
     @test length(F) == 100
+    @test !issymmetric(F)
+    @test !ishermitian(F)
+    @test !ishermitian(FC)
+    @test !isposdef(F)
     w = similar(v)
     mul!(w, F, v)
     @test w == F * v
