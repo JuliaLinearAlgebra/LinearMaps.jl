@@ -68,6 +68,7 @@ AV = A * V
 end
 
 @testset "transpose/adjoint" begin
+
     @test M' * w == A' * w
     @test mul!(copy(V), adjoint(M), W) ≈ A' * W
     @test transpose(M) * w == transpose(A) * w
@@ -88,10 +89,16 @@ end
     @test !(adjoint(M) == transpose(M))
     @test transpose(M') * v ≈ transpose(A') * v
     @test transpose(LinearMap(M')) * v ≈ transpose(A') * v
-    @test LinearMap(transpose(M))' * v ≈ copy(transpose(A))' * v
+    @test LinearMap(transpose(M))' * v ≈ transpose(A)' * v
     @test transpose(LinearMap(transpose(M))) * v ≈ Av
     @test adjoint(LinearMap(adjoint(M))) * v ≈ Av
+
+    @test mul!(copy(w), transpose(LinearMap(M')), v) ≈ transpose(A') * v
+    @test mul!(copy(w), LinearMap(transpose(M))', v) ≈ transpose(A)' * v
+    @test mul!(copy(w), transpose(LinearMap(transpose(M))), v) ≈ Av
+    @test mul!(copy(w), adjoint(LinearMap(adjoint(M))), v) ≈ Av
     @test mul!(copy(V), transpose(M), W) ≈ transpose(A) * W
+    @test mul!(copy(V), adjoint(M), W) ≈ A' * W
 
     B = LinearMap(Symmetric(rand(10, 10)))
     @test transpose(B) == B
@@ -129,11 +136,17 @@ end
     @test Matrix(CS) == [1. 0.; 1. 1.]
     @test Array(CS) == [1. 0.; 1. 1.]
     CS = LinearMap(cumsum, 10; ismutating=false)
-    v = rand(ComplexF64, 10)
+    v = rand(10)
     cv = cumsum(v)
     @test CS * v == cv
     @test *(CS, v) == cv
     @test_throws ErrorException CS' * v
+    CS = LinearMap(cumsum, x -> cumsum(reverse(x)), 10; ismutating=false)
+    cv = cumsum(v)
+    @test CS * v == cv
+    @test *(CS, v) == cv
+    @test CS' * v == cumsum(reverse(v))
+    @test mul!(similar(v), transpose(CS), v) == cumsum(reverse(v))
 
     CS! = LinearMap(cumsum!, 10; ismutating=true)
     @test LinearMaps.ismutating(CS!)
@@ -142,6 +155,24 @@ end
     @test mul!(similar(v), CS!, v) == cv
     @test_throws ErrorException CS!'v
     @test_throws ErrorException transpose(CS!) * v
+
+    CS! = LinearMap{ComplexF64}(cumsum!, 10; ismutating=true)
+    v = rand(ComplexF64, 10)
+    cv = cumsum(v)
+    @test LinearMaps.ismutating(CS!)
+    @test CS! * v == cv
+    @test *(CS!, v) == cv
+    @test mul!(similar(v), CS!, v) == cv
+    @test_throws ErrorException CS!'v
+    @test_throws ErrorException adjoint(CS!) * v
+    CS! = LinearMap{ComplexF64}(cumsum!, x -> cumsum!(reverse!(x)), 10; ismutating=true)
+    @test LinearMaps.ismutating(CS!)
+    @test CS! * v == cv
+    @test *(CS!, v) == cv
+    @test mul!(similar(v), CS!, v) == cv
+    @test CS' * v == cumsum(reverse(v))
+    @test mul!(similar(v), transpose(CS), v) == cumsum(reverse(v))
+    @test mul!(similar(v), adjoint(CS), v) == cumsum(reverse(v))
 
     # Test fallback methods:
     L = LinearMap(x -> x, x -> x, 10)
@@ -328,6 +359,8 @@ v = rand(ComplexF64, 10)
 w = similar(v)
 @testset "identity map" begin
     Id = LinearMaps.IdentityMap(10)
+    @test_throws ErrorException LinearMaps.IdentityMap(10, 20)
+    @test_throws ErrorException LinearMaps.IdentityMap((10, 20))
     @test size(Id) == (10, 10)
     @test isreal(Id)
     @test issymmetric(Id)
