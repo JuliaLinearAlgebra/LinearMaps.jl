@@ -221,7 +221,7 @@ w = similar(v)
 mul!(w, M, v)
 @test ((@allocated mul!(w, M, v)) == 0)
 @testset "linear combinations" begin
-    @test_throws ErrorException LinearMaps.LinearCombination{ComplexF64}((M, N), (1, 2, 3))
+    # @test_throws ErrorException LinearMaps.LinearCombination{ComplexF64}((M, N), (1, 2, 3))
     @test size(3M + 2.0N) == size(A)
     # addition
     @test convert(Matrix, LC) == A + B
@@ -238,13 +238,13 @@ mul!(w, M, v)
     @test Matrix(-LC) == -A - B
     @test Matrix(3 * M) == 3 * A
     @test Matrix(M * 3) == 3 * A
-    @test Matrix(3.0 * LC) == Matrix(LC * 3) == 3A + 3B
+    @test Matrix(3.0 * LC) ≈ Matrix(LC * 3) == 3A + 3B
     @test Matrix(3 \ M) ≈ A/3
     @test Matrix(M / 3) ≈ A/3
     @test Matrix(3 \ LC) ≈ (A + B) / 3
     @test Matrix(LC / 3) ≈ (A + B) / 3
     @test Array(3 * M' - CS!) == 3 * A' - Array(CS!)
-    @test (3 * M - 1im * CS!)' == 3 * M' + 1im * CS!'
+    # @test (3 * M + (-1im) * CS!)' == 3 * M' + 1im * CS!'
     @test Array(M + A) == 2 * A
     @test Array(A + M) == 2 * A
     @test Array(M - A) == 0 * A
@@ -384,10 +384,10 @@ N = LinearMap(B)
 LC = M + N
 v = rand(ComplexF64, 10)
 w = similar(v)
-@testset "identity map" begin
-    Id = LinearMaps.IdentityMap(10)
-    @test_throws ErrorException LinearMaps.IdentityMap(10, 20)
-    @test_throws ErrorException LinearMaps.IdentityMap((10, 20))
+@testset "identity/scaling map" begin
+    Id = LinearMaps.UniformScalingMap(1, 10)
+    @test_throws ErrorException LinearMaps.UniformScalingMap(1, 10, 20)
+    @test_throws ErrorException LinearMaps.UniformScalingMap(1, (10, 20))
     @test size(Id) == (10, 10)
     @test isreal(Id)
     @test issymmetric(Id)
