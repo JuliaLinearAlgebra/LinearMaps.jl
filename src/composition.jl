@@ -49,6 +49,19 @@ function LinearAlgebra.isposdef(A::CompositeMap)
     return true
 end
 
+# scalar multiplication and division
+function Base.:(*)(α::Number, A::LinearMap)
+    T = promote_type(eltype(α), eltype(A))
+    return CompositeMap{T}(tuple(A, UniformScalingMap(α, size(A, 1))))
+end
+function Base.:(*)(A::LinearMap, α::Number)
+    T = promote_type(eltype(α), eltype(A))
+    return CompositeMap{T}(tuple(UniformScalingMap(α, size(A, 2)), A))
+end
+Base.:(\)(α::Number, A::LinearMap) = inv(α) * A
+Base.:(/)(A::LinearMap, α::Number) = A * inv(α)
+Base.:(-)(A::LinearMap) = -1 * A
+
 # composition of linear maps
 function Base.:(*)(A1::CompositeMap, A2::CompositeMap)
     size(A1, 2) == size(A2, 1) || throw(DimensionMismatch("*"))
@@ -70,6 +83,8 @@ function Base.:(*)(A1::LinearMap, A2::LinearMap)
     T = promote_type(eltype(A1),eltype(A2))
     return CompositeMap{T}(tuple(A2, A1))
 end
+Base.:(*)(A1::LinearMap, A2::UniformScaling{T}) where {T} = A1 * A2[1,1]
+Base.:(*)(A1::UniformScaling{T}, A2::LinearMap) where {T} = A1[1,1] * A2
 
 # special transposition behavior
 LinearAlgebra.transpose(A::CompositeMap{T}) where {T} = CompositeMap{T}(map(transpose, reverse(A.maps)))
