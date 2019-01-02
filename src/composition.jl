@@ -90,6 +90,9 @@ Base.:(*)(A1::UniformScaling{T}, A2::LinearMap) where {T} = A1[1,1] * A2
 LinearAlgebra.transpose(A::CompositeMap{T}) where {T} = CompositeMap{T}(map(transpose, reverse(A.maps)))
 LinearAlgebra.adjoint(A::CompositeMap{T}) where {T}   = CompositeMap{T}(map(adjoint, reverse(A.maps)))
 
+# comparison of LinearCombination objects
+Base.:(==)(A::CompositeMap, B::CompositeMap) = (eltype(A) == eltype(B) && A.maps == B.maps)
+
 # multiplication with vectors
 function A_mul_B!(y::AbstractVector, A::CompositeMap, x::AbstractVector)
     # no size checking, will be done by individual maps
