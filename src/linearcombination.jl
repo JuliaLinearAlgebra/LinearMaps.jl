@@ -39,7 +39,7 @@ end
 Base.:(-)(A1::LinearMap, A2::LinearMap) = +(A1, -A2)
 
 # comparison of LinearCombination objects
-Base.:(==)(A::LinearCombination, B::LinearCombination) = (eltype(A)==eltype(B) && A.maps==B.maps && A.coeffs==B.coeffs)
+Base.:(==)(A::LinearCombination, B::LinearCombination) = (eltype(A)==eltype(B) && A.maps==B.maps)
 
 # special transposition behavior
 LinearAlgebra.transpose(A::LinearCombination) = LinearCombination{eltype(A)}(map(transpose, A.maps))

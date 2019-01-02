@@ -244,7 +244,7 @@ mul!(w, M, v)
     @test Matrix(3 \ LC) ≈ (A + B) / 3
     @test Matrix(LC / 3) ≈ (A + B) / 3
     @test Array(3 * M' - CS!) == 3 * A' - Array(CS!)
-    # @test (3 * M + (-1im) * CS!)' == 3 * M' + 1im * CS!'
+    @test ((3 * M) + ((-1im) * CS!))' == (M' * 3) + (CS!' * 1im)
     @test Array(M + A) == 2 * A
     @test Array(A + M) == 2 * A
     @test Array(M - A) == 0 * A
