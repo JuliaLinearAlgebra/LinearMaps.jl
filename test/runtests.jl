@@ -288,10 +288,14 @@ mul!(y::Vector, A::Union{SimpleFunctionMap,SimpleComplexFunctionMap}, x::Vector)
     L = 3 * F + 1im * A + F * M' * F
     LF = 3 * Matrix(F) + 1im * A + Matrix(F) * Matrix(M)' * Matrix(F)
     @test Array(L) ≈ LF
-    R1 = rand(ComplexF64, 10, 10)
-    R2 = rand(ComplexF64, 10, 10)
-    R3 = rand(ComplexF64, 10, 10)
+    R1 = rand(ComplexF64, 10, 10); L1 = LinearMap(R1)
+    R2 = rand(ComplexF64, 10, 10); L2 = LinearMap(R2)
+    R3 = rand(ComplexF64, 10, 10); L3 = LinearMap(R3)
     CompositeR = prod(R -> LinearMap(R), [R1, R2, R3])
+    @test transpose(CompositeR) == transpose(L3) * transpose(L2) * transpose(L1)
+    @test adjoint(CompositeR) == L3' * L2' * L1'
+    @test adjoint(adjoint((CompositeR))) == CompositeR
+    @test transpose(transpose((CompositeR))) == CompositeR
     Lt = transpose(LinearMap(CompositeR))
     @test Lt * v ≈ transpose(R3) * transpose(R2) * transpose(R1) * v
     Lc = adjoint(LinearMap(CompositeR))
