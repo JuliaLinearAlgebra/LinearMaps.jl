@@ -60,7 +60,7 @@ function Base.:(*)(α::Number, A::CompositeMap)
     if Alast isa UniformScalingMap
         return CompositeMap{T}(tuple(A.maps[1:end-1]..., UniformScalingMap(α * Alast.λ, size(Alast, 1))))
     else
-        return CompositeMap{T}(tuple(A, UniformScalingMap(α, size(A, 1))))
+        return CompositeMap{T}(tuple(A.maps..., UniformScalingMap(α, size(A, 1))))
     end
 end
 function Base.:(*)(A::LinearMap, α::Number)
@@ -73,7 +73,7 @@ function Base.:(*)(A::CompositeMap, α::Number)
     if Afirst isa UniformScalingMap
         return CompositeMap{T}(tuple(UniformScalingMap(Afirst.λ * α, size(Afirst, 1)), A.maps[2:end]...))
     else
-        return CompositeMap{T}(tuple(UniformScalingMap(α, size(A, 2)), A))
+        return CompositeMap{T}(tuple(UniformScalingMap(α, size(A, 2)), A.maps...))
     end
 end
 Base.:(\)(α::Number, A::LinearMap) = inv(α) * A
