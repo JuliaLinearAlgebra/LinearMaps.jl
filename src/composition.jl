@@ -54,9 +54,27 @@ function Base.:(*)(α::Number, A::LinearMap)
     T = promote_type(eltype(α), eltype(A))
     return CompositeMap{T}(tuple(A, UniformScalingMap(α, size(A, 1))))
 end
+function Base.:(*)(α::Number, A::CompositeMap)
+    T = promote_type(eltype(α), eltype(A))
+    Alast = last(A.maps)
+    if Alast isa UniformScalingMap
+        return CompositeMap{T}(tuple(A.maps[1:end-1]..., UniformScalingMap(α * Alast.λ, size(Alast, 1))))
+    else
+        return CompositeMap{T}(tuple(A, UniformScalingMap(α, size(A, 1))))
+    end
+end
 function Base.:(*)(A::LinearMap, α::Number)
     T = promote_type(eltype(α), eltype(A))
     return CompositeMap{T}(tuple(UniformScalingMap(α, size(A, 2)), A))
+end
+function Base.:(*)(A::CompositeMap, α::Number)
+    T = promote_type(eltype(α), eltype(A))
+    Afirst = first(A.maps)
+    if Afirst isa UniformScalingMap
+        return CompositeMap{T}(tuple(UniformScalingMap(Afirst.λ * α, size(Afirst, 1)), A.maps[2:end]...))
+    else
+        return CompositeMap{T}(tuple(UniformScalingMap(α, size(A, 2)), A))
+    end
 end
 Base.:(\)(α::Number, A::LinearMap) = inv(α) * A
 Base.:(/)(A::LinearMap, α::Number) = A * inv(α)
