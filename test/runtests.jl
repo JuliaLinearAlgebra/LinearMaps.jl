@@ -244,7 +244,7 @@ mul!(w, M, v)
     @test Matrix(3 \ LC) ≈ (A + B) / 3
     @test Matrix(LC / 3) ≈ (A + B) / 3
     @test Array(3 * M' - CS!) == 3 * A' - Array(CS!)
-    @test ((3 * M) + ((-1im) * CS!))' == (M' * 3) + (CS!' * 1im)
+    @test (3M - 1im*CS!)' == (3M + ((-1im)*CS!))' == M'*3 + CS!'*1im
     @test Array(M + A) == 2 * A
     @test Array(A + M) == 2 * A
     @test Array(M - A) == 0 * A
@@ -285,6 +285,8 @@ mul!(y::Vector, A::Union{SimpleFunctionMap,SimpleComplexFunctionMap}, x::Vector)
     @test isposdef(transpose(F) * F)
     @test isposdef((M * F)' * M * F)
     @test transpose(M * F) == transpose(F) * transpose(M)
+    @test (4*((-3*M)*2)) == -12M*2
+    @test (4*((3*(-M))*2)*(-5)) == -12M*(-10)
     L = 3 * F + 1im * A + F * M' * F
     LF = 3 * Matrix(F) + 1im * A + Matrix(F) * Matrix(M)' * Matrix(F)
     @test Array(L) ≈ LF
