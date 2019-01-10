@@ -20,9 +20,6 @@ macro numalloc(expr)
     end
 end
 
-import Base: *
-import LinearAlgebra: issymmetric, mul!
-
 A = 2 * rand(ComplexF64, (20, 10)) .- 1
 v = rand(ComplexF64, 10)
 w = rand(ComplexF64, 20)
@@ -252,6 +249,9 @@ mul!(w, M, v)
 end
 
 # new type
+import Base: *, size
+import LinearAlgebra: mul!
+
 struct SimpleFunctionMap <: LinearMap{Float64}
     f::Function
     N::Int
@@ -261,7 +261,7 @@ struct SimpleComplexFunctionMap <: LinearMap{Complex{Float64}}
     N::Int
 end
 Base.size(A::Union{SimpleFunctionMap,SimpleComplexFunctionMap}) = (A.N, A.N)
-*(A::Union{SimpleFunctionMap,SimpleComplexFunctionMap}, v::Vector) = A.f(v)
+Base.:(*)(A::Union{SimpleFunctionMap,SimpleComplexFunctionMap}, v::Vector) = A.f(v)
 mul!(y::Vector, A::Union{SimpleFunctionMap,SimpleComplexFunctionMap}, x::Vector) = copyto!(y, *(A, x))
 
 @testset "composition" begin
@@ -406,4 +406,23 @@ w = similar(v)
     @test (3 * I - 2 * M') * v == -2 * A'v + 3v
     @test transpose(LinearMap(2 * M' + 3 * I)) * v ≈ transpose(2 * A' + 3 * I) * v
     @test LinearMap(2 * M' + 3 * I)' * v ≈ (2 * A' + 3 * I)' * v
+end
+
+@testset "noncommutative number type" begin
+    using Quaternions
+    x = Quaternion.(rand(10), rand(10), rand(10), rand(10))
+    v = rand(10)
+    A = Quaternion.(rand(10,10), rand(10,10), rand(10,10), rand(10,10))
+    α = UniformScaling(Quaternion.(rand(4)...))
+    β = UniformScaling(Quaternion.(rand(4)...))
+    L = LinearMap(A)
+    @test Array(L) == A
+    @test Array(α * L) == α * A
+    @test Array(L * α) == A * α
+    @test Array(α * L) == α * A
+    @test Array(L * α ) == A * α
+    @test (α * L')' * x ≈ (α * A')' * x
+    @test (α * L')' * v ≈ (α * A')' * v
+    @test Array((α * L * β)') ≈ conj(β) * A' * conj(α)
+    @test Array(transpose(α * L * β)) ≈ β * transpose(A) * α
 end
