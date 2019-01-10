@@ -19,15 +19,16 @@ LinearAlgebra.transpose(A::UniformScalingMap) = A
 LinearAlgebra.adjoint(A::UniformScalingMap)   = UniformScalingMap(conj(A.λ), size(A))
 
 # multiplication with vector
+# order of arguments in mul! flipped due to typo in stdlib/LinearAlgebra/src/generic.jl
 A_mul_B!(y::AbstractVector, A::UniformScalingMap, x::AbstractVector) =
-    (length(x) == length(y) == A.M ? mul!(y, A.λ, x) : throw(DimensionMismatch("A_mul_B!")))
+    (length(x) == length(y) == A.M ? mul!(y, x, A.λ) : throw(DimensionMismatch("A_mul_B!")))
 Base.:(*)(A::UniformScalingMap, x::AbstractVector) = A.λ * x
 
 At_mul_B!(y::AbstractVector, A::UniformScalingMap, x::AbstractVector) =
-    (length(x) == length(y) == A.M ? mul!(y, A.λ, x) : throw(DimensionMismatch("At_mul_B!")))
+    (length(x) == length(y) == A.M ? mul!(y, x, A.λ) : throw(DimensionMismatch("At_mul_B!")))
 
 Ac_mul_B!(y::AbstractVector, A::UniformScalingMap, x::AbstractVector) =
-    (length(x) == length(y) == A.M ? mul!(y, conj(A.λ), x) : throw(DimensionMismatch("Ac_mul_B!")))
+    (length(x) == length(y) == A.M ? mul!(y, x, conj(A.λ)) : throw(DimensionMismatch("Ac_mul_B!")))
 
 # combine LinearMap and UniformScaling objects in linear combinations
 Base.:(+)(A1::LinearMap, A2::UniformScaling{T}) where {T} = A1 + UniformScalingMap{T}(A2[1,1], size(A1, 1))
