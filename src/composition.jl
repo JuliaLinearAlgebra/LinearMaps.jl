@@ -19,40 +19,22 @@ Base.isreal(A::CompositeMap) = all(isreal, A.maps) # sufficient but not necessar
 
 # the following rules are sufficient but not necessary
 const RealOrComplex = Union{Real,Complex}
-LinearAlgebra.issymmetric(A::CompositeMap) = _issymmetric(A.maps)
-_issymmetric(maps::Tuple{}) = true
-_issymmetric(maps::Tuple{<:LinearMap}) = issymmetric(maps[1])
-function _issymmetric(maps::Tuple{Vararg{<:LinearMap}}) # length(maps) >= 2
-    if maps[1] isa UniformScalingMap{<:RealOrComplex}
-        return issymmetric(maps[1]) && _issymmetric(Base.tail(maps))
-    elseif maps[end] isa UniformScalingMap{<:RealOrComplex}
-        return issymmetric(maps[end]) && _issymmetric(Base.front(maps))
-    else
-        return maps[end] == transpose(maps[1]) && _issymmetric(Base.front(Base.tail(maps)))
-    end
-end
-LinearAlgebra.ishermitian(A::CompositeMap) = _ishermitian(A.maps)
-_ishermitian(maps::Tuple{}) = true
-_ishermitian(maps::Tuple{<:LinearMap}) = issymmetric(maps[1])
-function _ishermitian(maps::Tuple{Vararg{<:LinearMap}}) # length(maps) >= 2
-    if maps[1] isa UniformScalingMap{<:RealOrComplex}
-        return ishermitian(maps[1]) && _ishermitian(Base.tail(maps))
-    elseif maps[end] isa UniformScalingMap{<:RealOrComplex}
-        return ishermitian(maps[end]) && _ishermitian(Base.front(maps))
-    else
-        return maps[end] == adjoint(maps[1]) && _ishermitian(Base.front(Base.tail(maps)))
-    end
-end
-LinearAlgebra.isposdef(A::CompositeMap) = _isposdef(A.maps)
-_isposdef(maps::Tuple{}) = true
-_isposdef(maps::Tuple{<:LinearMap}) = isposdef(maps[1])
-function _isposdef(maps::Tuple{Vararg{<:LinearMap}}) # length(maps) >= 2
-    if maps[1] isa UniformScalingMap{<:RealOrComplex}
-        return isposdef(maps[1]) && _isposdef(Base.tail(maps))
-    elseif maps[end] isa UniformScalingMap{<:RealOrComplex}
-        return isposdef(maps[end]) && _isposdef(Base.front(maps))
-    else
-        return maps[end] == adjoint(maps[1]) && _isposdef(Base.front(Base.tail(maps)))
+for (f, _f, g) in ((:issymmetric, :_issymmetric, :transpose),
+                    (:ishermitian, :_ishermitian, :adjoint),
+                    (:isposdef, :_isposdef, :adjoint))
+    @eval begin
+        LinearAlgebra.$f(A::CompositeMap) = $_f(A.maps)
+        $_f(maps::Tuple{}) = true
+        $_f(maps::Tuple{<:LinearMap}) = $f(maps[1])
+        function $_f(maps::Tuple{Vararg{<:LinearMap}}) # length(maps) >= 2
+            if maps[1] isa UniformScalingMap{<:RealOrComplex}
+                return $f(maps[1]) && $_f(Base.tail(maps))
+            elseif maps[end] isa UniformScalingMap{<:RealOrComplex}
+                return $f(maps[end]) && $_f(Base.front(maps))
+            else
+                return maps[end] == $g(maps[1]) && $_f(Base.front(Base.tail(maps)))
+            end
+        end
     end
 end
 
