@@ -18,36 +18,56 @@ Base.size(A::CompositeMap) = (size(A.maps[end], 1), size(A.maps[1], 2))
 Base.isreal(A::CompositeMap) = all(isreal, A.maps) # sufficient but not necessary
 
 # the following rules are sufficient but not necessary
-function LinearAlgebra.issymmetric(A::CompositeMap)
-    N = length(A.maps)
-    if isodd(N)
-        issymmetric(A.maps[div(N+1, 2)]) || return false
+const RealOrComplex = Union{Real,Complex}
+for (f, _f, g) in ((:issymmetric, :_issymmetric, :transpose),
+                    (:ishermitian, :_ishermitian, :adjoint),
+                    (:isposdef, :_isposdef, :adjoint))
+    @eval begin
+        LinearAlgebra.$f(A::CompositeMap) = $_f(A.maps)
+        $_f(maps::Tuple{}) = true
+        $_f(maps::Tuple{<:LinearMap}) = $f(maps[1])
+        function $_f(maps::Tuple{Vararg{<:LinearMap}}) # length(maps) >= 2
+            if maps[1] isa UniformScalingMap{<:RealOrComplex}
+                return $f(maps[1]) && $_f(Base.tail(maps))
+            elseif maps[end] isa UniformScalingMap{<:RealOrComplex}
+                return $f(maps[end]) && $_f(Base.front(maps))
+            else
+                return maps[end] == $g(maps[1]) && $_f(Base.front(Base.tail(maps)))
+            end
+        end
     end
-    for n = 1:div(N, 2)
-        A.maps[n] == transpose(A.maps[N-n+1]) || return false
-    end
-    return true
 end
-function LinearAlgebra.ishermitian(A::CompositeMap)
-    N = length(A.maps)
-    if isodd(N)
-        ishermitian(A.maps[div(N+1, 2)]) || return false
-    end
-    for n = 1:div(N, 2)
-        A.maps[n] == adjoint(A.maps[N-n+1]) || return false
-    end
-    return true
+
+# scalar multiplication and division
+function Base.:(*)(α::Number, A::LinearMap)
+    T = promote_type(eltype(α), eltype(A))
+    return CompositeMap{T}(tuple(A, UniformScalingMap(α, size(A, 1))))
 end
-function LinearAlgebra.isposdef(A::CompositeMap)
-    N = length(A.maps)
-    if isodd(N)
-        isposdef(A.maps[div(N+1, 2)]) || return false
+function Base.:(*)(α::Number, A::CompositeMap)
+    T = promote_type(eltype(α), eltype(A))
+    Alast = last(A.maps)
+    if Alast isa UniformScalingMap
+        return CompositeMap{T}(tuple(Base.front(A.maps)..., UniformScalingMap(α * Alast.λ, size(Alast, 1))))
+    else
+        return CompositeMap{T}(tuple(A.maps..., UniformScalingMap(α, size(A, 1))))
     end
-    for n = 1:div(N, 2)
-        A.maps[n] == adjoint(A.maps[N-n+1]) || return false
-    end
-    return true
 end
+function Base.:(*)(A::LinearMap, α::Number)
+    T = promote_type(eltype(α), eltype(A))
+    return CompositeMap{T}(tuple(UniformScalingMap(α, size(A, 2)), A))
+end
+function Base.:(*)(A::CompositeMap, α::Number)
+    T = promote_type(eltype(α), eltype(A))
+    Afirst = first(A.maps)
+    if Afirst isa UniformScalingMap
+        return CompositeMap{T}(tuple(UniformScalingMap(Afirst.λ * α, size(Afirst, 1)), Base.tail(A.maps)...))
+    else
+        return CompositeMap{T}(tuple(UniformScalingMap(α, size(A, 2)), A.maps...))
+    end
+end
+Base.:(\)(α::Number, A::LinearMap) = inv(α) * A
+Base.:(/)(A::LinearMap, α::Number) = A * inv(α)
+Base.:(-)(A::LinearMap) = -1 * A
 
 # composition of linear maps
 function Base.:(*)(A1::CompositeMap, A2::CompositeMap)
@@ -70,10 +90,15 @@ function Base.:(*)(A1::LinearMap, A2::LinearMap)
     T = promote_type(eltype(A1),eltype(A2))
     return CompositeMap{T}(tuple(A2, A1))
 end
+Base.:(*)(A1::LinearMap, A2::UniformScaling{T}) where {T} = A1 * A2[1,1]
+Base.:(*)(A1::UniformScaling{T}, A2::LinearMap) where {T} = A1[1,1] * A2
 
 # special transposition behavior
 LinearAlgebra.transpose(A::CompositeMap{T}) where {T} = CompositeMap{T}(map(transpose, reverse(A.maps)))
 LinearAlgebra.adjoint(A::CompositeMap{T}) where {T}   = CompositeMap{T}(map(adjoint, reverse(A.maps)))
+
+# comparison of LinearCombination objects
+Base.:(==)(A::CompositeMap, B::CompositeMap) = (eltype(A) == eltype(B) && A.maps == B.maps)
 
 # multiplication with vectors
 function A_mul_B!(y::AbstractVector, A::CompositeMap, x::AbstractVector)
