@@ -44,7 +44,7 @@ The LinearMaps package provides the following functionality:
 
 *   `LinearMap`
 
-    General purpose method to construct `LinearMap` objects of specific types, as described in the [Types](@ref) section below
+    General purpose method to construct `LinearMap` objects of specific types, as described in the [Types](#types) section below
 
     ```
     LinearMap{T}(A::AbstractMatrix[; issymmetric::Bool, ishermitian::Bool, isposdef::Bool])
