@@ -7,6 +7,10 @@
 
 A Julia package for defining and working with linear maps, also known as linear transformations or linear operators acting on vectors. The only requirement for a LinearMap is that it can act on a vector (by multiplication) efficiently.
 
+## What's new in v2.3.0
+*   Fully Julia v0.7/v1.0/v1.1 compatible.
+*   Full support of noncommutative number types such as quaternions.
+
 ## What's new in v2.2.0
 *   Fully Julia v0.7/v1.0 compatible.
 *   A `convert(SparseMatrixCSC, A::LinearMap)` function, that calls the `sparse` matrix generating function.
@@ -40,7 +44,7 @@ The LinearMaps package provides the following functionality:
 
 *   `LinearMap`
 
-    General purpose method to construct `LinearMap` objects of specific types, as described in the Types section below
+    General purpose method to construct `LinearMap` objects of specific types, as described in the [Types](@ref) section below
 
     ```
     LinearMap{T}(A::AbstractMatrix[; issymmetric::Bool, ishermitian::Bool, isposdef::Bool])
@@ -87,7 +91,9 @@ The LinearMaps package provides the following functionality:
 
 ## Types
 
-None of the types below need to be constructed directly; they arise from performing operations between `LinearMap` objects or by calling the `LinearMap` constructor described above.
+None of the types below need to be constructed directly; they arise from performing
+operations between `LinearMap` objects or by calling the `LinearMap` constructor
+described above.
 
 *   `LinearMap`
 
@@ -95,15 +101,30 @@ None of the types below need to be constructed directly; they arise from perform
 
 *   `FunctionMap`
 
-    Type for wrapping an arbitrary function that is supposed to implement the matrix vector product as a `LinearMap`.
+    Type for wrapping an arbitrary function that is supposed to implement the
+    matrix vector product as a `LinearMap`.
 
 *   `WrappedMap`
 
-    Type for wrapping an `AbstractMatrix` or `LinearMap` and to possible redefine the properties `isreal`, `issymmetric`, `ishermitian` and `isposdef`. An `AbstractMatrix` will automatically be converted to a `WrappedMap` when it is combined with other `AbstractLinearMap` objects via linear combination or composition (multiplication). Note that `WrappedMap(mat1)*WrappedMap(mat2)` will never evaluate `mat1*mat2`, since this is more costly then evaluating `mat1*(mat2*x)` and the latter is the only operation that needs to be performed by `LinearMap` objects anyway. While the cost of matrix addition is comparable to matrix vector multiplication, this too is not performed explicitly since this would require new storage of the same amount as of the original matrices.
+    Type for wrapping an `AbstractMatrix` or `LinearMap` and to possible redefine
+    the properties `isreal`, `issymmetric`, `ishermitian` and `isposdef`. An
+    `AbstractMatrix` will automatically be converted to a `WrappedMap` when it is
+    combined with other `AbstractLinearMap` objects via linear combination or
+    composition (multiplication). Note that `WrappedMap(mat1)*WrappedMap(mat2)`
+    will never evaluate `mat1*mat2`, since this is more costly then evaluating
+    `mat1*(mat2*x)` and the latter is the only operation that needs to be performed
+    by `LinearMap` objects anyway. While the cost of matrix addition is comparable
+    to matrix vector multiplication, this too is not performed explicitly since
+    this would require new storage of the same amount as of the original matrices.
 
-*   `IdentityMap`
+*   `UniformScalingMap`
 
-    Type for representing the identity map of a certain size `M=N`, obtained simply as `IdentityMap{T}(M)`, `IdentityMap(T,M)=IdentityMap(T,M,N)=IdentityMap(T,(M,N))` or even `IdentityMap(M)=IdentityMap(M,N)=IdentityMap((M,N))`. If `T` is not specified, `Bool` is assumed, since operations between `Bool` and any other `Number` will always be converted to the type of the other `Number`. If `M!=N`, an error is returned. An `IdentityMap` of the correct size and element type will automatically be created if `LinearMap` objects are combined with `I`, Julia's built in identity (`UniformScaling`).
+    Type for representing a scalar multiple of the identity map (a.k.a. uniform
+    scaling) of a certain size `M=N`, obtained simply as `UniformScalingMap(λ, M)`.
+    The type `T` of the resulting `LinearMap` object is inferred from the type of
+    `λ`. A `UniformScalingMap` of the correct size will be automatically created
+    if `LinearMap` objects are multiplied by scalars from the left or from the right,
+    respecting the order of multiplication.
 
 *   `LinearCombination`, `CompositeMap`, `TransposeMap` and `AdjointMap`
 
@@ -112,8 +133,10 @@ None of the types below need to be constructed directly; they arise from perform
 ## Example
 
 The `LinearMap` object combines well with methods of the following packages:
-* [Arpack.jl](https://github.com/JuliaLinearAlgebra/Arpack.jl): iterative eigensolver `eigs` and SVD `svds`;
-* [IterativeSolvers.jl](https://github.com/JuliaMath/IterativeSolvers.jl): iterative solvers, eigensolvers, and SVD;
+* [Arpack.jl](https://github.com/JuliaLinearAlgebra/Arpack.jl): iterative eigensolver
+  `eigs` and SVD `svds`;
+* [IterativeSolvers.jl](https://github.com/JuliaMath/IterativeSolvers.jl): iterative
+  solvers, eigensolvers, and SVD;
 * [TSVD.jl](https://github.com/andreasnoack/TSVD.jl): truncated SVD `tsvd`.
 
 ```
