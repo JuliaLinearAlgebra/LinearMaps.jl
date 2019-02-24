@@ -7,6 +7,23 @@ using SparseArrays
 
 abstract type LinearMap{T} end
 
+using Quaternions
+import LinearAlgebra: norm
+function norm(x::Union{Array{Octonion{T},1},Array{Quaternion{T},1}}) where T
+    index = 1 
+    a = zeros(length(x))
+    for i ∈ x 
+        a[index]=abs(i)
+        index += 1
+    end 
+    return norm(a)
+end
+
+function norm(x::Union{Array{Octonion{T},2},Array{Quaternion{T},2}}) where T
+    a = vec(x)
+    return norm(a)
+end
+
 Base.eltype(::LinearMap{T}) where {T} = T
 
 Base.isreal(A::LinearMap) = eltype(A) <: Real
