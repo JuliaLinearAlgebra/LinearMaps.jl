@@ -423,7 +423,7 @@ end
     @test Array(α * L) == α * A
     @test Array(L * α) == A * α
     @test Array(α * L) == α * A
-    @test Array(L * α ) == A * α
+    @test Array(L * α) == A * α
     @test (α * L')' * x ≈ (α * A')' * x
     @test (α * L')' * v ≈ (α * A')' * v
     @test Array(@inferred adjoint(α * L * β)) ≈ conj(β) * A' * conj(α)
@@ -439,12 +439,9 @@ end
     β = UniformScaling(Octonion.(rand(8)...))
     L = LinearMap(A)
     @test Array(L) == A
-    @test Array(α * L) == α * A 
-    @test Array(L * α) == A * α 
-    @test Array(α * L) == α * A 
-    @test Array(L * α ) == A * α 
-    @test (α * L')' * x ≈ (α * A')' * x 
-    @test (α * L')' * v ≈ (α * A')' * v 
-    @test Array(@inferred adjoint(α * L * β)) ≈ conj(β) * A' * conj(α)
-    @test Array(@inferred transpose(α * L * β)) ≈ β * transpose(A) * α 
+    @test Array(α * L) == α * A
+    @test Array(L * α) == A * α
+    @test Array(α * L) == α * A
+    @test Array(L * α) == A * α
+    @test (α * L')' * v ≈ (α * A')' * v
 end
