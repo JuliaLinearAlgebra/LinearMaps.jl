@@ -2,23 +2,7 @@ using Test
 using LinearMaps
 using SparseArrays
 using LinearAlgebra
-
-# adopted from: https://discourse.julialang.org/t/way-to-return-the-number-of-allocations/5167/10
-macro numalloc(expr)
-    return quote
-        let
-            local f
-            function f()
-                n1 = Base.gc_num()
-                $(expr)
-                n2 = Base.gc_num()
-                diff = Base.GC_Diff(n2, n1)
-                Base.gc_alloc_count(diff)
-            end
-            f()
-        end
-    end
-end
+using BenchmarkTools
 
 A = 2 * rand(ComplexF64, (20, 10)) .- 1
 v = rand(ComplexF64, 10)
@@ -61,7 +45,8 @@ AV = A * V
     @test M * v == Av
     @test N * v == Av
     @test @inferred mul!(copy(w), M, v) == mul!(copy(w), A, v)
-    @test ((@allocated mul!(w, M, v)) == 0)
+    b = @benchmarkable mul!(w, M, v)
+    @test run(b, samples=3).allocs == 0
     @test @inferred mul!(copy(w), N, v) == Av
 
     # mat-vec-mul
@@ -201,12 +186,13 @@ end
 CS! = LinearMap(cumsum!, 10; ismutating=true)
 v = rand(10)
 u = similar(v)
-mul!(u, CS!, v)
-@test ((@allocated mul!(u, CS!, v)) == 0)
+b = @benchmarkable mul!(u, CS!, v)
+@test run(b, samples=3).allocs == 0
 n = 10
 L = sum(fill(CS!, n))
 @test mul!(u, L, v) ≈ n * cumsum(v)
-@test ((@numalloc mul!(u, L, v)) <= 1)
+b = @benchmarkable mul!(u, L, v)
+@test run(b, samples=5).allocs <= 1
 
 A = 2 * rand(ComplexF64, (10, 10)) .- 1
 B = rand(size(A)...)
@@ -215,8 +201,8 @@ N = LinearMap(B)
 LC = M + N
 v = rand(ComplexF64, 10)
 w = similar(v)
-mul!(w, M, v)
-@test ((@allocated mul!(w, M, v)) == 0)
+b = @benchmarkable mul!(w, M, v)
+@test run(b, samples=3).allocs == 0
 @testset "linear combinations" begin
     # @test_throws ErrorException LinearMaps.LinearCombination{ComplexF64}((M, N), (1, 2, 3))
     @test @inferred size(3M + 2.0N) == size(A)
@@ -420,10 +406,19 @@ end
     β = UniformScaling(Quaternion.(rand(4)...))
     L = LinearMap(A)
     @test Array(L) == A
+    @test Array(L') == A'
+    @test Array(transpose(L)) == transpose(A)
     @test Array(α * L) == α * A
     @test Array(L * α) == A * α
     @test Array(α * L) == α * A
-    @test Array(L * α) == A * α
+    @test Array(L * α ) == A * α
+    @test Array(α * L') == α * A'
+    @test Array((α * L')') ≈ (α * A')' ≈ A * conj(α)
+    @test L * x ≈ A * x
+    @test L' * x ≈ A' * x
+    @test α * (L * x) ≈ α * (A * x)
+    @test α * L * x ≈ α * A * x
+    @test (α * L') * x ≈ (α * A') * x
     @test (α * L')' * x ≈ (α * A')' * x
     @test (α * L')' * v ≈ (α * A')' * v
     @test Array(@inferred adjoint(α * L * β)) ≈ conj(β) * A' * conj(α)
