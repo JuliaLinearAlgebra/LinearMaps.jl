@@ -440,3 +440,74 @@ end
     @test Array(L * α) == A * α
     @test (α * L')' * v ≈ (α * A')' * v
 end
+
+@testset "block maps" begin
+    @testset "hcat" begin
+        for elty in (Float32, Float64, ComplexF64)
+            A11 = rand(elty, 10, 10)
+            A12 = rand(elty, 10, 20)
+            L = @inferred hcat(LinearMap(A11), LinearMap(A12))
+            @test L isa LinearMaps.BlockMap{elty}
+            A = [A11 A12]
+            x = rand(30)
+            @test L * x ≈ A * x
+            A = [I I I A11 A11 A11]
+            L = [I I I LinearMap(A11) LinearMap(A11) LinearMap(A11)]
+            x = rand(elty, 60)
+            @test L isa LinearMaps.BlockMap{elty}
+            @test L * x ≈ A * x
+        end
+    end
+    @testset "vcat" begin
+        for elty in (Float32, Float64, ComplexF64)
+            A11 = rand(elty, 10, 10)
+            A21 = rand(elty, 20, 10)
+            L = @inferred vcat(LinearMap(A11), LinearMap(A21))
+            @test L isa LinearMaps.BlockMap{elty}
+            A = [A11; A21]
+            x = rand(10)
+            @test L * x ≈ A * x
+            A = [I; I; I; A11; A11; A11]
+            L = [I; I; I; LinearMap(A11); LinearMap(A11); LinearMap(A11)]
+            x = rand(elty, 10)
+            @test L isa LinearMaps.BlockMap{elty}
+            @test L * x ≈ A * x
+        end
+    end
+    @testset "hvcat" begin
+        for elty in (Float32, Float64, ComplexF64)
+            A12 = rand(elty, 10, 20)
+            A21 = rand(elty, 20, 10)
+            A = [I A12; A21 I]
+            @test_broken @inferred hvcat(2, I, LinearMap(A12), LinearMap(A21), I)
+            L = [I LinearMap(A12); LinearMap(A21) I]
+            x = rand(30)
+            @test L isa LinearMaps.BlockMap{elty}
+            @test size(L) == (30, 30)
+            @test L * x ≈ A * x
+        end
+    end
+    @testset "adjoint/transpose" begin
+        for elty in (Float32, Float64, ComplexF64), transform in (transpose, adjoint)
+            A12 = rand(elty, 10, 10)
+            A = [I A12; transform(A12) I]
+            L = [I LinearMap(A12); transform(LinearMap(A12)) I]
+            @test_broken ishermitian(L)
+            x = rand(elty, 20)
+            @test L isa LinearMaps.BlockMap{elty}
+            @test size(L) == (20, 20)
+            @test L * x ≈ A * x
+            Lt = transform(L)
+            @test Lt isa LinearMaps.BlockMap{elty}
+            @test Lt * x ≈ transform(A) * x
+            Lt = transform(LinearMap(L))
+            @test Lt * x ≈ transform(A) * x
+            A21 = rand(elty, 10, 10)
+            A = [I A12; A21 I]
+            L = [I LinearMap(A12); LinearMap(A21) I]
+            Lt = transform(L)
+            @test Lt isa LinearMaps.BlockMap{elty}
+            @test Lt * x ≈ transform(A) * x
+        end
+    end
+end
