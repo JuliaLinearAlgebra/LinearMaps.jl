@@ -458,7 +458,7 @@ end
             @test L * x ≈ A * x
             A11 = rand(elty, 11, 10)
             A12 = rand(elty, 10, 20)
-            @test_throws ArgumentError hcat(LinearMap(A11), LinearMap(A12))
+            @test_throws ErrorException hcat(LinearMap(A11), LinearMap(A12))
         end
     end
     @testset "vcat" begin
@@ -477,7 +477,7 @@ end
             @test L * x ≈ A * x
             A11 = rand(elty, 10, 11)
             A21 = rand(elty, 20, 10)
-            @test_throws ArgumentError vcat(LinearMap(A11), LinearMap(A21))
+            @test_throws ErrorException vcat(LinearMap(A11), LinearMap(A21))
         end
     end
     @testset "hvcat" begin

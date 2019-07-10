@@ -163,10 +163,10 @@ function checksizes(fullsizes::Array{Tuple{Int,Int},2}, block_sizes::Tuple{Vecto
     Base.@nloops 2 i fullsizes begin
         block_index = Base.@ntuple 2 i
         if fullsizes[block_index...] != getsizes(block_sizes, block_index)
-            throw(ArgumentError("size(blocks[", strip(repr(block_index), ['(', ')']),
-                  "]) (= ", fullsizes[block_index...],
-                  ") is incompatible with expected size: ",
-                  getsizes(block_sizes, block_index)))
+			error("size(blocks[", strip(repr(block_index), ['(', ')']),
+                      "]) (= ", fullsizes[block_index...],
+                      ") is incompatible with expected size: ",
+                      getsizes(block_sizes, block_index))
         end
     end
     return fullsizes
