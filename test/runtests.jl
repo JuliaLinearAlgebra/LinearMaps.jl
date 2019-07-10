@@ -456,6 +456,9 @@ end
             x = rand(elty, 60)
             @test L isa LinearMaps.BlockMap{elty}
             @test L * x ≈ A * x
+            A11 = rand(elty, 11, 10)
+            A12 = rand(elty, 10, 20)
+            @test_throws ArgumentError hcat(LinearMap(A11), LinearMap(A12))
         end
     end
     @testset "vcat" begin
@@ -472,6 +475,9 @@ end
             x = rand(elty, 10)
             @test L isa LinearMaps.BlockMap{elty}
             @test L * x ≈ A * x
+            A11 = rand(elty, 10, 11)
+            A21 = rand(elty, 20, 10)
+            @test_throws ArgumentError vcat(LinearMap(A11), LinearMap(A21))
         end
     end
     @testset "hvcat" begin
@@ -485,6 +491,10 @@ end
             @test L isa LinearMaps.BlockMap{elty}
             @test size(L) == (30, 30)
             @test L * x ≈ A * x
+            A12 = rand(elty, 10, 21)
+            A21 = rand(elty, 20, 10)
+            @test_throws ArgumentError A = [I A12; A21 I]
+            @test_throws ArgumentError A = [A12 A12; A21 A21]
         end
     end
     @testset "adjoint/transpose" begin
