@@ -487,7 +487,7 @@ end
             A21 = rand(elty, 20, 10)
             A22 = rand(elty, 20, 20)
             A = [A11 A12; A21 A22]
-            @test_broken @inferred hvcat(2, LinearMap(A11), LinearMap(A12), LinearMap(A21), LinearMap(A22))
+            @test @inferred hvcat(2, LinearMap(A11), LinearMap(A12), LinearMap(A21), LinearMap(A22))
             L = [LinearMap(A11) LinearMap(A12); LinearMap(A21) LinearMap(A22)]
             x = rand(30)
             @test L isa LinearMaps.AbstractBlockMap{elty}
@@ -495,7 +495,7 @@ end
             @test L * x ≈ A * x
             @test Matrix(L) ≈ A
             A = [I A12; A21 I]
-            @test_broken @inferred hvcat(2, I, LinearMap(A12), LinearMap(A21), I)
+            @test @inferred hvcat(2, I, LinearMap(A12), LinearMap(A21), I)
             L = hvcat(2, I, LinearMap(A12), LinearMap(A21), I)
             @test L isa LinearMaps.AbstractBlockMap{elty}
             @test size(L) == (30, 30)
