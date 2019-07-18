@@ -447,18 +447,18 @@ end
             A11 = rand(elty, 10, 10)
             A12 = rand(elty, 10, 20)
             L = @inferred hcat(LinearMap(A11), LinearMap(A12))
-            @test L isa LinearMaps.BlockMap{elty}
+            @test L isa LinearMaps.AbstractBlockMap{elty}
             A = [A11 A12]
             x = rand(30)
             @test L * x ≈ A * x
             A = [I I I A11 A11 A11]
             L = [I I I LinearMap(A11) LinearMap(A11) LinearMap(A11)]
             x = rand(elty, 60)
-            @test L isa LinearMaps.BlockMap{elty}
+            @test L isa LinearMaps.AbstractBlockMap{elty}
             @test L * x ≈ A * x
             A11 = rand(elty, 11, 10)
             A12 = rand(elty, 10, 20)
-            @test_throws ErrorException hcat(LinearMap(A11), LinearMap(A12))
+            @test_throws DimensionMismatch hcat(LinearMap(A11), LinearMap(A12))
         end
     end
     @testset "vcat" begin
@@ -466,29 +466,38 @@ end
             A11 = rand(elty, 10, 10)
             A21 = rand(elty, 20, 10)
             L = @inferred vcat(LinearMap(A11), LinearMap(A21))
-            @test L isa LinearMaps.BlockMap{elty}
+            @test L isa LinearMaps.AbstractBlockMap{elty}
             A = [A11; A21]
             x = rand(10)
             @test L * x ≈ A * x
             A = [I; I; I; A11; A11; A11]
             L = [I; I; I; LinearMap(A11); LinearMap(A11); LinearMap(A11)]
             x = rand(elty, 10)
-            @test L isa LinearMaps.BlockMap{elty}
+            @test L isa LinearMaps.AbstractBlockMap{elty}
             @test L * x ≈ A * x
             A11 = rand(elty, 10, 11)
             A21 = rand(elty, 20, 10)
-            @test_throws ErrorException vcat(LinearMap(A11), LinearMap(A21))
+            @test_throws DimensionMismatch vcat(LinearMap(A11), LinearMap(A21))
         end
     end
     @testset "hvcat" begin
         for elty in (Float32, Float64, ComplexF64)
+            A11 = rand(elty, 10, 10)
             A12 = rand(elty, 10, 20)
             A21 = rand(elty, 20, 10)
+            A22 = rand(elty, 20, 20)
+            A = [A11 A12; A21 A22]
+            @test_broken @inferred hvcat(2, LinearMap(A11), LinearMap(A12), LinearMap(A21), LinearMap(A22))
+            L = [LinearMap(A11) LinearMap(A12); LinearMap(A21) LinearMap(A22)]
+            x = rand(30)
+            @test L isa LinearMaps.AbstractBlockMap{elty}
+            @test size(L) == (30, 30)
+            @test L * x ≈ A * x
+            @test Matrix(L) ≈ A
             A = [I A12; A21 I]
             @test_broken @inferred hvcat(2, I, LinearMap(A12), LinearMap(A21), I)
-            L = [I LinearMap(A12); LinearMap(A21) I]
-            x = rand(30)
-            @test L isa LinearMaps.BlockMap{elty}
+            L = hvcat(2, I, LinearMap(A12), LinearMap(A21), I)
+            @test L isa LinearMaps.AbstractBlockMap{elty}
             @test size(L) == (30, 30)
             @test L * x ≈ A * x
             A12 = rand(elty, 10, 21)
@@ -504,11 +513,11 @@ end
             L = [I LinearMap(A12); transform(LinearMap(A12)) I]
             @test_broken ishermitian(L)
             x = rand(elty, 20)
-            @test L isa LinearMaps.BlockMap{elty}
+            @test L isa LinearMaps.AbstractBlockMap{elty}
             @test size(L) == (20, 20)
             @test L * x ≈ A * x
             Lt = transform(L)
-            @test Lt isa LinearMaps.BlockMap{elty}
+            @test Lt isa LinearMaps.AbstractBlockMap{elty}
             @test Lt * x ≈ transform(A) * x
             Lt = transform(LinearMap(L))
             @test Lt * x ≈ transform(A) * x
@@ -516,7 +525,7 @@ end
             A = [I A12; A21 I]
             L = [I LinearMap(A12); LinearMap(A21) I]
             Lt = transform(L)
-            @test Lt isa LinearMaps.BlockMap{elty}
+            @test Lt isa LinearMaps.AbstractBlockMap{elty}
             @test Lt * x ≈ transform(A) * x
         end
     end
