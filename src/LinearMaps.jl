@@ -47,8 +47,8 @@ end
 # the following is of interest in, e.g., subspace-iteration methods
 function LinearAlgebra.mul!(Y::AbstractMatrix, A::LinearMap{T}, X::AbstractMatrix, α::Number=one(T), β::Number=zero(T)) where {T}
     (size(Y, 1) == size(A, 1) && size(X, 1) == size(A, 2) && size(Y, 2) == size(X, 2)) || throw(DimensionMismatch("mul!"))
-    @inbounds @views for i = 1:size(X, 2)
-        mul!(Y[:, i], A, X[:, i], α, β)
+    for (Xi, Yi) in zip(eachcol(X), eachcol(Y))
+        mul!(Yi, A, Xi, α, β)
     end
     return Y
 end

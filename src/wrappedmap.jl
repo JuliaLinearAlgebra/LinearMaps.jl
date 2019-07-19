@@ -40,4 +40,4 @@ Base.:(-)(A1::LinearMap, A2::AbstractMatrix) = -(A1, WrappedMap(A2))
 Base.:(-)(A1::AbstractMatrix, A2::LinearMap) = -(WrappedMap(A1), A2)
 
 Base.:(*)(A1::LinearMap, A2::AbstractMatrix) = *(A1, WrappedMap(A2))
-Base.:(*)(A1::AbstractMatrix, A2::LinearMap) = *(WrappedMap(A1) ,A2)
+Base.:(*)(A1::AbstractMatrix, A2::LinearMap) = *(WrappedMap(A1), A2)

@@ -59,29 +59,7 @@ function A_mul_B!(y::AbstractVector, A::LinearCombination, x::AbstractVector)
     end
     return y
 end
-function At_mul_B!(y::AbstractVector, A::LinearCombination, x::AbstractVector)
-    # no size checking, will be done by individual maps
-    At_mul_B!(y, A.maps[1], x)
-    l = length(A.maps)
-    if l>1
-        z = similar(y)
-        for n = 2:l
-            At_mul_B!(z, A.maps[n], x)
-            y .+= z
-        end
-    end
-    return y
-end
-function Ac_mul_B!(y::AbstractVector, A::LinearCombination, x::AbstractVector)
-    # no size checking, will be done by individual maps
-    Ac_mul_B!(y, A.maps[1], x)
-    l = length(A.maps)
-    if l>1
-        z = similar(y)
-        for n=2:l
-            Ac_mul_B!(z, A.maps[n], x)
-            y .+= z
-        end
-    end
-    return y
-end
+
+At_mul_B!(y::AbstractVector, A::LinearCombination, x::AbstractVector) = A_mul_B!(y, transpose(A), x)
+
+Ac_mul_B!(y::AbstractVector, A::LinearCombination, x::AbstractVector) = A_mul_B!(y, adjoint(A), x)

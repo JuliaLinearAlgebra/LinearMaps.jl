@@ -38,11 +38,6 @@ ismutating(A::FunctionMap) = A._ismutating
 _ismutating(f) = first(methods(f)).nargs == 3
 
 # multiplication with vector
-function A_mul_B!(y::AbstractVector, A::FunctionMap, x::AbstractVector)
-    (length(x) == A.N && length(y) == A.M) || throw(DimensionMismatch())
-    ismutating(A) ? A.f(y, x) : copyto!(y, A.f(x))
-    return y
-end
 function Base.:(*)(A::FunctionMap, x::AbstractVector)
     length(x) == A.N || throw(DimensionMismatch())
     if ismutating(A)
@@ -51,6 +46,12 @@ function Base.:(*)(A::FunctionMap, x::AbstractVector)
     else
         y = A.f(x)
     end
+    return y
+end
+
+function A_mul_B!(y::AbstractVector, A::FunctionMap, x::AbstractVector)
+    (length(x) == A.N && length(y) == A.M) || throw(DimensionMismatch())
+    ismutating(A) ? A.f(y, x) : copyto!(y, A.f(x))
     return y
 end
 
