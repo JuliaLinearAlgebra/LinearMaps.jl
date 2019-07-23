@@ -450,6 +450,8 @@ end
             @test L isa LinearMaps.AbstractBlockMap{elty}
             A = [A11 A12]
             x = rand(30)
+            @test size(L) == size(A)
+            @test Matrix(L) ≈ A
             @test L * x ≈ A * x
             A = [I I I A11 A11 A11]
             L = [I I I LinearMap(A11) LinearMap(A11) LinearMap(A11)]
@@ -469,6 +471,8 @@ end
             @test L isa LinearMaps.AbstractBlockMap{elty}
             A = [A11; A21]
             x = rand(10)
+            @test size(L) == size(A)
+            @test Matrix(L) ≈ A
             @test L * x ≈ A * x
             A = [I; I; I; A11; A11; A11]
             L = [I; I; I; LinearMap(A11); LinearMap(A11); LinearMap(A11)]
@@ -491,7 +495,7 @@ end
             L = [LinearMap(A11) LinearMap(A12); LinearMap(A21) LinearMap(A22)]
             x = rand(30)
             @test L isa LinearMaps.AbstractBlockMap{elty}
-            @test size(L) == (30, 30)
+            @test size(L) == size(A)
             @test L * x ≈ A * x
             @test Matrix(L) ≈ A
             A = [I A12; A21 I]
@@ -499,6 +503,7 @@ end
             L = hvcat(2, I, LinearMap(A12), LinearMap(A21), I)
             @test L isa LinearMaps.AbstractBlockMap{elty}
             @test size(L) == (30, 30)
+            @test Matrix(L) ≈ A
             @test L * x ≈ A * x
             A12 = rand(elty, 10, 21)
             A21 = rand(elty, 20, 10)
@@ -514,19 +519,22 @@ end
             @test_broken ishermitian(L)
             x = rand(elty, 20)
             @test L isa LinearMaps.AbstractBlockMap{elty}
-            @test size(L) == (20, 20)
+            @test size(L) == size(A)
             @test L * x ≈ A * x
+            @test Matrix(L) ≈ A
             Lt = transform(L)
             @test Lt isa LinearMaps.AbstractBlockMap{elty}
             @test Lt * x ≈ transform(A) * x
             Lt = transform(LinearMap(L))
             @test Lt * x ≈ transform(A) * x
+            @test Matrix(Lt) ≈ Matrix(transform(A))
             A21 = rand(elty, 10, 10)
             A = [I A12; A21 I]
             L = [I LinearMap(A12); LinearMap(A21) I]
             Lt = transform(L)
             @test Lt isa LinearMaps.AbstractBlockMap{elty}
             @test Lt * x ≈ transform(A) * x
+            @test Matrix(Lt) ≈ Matrix(transform(A))
         end
     end
 end
