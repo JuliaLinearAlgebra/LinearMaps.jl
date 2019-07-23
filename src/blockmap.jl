@@ -24,18 +24,18 @@ HBlockMap(maps::Tuple{Vararg{LinearMap{T}}}) where {T} = HBlockMap(maps, sizes_f
 VBlockMap(maps::Tuple{Vararg{LinearMap{T}}}) where {T} = VBlockMap(maps, sizes_from_maps_v(maps))
 
 function sizes_from_maps_h(maps::Tuple{Vararg{LinearMap}})::Tuple{Vector{Int},Vector{Int}} where {T}
-	m = size(maps[1], 1)
-	for map in maps
-		m == size(map, 1) || throw(DimensionMismatch())
-	end
-	return [1, m+1], cumsum!(zeros(Int, length(maps)+1), [1, map(m -> size(m, 2), maps)...,])
+    m = size(maps[1], 1)
+    for map in maps
+        m == size(map, 1) || throw(DimensionMismatch())
+    end
+    return [1, m+1], cumsum!(zeros(Int, length(maps)+1), [1, map(m -> size(m, 2), maps)...,])
 end
 function sizes_from_maps_v(maps::Tuple{Vararg{LinearMap}})::Tuple{Vector{Int},Vector{Int}} where {T}
-	n = size(maps[1], 2)
-	for map in maps
-		n == size(map, 2) || throw(DimensionMismatch())
-	end
-	return cumsum!(zeros(Int, length(maps)+1), [1, map(m -> size(m, 1), maps)...,]), [1, n+1]
+    n = size(maps[1], 2)
+    for map in maps
+        n == size(map, 2) || throw(DimensionMismatch())
+    end
+    return cumsum!(zeros(Int, length(maps)+1), [1, map(m -> size(m, 1), maps)...,]), [1, n+1]
 end
 
 @inline Base.size(A::AbstractBlockMap) = (A.block_sizes[1][end]-1, A.block_sizes[2][end]-1)
@@ -45,32 +45,32 @@ end
 ############
 
 function Base.hcat(As::Union{LinearMap,UniformScaling}...)
-	T = promote_type(map(eltype, As)...)
-	for A in As
-		if !(A isa UniformScaling)
-			eltype(A) == T || throw(ArgumentError("eltype mismatch in hcat of linear maps"))
-		end
-	end
+    T = promote_type(map(eltype, As)...)
+    for A in As
+        if !(A isa UniformScaling)
+            eltype(A) == T || throw(ArgumentError("eltype mismatch in hcat of linear maps"))
+        end
+    end
 
-	nrows = 0
-	# find first non-UniformScaling to detect number of rows
-	for A in As
-		if !(A isa UniformScaling)
-			nrows = size(A, 1)
-			break
-		end
-	end
-	nrows == 0 && throw(ArgumentError("hcat of only UniformScaling-like objects cannot determine the linear map size"))
+    nrows = 0
+    # find first non-UniformScaling to detect number of rows
+    for A in As
+        if !(A isa UniformScaling)
+            nrows = size(A, 1)
+            break
+        end
+    end
+    nrows == 0 && throw(ArgumentError("hcat of only UniformScaling-like objects cannot determine the linear map size"))
 
-	maps = map(As) do A
-		if A isa UniformScaling
-			return UniformScalingMap(convert(T, A.λ), nrows)
-		else
-			# size(A, 1) == nrows || throw(DimensionMismatch("hcat of LinearMaps"))
-			return A
-		end
-	end
-	return hcat(maps...)
+    maps = map(As) do A
+        if A isa UniformScaling
+            return UniformScalingMap(convert(T, A.λ), nrows)
+        else
+            # size(A, 1) == nrows || throw(DimensionMismatch("hcat of LinearMaps"))
+            return A
+        end
+    end
+    return hcat(maps...)
 end
 Base.hcat(A::LinearMap{T}, As::LinearMap{T}...) where {T} = hcat(A, hcat(As...))
 Base.hcat(A::LinearMap{T}, B::LinearMap{T}) where {T} = HBlockMap(tuple(A, B))
@@ -78,32 +78,32 @@ Base.hcat(A::LinearMap{T}, B::HBlockMap{T}) where {T} = HBlockMap(tuple(A, B.map
 Base.hcat(A::HBlockMap{T}, B::HBlockMap{T}) where {T} = HBlockMap(tuple(A.maps..., B.maps...))
 
 function Base.vcat(As::Union{LinearMap,UniformScaling}...)
-	T = promote_type(map(eltype, As)...)
-	for A in As
-		if !(A isa UniformScaling)
-			eltype(A) == T || throw(ArgumentError("eltype type mismatch in vcat of linear maps"))
-		end
-	end
+    T = promote_type(map(eltype, As)...)
+    for A in As
+        if !(A isa UniformScaling)
+            eltype(A) == T || throw(ArgumentError("eltype type mismatch in vcat of linear maps"))
+        end
+    end
 
-	ncols = 0
-	# find first non-UniformScaling to detect number of columns
-	for A in As
-		if !(A isa UniformScaling)
-			ncols = size(A, 2)
-			break
-		end
-	end
-	ncols == 0 && throw(ArgumentError("hcat of only UniformScaling-like objects cannot determine the linear map size"))
+    ncols = 0
+    # find first non-UniformScaling to detect number of columns
+    for A in As
+        if !(A isa UniformScaling)
+            ncols = size(A, 2)
+            break
+        end
+    end
+    ncols == 0 && throw(ArgumentError("hcat of only UniformScaling-like objects cannot determine the linear map size"))
 
-	maps = map(As) do A
-		if A isa UniformScaling
-			return UniformScalingMap(convert(T, A.λ), ncols)
-		else
-			# size(A, 2) == ncols || throw(DimensionMismatch("vcat of LinearMaps"))
-			return A
-		end
-	end
-	return vcat(maps...)
+    maps = map(As) do A
+        if A isa UniformScaling
+            return UniformScalingMap(convert(T, A.λ), ncols)
+        else
+            # size(A, 2) == ncols || throw(DimensionMismatch("vcat of LinearMaps"))
+            return A
+        end
+    end
+    return vcat(maps...)
 end
 Base.vcat(A::LinearMap{T}, As::LinearMap{T}...) where {T} = vcat(A, vcat(As...))
 Base.vcat(A::LinearMap{T}, B::LinearMap{T}) where {T} = VBlockMap(tuple(A, B))
@@ -111,7 +111,7 @@ Base.vcat(A::LinearMap{T}, B::VBlockMap{T}) where {T} = VBlockMap(tuple(A, B.map
 Base.vcat(A::VBlockMap{T}, B::VBlockMap{T}) where {T} = VBlockMap(tuple(A.maps..., B.maps...))
 
 function Base.hvcat(rows::Tuple{Vararg{Int}}, As::Union{LinearMap,UniformScaling}...)
-	T = promote_type(map(eltype, As)...)
+    T = promote_type(map(eltype, As)...)
     nr = length(rows)
     sum(rows) == length(As) || throw(ArgumentError("mismatch between row sizes and number of arguments"))
     n = fill(-1, length(As))
@@ -162,23 +162,23 @@ function Base.hvcat(rows::Tuple{Vararg{Int}}, As::Union{LinearMap,UniformScaling
             j += rows[i]
         end
     end
-	maps = ntuple(length(As)) do i
-		if As[i] isa UniformScaling
-			return UniformScalingMap(convert(T, As[i].λ), n[i])
-		else
-			return As[i] # size check is going to be performed in h/v/cat below
-		end
-	end
+    maps = ntuple(length(As)) do i
+        if As[i] isa UniformScaling
+            return UniformScalingMap(convert(T, As[i].λ), n[i])
+        else
+            return As[i] # size check is going to be performed in h/v/cat below
+        end
+    end
 
-	return hvcat(rows, maps)
+    return hvcat(rows, maps)
 end
 function Base.hvcat(rows::Tuple{Vararg{Int}}, As::Tuple{Vararg{LinearMap{T}}}) where {T}
-	nr = length(rows)
-	j = 0
-	A::NTuple{nr,HBlockMap{T}} = ntuple(nr) do i
-		hmaps = As[j+1:j+rows[i]]
-		j += rows[i]
-		return hcat(hmaps...)
+    nr = length(rows)
+    j = 0
+    A::NTuple{nr,HBlockMap{T}} = ntuple(nr) do i
+        hmaps = As[j+1:j+rows[i]]
+        j += rows[i]
+        return hcat(hmaps...)
     end
 
     return vcat(A...)
@@ -239,19 +239,19 @@ function A_mul_B!(y::AbstractVector, A::HBlockMap, x::AbstractVector)
     (length(x) == N && length(y) == M) || throw(DimensionMismatch())
     _, xinds = A.block_sizes
     # fill y with results of first block
-	A_mul_B!(y, A.maps[1], @views x[xinds[1]:xinds[2]-1])
-	# add to y results of the following block columns
+    A_mul_B!(y, A.maps[1], @views x[xinds[1]:xinds[2]-1])
+    # add to y results of the following block columns
     @inbounds @views for j in 2:length(A.maps)
         mul!(y, A.maps[j], x[xinds[j]:xinds[j+1]-1], 1, 1)
     end
     return y
 end
 function A_mul_B!(y::AbstractVector, A::VBlockMap, x::AbstractVector)
-	M, N = size(A)
+    M, N = size(A)
     (length(x) == N && length(y) == M) || throw(DimensionMismatch())
     yinds, _ = A.block_sizes
     # fill parts of y according to block sizes
-	@inbounds @views for j in 1:length(A.maps)
+    @inbounds @views for j in 1:length(A.maps)
         A_mul_B!(y[yinds[j]:yinds[j+1]-1], A.maps[j], x)
     end
     return y
