@@ -505,6 +505,14 @@ end
             @test size(L) == (30, 30)
             @test Matrix(L) ≈ A
             @test L * x ≈ A * x
+            A = rand(elty, 10,10); LA = LinearMap(A)
+            B = rand(elty, 20,30); LB = LinearMap(B)
+            @test [LA LA LA; LB] isa LinearMaps.AbstractBlockMap{elty}
+            @test Matrix([LA LA LA; LB]) ≈ [A A A; B]
+            @test [LB; LA LA LA] isa LinearMaps.AbstractBlockMap{elty}
+            @test Matrix([LB; LA LA LA]) ≈ [B; A A A]
+            @test [I; LA LA LA] isa LinearMaps.AbstractBlockMap{elty}
+            @test Matrix([I; LA LA LA]) ≈ [I; A A A]
             A12 = rand(elty, 10, 21)
             A21 = rand(elty, 20, 10)
             @test_throws ArgumentError A = [I A12; A21 I]
