@@ -1,44 +1,40 @@
-##############
-# BlockMaps #
-##############
-
-abstract type AbstractBlockMap{T,As} <: LinearMap{T} end
-
-struct HBlockMap{T,As<:Tuple{Vararg{LinearMap}}} <: AbstractBlockMap{T,As}
+struct BlockMap{T,As<:Tuple{Vararg{LinearMap}},Rs<:Tuple{Vararg{Int}}} <: LinearMap{T}
     maps::As
-    block_sizes::Tuple{Vector{Int},Vector{Int}}
-    function HBlockMap(maps::R, block_sizes::Tuple{Vector{Int},Vector{Int}}) where {T, R<:Tuple{Vararg{LinearMap{T}}}}
-        new{T,R}(maps, block_sizes)
+    rows::Rs
+    function BlockMap(maps::R, rows::S) where {T, R<:Tuple{Vararg{LinearMap{T}}}, S<:Tuple{Vararg{Int}}}
+        new{T,R,S}(maps, rows)
     end
 end
 
-struct VBlockMap{T,As<:Tuple{Vararg{LinearMap}}} <: AbstractBlockMap{T,As}
-    maps::As
-    block_sizes::Tuple{Vector{Int},Vector{Int}}
-    function VBlockMap(maps::R, block_sizes::Tuple{Vector{Int},Vector{Int}}) where {T, R<:Tuple{Vararg{LinearMap{T}}}}
-        new{T,R}(maps, block_sizes)
-    end
-end
+cumsize_h(maps::Tuple{Vararg{LinearMap}}) = cumsum([1, map(m -> size(m, 2), maps)...,])
 
-HBlockMap(maps::Tuple{Vararg{LinearMap{T}}}) where {T} = HBlockMap(maps, sizes_from_maps_h(maps))
-VBlockMap(maps::Tuple{Vararg{LinearMap{T}}}) where {T} = VBlockMap(maps, sizes_from_maps_v(maps))
+cumsize_v(maps::Tuple{Vararg{LinearMap}}) = cumsum([1, map(m -> size(m, 1), maps)...,])
 
-function sizes_from_maps_h(maps::Tuple{Vararg{LinearMap}})::Tuple{Vector{Int},Vector{Int}} where {T}
-    m = size(maps[1], 1)
+function check_dims(maps::Tuple{Vararg{LinearMap}}, k)
+    n = size(maps[1], k)
     for map in maps
-        m == size(map, 1) || throw(DimensionMismatch())
+        n == size(map, k) || throw(DimensionMismatch("Expected $n, got $(size(map, k))"))
     end
-    return [1, m+1], cumsum!(zeros(Int, length(maps)+1), [1, map(m -> size(m, 2), maps)...,])
-end
-function sizes_from_maps_v(maps::Tuple{Vararg{LinearMap}})::Tuple{Vector{Int},Vector{Int}} where {T}
-    n = size(maps[1], 2)
-    for map in maps
-        n == size(map, 2) || throw(DimensionMismatch())
-    end
-    return cumsum!(zeros(Int, length(maps)+1), [1, map(m -> size(m, 1), maps)...,]), [1, n+1]
+    return nothing
 end
 
-@inline Base.size(A::AbstractBlockMap) = (A.block_sizes[1][end]-1, A.block_sizes[2][end]-1)
+function Base.size(A::BlockMap)
+    as, rows = A.maps, A.rows
+
+    nbr = length(rows)  # number of block rows
+    nc = 0
+    for i in 1:rows[1]
+        nc += size(as[i],2)
+    end
+
+    nr = 0
+    a = 1
+    for i in 1:nbr
+        nr += size(as[a],1)
+        a += rows[i]
+    end
+    return nr, nc
+end
 
 ############
 # hcat
@@ -46,6 +42,8 @@ end
 
 function Base.hcat(As::Union{LinearMap,UniformScaling}...)
     T = promote_type(map(eltype, As)...)
+    nbc = length(As)
+
     for A in As
         if !(A isa UniformScaling)
             eltype(A) == T || throw(ArgumentError("eltype mismatch in hcat of linear maps"))
@@ -62,23 +60,19 @@ function Base.hcat(As::Union{LinearMap,UniformScaling}...)
     end
     nrows == 0 && throw(ArgumentError("hcat of only UniformScaling-like objects cannot determine the linear map size"))
 
-    maps = map(As) do A
-        if A isa UniformScaling
-            return UniformScalingMap(convert(T, A.λ), nrows)
-        else
-            # size(A, 1) == nrows || throw(DimensionMismatch("hcat of LinearMaps"))
-            return A
-        end
-    end
-    return hcat(maps...)
+    maps = promote_to_lmaps(ntuple(i->nrows, nbc), 1, T, As...)
+    check_dims(maps, 1)
+    return BlockMap(maps, (length(As),))
 end
-Base.hcat(A::LinearMap{T}, As::LinearMap{T}...) where {T} = hcat(A, hcat(As...))
-Base.hcat(A::LinearMap{T}, B::LinearMap{T}) where {T} = HBlockMap(tuple(A, B))
-Base.hcat(A::LinearMap{T}, B::HBlockMap{T}) where {T} = HBlockMap(tuple(A, B.maps...))
-Base.hcat(A::HBlockMap{T}, B::HBlockMap{T}) where {T} = HBlockMap(tuple(A.maps..., B.maps...))
+
+############
+# vcat
+############
 
 function Base.vcat(As::Union{LinearMap,UniformScaling}...)
     T = promote_type(map(eltype, As)...)
+    nbr = length(As)
+
     for A in As
         if !(A isa UniformScaling)
             eltype(A) == T || throw(ArgumentError("eltype type mismatch in vcat of linear maps"))
@@ -95,24 +89,17 @@ function Base.vcat(As::Union{LinearMap,UniformScaling}...)
     end
     ncols == 0 && throw(ArgumentError("hcat of only UniformScaling-like objects cannot determine the linear map size"))
 
-    maps = map(As) do A
-        if A isa UniformScaling
-            return UniformScalingMap(convert(T, A.λ), ncols)
-        else
-            # size(A, 2) == ncols || throw(DimensionMismatch("vcat of LinearMaps"))
-            return A
-        end
-    end
-    return vcat(maps...)
+    maps = promote_to_lmaps(ntuple(i->ncols, nbr), 1, T, As...)
+    check_dims(maps, 2)
+    return BlockMap(maps, ntuple(i->1, length(As)))
 end
-Base.vcat(A::LinearMap{T}, As::LinearMap{T}...) where {T} = vcat(A, vcat(As...))
-Base.vcat(A::LinearMap{T}, B::LinearMap{T}) where {T} = VBlockMap(tuple(A, B))
-Base.vcat(A::LinearMap{T}, B::VBlockMap{T}) where {T} = VBlockMap(tuple(A, B.maps...))
-Base.vcat(A::VBlockMap{T}, B::VBlockMap{T}) where {T} = VBlockMap(tuple(A.maps..., B.maps...))
 
-function Base.hvcat(rows::Tuple{Vararg{Int}}, As::Union{LinearMap,UniformScaling}...)
+############
+# hvcat
+############
+
+function Base.hvcat(rows::NTuple{nr,Int}, As::Union{LinearMap,UniformScaling}...) where nr
     T = promote_type(map(eltype, As)...)
-    nr = length(rows)
     sum(rows) == length(As) || throw(ArgumentError("mismatch between row sizes and number of arguments"))
     n = fill(-1, length(As))
     needcols = false # whether we also need to infer some sizes from the column count
@@ -162,27 +149,20 @@ function Base.hvcat(rows::Tuple{Vararg{Int}}, As::Union{LinearMap,UniformScaling
             j += rows[i]
         end
     end
-    maps = ntuple(length(As)) do i
-        if As[i] isa UniformScaling
-            return UniformScalingMap(convert(T, As[i].λ), n[i])
-        else
-            return As[i] # size check is going to be performed in h/v/cat below
-        end
-    end
 
-    return hvcat(rows, maps)
+    return BlockMap(promote_to_lmaps(n, 1, T, As...), rows)
 end
-function Base.hvcat(rows::Tuple{Vararg{Int}}, As::Tuple{Vararg{LinearMap{T}}}) where {T}
-    nr = length(rows)
-    j = 0
-    A::NTuple{nr,HBlockMap{T}} = ntuple(nr) do i
-        hmaps = As[j+1:j+rows[i]]
-        j += rows[i]
-        return hcat(hmaps...)
-    end
 
-    return vcat(A...)
-end
+promote_to_lmaps_(n::Int, ::Type{T}, J::UniformScaling) where {T} = UniformScalingMap(convert(T, J.λ), n)
+promote_to_lmaps_(n::Int, ::Type{T}, A::LinearMap{T}) where {T} = A
+promote_to_lmaps(n, k, ::Type) = ()
+promote_to_lmaps(n, k, ::Type{T}, A) where {T} = (promote_to_lmaps_(n[k], T, A),)
+promote_to_lmaps(n, k, ::Type{T}, A, B) where {T} =
+    (promote_to_lmaps_(n[k], T, A), promote_to_lmaps_(n[k+1], T, B))
+promote_to_lmaps(n, k, ::Type{T}, A, B, C) where {T} =
+    (promote_to_lmaps_(n[k], T, A), promote_to_lmaps_(n[k+1], T, B), promote_to_lmaps_(n[k+2], T, C))
+promote_to_lmaps(n, k, ::Type{T}, A, B, Cs...) where {T} =
+    (promote_to_lmaps_(n[k], T, A), promote_to_lmaps_(n[k+1], T, B), promote_to_lmaps(n, k+2, T, Cs...)...)
 
 ############
 # basic methods
@@ -221,61 +201,97 @@ end
 # comparison of BlockMap objects, sufficient but not necessary
 ############
 
-Base.:(==)(A::AbstractBlockMap, B::AbstractBlockMap) = (eltype(A) == eltype(B) && A.maps == B.maps && A.block_indices == B.block_indices)
+Base.:(==)(A::BlockMap, B::BlockMap) = (eltype(A) == eltype(B) && A.maps == B.maps && A.rows == B.rows)
 
 # special transposition behavior
 
-LinearAlgebra.transpose(A::VBlockMap) = HBlockMap(map(transpose, A.maps))
-LinearAlgebra.transpose(A::HBlockMap) = VBlockMap(map(transpose, A.maps))
-LinearAlgebra.adjoint(A::VBlockMap)   = HBlockMap(map(adjoint, A.maps))
-LinearAlgebra.adjoint(A::HBlockMap)   = VBlockMap(map(adjoint, A.maps))
+LinearAlgebra.transpose(A::BlockMap) = TransposeMap(A)
+LinearAlgebra.adjoint(A::BlockMap)  = AdjointMap(A)
 
 ############
 # multiplication with vectors
 ############
 
-function A_mul_B!(y::AbstractVector, A::HBlockMap, x::AbstractVector)
-    M, N = size(A)
-    (length(x) == N && length(y) == M) || throw(DimensionMismatch())
-    _, xinds = A.block_sizes
-    # fill y with results of first block
-    A_mul_B!(y, A.maps[1], @views x[xinds[1]:xinds[2]-1])
-    # add to y results of the following block columns
-    @inbounds @views for j in 2:length(A.maps)
-        mul!(y, A.maps[j], x[xinds[j]:xinds[j+1]-1], 1, 1)
-    end
-    return y
-end
-function A_mul_B!(y::AbstractVector, A::VBlockMap, x::AbstractVector)
-    M, N = size(A)
-    (length(x) == N && length(y) == M) || throw(DimensionMismatch())
-    yinds, _ = A.block_sizes
-    # fill parts of y according to block sizes
-    @inbounds @views for j in 1:length(A.maps)
-        A_mul_B!(y[yinds[j]:yinds[j+1]-1], A.maps[j], x)
+function A_mul_B!(y::AbstractVector, A::BlockMap, x::AbstractVector)
+    maps, rows = A.maps, A.rows
+    mapind = 0
+    yinds = cumsize_v(maps[cumsum([1, rows...])[1:end-1]])
+    @views for rowind in 1:length(rows)
+        xinds = cumsize_h(maps[mapind+1:mapind+rows[rowind]])
+        yrow = @views y[yinds[rowind]:(yinds[rowind+1]-1)]
+        mapind += 1
+        A_mul_B!(yrow, maps[mapind], x[xinds[1]:xinds[2]-1])
+        for colind in 2:rows[rowind]
+            mapind +=1
+            mul!(yrow, maps[mapind], x[xinds[colind]:xinds[colind+1]-1], 1, 1)
+        end
     end
     return y
 end
 
-At_mul_B!(y::AbstractVector, A::AbstractBlockMap, x::AbstractVector) = A_mul_B!(y, transpose(A), x)
+function At_mul_B!(y::AbstractVector, A::BlockMap, x::AbstractVector)
+    maps, rows = A.maps, A.rows
+    fill!(y, 0)
+    mapind = 0
+    xinds = cumsize_v(maps[cumsum([1, rows...])[1:end-1]])
+    # first block row (rowind = 1), fill all of y
+    yinds = cumsize_h(maps[mapind+1:mapind+rows[1]])
+    xcol = @views x[xinds[1]:(xinds[2]-1)]
+    @views for colind in 1:rows[1]
+        mapind +=1
+        A_mul_B!(y[yinds[colind]:yinds[colind+1]-1], transpose(maps[mapind]), xcol)
+    end
+    # subsequent block rows, add results to corresponding parts of y
+    @views for rowind in 2:length(rows)
+        yinds = cumsize_h(maps[mapind+1:mapind+rows[rowind]])
+        xcol = @views x[xinds[rowind]:(xinds[rowind+1]-1)]
+        for colind in 1:rows[rowind]
+            mapind +=1
+            mul!(y[yinds[colind]:yinds[colind+1]-1], transpose(maps[mapind]), xcol, 1, 1)
+        end
+    end
+    return y
+end
 
-Ac_mul_B!(y::AbstractVector, A::AbstractBlockMap, x::AbstractVector) = A_mul_B!(y, adjoint(A), x)
+function Ac_mul_B!(y::AbstractVector, A::BlockMap, x::AbstractVector)
+    maps, rows = A.maps, A.rows
+    fill!(y, 0)
+    mapind = 0
+    xinds = cumsize_v(maps[cumsum([1, rows...])[1:end-1]])
+    # first block row (rowind = 1), fill all of y
+    yinds = cumsize_h(maps[mapind+1:mapind+rows[1]])
+    xcol = @views x[xinds[1]:(xinds[2]-1)]
+    @views for colind in 1:rows[1]
+        mapind +=1
+        A_mul_B!(y[yinds[colind]:yinds[colind+1]-1], adjoint(maps[mapind]), xcol)
+    end
+    # subsequent block rows, add results to corresponding parts of y
+    @views for rowind in 2:length(rows)
+        yinds = cumsize_h(maps[mapind+1:mapind+rows[rowind]])
+        xcol = @views x[xinds[rowind]:(xinds[rowind+1]-1)]
+        for colind in 1:rows[rowind]
+            mapind +=1
+            mul!(y[yinds[colind]:yinds[colind+1]-1], adjoint(maps[mapind]), xcol, 1, 1)
+        end
+    end
+    return y
+end
 
 ############
 # show methods
 ############
 
-block2string(b, s) = string(join(map(string, b), '×'), "-blocked ", Base.dims2string(s))
-Base.summary(a::AbstractBlockMap) = string(block2string(nblocks(a), size(a)), " ", typeof(a))
-# _show_typeof(io, a) = show(io, typeof(a))
-function Base.summary(io::IO, a::AbstractBlockMap)
-    print(io, block2string(nblocks(a), size(a)))
-    print(io, ' ')
-    _show_typeof(io, a)
-end
-function _show_typeof(io::IO, a::AbstractBlockMap{T}) where {T}
-    Base.show_type_name(io, typeof(a).name)
-    print(io, '{')
-    show(io, T)
-    print(io, '}')
-end
+# block2string(b, s) = string(join(map(string, b), '×'), "-blocked ", Base.dims2string(s))
+# Base.summary(a::BlockMap) = string(block2string(nblocks(a), size(a)), " ", typeof(a))
+# # _show_typeof(io, a) = show(io, typeof(a))
+# function Base.summary(io::IO, a::AbstractBlockMap)
+#     print(io, block2string(nblocks(a), size(a)))
+#     print(io, ' ')
+#     _show_typeof(io, a)
+# end
+# function _show_typeof(io::IO, a::AbstractBlockMap{T}) where {T}
+#     Base.show_type_name(io, typeof(a).name)
+#     print(io, '{')
+#     show(io, T)
+#     print(io, '}')
+# end
