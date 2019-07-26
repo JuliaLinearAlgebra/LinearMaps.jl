@@ -453,8 +453,12 @@ end
             @test size(L) == size(A)
             @test Matrix(L) ≈ A
             @test L * x ≈ A * x
+            L = @inferred hcat(LinearMap(A11), LinearMap(A12), LinearMap(A11))
+            A = [A11 A12 A11]
+            @test Matrix(L) ≈ A
             A = [I I I A11 A11 A11]
-            L = [I I I LinearMap(A11) LinearMap(A11) LinearMap(A11)]
+            L = @inferred hcat(I, I, I, LinearMap(A11), LinearMap(A11), LinearMap(A11))
+            @test L == [I I I LinearMap(A11) LinearMap(A11) LinearMap(A11)]
             x = rand(elty, 60)
             @test L isa LinearMaps.BlockMap{elty}
             @test L * x ≈ A * x
@@ -466,6 +470,9 @@ end
     @testset "vcat" begin
         for elty in (Float32, Float64, ComplexF64)
             A11 = rand(elty, 10, 10)
+            L = @inferred vcat(LinearMap(A11))
+            @test L == [LinearMap(A11);]
+            @test Matrix(L) ≈ A11
             A21 = rand(elty, 20, 10)
             L = @inferred vcat(LinearMap(A11), LinearMap(A21))
             @test L isa LinearMaps.BlockMap{elty}
@@ -475,7 +482,8 @@ end
             @test Matrix(L) ≈ A
             @test L * x ≈ A * x
             A = [I; I; I; A11; A11; A11]
-            L = [I; I; I; LinearMap(A11); LinearMap(A11); LinearMap(A11)]
+            L = @inferred vcat(I, I, I, LinearMap(A11), LinearMap(A11), LinearMap(A11))
+            @test L == [I; I; I; LinearMap(A11); LinearMap(A11); LinearMap(A11)]
             x = rand(elty, 10)
             @test L isa LinearMaps.BlockMap{elty}
             @test L * x ≈ A * x
