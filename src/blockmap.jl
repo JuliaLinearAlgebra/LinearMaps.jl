@@ -1,10 +1,15 @@
 struct BlockMap{T,As<:Tuple{Vararg{LinearMap}},Rs<:Tuple{Vararg{Int}}} <: LinearMap{T}
     maps::As
     rows::Rs
-    function BlockMap(maps::R, rows::S) where {T, R<:Tuple{Vararg{LinearMap{T}}}, S<:Tuple{Vararg{Int}}}
-        new{T,R,S}(maps, rows)
+    function BlockMap{T,R,S}(As::R, rows::S) where {T, R<:Tuple{Vararg{LinearMap}}, S<:Tuple{Vararg{Int}}}
+        for A in As
+            promote_type(T, eltype(A)) == T || throw(InexactError())
+        end
+        new{T,R,S}(As, rows)
     end
 end
+
+BlockMap{T}(maps::As, rows::S) where {T,As<:Tuple{Vararg{LinearMap}},S} = BlockMap{T,As,S}(maps, rows)
 
 firstindices(maps::Tuple{Vararg{LinearMap}}, dim) = cumsum([1, map(m -> size(m, dim), maps)...,])
 
@@ -42,12 +47,6 @@ function Base.hcat(As::Union{LinearMap,UniformScaling}...)
     T = promote_type(map(eltype, As)...)
     nbc = length(As)
 
-    for A in As
-        if !(A isa UniformScaling)
-            eltype(A) == T || throw(ArgumentError("eltype mismatch in hcat of linear maps"))
-        end
-    end
-
     nrows = 0
     # find first non-UniformScaling to detect number of rows
     for A in As
@@ -60,7 +59,7 @@ function Base.hcat(As::Union{LinearMap,UniformScaling}...)
 
     maps = promote_to_lmaps(ntuple(i->nrows, nbc), 1, T, As...)
     check_dims(maps, 1)
-    return BlockMap(maps, (length(As),))
+    return BlockMap{T}(maps, (length(As),))
 end
 
 ############
@@ -70,12 +69,6 @@ end
 function Base.vcat(As::Union{LinearMap,UniformScaling}...)
     T = promote_type(map(eltype, As)...)
     nbr = length(As)
-
-    for A in As
-        if !(A isa UniformScaling)
-            eltype(A) == T || throw(ArgumentError("eltype type mismatch in vcat of linear maps"))
-        end
-    end
 
     ncols = 0
     # find first non-UniformScaling to detect number of columns
@@ -89,7 +82,7 @@ function Base.vcat(As::Union{LinearMap,UniformScaling}...)
 
     maps = promote_to_lmaps(ntuple(i->ncols, nbr), 1, T, As...)
     check_dims(maps, 2)
-    return BlockMap(maps, ntuple(i->1, length(As)))
+    return BlockMap{T}(maps, ntuple(i->1, length(As)))
 end
 
 ############
@@ -148,7 +141,7 @@ function Base.hvcat(rows::NTuple{nr,Int}, As::Union{LinearMap,UniformScaling}...
         end
     end
 
-    return BlockMap(promote_to_lmaps(n, 1, T, As...), rows)
+    return BlockMap{T}(promote_to_lmaps(n, 1, T, As...), rows)
 end
 
 promote_to_lmaps_(n::Int, ::Type{T}, J::UniformScaling) where {T} = UniformScalingMap(convert(T, J.λ), n)

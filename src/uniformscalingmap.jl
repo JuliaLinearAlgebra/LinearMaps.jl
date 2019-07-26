@@ -1,4 +1,4 @@
-struct UniformScalingMap{T} <: LinearMap{T} # T will be determined from maps to which this is added
+struct UniformScalingMap{T} <: LinearMap{T}
     λ::T
     M::Int
 end
@@ -38,11 +38,7 @@ At_mul_B!(y::AbstractVector, A::UniformScalingMap, x::AbstractVector) = A_mul_B!
 Ac_mul_B!(y::AbstractVector, A::UniformScalingMap, x::AbstractVector) = A_mul_B!(y, adjoint(A), x)
 
 # combine LinearMap and UniformScaling objects in linear combinations
-Base.:(+)(A1::LinearMap, A2::UniformScaling) =
-    A1 + UniformScalingMap(convert(promote_type(eltype(A1), eltype(A2)), A2.λ), size(A1, 1))
-Base.:(+)(A1::UniformScaling, A2::LinearMap) =
-    UniformScalingMap(convert(promote_type(eltype(A1), eltype(A2)), A1.λ), size(A2, 1)) + A2
-Base.:(-)(A1::LinearMap, A2::UniformScaling) =
-    A1 - UniformScalingMap(convert(promote_type(eltype(A1), eltype(A2)), A2.λ), size(A1, 1))
-Base.:(-)(A1::UniformScaling, A2::LinearMap) =
-    UniformScalingMap(convert(promote_type(eltype(A1), eltype(A2)), A1.λ), size(A2, 1)) - A2
+Base.:(+)(A1::LinearMap, A2::UniformScaling) = A1 + UniformScalingMap(A2.λ, size(A1, 1))
+Base.:(+)(A1::UniformScaling, A2::LinearMap) = UniformScalingMap(A1.λ, size(A2, 1)) + A2
+Base.:(-)(A1::LinearMap, A2::UniformScaling) = A1 - UniformScalingMap(A2.λ, size(A1, 1))
+Base.:(-)(A1::UniformScaling, A2::LinearMap) = UniformScalingMap(A1.λ, size(A2, 1)) - A2
