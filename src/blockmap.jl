@@ -57,7 +57,7 @@ function Base.hcat(As::Union{LinearMap,UniformScaling}...)
     end
     nrows == 0 && throw(ArgumentError("hcat of only UniformScaling-like objects cannot determine the linear map size"))
 
-    maps = promote_to_lmaps(ntuple(i->nrows, nbc), 1, T, As...)
+    maps = promote_to_lmaps(ntuple(i->nrows, nbc), 1, As...)
     check_dims(maps, 1)
     return BlockMap{T}(maps, (length(As),))
 end
@@ -80,7 +80,7 @@ function Base.vcat(As::Union{LinearMap,UniformScaling}...)
     end
     ncols == 0 && throw(ArgumentError("hcat of only UniformScaling-like objects cannot determine the linear map size"))
 
-    maps = promote_to_lmaps(ntuple(i->ncols, nbr), 1, T, As...)
+    maps = promote_to_lmaps(ntuple(i->ncols, nbr), 1, As...)
     check_dims(maps, 2)
     return BlockMap{T}(maps, ntuple(i->1, length(As)))
 end
@@ -141,19 +141,18 @@ function Base.hvcat(rows::NTuple{nr,Int}, As::Union{LinearMap,UniformScaling}...
         end
     end
 
-    return BlockMap{T}(promote_to_lmaps(n, 1, T, As...), rows)
+    return BlockMap{T}(promote_to_lmaps(n, 1, As...), rows)
 end
 
-promote_to_lmaps_(n::Int, ::Type{T}, J::UniformScaling) where {T} = UniformScalingMap(convert(T, J.λ), n)
-promote_to_lmaps_(n::Int, ::Type{T}, A::LinearMap{T}) where {T} = A
-promote_to_lmaps(n, k, ::Type) = ()
-promote_to_lmaps(n, k, ::Type{T}, A) where {T} = (promote_to_lmaps_(n[k], T, A),)
-promote_to_lmaps(n, k, ::Type{T}, A, B) where {T} =
-    (promote_to_lmaps_(n[k], T, A), promote_to_lmaps_(n[k+1], T, B))
-promote_to_lmaps(n, k, ::Type{T}, A, B, C) where {T} =
-    (promote_to_lmaps_(n[k], T, A), promote_to_lmaps_(n[k+1], T, B), promote_to_lmaps_(n[k+2], T, C))
-promote_to_lmaps(n, k, ::Type{T}, A, B, Cs...) where {T} =
-    (promote_to_lmaps_(n[k], T, A), promote_to_lmaps_(n[k+1], T, B), promote_to_lmaps(n, k+2, T, Cs...)...)
+promote_to_lmaps_(n::Int, J::UniformScaling) = UniformScalingMap(J.λ, n)
+promote_to_lmaps_(n::Int, A::LinearMap) = A
+promote_to_lmaps(n, k) = ()
+promote_to_lmaps(n, k, A) = (promote_to_lmaps_(n[k], A),)
+promote_to_lmaps(n, k, A, B) = (promote_to_lmaps_(n[k], A), promote_to_lmaps_(n[k+1], B))
+promote_to_lmaps(n, k, A, B, C) =
+    (promote_to_lmaps_(n[k], A), promote_to_lmaps_(n[k+1], B), promote_to_lmaps_(n[k+2], C))
+promote_to_lmaps(n, k, A, B, Cs...) =
+    (promote_to_lmaps_(n[k], A), promote_to_lmaps_(n[k+1], B), promote_to_lmaps(n, k+2, Cs...)...)
 
 ############
 # basic methods
