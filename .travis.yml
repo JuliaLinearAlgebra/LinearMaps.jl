@@ -17,4 +17,4 @@ notifications:
 
 
 after_success:
-  - julia -e 'cd(Pkg.dir("LinearMaps")); Pkg.add("Coverage"); using Coverage; Codecov.submit(process_folder()); Coveralls.submit(Coveralls.process_folder())';
+  - julia -e 'using Pkg; Pkg.add("Coverage"); using Coverage; Codecov.submit(Codecov.process_folder()); Coveralls.submit(Coveralls.process_folder())'
