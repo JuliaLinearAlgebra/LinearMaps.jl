@@ -23,11 +23,11 @@ sumshift(a::Tuple{Vararg{Int}}, b::Tuple{Int}) = tuple(a..., last(a) + first(b))
 function firstrowindices(A::BlockMap)
     as, rows = A.maps, A.rows
 
-	firstrows = sumshift(A.rows)
-	Afirstcol = ntuple(length(firstrows)-1) do i
-		A.maps[firstrows[i]]
-	end
-	return sumshift(map(a -> size(a, 1), Afirstcol))
+    firstrows = sumshift(A.rows)
+    Afirstcol = ntuple(length(firstrows)-1) do i
+        A.maps[firstrows[i]]
+    end
+    return sumshift(map(a -> size(a, 1), Afirstcol))
 end
 
 @inline firstcolindices(As::Tuple{Vararg{LinearMap}}) = sumshift(map(a -> size(a, 2), As))
