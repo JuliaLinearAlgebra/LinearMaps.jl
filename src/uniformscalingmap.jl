@@ -37,6 +37,36 @@ end
 At_mul_B!(y::AbstractVector, A::UniformScalingMap, x::AbstractVector) = A_mul_B!(y, transpose(A), x)
 Ac_mul_B!(y::AbstractVector, A::UniformScalingMap, x::AbstractVector) = A_mul_B!(y, adjoint(A), x)
 
+function LinearAlgebra.mul!(y::AbstractVector, J::UniformScalingMap{T}, x::AbstractVector, α::Number=one(T), β::Number=zero(T)) where {T}
+    length(y) == size(J, 1) || throw(DimensionMismatch("mul!"))
+    if α == 1
+        β == 0 && (A_mul_B!(y, J, x); return y)
+        if β == 1
+            iszero(J.λ) && return y
+            isone(J.λ) && return y .+= x
+            y .+= J.λ .* x
+            return y
+        else # β != 0, 1
+            iszero(J.λ) && return y .*= β
+            isone(J.λ) && return y .=  .+ x
+            y .= y .* β .+ J.λ .* x
+            return y
+        end
+    elseif α == 0
+        β == 0 && (fill!(y, zero(eltype(y))); return y)
+        β == 1 && return y
+        # β != 0, 1
+        rmul!(y, β)
+        return y
+    else # α != 0, 1
+        β == 0 && (y .= J.λ .* x .* α; return y)
+        β == 1 && (y .+= J.λ .* x .* α; return y)
+        # β != 0, 1
+        y .+= y .* β .+ J.λ .* x .* α
+        return y
+    end
+end
+
 # combine LinearMap and UniformScaling objects in linear combinations
 Base.:(+)(A1::LinearMap, A2::UniformScaling) = A1 + UniformScalingMap(A2.λ, size(A1, 1))
 Base.:(+)(A1::UniformScaling, A2::LinearMap) = UniformScalingMap(A1.λ, size(A2, 1)) + A2
