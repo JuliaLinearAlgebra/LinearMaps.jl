@@ -215,7 +215,7 @@ function A_mul_B!(y::AbstractVector, A::BlockMap, x::AbstractVector)
     yinds = firstrowindices(A)
     @views for rowind in 1:length(rows)
         xinds = firstcolindices(maps[mapind+1:mapind+rows[rowind]])
-        yrow = @views y[yinds[rowind]:(yinds[rowind+1]-1)]
+        yrow = y[yinds[rowind]:(yinds[rowind+1]-1)]
         mapind += 1
         A_mul_B!(yrow, maps[mapind], x[xinds[1]:xinds[2]-1])
         for colind in 2:rows[rowind]
@@ -241,7 +241,7 @@ function At_mul_B!(y::AbstractVector, A::BlockMap, x::AbstractVector)
     # subsequent block rows, add results to corresponding parts of y
     @views for rowind in 2:length(rows)
         yinds = firstcolindices(maps[mapind+1:mapind+rows[rowind]])
-        xcol = @views x[xinds[rowind]:(xinds[rowind+1]-1)]
+        xcol = x[xinds[rowind]:(xinds[rowind+1]-1)]
         for colind in 1:rows[rowind]
             mapind +=1
             mul!(y[yinds[colind]:yinds[colind+1]-1], transpose(maps[mapind]), xcol, 1, 1)
@@ -265,7 +265,7 @@ function Ac_mul_B!(y::AbstractVector, A::BlockMap, x::AbstractVector)
     # subsequent block rows, add results to corresponding parts of y
     @views for rowind in 2:length(rows)
         yinds = firstcolindices(maps[mapind+1:mapind+rows[rowind]])
-        xcol = @views x[xinds[rowind]:(xinds[rowind+1]-1)]
+        xcol = x[xinds[rowind]:(xinds[rowind+1]-1)]
         for colind in 1:rows[rowind]
             mapind +=1
             mul!(y[yinds[colind]:yinds[colind+1]-1], adjoint(maps[mapind]), xcol, 1, 1)
