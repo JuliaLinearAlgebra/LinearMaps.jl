@@ -39,30 +39,32 @@ Ac_mul_B!(y::AbstractVector, A::UniformScalingMap, x::AbstractVector) = A_mul_B!
 
 function LinearAlgebra.mul!(y::AbstractVector, J::UniformScalingMap{T}, x::AbstractVector, α::Number=one(T), β::Number=zero(T)) where {T}
     length(y) == size(J, 1) || throw(DimensionMismatch("mul!"))
-    if α == 1
-        β == 0 && (A_mul_B!(y, J, x); return y)
-        if β == 1
+    if isone(α)
+        if iszero(β)
+            A_mul_B!(y, J, x)
+            return y
+        elseif isone(β)
             iszero(J.λ) && return y
             isone(J.λ) && return y .+= x
             y .+= J.λ .* x
             return y
         else # β != 0, 1
-            iszero(J.λ) && return y .*= β
-            isone(J.λ) && return y .=  .+ x
+            iszero(J.λ) && (rmul!(y, β); return y)
+            isone(J.λ) && (y .= y .* β .+ x; return y)
             y .= y .* β .+ J.λ .* x
             return y
         end
-    elseif α == 0
-        β == 0 && (fill!(y, zero(eltype(y))); return y)
-        β == 1 && return y
+    elseif iszero(α)
+        iszero(β) && (fill!(y, zero(eltype(y))); return y)
+        isone(β) && return y
         # β != 0, 1
         rmul!(y, β)
         return y
     else # α != 0, 1
-        β == 0 && (y .= J.λ .* x .* α; return y)
-        β == 1 && (y .+= J.λ .* x .* α; return y)
+        iszero(β) && (y .= J.λ .* x .* α; return y)
+        isone(β) && (y .+= J.λ .* x .* α; return y)
         # β != 0, 1
-        y .+= y .* β .+ J.λ .* x .* α
+        y .= y .* β .+ J.λ .* x .* α
         return y
     end
 end
