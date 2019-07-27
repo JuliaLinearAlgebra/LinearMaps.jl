@@ -11,13 +11,8 @@ end
 
 BlockMap{T}(maps::As, rows::S) where {T,As<:Tuple{Vararg{LinearMap}},S} = BlockMap{T,As,S}(maps, rows)
 
-# firstindices(maps::Tuple{Vararg{LinearMap}}, dim) = cumsum([1, map(m -> size(m, dim), maps)...,])
-
-function check_dims(maps::Tuple{Vararg{LinearMap}}, k)
-    n = size(maps[1], k)
-    for map in maps
-        n == size(map, k) || throw(DimensionMismatch("Expected $n, got $(size(map, k))"))
-    end
+function check_dim(A::LinearMap, dim, n)
+    n == size(A, dim) || throw(DimensionMismatch("Expected $n, got $(size(A, dim))"))
     return nothing
 end
 
@@ -73,9 +68,7 @@ function Base.hcat(As::Union{LinearMap,UniformScaling}...)
     end
     nrows == 0 && throw(ArgumentError("hcat of only UniformScaling-like objects cannot determine the linear map size"))
 
-    maps = promote_to_lmaps(ntuple(i->nrows, nbc), 1, As...)
-    check_dims(maps, 1)
-    return BlockMap{T}(maps, (length(As),))
+    return BlockMap{T}(promote_to_lmaps(ntuple(i->nrows, nbc), 1, 1, As...), (nbc,))
 end
 
 ############
@@ -96,9 +89,7 @@ function Base.vcat(As::Union{LinearMap,UniformScaling}...)
     end
     ncols == 0 && throw(ArgumentError("hcat of only UniformScaling-like objects cannot determine the linear map size"))
 
-    maps = promote_to_lmaps(ntuple(i->ncols, nbr), 1, As...)
-    check_dims(maps, 2)
-    return BlockMap{T}(maps, ntuple(i->1, length(As)))
+    return BlockMap{T}(promote_to_lmaps(ntuple(i->ncols, nbr), 1, 2, As...), ntuple(i->1, nbr))
 end
 
 ############
@@ -157,18 +148,18 @@ function Base.hvcat(rows::NTuple{nr,Int}, As::Union{LinearMap,UniformScaling}...
         end
     end
 
-    return BlockMap{T}(promote_to_lmaps(n, 1, As...), rows)
+    return BlockMap{T}(promote_to_lmaps(n, 1, 1, As...), rows)
 end
 
-promote_to_lmaps_(n::Int, J::UniformScaling) = UniformScalingMap(J.λ, n)
-promote_to_lmaps_(n::Int, A::LinearMap) = A
+promote_to_lmaps_(n::Int, dim, J::UniformScaling) = UniformScalingMap(J.λ, n)
+promote_to_lmaps_(n::Int, dim, A::LinearMap) = (check_dim(A, dim, n); A)
 promote_to_lmaps(n, k) = ()
-promote_to_lmaps(n, k, A) = (promote_to_lmaps_(n[k], A),)
-promote_to_lmaps(n, k, A, B) = (promote_to_lmaps_(n[k], A), promote_to_lmaps_(n[k+1], B))
-promote_to_lmaps(n, k, A, B, C) =
-    (promote_to_lmaps_(n[k], A), promote_to_lmaps_(n[k+1], B), promote_to_lmaps_(n[k+2], C))
-promote_to_lmaps(n, k, A, B, Cs...) =
-    (promote_to_lmaps_(n[k], A), promote_to_lmaps_(n[k+1], B), promote_to_lmaps(n, k+2, Cs...)...)
+promote_to_lmaps(n, k, dim, A) = (promote_to_lmaps_(n[k], dim, A),)
+promote_to_lmaps(n, k, dim, A, B) = (promote_to_lmaps_(n[k], dim, A), promote_to_lmaps_(n[k+1], dim, B))
+promote_to_lmaps(n, k, dim, A, B, C) =
+    (promote_to_lmaps_(n[k], dim, A), promote_to_lmaps_(n[k+1], dim, B), promote_to_lmaps_(n[k+2], dim, C))
+promote_to_lmaps(n, k, dim, A, B, Cs...) =
+    (promote_to_lmaps_(n[k], dim, A), promote_to_lmaps_(n[k+1], dim, B), promote_to_lmaps(n, k+2, dim, Cs...)...)
 
 ############
 # basic methods
