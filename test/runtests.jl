@@ -45,7 +45,7 @@ AV = A * V
     @test M * v == Av
     @test N * v == Av
     @test @inferred mul!(copy(w), M, v) == mul!(copy(w), A, v)
-    b = @benchmarkable mul!(w, M, v)
+    b = @benchmarkable mul!($w, $M, $v)
     @test run(b, samples=3).allocs == 0
     @test @inferred mul!(copy(w), N, v) == Av
 
@@ -183,27 +183,27 @@ end
     @test @inferred transpose(2 * L) * v ≈ 2 * v
 end
 
-CS! = @inferred LinearMap(cumsum!, 10; ismutating=true)
-v = rand(10)
-u = similar(v)
-b = @benchmarkable mul!(u, CS!, v)
-@test run(b, samples=3).allocs == 0
-n = 10
-L = sum(fill(CS!, n))
-@test mul!(u, L, v) ≈ n * cumsum(v)
-b = @benchmarkable mul!(u, L, v)
-@test run(b, samples=5).allocs <= 1
-
-A = 2 * rand(ComplexF64, (10, 10)) .- 1
-B = rand(size(A)...)
-M = @inferred LinearMap(A)
-N = @inferred LinearMap(B)
-LC = @inferred M + N
-v = rand(ComplexF64, 10)
-w = similar(v)
-b = @benchmarkable mul!(w, M, v)
-@test run(b, samples=3).allocs == 0
 @testset "linear combinations" begin
+    CS! = @inferred LinearMap(cumsum!, 10; ismutating=true)
+    v = rand(10)
+    u = similar(v)
+    b = @benchmarkable mul!($u, $CS!, $v)
+    @test run(b, samples=3).allocs == 0
+    n = 10
+    L = sum(fill(CS!, n))
+    @test mul!(u, L, v) ≈ n * cumsum(v)
+    b = @benchmarkable mul!($u, $L, $v)
+    @test run(b, samples=5).allocs <= 1
+    
+    A = 2 * rand(ComplexF64, (10, 10)) .- 1
+    B = rand(size(A)...)
+    M = @inferred LinearMap(A)
+    N = @inferred LinearMap(B)
+    LC = @inferred M + N
+    v = rand(ComplexF64, 10)
+    w = similar(v)
+    b = @benchmarkable mul!($w, $M, $v)
+    @test run(b, samples=3).allocs == 0
     # @test_throws ErrorException LinearMaps.LinearCombination{ComplexF64}((M, N), (1, 2, 3))
     @test @inferred size(3M + 2.0N) == size(A)
     # addition
@@ -357,14 +357,14 @@ mul!(y::Vector, A::Union{SimpleFunctionMap,SimpleComplexFunctionMap}, x::Vector)
     end
 end
 
-A = rand(10, 20)
-B = rand(ComplexF64, 10, 20)
-SA = A'A + I
-SB = B'B + I
-L = @inferred LinearMap{Float64}(A)
-MA = @inferred LinearMap(SA)
-MB = @inferred LinearMap(SB)
 @testset "wrapped maps" begin
+    A = rand(10, 20)
+    B = rand(ComplexF64, 10, 20)
+    SA = A'A + I
+    SB = B'B + I
+    L = @inferred LinearMap{Float64}(A)
+    MA = @inferred LinearMap(SA)
+    MB = @inferred LinearMap(SB)
     @test size(L) == size(A)
     @test @inferred !issymmetric(L)
     @test @inferred issymmetric(MA)
@@ -373,14 +373,14 @@ MB = @inferred LinearMap(SB)
     @test @inferred isposdef(MB)
 end
 
-A = 2 * rand(ComplexF64, (10, 10)) .- 1
-B = rand(size(A)...)
-M = @inferred 1 * LinearMap(A)
-N = @inferred LinearMap(B)
-LC = @inferred M + N
-v = rand(ComplexF64, 10)
-w = similar(v)
 @testset "identity/scaling map" begin
+    A = 2 * rand(ComplexF64, (10, 10)) .- 1
+    B = rand(size(A)...)
+    M = @inferred 1 * LinearMap(A)
+    N = @inferred LinearMap(B)
+    LC = @inferred M + N
+    v = rand(ComplexF64, 10)
+    w = similar(v)
     Id = @inferred LinearMaps.UniformScalingMap(1, 10)
     @test_throws ErrorException LinearMaps.UniformScalingMap(1, 10, 20)
     @test_throws ErrorException LinearMaps.UniformScalingMap(1, (10, 20))
@@ -396,6 +396,16 @@ w = similar(v)
     @test (3 * I - 2 * M') * v == -2 * A'v + 3v
     @test transpose(LinearMap(2 * M' + 3 * I)) * v ≈ transpose(2 * A' + 3 * I) * v
     @test LinearMap(2 * M' + 3 * I)' * v ≈ (2 * A' + 3 * I)' * v
+    for λ in (0, 1, rand()), α in (0, 1, rand()), β in (0, 1, rand())
+        Λ = @inferred LinearMaps.UniformScalingMap(λ, 10)
+        x = rand(10)
+        y = rand(10)
+        b = @benchmarkable mul!($y, $Λ, $x, $α, $β)
+        @test run(b, samples=3).allocs == 0
+        y = deepcopy(x)
+        @inferred mul!(y, Λ, x, α, β)
+        @test y ≈ λ * x * α + β * x
+    end
 end
 
 @testset "noncommutative number type" begin
