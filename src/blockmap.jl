@@ -153,7 +153,7 @@ end
 
 promote_to_lmaps_(n::Int, dim, J::UniformScaling) = UniformScalingMap(J.λ, n)
 promote_to_lmaps_(n::Int, dim, A::LinearMap) = (check_dim(A, dim, n); A)
-promote_to_lmaps(n, k) = ()
+promote_to_lmaps(n, k, dim) = ()
 promote_to_lmaps(n, k, dim, A) = (promote_to_lmaps_(n[k], dim, A),)
 promote_to_lmaps(n, k, dim, A, B) = (promote_to_lmaps_(n[k], dim, A), promote_to_lmaps_(n[k+1], dim, B))
 promote_to_lmaps(n, k, dim, A, B, C) =
