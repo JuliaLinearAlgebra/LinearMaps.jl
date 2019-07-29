@@ -1,11 +1,16 @@
 struct BlockMap{T,As<:Tuple{Vararg{LinearMap}},Rs<:Tuple{Vararg{Int}}} <: LinearMap{T}
     maps::As
     rows::Rs
-    function BlockMap{T,R,S}(As::R, rows::S) where {T, R<:Tuple{Vararg{LinearMap}}, S<:Tuple{Vararg{Int}}}
-        for A in As
+    rowinds::Vector{Int}
+    colranges::Vector{UnitRange{Int}}
+    function BlockMap{T,R,S}(maps::R, rows::S) where {T, R<:Tuple{Vararg{LinearMap}}, S<:Tuple{Vararg{Int}}}
+        for A in maps
             promote_type(T, eltype(A)) == T || throw(InexactError())
         end
-        new{T,R,S}(As, rows)
+        rowinds = rowindices(maps, rows)
+        colranges = columnranges(maps, rows)
+
+        new{T,R,S}(maps, rows, rowinds, colranges)
     end
 end
 
@@ -16,21 +21,38 @@ function check_dim(A::LinearMap, dim, n)
     return nothing
 end
 
-sumshift(a::Tuple{Vararg{Int}}) = sumshift((1,), a)
-sumshift(a::Tuple{Vararg{Int}}, as::Tuple{Vararg{Int}}) = sumshift(tuple(a..., last(a) + first(as)), Base.tail(as))
-sumshift(a::Tuple{Vararg{Int}}, b::Tuple{Int}) = tuple(a..., last(a) + first(b))
+"""
+    rowindices(maps, rows)
 
-function firstrowindices(A::BlockMap)
-    as, rows = A.maps, A.rows
-
-    firstrows = sumshift(A.rows)
-    Afirstcol = ntuple(length(firstrows)-1) do i
-        A.maps[firstrows[i]]
-    end
-    return sumshift(map(a -> size(a, 1), Afirstcol))
+Determines the respective first indices of the block rows in a virtual matrix
+representation  of the block linear map obtained from `hvcat(rows, maps...)`.
+"""
+function rowindices(maps, rows)::Vector{Int}
+    firstblockindices = cumsum([1, rows[1:end-1]...,])
+    return cumsum([1, map(i -> size(maps[i], 1), firstblockindices)...,])
 end
 
-@inline firstcolindices(As::Tuple{Vararg{LinearMap}}) = sumshift(map(a -> size(a, 2), As))
+"""
+    columnranges(maps, rows)
+
+Determines the range of columns for each map in `maps`, according to its position
+in a virtual matrix representation of the block linear map obtained from
+`hvcat(rows, maps...)`.
+"""
+function columnranges(maps, rows)::Vector{UnitRange{Int}}
+    colranges = Vector{UnitRange}(undef, length(maps))
+    mapind = 0
+    for rowind in 1:length(rows)
+        xinds = cumsum([1, map(a -> size(a, 2), maps[mapind+1:mapind+rows[rowind]])...,])
+        mapind += 1
+        colranges[mapind] = xinds[1]:xinds[2]-1
+        for colind in 2:rows[rowind]
+            mapind +=1
+            colranges[mapind] = xinds[colind]:xinds[colind+1]-1
+        end
+    end
+    return colranges
+end
 
 function Base.size(A::BlockMap)
     as, rows = A.maps, A.rows
@@ -68,7 +90,7 @@ function Base.hcat(As::Union{LinearMap,UniformScaling}...)
     end
     nrows == 0 && throw(ArgumentError("hcat of only UniformScaling-like objects cannot determine the linear map size"))
 
-    return BlockMap{T}(promote_to_lmaps(ntuple(i->nrows, nbc), 1, 1, As...), (nbc,))
+    return BlockMap{T}(promote_to_lmaps(fill(nrows, nbc), 1, 1, As...), (nbc,))
 end
 
 ############
@@ -89,7 +111,7 @@ function Base.vcat(As::Union{LinearMap,UniformScaling}...)
     end
     ncols == 0 && throw(ArgumentError("hcat of only UniformScaling-like objects cannot determine the linear map size"))
 
-    return BlockMap{T}(promote_to_lmaps(ntuple(i->ncols, nbr), 1, 2, As...), ntuple(i->1, nbr))
+    return BlockMap{T}(promote_to_lmaps(fill(ncols, nbr), 1, 2, As...), ntuple(i->1, nbr))
 end
 
 ############
@@ -210,65 +232,65 @@ LinearAlgebra.adjoint(A::BlockMap)  = AdjointMap(A)
 ############
 
 function A_mul_B!(y::AbstractVector, A::BlockMap, x::AbstractVector)
-    maps, rows = A.maps, A.rows
+    m, n = size(A)
+    @boundscheck (m == length(y) && n == length(x)) || throw(DimensionMismatch("A_mul_B!"))
+    maps, rows, yinds, xinds = A.maps, A.rows, A.rowinds, A.colranges
     mapind = 0
-    yinds = firstrowindices(A)
-    @views for rowind in 1:length(rows)
-        xinds = firstcolindices(maps[mapind+1:mapind+rows[rowind]])
+    @views @inbounds for rowind in 1:length(rows)
         yrow = y[yinds[rowind]:(yinds[rowind+1]-1)]
         mapind += 1
-        A_mul_B!(yrow, maps[mapind], x[xinds[1]:xinds[2]-1])
+        A_mul_B!(yrow, maps[mapind], x[xinds[mapind]])
         for colind in 2:rows[rowind]
             mapind +=1
-            mul!(yrow, maps[mapind], x[xinds[colind]:xinds[colind+1]-1], 1, 1)
+            mul!(yrow, maps[mapind], x[xinds[mapind]], 1, 1)
         end
     end
     return y
 end
 
 function At_mul_B!(y::AbstractVector, A::BlockMap, x::AbstractVector)
-    maps, rows = A.maps, A.rows
-    fill!(y, 0)
+    m, n = size(A)
+    @boundscheck (n == length(y) && m == length(x)) || throw(DimensionMismatch("At_mul_B!"))
+    maps, rows, xinds, yinds = A.maps, A.rows, A.rowinds, A.colranges
     mapind = 0
-    xinds = firstrowindices(A)
     # first block row (rowind = 1), fill all of y
-    yinds = firstcolindices(maps[mapind+1:mapind+rows[1]])
-    xcol = @views x[xinds[1]:(xinds[2]-1)]
-    @views for colind in 1:rows[1]
-        mapind +=1
-        A_mul_B!(y[yinds[colind]:yinds[colind+1]-1], transpose(maps[mapind]), xcol)
-    end
-    # subsequent block rows, add results to corresponding parts of y
-    @views for rowind in 2:length(rows)
-        yinds = firstcolindices(maps[mapind+1:mapind+rows[rowind]])
-        xcol = x[xinds[rowind]:(xinds[rowind+1]-1)]
-        for colind in 1:rows[rowind]
+    @views @inbounds begin
+        xcol = x[xinds[1]:(xinds[2]-1)]
+        for colind in 1:rows[1]
             mapind +=1
-            mul!(y[yinds[colind]:yinds[colind+1]-1], transpose(maps[mapind]), xcol, 1, 1)
+            A_mul_B!(y[yinds[colind]], transpose(maps[mapind]), xcol)
+        end
+        # subsequent block rows, add results to corresponding parts of y
+        for rowind in 2:length(rows)
+            xcol = x[xinds[rowind]:(xinds[rowind+1]-1)]
+            for colind in 1:rows[rowind]
+                mapind +=1
+                mul!(y[yinds[colind]], transpose(maps[mapind]), xcol, 1, 1)
+            end
         end
     end
     return y
 end
 
 function Ac_mul_B!(y::AbstractVector, A::BlockMap, x::AbstractVector)
-    maps, rows = A.maps, A.rows
-    fill!(y, 0)
+    m, n = size(A)
+    @boundscheck (n == length(y) && m == length(x)) || throw(DimensionMismatch("Ac_mul_B!"))
+    maps, rows, xinds, yinds = A.maps, A.rows, A.rowinds, A.colranges
     mapind = 0
-    xinds = firstrowindices(A)
     # first block row (rowind = 1), fill all of y
-    yinds = firstcolindices(maps[mapind+1:mapind+rows[1]])
-    xcol = @views x[xinds[1]:(xinds[2]-1)]
-    @views for colind in 1:rows[1]
-        mapind +=1
-        A_mul_B!(y[yinds[colind]:yinds[colind+1]-1], adjoint(maps[mapind]), xcol)
-    end
-    # subsequent block rows, add results to corresponding parts of y
-    @views for rowind in 2:length(rows)
-        yinds = firstcolindices(maps[mapind+1:mapind+rows[rowind]])
-        xcol = x[xinds[rowind]:(xinds[rowind+1]-1)]
-        for colind in 1:rows[rowind]
+    @views @inbounds begin
+        xcol = x[xinds[1]:(xinds[2]-1)]
+        for colind in 1:rows[1]
             mapind +=1
-            mul!(y[yinds[colind]:yinds[colind+1]-1], adjoint(maps[mapind]), xcol, 1, 1)
+            A_mul_B!(y[yinds[colind]], adjoint(maps[mapind]), xcol)
+        end
+        # subsequent block rows, add results to corresponding parts of y
+        for rowind in 2:length(rows)
+            xcol = x[xinds[rowind]:(xinds[rowind+1]-1)]
+            for colind in 1:rows[rowind]
+                mapind +=1
+                mul!(y[yinds[colind]], adjoint(maps[mapind]), xcol, 1, 1)
+            end
         end
     end
     return y

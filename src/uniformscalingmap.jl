@@ -38,8 +38,8 @@ At_mul_B!(y::AbstractVector, A::UniformScalingMap, x::AbstractVector) = A_mul_B!
 Ac_mul_B!(y::AbstractVector, A::UniformScalingMap, x::AbstractVector) = A_mul_B!(y, adjoint(A), x)
 
 function LinearAlgebra.mul!(y::AbstractVector, J::UniformScalingMap{T}, x::AbstractVector, α::Number=one(T), β::Number=zero(T)) where {T}
-    length(y) == size(J, 1) || throw(DimensionMismatch("mul!"))
-    if isone(α)
+    @boundscheck (length(x) == length(y) == J.M || throw(DimensionMismatch("mul!")))
+    @inbounds if isone(α)
         if iszero(β)
             A_mul_B!(y, J, x)
             return y
