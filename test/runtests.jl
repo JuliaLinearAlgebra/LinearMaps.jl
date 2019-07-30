@@ -194,7 +194,7 @@ end
     @test mul!(u, L, v) ≈ n * cumsum(v)
     b = @benchmarkable mul!($u, $L, $v)
     @test run(b, samples=5).allocs <= 1
-    
+
     A = 2 * rand(ComplexF64, (10, 10)) .- 1
     B = rand(size(A)...)
     M = @inferred LinearMap(A)
@@ -543,7 +543,17 @@ end
             A12 = rand(elty, 10, 10)
             A = [I A12; transform(A12) I]
             L = [I LinearMap(A12); transform(LinearMap(A12)) I]
-            @test_broken ishermitian(L)
+            if elty <: Complex
+                if transform == transpose
+                    @test issymmetric(L)
+                else
+                    @test ishermitian(L)
+                end
+            end
+            if elty <: Real
+                @test ishermitian(L)
+                @test issymmetric(L)
+            end
             x = rand(elty, 20)
             @test L isa LinearMaps.LinearMap{elty}
             @test size(L) == size(A)

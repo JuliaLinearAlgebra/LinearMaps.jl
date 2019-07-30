@@ -1,16 +1,14 @@
 struct BlockMap{T,As<:Tuple{Vararg{LinearMap}},Rs<:Tuple{Vararg{Int}}} <: LinearMap{T}
     maps::As
     rows::Rs
-    rowinds::Vector{Int}
+    rowranges::Vector{UnitRange{Int}}
     colranges::Vector{UnitRange{Int}}
     function BlockMap{T,R,S}(maps::R, rows::S) where {T, R<:Tuple{Vararg{LinearMap}}, S<:Tuple{Vararg{Int}}}
         for A in maps
             promote_type(T, eltype(A)) == T || throw(InexactError())
         end
-        rowinds = rowindices(maps, rows)
-        colranges = columnranges(maps, rows)
-
-        new{T,R,S}(maps, rows, rowinds, colranges)
+        rowranges, colranges = rowcolranges(maps, rows)
+        return new{T,R,S}(maps, rows, rowranges, colranges)
     end
 end
 
@@ -22,57 +20,35 @@ function check_dim(A::LinearMap, dim, n)
 end
 
 """
-    rowindices(maps, rows)
+    rowcolranges(maps, rows)
 
-Determines the respective first indices of the block rows in a virtual matrix
-representation  of the block linear map obtained from `hvcat(rows, maps...)`.
+Determines the range of rows for each block row and the range of columns for each
+map in `maps`, according to its position in a virtual matrix representation of the
+block linear map obtained from `hvcat(rows, maps...)`.
 """
-function rowindices(maps, rows)::Vector{Int}
-    firstblockindices = vcat(1, Base.front(rows)...)
-    cumsum!(firstblockindices, firstblockindices)
-    sizes = vcat(1, map(i -> size(maps[i], 1), firstblockindices)...)
-    return cumsum!(sizes, sizes)
-end
-
-"""
-    columnranges(maps, rows)
-
-Determines the range of columns for each map in `maps`, according to its position
-in a virtual matrix representation of the block linear map obtained from
-`hvcat(rows, maps...)`.
-"""
-function columnranges(maps, rows)::Vector{UnitRange{Int}}
-    colranges = Vector{UnitRange}(undef, length(maps))
+function rowcolranges(maps, rows)::Tuple{Vector{UnitRange{Int}},Vector{UnitRange{Int}}}
+    rowranges = Vector{UnitRange{Int}}(undef, length(rows))
+    colranges = Vector{UnitRange{Int}}(undef, length(maps))
     mapind = 0
+    rowstart = 1
     for rowind in 1:length(rows)
         xinds = vcat(1, map(a -> size(a, 2), maps[mapind+1:mapind+rows[rowind]])...)
         cumsum!(xinds, xinds)
         mapind += 1
+        rowend = rowstart + size(maps[mapind], 1) - 1
+        rowranges[rowind] = rowstart:rowend
         colranges[mapind] = xinds[1]:xinds[2]-1
         for colind in 2:rows[rowind]
             mapind +=1
             colranges[mapind] = xinds[colind]:xinds[colind+1]-1
         end
+        rowstart = rowend + 1
     end
-    return colranges
+    return rowranges, colranges
 end
 
 function Base.size(A::BlockMap)
-    as, rows = A.maps, A.rows
-
-    nbr = length(rows)  # number of block rows
-    nc = 0
-    for i in 1:rows[1]
-        nc += size(as[i],2)
-    end
-
-    nr = 0
-    a = 1
-    for i in 1:nbr
-        nr += size(as[a],1)
-        a += rows[i]
-    end
-    return nr, nc
+    return A.rowranges[end][end], A.colranges[end][end]
 end
 
 ############
@@ -190,34 +166,40 @@ promote_to_lmaps(n, k, dim, A, B, Cs...) =
 # basic methods
 ############
 
-# function LinearAlgebra.issymmetric(A::BlockMap)
-#     m, n = nblocks(A)
-#     m == n || return false
-#     for i in 1:m, j in i:m
-#         if (i == j && !issymmetric(getblock(A, i, i)))
-#             return false
-#         elseif getblock(A, i, j) != transpose(getblock(A, j, i))
-#             return false
-#         end
-#     end
-#     return true
-# end
+function isblocksquare(A::BlockMap)
+    rows = A.rows
+    N = length(rows)
+    return all(r -> r == N, rows)
+end
+
+function LinearAlgebra.issymmetric(A::BlockMap)
+    isblocksquare(A) ? N = length(A.rows) : return false
+    maps = A.maps
+    symindex = vec(permutedims(reshape(collect(1:N*N), N, N)))
+    for i in 1:N*N
+        if (i == symindex[i] && !issymmetric(maps[i]))
+            return false
+        elseif (maps[i] != transpose(maps[symindex[i]]))
+            return false
+        end
+    end
+    return true
+end
 #
-# LinearAlgebra.ishermitian(A::BlockMap{<:Real}) = issymmetric(A)
-# function LinearAlgebra.ishermitian(A::BlockMap)
-#     m, n = nblocks(A)
-#     m == n || return false
-#     for i in 1:m, j in i:m
-#         if (i == j && !ishermitian(getblock(A, i, i)))
-#             return false
-#         elseif getblock(A, i, j) != adjoint(getblock(A, j, i))
-#             return false
-#         end
-#     end
-#     return true
-# end
-# TODO, currently falls back on the generic `false`
-# LinearAlgebra.isposdef(A::BlockMap)
+LinearAlgebra.ishermitian(A::BlockMap{<:Real}) = issymmetric(A)
+function LinearAlgebra.ishermitian(A::BlockMap)
+    isblocksquare(A) ? N = length(A.rows) : return false
+    maps = A.maps
+    symindex = vec(permutedims(reshape(collect(1:N*N), N, N)))
+    for i in 1:N*N
+        if (i == symindex[i] && !ishermitian(maps[i]))
+            return false
+        elseif (maps[i] != adjoint(maps[symindex[i]]))
+            return false
+        end
+    end
+    return true
+end
 
 ############
 # comparison of BlockMap objects, sufficient but not necessary
@@ -237,10 +219,10 @@ LinearAlgebra.adjoint(A::BlockMap)  = AdjointMap(A)
 function A_mul_B!(y::AbstractVector, A::BlockMap, x::AbstractVector)
     m, n = size(A)
     @boundscheck (m == length(y) && n == length(x)) || throw(DimensionMismatch("A_mul_B!"))
-    maps, rows, yinds, xinds = A.maps, A.rows, A.rowinds, A.colranges
+    maps, rows, yinds, xinds = A.maps, A.rows, A.rowranges, A.colranges
     mapind = 0
     @views @inbounds for rowind in 1:length(rows)
-        yrow = y[yinds[rowind]:(yinds[rowind+1]-1)]
+        yrow = y[yinds[rowind]]
         mapind += 1
         A_mul_B!(yrow, maps[mapind], x[xinds[mapind]])
         for colind in 2:rows[rowind]
@@ -254,18 +236,18 @@ end
 function At_mul_B!(y::AbstractVector, A::BlockMap, x::AbstractVector)
     m, n = size(A)
     @boundscheck (n == length(y) && m == length(x)) || throw(DimensionMismatch("At_mul_B!"))
-    maps, rows, xinds, yinds = A.maps, A.rows, A.rowinds, A.colranges
+    maps, rows, xinds, yinds = A.maps, A.rows, A.rowranges, A.colranges
     mapind = 0
     # first block row (rowind = 1), fill all of y
     @views @inbounds begin
-        xcol = x[xinds[1]:(xinds[2]-1)]
+        xcol = x[xinds[1]]
         for colind in 1:rows[1]
             mapind +=1
             A_mul_B!(y[yinds[colind]], transpose(maps[mapind]), xcol)
         end
         # subsequent block rows, add results to corresponding parts of y
         for rowind in 2:length(rows)
-            xcol = x[xinds[rowind]:(xinds[rowind+1]-1)]
+            xcol = x[xinds[rowind]]
             for colind in 1:rows[rowind]
                 mapind +=1
                 mul!(y[yinds[colind]], transpose(maps[mapind]), xcol, 1, 1)
@@ -277,19 +259,19 @@ end
 
 function Ac_mul_B!(y::AbstractVector, A::BlockMap, x::AbstractVector)
     m, n = size(A)
-    @boundscheck (n == length(y) && m == length(x)) || throw(DimensionMismatch("Ac_mul_B!"))
-    maps, rows, xinds, yinds = A.maps, A.rows, A.rowinds, A.colranges
+    @boundscheck (n == length(y) && m == length(x)) || throw(DimensionMismatch("At_mul_B!"))
+    maps, rows, xinds, yinds = A.maps, A.rows, A.rowranges, A.colranges
     mapind = 0
     # first block row (rowind = 1), fill all of y
     @views @inbounds begin
-        xcol = x[xinds[1]:(xinds[2]-1)]
+        xcol = x[xinds[1]]
         for colind in 1:rows[1]
             mapind +=1
             A_mul_B!(y[yinds[colind]], adjoint(maps[mapind]), xcol)
         end
         # subsequent block rows, add results to corresponding parts of y
         for rowind in 2:length(rows)
-            xcol = x[xinds[rowind]:(xinds[rowind+1]-1)]
+            xcol = x[xinds[rowind]]
             for colind in 1:rows[rowind]
                 mapind +=1
                 mul!(y[yinds[colind]], adjoint(maps[mapind]), xcol, 1, 1)
