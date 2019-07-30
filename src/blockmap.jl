@@ -28,8 +28,10 @@ Determines the respective first indices of the block rows in a virtual matrix
 representation  of the block linear map obtained from `hvcat(rows, maps...)`.
 """
 function rowindices(maps, rows)::Vector{Int}
-    firstblockindices = cumsum([1, rows[1:end-1]...,])
-    return cumsum([1, map(i -> size(maps[i], 1), firstblockindices)...,])
+    firstblockindices = vcat(1, Base.front(rows)...)
+    cumsum!(firstblockindices, firstblockindices)
+    sizes = vcat(1, map(i -> size(maps[i], 1), firstblockindices)...)
+    return cumsum!(sizes, sizes)
 end
 
 """
@@ -43,7 +45,8 @@ function columnranges(maps, rows)::Vector{UnitRange{Int}}
     colranges = Vector{UnitRange}(undef, length(maps))
     mapind = 0
     for rowind in 1:length(rows)
-        xinds = cumsum([1, map(a -> size(a, 2), maps[mapind+1:mapind+rows[rowind]])...,])
+        xinds = vcat(1, map(a -> size(a, 2), maps[mapind+1:mapind+rows[rowind]])...)
+        cumsum!(xinds, xinds)
         mapind += 1
         colranges[mapind] = xinds[1]:xinds[2]-1
         for colind in 2:rows[rowind]
