@@ -545,14 +545,14 @@ end
             L = [I LinearMap(A12); transform(LinearMap(A12)) I]
             if elty <: Complex
                 if transform == transpose
-                    @test issymmetric(L)
+                    @test @inferred issymmetric(L)
                 else
-                    @test ishermitian(L)
+                    @test @inferred ishermitian(L)
                 end
             end
             if elty <: Real
-                @test ishermitian(L)
-                @test issymmetric(L)
+                @test @inferred ishermitian(L)
+                @test @inferred issymmetric(L)
             end
             x = rand(elty, 20)
             @test L isa LinearMaps.LinearMap{elty}
