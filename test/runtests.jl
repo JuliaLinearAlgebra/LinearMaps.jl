@@ -406,6 +406,12 @@ end
         @inferred mul!(y, Λ, x, α, β)
         @test y ≈ λ * x * α + β * x
     end
+    for elty in (Float64, ComplexF64), transform in (transpose, adjoint)
+        λ = rand(elty)
+        x = rand(10)
+        J = @inferred LinearMap(LinearMaps.UniformScalingMap(λ, 10))
+        @test transform(J) * x == transform(λ) * x
+    end
 end
 
 @testset "noncommutative number type" begin
@@ -512,6 +518,8 @@ end
             A = [A11 A12; A21 A22]
             @inferred hvcat((2,2), LinearMap(A11), LinearMap(A12), LinearMap(A21), LinearMap(A22))
             L = [LinearMap(A11) LinearMap(A12); LinearMap(A21) LinearMap(A22)]
+            @test @inferred !issymmetric(L)
+            @test @inferred !ishermitian(L)
             x = rand(30)
             @test L isa LinearMaps.BlockMap{elty}
             @test size(L) == size(A)

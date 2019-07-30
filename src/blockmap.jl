@@ -172,6 +172,7 @@ function isblocksquare(A::BlockMap)
     return all(r -> r == N, rows)
 end
 
+# the following rules are sufficient but not necessary
 function LinearAlgebra.issymmetric(A::BlockMap)
     isblocksquare(A) ? N = length(A.rows) : return false
     maps = A.maps
@@ -185,7 +186,7 @@ function LinearAlgebra.issymmetric(A::BlockMap)
     end
     return true
 end
-#
+
 LinearAlgebra.ishermitian(A::BlockMap{<:Real}) = issymmetric(A)
 function LinearAlgebra.ishermitian(A::BlockMap)
     isblocksquare(A) ? N = length(A.rows) : return false
