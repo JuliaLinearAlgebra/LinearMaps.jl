@@ -59,7 +59,7 @@ function Base.hcat(As::Union{LinearMap,UniformScaling}...)
     T = promote_type(map(eltype, As)...)
     nbc = length(As)
 
-    nrows = 0
+    nrows = -1
     # find first non-UniformScaling to detect number of rows
     for A in As
         if !(A isa UniformScaling)
@@ -67,8 +67,7 @@ function Base.hcat(As::Union{LinearMap,UniformScaling}...)
             break
         end
     end
-    nrows == 0 && throw(ArgumentError("hcat of only UniformScaling-like objects cannot determine the linear map size"))
-
+    nrows == -1 && throw(ArgumentError("hcat of only UniformScaling objects cannot determine the matrix size"))
     return BlockMap{T}(promote_to_lmaps(fill(nrows, nbc), 1, 1, As...), (nbc,))
 end
 
@@ -80,7 +79,7 @@ function Base.vcat(As::Union{LinearMap,UniformScaling}...)
     T = promote_type(map(eltype, As)...)
     nbr = length(As)
 
-    ncols = 0
+    ncols = -1
     # find first non-UniformScaling to detect number of columns
     for A in As
         if !(A isa UniformScaling)
@@ -88,7 +87,7 @@ function Base.vcat(As::Union{LinearMap,UniformScaling}...)
             break
         end
     end
-    ncols == 0 && throw(ArgumentError("hcat of only UniformScaling-like objects cannot determine the linear map size"))
+    ncols == -1 && throw(ArgumentError("vcat of only UniformScaling objects cannot determine the matrix size"))
 
     return BlockMap{T}(promote_to_lmaps(fill(ncols, nbr), 1, 2, As...), ntuple(i->1, nbr))
 end
@@ -139,8 +138,8 @@ function Base.hvcat(rows::NTuple{nr,Int}, As::Union{LinearMap,UniformScaling}...
         j = 0
         for i in 1:nr
             if rows[i] > 0 && n[j+1] == -1 # this row consists entirely of UniformScalings
-                nci = nc ÷ rows[i]
-                nci * rows[i] != nc && throw(DimensionMismatch("indivisible UniformScaling sizes"))
+                nci, r = divrem(nc, rows[i])
+                r != 0 && throw(DimensionMismatch("indivisible UniformScaling sizes"))
                 for k = 1:rows[i]
                     n[j+k] = nci
                 end
@@ -156,10 +155,7 @@ promote_to_lmaps_(n::Int, dim, J::UniformScaling) = UniformScalingMap(J.λ, n)
 promote_to_lmaps_(n::Int, dim, A::LinearMap) = (check_dim(A, dim, n); A)
 promote_to_lmaps(n, k, dim) = ()
 promote_to_lmaps(n, k, dim, A) = (promote_to_lmaps_(n[k], dim, A),)
-promote_to_lmaps(n, k, dim, A, B) = (promote_to_lmaps_(n[k], dim, A), promote_to_lmaps_(n[k+1], dim, B))
-promote_to_lmaps(n, k, dim, A, B, C) =
-    (promote_to_lmaps_(n[k], dim, A), promote_to_lmaps_(n[k+1], dim, B), promote_to_lmaps_(n[k+2], dim, C))
-promote_to_lmaps(n, k, dim, A, B, Cs...) =
+@inline promote_to_lmaps(n, k, dim, A, B, Cs...) =
     (promote_to_lmaps_(n[k], dim, A), promote_to_lmaps_(n[k+1], dim, B), promote_to_lmaps(n, k+2, dim, Cs...)...)
 
 ############
@@ -174,7 +170,8 @@ end
 
 # the following rules are sufficient but not necessary
 function LinearAlgebra.issymmetric(A::BlockMap)
-    isblocksquare(A) ? N = length(A.rows) : return false
+    isblocksquare(A) || return false
+    N = length(A.rows)
     maps = A.maps
     symindex = vec(permutedims(reshape(collect(1:N*N), N, N)))
     for i in 1:N*N
@@ -189,7 +186,8 @@ end
 
 LinearAlgebra.ishermitian(A::BlockMap{<:Real}) = issymmetric(A)
 function LinearAlgebra.ishermitian(A::BlockMap)
-    isblocksquare(A) ? N = length(A.rows) : return false
+    isblocksquare(A) || return false
+    N = length(A.rows)
     maps = A.maps
     symindex = vec(permutedims(reshape(collect(1:N*N), N, N)))
     for i in 1:N*N
@@ -228,7 +226,7 @@ function A_mul_B!(y::AbstractVector, A::BlockMap, x::AbstractVector)
         A_mul_B!(yrow, maps[mapind], x[xinds[mapind]])
         for colind in 2:rows[rowind]
             mapind +=1
-            mul!(yrow, maps[mapind], x[xinds[mapind]], 1, 1)
+            mul!(yrow, maps[mapind], x[xinds[mapind]], true, true)
         end
     end
     return y
@@ -251,7 +249,7 @@ function At_mul_B!(y::AbstractVector, A::BlockMap, x::AbstractVector)
             xcol = x[xinds[rowind]]
             for colind in 1:rows[rowind]
                 mapind +=1
-                mul!(y[yinds[colind]], transpose(maps[mapind]), xcol, 1, 1)
+                mul!(y[yinds[colind]], transpose(maps[mapind]), xcol, true, true)
             end
         end
     end
@@ -275,7 +273,7 @@ function Ac_mul_B!(y::AbstractVector, A::BlockMap, x::AbstractVector)
             xcol = x[xinds[rowind]]
             for colind in 1:rows[rowind]
                 mapind +=1
-                mul!(y[yinds[colind]], adjoint(maps[mapind]), xcol, 1, 1)
+                mul!(y[yinds[colind]], adjoint(maps[mapind]), xcol, true, true)
             end
         end
     end
