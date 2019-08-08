@@ -2,23 +2,7 @@ using Test
 using LinearMaps
 using SparseArrays
 using LinearAlgebra
-
-# adopted from: https://discourse.julialang.org/t/way-to-return-the-number-of-allocations/5167/10
-macro numalloc(expr)
-    return quote
-        let
-            local f
-            function f()
-                n1 = Base.gc_num()
-                $(expr)
-                n2 = Base.gc_num()
-                diff = Base.GC_Diff(n2, n1)
-                Base.gc_alloc_count(diff)
-            end
-            f()
-        end
-    end
-end
+using BenchmarkTools
 
 A = 2 * rand(ComplexF64, (20, 10)) .- 1
 v = rand(ComplexF64, 10)
@@ -27,8 +11,8 @@ V = rand(ComplexF64, 10, 3)
 W = rand(ComplexF64, 20, 3)
 α = rand()
 β = rand()
-M = LinearMap(A)
-N = LinearMap(M)
+M = @inferred LinearMap(A)
+N = @inferred LinearMap(M)
 
 @testset "LinearMaps.jl" begin
     @test eltype(M) == eltype(A)
@@ -61,7 +45,8 @@ AV = A * V
     @test M * v == Av
     @test N * v == Av
     @test @inferred mul!(copy(w), M, v) == mul!(copy(w), A, v)
-    @test ((@allocated mul!(w, M, v)) == 0)
+    b = @benchmarkable mul!(w, M, v)
+    @test run(b, samples=3).allocs == 0
     @test @inferred mul!(copy(w), N, v) == Av
 
     # mat-vec-mul
@@ -89,7 +74,7 @@ end
     @test @inferred LinearMap(M')' * v == A * v
     @test @inferred transpose(transpose(M)) == M
     @test (M')' == M
-    Mherm = LinearMap(A'A)
+    Mherm = @inferred LinearMap(A'A)
     @test @inferred ishermitian(Mherm)
     @test @inferred !issymmetric(Mherm)
     @test @inferred !issymmetric(transpose(Mherm))
@@ -113,11 +98,11 @@ end
     @test @inferred mul!(copy(V), transpose(M), W) ≈ transpose(A) * W
     @test @inferred mul!(copy(V), adjoint(M), W) ≈ A' * W
 
-    B = LinearMap(Symmetric(rand(10, 10)))
+    B = @inferred LinearMap(Symmetric(rand(10, 10)))
     @test transpose(B) == B
     @test B == transpose(B)
 
-    B = LinearMap(Hermitian(rand(ComplexF64, 10, 10)))
+    B = @inferred LinearMap(Hermitian(rand(ComplexF64, 10, 10)))
     @test adjoint(B) == B
     @test B == B'
 end
@@ -136,11 +121,11 @@ end
         end
         return w
     end
-    MyFT = LinearMap{ComplexF64}(myft, N) / sqrt(N)
+    MyFT = @inferred LinearMap{ComplexF64}(myft, N) / sqrt(N)
     U = Matrix(MyFT) # will be a unitary matrix
     @test @inferred U'U ≈ Matrix{eltype(U)}(I, N, N)
 
-    CS = LinearMap(cumsum, 2)
+    CS = @inferred LinearMap(cumsum, 2)
     @test size(CS) == (2, 2)
     @test @inferred !issymmetric(CS)
     @test @inferred !ishermitian(CS)
@@ -148,20 +133,20 @@ end
     @test @inferred !(LinearMaps.ismutating(CS))
     @test @inferred Matrix(CS) == [1. 0.; 1. 1.]
     @test @inferred Array(CS) == [1. 0.; 1. 1.]
-    CS = LinearMap(cumsum, 10; ismutating=false)
+    CS = @inferred LinearMap(cumsum, 10; ismutating=false)
     v = rand(10)
     cv = cumsum(v)
     @test CS * v == cv
     @test *(CS, v) == cv
     @test_throws ErrorException CS' * v
-    CS = LinearMap(cumsum, x -> cumsum(reverse(x)), 10; ismutating=false)
+    CS = @inferred LinearMap(cumsum, x -> cumsum(reverse(x)), 10; ismutating=false)
     cv = cumsum(v)
     @test @inferred CS * v == cv
     @test @inferred *(CS, v) == cv
     @test @inferred CS' * v == cumsum(reverse(v))
     @test @inferred mul!(similar(v), transpose(CS), v) == cumsum(reverse(v))
 
-    CS! = LinearMap(cumsum!, 10; ismutating=true)
+    CS! = @inferred LinearMap(cumsum!, 10; ismutating=true)
     @test @inferred LinearMaps.ismutating(CS!)
     @test @inferred CS! * v == cv
     @test @inferred *(CS!, v) == cv
@@ -169,7 +154,7 @@ end
     @test_throws ErrorException CS!'v
     @test_throws ErrorException transpose(CS!) * v
 
-    CS! = LinearMap{ComplexF64}(cumsum!, 10; ismutating=true)
+    CS! = @inferred LinearMap{ComplexF64}(cumsum!, 10; ismutating=true)
     v = rand(ComplexF64, 10)
     cv = cumsum(v)
     @test @inferred LinearMaps.ismutating(CS!)
@@ -188,35 +173,36 @@ end
     @test @inferred mul!(similar(v), adjoint(CS), v) == cumsum(reverse(v))
 
     # Test fallback methods:
-    L = LinearMap(x -> x, x -> x, 10)
+    L = @inferred LinearMap(x -> x, x -> x, 10)
     v = randn(10)
     @test @inferred (2 * L)' * v ≈ 2 * v
     @test @inferred transpose(2 * L) * v ≈ 2 * v
-    L = LinearMap{ComplexF64}(x -> x, x -> x, 10)
+    L = @inferred LinearMap{ComplexF64}(x -> x, x -> x, 10)
     v = rand(ComplexF64, 10)
     @test @inferred (2 * L)' * v ≈ 2 * v
     @test @inferred transpose(2 * L) * v ≈ 2 * v
 end
 
-CS! = LinearMap(cumsum!, 10; ismutating=true)
+CS! = @inferred LinearMap(cumsum!, 10; ismutating=true)
 v = rand(10)
 u = similar(v)
-mul!(u, CS!, v)
-@test ((@allocated mul!(u, CS!, v)) == 0)
+b = @benchmarkable mul!(u, CS!, v)
+@test run(b, samples=3).allocs == 0
 n = 10
 L = sum(fill(CS!, n))
 @test mul!(u, L, v) ≈ n * cumsum(v)
-@test ((@numalloc mul!(u, L, v)) <= 1)
+b = @benchmarkable mul!(u, L, v)
+@test run(b, samples=5).allocs <= 1
 
 A = 2 * rand(ComplexF64, (10, 10)) .- 1
 B = rand(size(A)...)
-M = LinearMap(A)
-N = LinearMap(B)
-LC = M + N
+M = @inferred LinearMap(A)
+N = @inferred LinearMap(B)
+LC = @inferred M + N
 v = rand(ComplexF64, 10)
 w = similar(v)
-mul!(w, M, v)
-@test ((@allocated mul!(w, M, v)) == 0)
+b = @benchmarkable mul!(w, M, v)
+@test run(b, samples=3).allocs == 0
 @testset "linear combinations" begin
     # @test_throws ErrorException LinearMaps.LinearCombination{ComplexF64}((M, N), (1, 2, 3))
     @test @inferred size(3M + 2.0N) == size(A)
@@ -265,11 +251,11 @@ Base.:(*)(A::Union{SimpleFunctionMap,SimpleComplexFunctionMap}, v::Vector) = A.f
 mul!(y::Vector, A::Union{SimpleFunctionMap,SimpleComplexFunctionMap}, x::Vector) = copyto!(y, *(A, x))
 
 @testset "composition" begin
-    F = LinearMap(cumsum, 10; ismutating=false)
+    F = @inferred LinearMap(cumsum, 10; ismutating=false)
     A = 2 * rand(ComplexF64, (10, 10)) .- 1
     B = rand(size(A)...)
-    M = 1 * LinearMap(A)
-    N = LinearMap(B)
+    M = @inferred 1 * LinearMap(A)
+    N = @inferred LinearMap(B)
     @test @inferred (F * F) * v == @inferred F * (F * v)
     @test @inferred (F * A) * v == @inferred F * (A * v)
     @test @inferred (A * F) * v == @inferred A * (F * v)
@@ -290,20 +276,21 @@ mul!(y::Vector, A::Union{SimpleFunctionMap,SimpleComplexFunctionMap}, x::Vector)
     @test @inferred transpose(M * F) == @inferred transpose(F) * transpose(M)
     @test @inferred (4*((-3*M)*2)) == @inferred -12M*2
     @test @inferred (4*((3*(-M))*2)*(-5)) == @inferred -12M*(-10)
-    L = 3 * F + 1im * A + F * M' * F
+    L = @inferred 3 * F + 1im * A + F * M' * F
     LF = 3 * Matrix(F) + 1im * A + Matrix(F) * Matrix(M)' * Matrix(F)
     @test Array(L) ≈ LF
     R1 = rand(ComplexF64, 10, 10); L1 = LinearMap(R1)
     R2 = rand(ComplexF64, 10, 10); L2 = LinearMap(R2)
     R3 = rand(ComplexF64, 10, 10); L3 = LinearMap(R3)
     CompositeR = prod(R -> LinearMap(R), [R1, R2, R3])
-    @test transpose(CompositeR) == transpose(L3) * transpose(L2) * transpose(L1)
-    @test adjoint(CompositeR) == L3' * L2' * L1'
-    @test adjoint(adjoint((CompositeR))) == CompositeR
+    @test @inferred L1 * L2 * L3 == CompositeR
+    @test @inferred transpose(CompositeR) == transpose(L3) * transpose(L2) * transpose(L1)
+    @test @inferred adjoint(CompositeR) == L3' * L2' * L1'
+    @test @inferred adjoint(adjoint((CompositeR))) == CompositeR
     @test transpose(transpose((CompositeR))) == CompositeR
-    Lt = transpose(LinearMap(CompositeR))
+    Lt = @inferred transpose(LinearMap(CompositeR))
     @test Lt * v ≈ transpose(R3) * transpose(R2) * transpose(R1) * v
-    Lc = adjoint(LinearMap(CompositeR))
+    Lc = @inferred adjoint(LinearMap(CompositeR))
     @test Lc * v ≈ R3' * R2' * R1' * v
 
     # test inplace operations
@@ -374,9 +361,9 @@ A = rand(10, 20)
 B = rand(ComplexF64, 10, 20)
 SA = A'A + I
 SB = B'B + I
-L = LinearMap{Float64}(A)
-MA = LinearMap(SA)
-MB = LinearMap(SB)
+L = @inferred LinearMap{Float64}(A)
+MA = @inferred LinearMap(SA)
+MB = @inferred LinearMap(SB)
 @testset "wrapped maps" begin
     @test size(L) == size(A)
     @test @inferred !issymmetric(L)
@@ -389,12 +376,12 @@ end
 A = 2 * rand(ComplexF64, (10, 10)) .- 1
 B = rand(size(A)...)
 M = @inferred 1 * LinearMap(A)
-N = LinearMap(B)
-LC = M + N
+N = @inferred LinearMap(B)
+LC = @inferred M + N
 v = rand(ComplexF64, 10)
 w = similar(v)
 @testset "identity/scaling map" begin
-    Id = LinearMaps.UniformScalingMap(1, 10)
+    Id = @inferred LinearMaps.UniformScalingMap(1, 10)
     @test_throws ErrorException LinearMaps.UniformScalingMap(1, 10, 20)
     @test_throws ErrorException LinearMaps.UniformScalingMap(1, (10, 20))
     @test size(Id) == (10, 10)
@@ -420,12 +407,151 @@ end
     β = UniformScaling(Quaternion.(rand(4)...))
     L = LinearMap(A)
     @test Array(L) == A
+    @test Array(L') == A'
+    @test Array(transpose(L)) == transpose(A)
     @test Array(α * L) == α * A
     @test Array(L * α) == A * α
     @test Array(α * L) == α * A
     @test Array(L * α ) == A * α
+    @test Array(α * L') == α * A'
+    @test Array((α * L')') ≈ (α * A')' ≈ A * conj(α)
+    @test L * x ≈ A * x
+    @test L' * x ≈ A' * x
+    @test α * (L * x) ≈ α * (A * x)
+    @test α * L * x ≈ α * A * x
+    @test (α * L') * x ≈ (α * A') * x
     @test (α * L')' * x ≈ (α * A')' * x
     @test (α * L')' * v ≈ (α * A')' * v
     @test Array(@inferred adjoint(α * L * β)) ≈ conj(β) * A' * conj(α)
     @test Array(@inferred transpose(α * L * β)) ≈ β * transpose(A) * α
+end
+
+@testset "nonassociative number type" begin
+    using Quaternions
+    x = Octonion.(rand(10), rand(10), rand(10), rand(10),rand(10), rand(10), rand(10), rand(10))
+    v = rand(10)
+    A = Octonion.(rand(10,10), rand(10,10), rand(10,10), rand(10,10),rand(10,10), rand(10,10), rand(10,10), rand(10,10))
+    α = UniformScaling(Octonion.(rand(8)...))
+    β = UniformScaling(Octonion.(rand(8)...))
+    L = LinearMap(A)
+    @test Array(L) == A
+    @test Array(α * L) == α * A
+    @test Array(L * α) == A * α
+    @test Array(α * L) == α * A
+    @test Array(L * α) == A * α
+    @test (α * L')' * v ≈ (α * A')' * v
+end
+
+@testset "block maps" begin
+    @testset "hcat" begin
+        for elty in (Float32, Float64, ComplexF64)
+            A11 = rand(elty, 10, 10)
+            A12 = rand(elty, 10, 20)
+            L = @inferred hcat(LinearMap(A11), LinearMap(A12))
+            @test L isa LinearMaps.BlockMap{elty}
+            A = [A11 A12]
+            x = rand(30)
+            @test size(L) == size(A)
+            @test Matrix(L) ≈ A
+            @test L * x ≈ A * x
+            L = @inferred hcat(LinearMap(A11), LinearMap(A12), LinearMap(A11))
+            A = [A11 A12 A11]
+            @test Matrix(L) ≈ A
+            A = [I I I A11 A11 A11]
+            L = @inferred hcat(I, I, I, LinearMap(A11), LinearMap(A11), LinearMap(A11))
+            @test L == [I I I LinearMap(A11) LinearMap(A11) LinearMap(A11)]
+            x = rand(elty, 60)
+            @test L isa LinearMaps.BlockMap{elty}
+            @test L * x ≈ A * x
+            A11 = rand(elty, 11, 10)
+            A12 = rand(elty, 10, 20)
+            @test_throws DimensionMismatch hcat(LinearMap(A11), LinearMap(A12))
+        end
+    end
+    @testset "vcat" begin
+        for elty in (Float32, Float64, ComplexF64)
+            A11 = rand(elty, 10, 10)
+            L = @inferred vcat(LinearMap(A11))
+            @test L == [LinearMap(A11);]
+            @test Matrix(L) ≈ A11
+            A21 = rand(elty, 20, 10)
+            L = @inferred vcat(LinearMap(A11), LinearMap(A21))
+            @test L isa LinearMaps.BlockMap{elty}
+            A = [A11; A21]
+            x = rand(10)
+            @test size(L) == size(A)
+            @test Matrix(L) ≈ A
+            @test L * x ≈ A * x
+            A = [I; I; I; A11; A11; A11]
+            L = @inferred vcat(I, I, I, LinearMap(A11), LinearMap(A11), LinearMap(A11))
+            @test L == [I; I; I; LinearMap(A11); LinearMap(A11); LinearMap(A11)]
+            x = rand(elty, 10)
+            @test L isa LinearMaps.BlockMap{elty}
+            @test L * x ≈ A * x
+            A11 = rand(elty, 10, 11)
+            A21 = rand(elty, 20, 10)
+            @test_throws DimensionMismatch vcat(LinearMap(A11), LinearMap(A21))
+        end
+    end
+    @testset "hvcat" begin
+        for elty in (Float32, Float64, ComplexF64)
+            A11 = rand(elty, 10, 10)
+            A12 = rand(elty, 10, 20)
+            A21 = rand(elty, 20, 10)
+            A22 = rand(elty, 20, 20)
+            A = [A11 A12; A21 A22]
+            @inferred hvcat((2,2), LinearMap(A11), LinearMap(A12), LinearMap(A21), LinearMap(A22))
+            L = [LinearMap(A11) LinearMap(A12); LinearMap(A21) LinearMap(A22)]
+            x = rand(30)
+            @test L isa LinearMaps.BlockMap{elty}
+            @test size(L) == size(A)
+            @test L * x ≈ A * x
+            @test Matrix(L) ≈ A
+            A = [I A12; A21 I]
+            @inferred hvcat((2,2), I, LinearMap(A12), LinearMap(A21), I)
+            L = @inferred hvcat((2,2), I, LinearMap(A12), LinearMap(A21), I)
+            @test L isa LinearMaps.BlockMap{elty}
+            @test size(L) == (30, 30)
+            @test Matrix(L) ≈ A
+            @test L * x ≈ A * x
+            A = rand(elty, 10,10); LA = LinearMap(A)
+            B = rand(elty, 20,30); LB = LinearMap(B)
+            @test [LA LA LA; LB] isa LinearMaps.BlockMap{elty}
+            @test Matrix([LA LA LA; LB]) ≈ [A A A; B]
+            @test [LB; LA LA LA] isa LinearMaps.BlockMap{elty}
+            @test Matrix([LB; LA LA LA]) ≈ [B; A A A]
+            @test [I; LA LA LA] isa LinearMaps.BlockMap{elty}
+            @test Matrix([I; LA LA LA]) ≈ [I; A A A]
+            A12 = rand(elty, 10, 21)
+            A21 = rand(elty, 20, 10)
+            @test_throws ArgumentError A = [I A12; A21 I]
+            @test_throws ArgumentError A = [A12 A12; A21 A21]
+        end
+    end
+    @testset "adjoint/transpose" begin
+        for elty in (Float32, Float64, ComplexF64), transform in (transpose, adjoint)
+            A12 = rand(elty, 10, 10)
+            A = [I A12; transform(A12) I]
+            L = [I LinearMap(A12); transform(LinearMap(A12)) I]
+            @test_broken ishermitian(L)
+            x = rand(elty, 20)
+            @test L isa LinearMaps.LinearMap{elty}
+            @test size(L) == size(A)
+            @test L * x ≈ A * x
+            @test Matrix(L) ≈ A
+            Lt = @inferred transform(L)
+            @test Lt isa LinearMaps.LinearMap{elty}
+            @test Lt * x ≈ transform(A) * x
+            Lt = @inferred transform(LinearMap(L))
+            @test Lt * x ≈ transform(A) * x
+            @test Matrix(Lt) ≈ Matrix(transform(A))
+            A21 = rand(elty, 10, 10)
+            A = [I A12; A21 I]
+            L = [I LinearMap(A12); LinearMap(A21) I]
+            Lt = @inferred transform(L)
+            @test Lt isa LinearMaps.LinearMap{elty}
+            @test Lt * x ≈ transform(A) * x
+            @test Matrix(Lt) ≈ Matrix(transform(A))
+        end
+    end
 end

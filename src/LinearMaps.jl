@@ -50,6 +50,10 @@ function LinearAlgebra.mul!(Y::AbstractMatrix, A::LinearMap{T}, X::AbstractMatri
     @inbounds @views for i = 1:size(X, 2)
         mul!(Y[:, i], A, X[:, i], α, β)
     end
+    # starting from Julia v1.1, we could use the `eachcol` iterator
+    # for (Xi, Yi) in zip(eachcol(X), eachcol(Y))
+    #     mul!(Yi, A, Xi, α, β)
+    # end
     return Y
 end
 
@@ -107,6 +111,7 @@ include("composition.jl") # composition of linear maps
 include("wrappedmap.jl") # wrap a matrix of linear map in a new type, thereby allowing to alter its properties
 include("uniformscalingmap.jl") # the uniform scaling map, to be able to make linear combinations of LinearMap objects and multiples of I
 include("functionmap.jl") # using a function as linear map
+include("blockmap.jl") # block linear maps
 
 """
     LinearMap(A; kwargs...)

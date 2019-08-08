@@ -131,63 +131,7 @@ function A_mul_B!(y::AbstractVector, A::CompositeMap, x::AbstractVector)
     end
     return y
 end
-function At_mul_B!(y::AbstractVector, A::CompositeMap, x::AbstractVector)
-    # no size checking, will be done by individual maps
-    N = length(A.maps)
-    if N == 1
-        At_mul_B!(y, A.maps[1], x)
-    else
-        T = eltype(y)
-        dest = Array{T}(undef, size(A.maps[N], 2))
-        At_mul_B!(dest, A.maps[N], x)
-        source = dest
-        if N>2
-            dest = Array{T}(undef, size(A.maps[N-1], 2))
-        end
-        for n = N-1:-1:2
-            try
-                resize!(dest, size(A.maps[n], 2))
-            catch err
-                if err == ErrorException("cannot resize array with shared data")
-                    dest = Array{T}(undef, size(A.maps[n], 2))
-                else
-                    rethrow(err)
-                end
-            end
-            At_mul_B!(dest, A.maps[n], source)
-            dest, source = source, dest # alternate dest and source
-        end
-        At_mul_B!(y, A.maps[1], source)
-    end
-    return y
-end
-function Ac_mul_B!(y::AbstractVector, A::CompositeMap, x::AbstractVector)
-    # no size checking, will be done by individual maps
-    N = length(A.maps)
-    if N == 1
-        Ac_mul_B!(y, A.maps[1], x)
-    else
-        T = eltype(y)
-        dest = Array{T}(undef, size(A.maps[N], 2))
-        Ac_mul_B!(dest, A.maps[N], x)
-        source = dest
-        if N>2
-            dest = Array{T}(undef, size(A.maps[N-1], 2))
-        end
-        for n = N-1:-1:2
-            try
-                resize!(dest, size(A.maps[n], 2))
-            catch err
-                if err == ErrorException("cannot resize array with shared data")
-                    dest = Array{T}(undef, size(A.maps[n], 2))
-                else
-                    rethrow(err)
-                end
-            end
-            Ac_mul_B!(dest, A.maps[n], source)
-            dest, source = source, dest # alternate dest and source
-        end
-        Ac_mul_B!(y, A.maps[1], source)
-    end
-    return y
-end
+
+At_mul_B!(y::AbstractVector, A::CompositeMap, x::AbstractVector) = A_mul_B!(y, transpose(A), x)
+
+Ac_mul_B!(y::AbstractVector, A::CompositeMap, x::AbstractVector) = A_mul_B!(y, adjoint(A), x)
