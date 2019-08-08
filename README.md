@@ -7,6 +7,9 @@
 
 A Julia package for defining and working with linear maps, also known as linear transformations or linear operators acting on vectors. The only requirement for a LinearMap is that it can act on a vector (by multiplication) efficiently.
 
+## What's new in v2.5.0
+* Support for `hcat` `vcat` `hvcat`
+
 ## What's new in v2.3.0
 *   Fully Julia v0.7/v1.0/v1.1 compatible.
 *   Full support of noncommutative number types such as quaternions.
