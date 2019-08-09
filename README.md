@@ -7,6 +7,15 @@
 
 A Julia package for defining and working with linear maps, also known as linear transformations or linear operators acting on vectors. The only requirement for a LinearMap is that it can act on a vector (by multiplication) efficiently.
 
+## What's new in v2.5.0
+*   New feature: concatenation of `LinearMap`s objects with `UniformScaling`s,
+    consistent with (h-, v-, and hc-)concatenation of matrices. Note, matrices
+    `A` must be wrapped as `LinearMap(A)`, `UniformScaling`s are promoted to
+    `LinearMap`s automatically.
+
+## What's new in v2.4.0
+*   Support restricted to Julia v1.0+.
+
 ## What's new in v2.3.0
 *   Fully Julia v0.7/v1.0/v1.1 compatible.
 *   Full support of noncommutative number types such as quaternions.
@@ -88,6 +97,10 @@ The LinearMaps package provides the following functionality:
     * `mul!(y::AbstractVector, A::LinearMap, x::AbstractVector, α::Number=1, β::Number=0)`: computes `α * A * x + β * y` and stores the result in `y`. Analogously for `X,Y::AbstractMatrix`.
 
     Applying the adjoint or transpose of `A` (if defined) to `x` works exactly as in the usual matrix case: `transpose(A) * x` and `mul!(y, A', x)`, for instance.
+
+*   Horizontal, vertical, and hv-concatenation as known for regular matrices,
+    where `UniformScaling`s are automatically promoted to `LinearMap`s and their
+    sizes are inferred, if possible.
 
 ## Types
 
