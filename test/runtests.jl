@@ -540,10 +540,12 @@ end
             @test Matrix([LB; LA LA LA]) ≈ [B; A A A]
             @test [I; LA LA LA] isa LinearMaps.BlockMap{elty}
             @test Matrix([I; LA LA LA]) ≈ [I; A A A]
-            A12 = rand(elty, 10, 21)
-            A21 = rand(elty, 20, 10)
-            @test_throws ArgumentError A = [I A12; A21 I]
-            @test_throws ArgumentError A = [A12 A12; A21 A21]
+            A12 = LinearMap(rand(elty, 10, 21))
+            A21 = LinearMap(rand(elty, 20, 10))
+            @test_throws DimensionMismatch A = [I A12; A21 I]
+            @test_throws DimensionMismatch A = [I A21; A12 I]
+            @test_throws DimensionMismatch A = [A12 A12; A21 A21]
+            @test_throws DimensionMismatch A = [A12 A21; A12 A21]
         end
     end
     @testset "adjoint/transpose" begin

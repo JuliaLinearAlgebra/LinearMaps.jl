@@ -100,7 +100,6 @@ function Base.hvcat(rows::NTuple{nr,Int}, As::Union{LinearMap,UniformScaling}...
     T = promote_type(map(eltype, As)...)
     sum(rows) == length(As) || throw(ArgumentError("mismatch between row sizes and number of arguments"))
     n = fill(-1, length(As))
-    needcols = false # whether we also need to infer some sizes from the column count
     j = 0
     for i in 1:nr # infer UniformScaling sizes from row counts, if possible:
         ni = -1 # number of rows in this block-row, -1 indicates unknown
@@ -116,36 +115,33 @@ function Base.hvcat(rows::NTuple{nr,Int}, As::Union{LinearMap,UniformScaling}...
             for k = 1:rows[i]
                 n[j+k] = ni
             end
-        else # row consisted only of UniformScaling objects
-            needcols = true
         end
         j += rows[i]
     end
-    if needcols # some sizes still unknown, try to infer from column count
-        nc = -1
-        j = 0
-        for i in 1:nr
-            nci = 0
-            rows[i] > 0 && n[j+1] == -1 && (j += rows[i]; continue)
+    # check for consistent total column number
+    nc = -1
+    j = 0
+    for i in 1:nr
+        nci = 0
+        rows[i] > 0 && n[j+1] == -1 && (j += rows[i]; continue)
+        for k = 1:rows[i]
+            nci += isa(As[j+k], UniformScaling) ? n[j+k] : size(As[j+k], 2)
+        end
+        nc >= 0 && nc != nci && throw(DimensionMismatch("mismatch in number of columns"))
+        nc = nci
+        j += rows[i]
+    end
+    nc == -1 && throw(ArgumentError("sizes of UniformScalings could not be inferred"))
+    j = 0
+    for i in 1:nr
+        if rows[i] > 0 && n[j+1] == -1 # this row consists entirely of UniformScalings
+            nci, r = divrem(nc, rows[i])
+            r != 0 && throw(DimensionMismatch("indivisible UniformScaling sizes"))
             for k = 1:rows[i]
-                nci += isa(As[j+k], UniformScaling) ? n[j+k] : size(As[j+k], 2)
+                n[j+k] = nci
             end
-            nc >= 0 && nc != nci && throw(DimensionMismatch("mismatch in number of columns"))
-            nc = nci
-            j += rows[i]
         end
-        nc == -1 && throw(ArgumentError("sizes of UniformScalings could not be inferred"))
-        j = 0
-        for i in 1:nr
-            if rows[i] > 0 && n[j+1] == -1 # this row consists entirely of UniformScalings
-                nci, r = divrem(nc, rows[i])
-                r != 0 && throw(DimensionMismatch("indivisible UniformScaling sizes"))
-                for k = 1:rows[i]
-                    n[j+k] = nci
-                end
-            end
-            j += rows[i]
-        end
+        j += rows[i]
     end
 
     return BlockMap{T}(promote_to_lmaps(n, 1, 1, As...), rows)
