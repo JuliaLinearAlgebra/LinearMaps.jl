@@ -55,7 +55,17 @@ end
 # hcat
 ############
 
-function Base.hcat(As::Union{LinearMap,UniformScaling}...)
+for k in 1:8 # is 8 sufficient?
+      Is = ntuple(n->:($(Symbol(:A,n))::UniformScaling), Val(k-1))
+      L = :($(Symbol(:A,k))::LinearMap)
+      args = ntuple(n->Symbol(:A,n), Val(k))
+
+      @eval Base.hcat($(Is...), $L, As::Union{LinearMap,UniformScaling}...) = _hcat($(args...), As...)
+      @eval Base.vcat($(Is...), $L, As::Union{LinearMap,UniformScaling}...) = _vcat($(args...), As...)
+      @eval Base.hvcat(rows::Tuple{Vararg{Int}}, $(Is...), $L, As::Union{LinearMap,UniformScaling}...) = _hvcat(rows, $(args...), As...)
+end
+
+function _hcat(As::Union{LinearMap,UniformScaling}...)
     T = promote_type(map(eltype, As)...)
     nbc = length(As)
 
@@ -75,7 +85,7 @@ end
 # vcat
 ############
 
-function Base.vcat(As::Union{LinearMap,UniformScaling}...)
+function _vcat(As::Union{LinearMap,UniformScaling}...)
     T = promote_type(map(eltype, As)...)
     nbr = length(As)
 
@@ -96,7 +106,8 @@ end
 # hvcat
 ############
 
-function Base.hvcat(rows::NTuple{nr,Int}, As::Union{LinearMap,UniformScaling}...) where nr
+function _hvcat(rows::Tuple{Vararg{Int}}, As::Union{LinearMap,UniformScaling}...)
+    nr = length(rows)
     T = promote_type(map(eltype, As)...)
     sum(rows) == length(As) || throw(ArgumentError("mismatch between row sizes and number of arguments"))
     n = fill(-1, length(As))
