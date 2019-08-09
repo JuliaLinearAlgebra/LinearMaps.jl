@@ -77,7 +77,7 @@ function _hcat(As::Union{LinearMap,UniformScaling}...)
             break
         end
     end
-    nrows == -1 && throw(ArgumentError("hcat of only UniformScaling objects cannot determine the matrix size"))
+    nrows == -1 && throw(ArgumentError("hcat of only UniformScaling objects cannot determine the linear map size"))
     return BlockMap{T}(promote_to_lmaps(fill(nrows, nbc), 1, 1, As...), (nbc,))
 end
 
@@ -97,7 +97,7 @@ function _vcat(As::Union{LinearMap,UniformScaling}...)
             break
         end
     end
-    ncols == -1 && throw(ArgumentError("vcat of only UniformScaling objects cannot determine the matrix size"))
+    ncols == -1 && throw(ArgumentError("vcat of only UniformScaling objects cannot determine the linear map size"))
 
     return BlockMap{T}(promote_to_lmaps(fill(ncols, nbr), 1, 2, As...), ntuple(i->1, nbr))
 end
