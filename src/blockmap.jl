@@ -56,13 +56,13 @@ end
 ############
 
 for k in 1:8 # is 8 sufficient?
-      Is = ntuple(n->:($(Symbol(:A,n))::UniformScaling), Val(k-1))
-      L = :($(Symbol(:A,k))::LinearMap)
-      args = ntuple(n->Symbol(:A,n), Val(k))
+    Is = ntuple(n->:($(Symbol(:A,n))::UniformScaling), Val(k-1))
+    L = :($(Symbol(:A,k))::LinearMap)
+    args = ntuple(n->Symbol(:A,n), Val(k))
 
-      @eval Base.hcat($(Is...), $L, As::Union{LinearMap,UniformScaling}...) = _hcat($(args...), As...)
-      @eval Base.vcat($(Is...), $L, As::Union{LinearMap,UniformScaling}...) = _vcat($(args...), As...)
-      @eval Base.hvcat(rows::Tuple{Vararg{Int}}, $(Is...), $L, As::Union{LinearMap,UniformScaling}...) = _hvcat(rows, $(args...), As...)
+    @eval Base.hcat($(Is...), $L, As::Union{LinearMap,UniformScaling}...) = _hcat($(args...), As...)
+    @eval Base.vcat($(Is...), $L, As::Union{LinearMap,UniformScaling}...) = _vcat($(args...), As...)
+    @eval Base.hvcat(rows::Tuple{Vararg{Int}}, $(Is...), $L, As::Union{LinearMap,UniformScaling}...) = _hvcat(rows, $(args...), As...)
 end
 
 function _hcat(As::Union{LinearMap,UniformScaling}...)
