@@ -509,6 +509,7 @@ end
             @test_throws DimensionMismatch vcat(LinearMap(A11), LinearMap(A21))
         end
     end
+
     @testset "hvcat" begin
         for elty in (Float32, Float64, ComplexF64)
             A11 = rand(elty, 10, 10)
@@ -546,8 +547,19 @@ end
             @test_throws DimensionMismatch A = [I A21; A12 I]
             @test_throws DimensionMismatch A = [A12 A12; A21 A21]
             @test_throws DimensionMismatch A = [A12 A21; A12 A21]
+
+            # basic test of "misaligned" blocks
+			M = ones(elty, 3, 2) # non-square
+            A = LinearMap(M)
+            B = [I A; A I]
+            C = [I M; M I]
+            @test B isa LinearMaps.BlockMap{elty}
+            @test Matrix(B) == C
+            @test Matrix(transpose(B)) == C'
+            @test Matrix(adjoint(B)) == C'
         end
     end
+
     @testset "adjoint/transpose" begin
         for elty in (Float32, Float64, ComplexF64), transform in (transpose, adjoint)
             A12 = rand(elty, 10, 10)
