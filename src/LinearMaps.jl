@@ -119,6 +119,7 @@ include("linearcombination.jl") # defining linear combinations of linear maps
 include("composition.jl") # composition of linear maps
 include("functionmap.jl") # using a function as linear map
 include("blockmap.jl") # block linear maps
+include("kronecker.jl") # Kronecker product of linear maps
 
 """
     LinearMap(A; kwargs...)
