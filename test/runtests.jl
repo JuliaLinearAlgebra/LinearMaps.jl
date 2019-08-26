@@ -546,6 +546,16 @@ end
             @test_throws DimensionMismatch A = [I A21; A12 I]
             @test_throws DimensionMismatch A = [A12 A12; A21 A21]
             @test_throws DimensionMismatch A = [A12 A21; A12 A21]
+
+            # basic test of "misaligned" blocks
+            M = ones(elty, 3, 2) # non-square
+            A = LinearMap(M)
+            B = [I A; A I]
+            C = [I M; M I]
+            @test B isa LinearMaps.BlockMap{elty}
+            @test Matrix(B) == C
+            @test Matrix(transpose(B)) == transpose(C)
+            @test Matrix(adjoint(B)) == C'
         end
     end
     @testset "adjoint/transpose" begin

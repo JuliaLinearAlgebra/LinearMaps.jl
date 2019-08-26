@@ -244,19 +244,19 @@ function At_mul_B!(y::AbstractVector, A::BlockMap, x::AbstractVector)
     @boundscheck (n == length(y) && m == length(x)) || throw(DimensionMismatch("At_mul_B!"))
     maps, rows, xinds, yinds = A.maps, A.rows, A.rowranges, A.colranges
     mapind = 0
-    # first block row (rowind = 1), fill all of y
+    # first block row (rowind = 1) of A, meaning first block column of A', fill all of y
     @views @inbounds begin
         xcol = x[xinds[1]]
         for colind in 1:rows[1]
             mapind +=1
-            A_mul_B!(y[yinds[colind]], transpose(maps[mapind]), xcol)
+            A_mul_B!(y[yinds[mapind]], transpose(maps[mapind]), xcol)
         end
-        # subsequent block rows, add results to corresponding parts of y
+        # subsequent block rows of A, add results to corresponding parts of y
         for rowind in 2:length(rows)
             xcol = x[xinds[rowind]]
             for colind in 1:rows[rowind]
                 mapind +=1
-                mul!(y[yinds[colind]], transpose(maps[mapind]), xcol, true, true)
+                mul!(y[yinds[mapind]], transpose(maps[mapind]), xcol, true, true)
             end
         end
     end
@@ -268,19 +268,19 @@ function Ac_mul_B!(y::AbstractVector, A::BlockMap, x::AbstractVector)
     @boundscheck (n == length(y) && m == length(x)) || throw(DimensionMismatch("At_mul_B!"))
     maps, rows, xinds, yinds = A.maps, A.rows, A.rowranges, A.colranges
     mapind = 0
-    # first block row (rowind = 1), fill all of y
+    # first block row (rowind = 1) of A, fill all of y
     @views @inbounds begin
         xcol = x[xinds[1]]
         for colind in 1:rows[1]
             mapind +=1
-            A_mul_B!(y[yinds[colind]], adjoint(maps[mapind]), xcol)
+            A_mul_B!(y[yinds[mapind]], adjoint(maps[mapind]), xcol)
         end
-        # subsequent block rows, add results to corresponding parts of y
+        # subsequent block rows of A, add results to corresponding parts of y
         for rowind in 2:length(rows)
             xcol = x[xinds[rowind]]
             for colind in 1:rows[rowind]
                 mapind +=1
-                mul!(y[yinds[colind]], adjoint(maps[mapind]), xcol, true, true)
+                mul!(y[yinds[mapind]], adjoint(maps[mapind]), xcol, true, true)
             end
         end
     end
