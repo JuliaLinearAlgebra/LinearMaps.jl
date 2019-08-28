@@ -34,10 +34,10 @@ Ac_mul_B!(y::AbstractVector, A::WrappedMap, x::AbstractVector) =
     ishermitian(A) ? A_mul_B!(y, A.lmap, x) : Ac_mul_B!(y, A.lmap, x)
 
 # combine LinearMap and Matrix objects: linear combinations and map composition
-Base.:(+)(A1::LinearMap, A2::AbstractMatrix) = +(A1, WrappedMap(A2))
-Base.:(+)(A1::AbstractMatrix, A2::LinearMap) = +(WrappedMap(A1), A2)
-Base.:(-)(A1::LinearMap, A2::AbstractMatrix) = -(A1, WrappedMap(A2))
-Base.:(-)(A1::AbstractMatrix, A2::LinearMap) = -(WrappedMap(A1), A2)
+Base.:(+)(A₁::LinearMap, A₂::AbstractMatrix) = +(A₁, WrappedMap(A₂))
+Base.:(+)(A₁::AbstractMatrix, A₂::LinearMap) = +(WrappedMap(A₁), A₂)
+Base.:(-)(A₁::LinearMap, A₂::AbstractMatrix) = -(A₁, WrappedMap(A₂))
+Base.:(-)(A₁::AbstractMatrix, A₂::LinearMap) = -(WrappedMap(A₁), A₂)
 
-Base.:(*)(A1::LinearMap, A2::AbstractMatrix) = *(A1, WrappedMap(A2))
-Base.:(*)(A1::AbstractMatrix, A2::LinearMap) = *(WrappedMap(A1), A2)
+Base.:(*)(A₁::LinearMap, A₂::AbstractMatrix) = *(A₁, WrappedMap(A₂))
+Base.:(*)(A₁::AbstractMatrix, A₂::LinearMap) = *(WrappedMap(A₁), A₂)
