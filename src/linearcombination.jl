@@ -3,7 +3,7 @@ struct LinearCombination{T, As<:Tuple{Vararg{LinearMap}}} <: LinearMap{T}
     function LinearCombination{T, As}(maps::As) where {T, As}
         N = length(maps)
         sz = size(maps[1])
-        for n = 1:N
+        for n in 1:N
             size(maps[n]) == sz || throw(DimensionMismatch("LinearCombination"))
             promote_type(T, eltype(maps[n])) == T || throw(InexactError())
         end
@@ -52,7 +52,7 @@ function A_mul_B!(y::AbstractVector, A::LinearCombination, x::AbstractVector)
     l = length(A.maps)
     if l>1
         z = similar(y)
-        for n=2:l
+        for n in 2:l
             A_mul_B!(z, A.maps[n], x)
             y .+= z
         end

@@ -2,10 +2,10 @@ struct CompositeMap{T, As<:Tuple{Vararg{LinearMap}}} <: LinearMap{T}
     maps::As # stored in order of application to vector
     function CompositeMap{T, As}(maps::As) where {T, As}
         N = length(maps)
-        for n = 2:N
+        for n in 2:N
             size(maps[n], 2) == size(maps[n-1], 1) || throw(DimensionMismatch("CompositeMap"))
         end
-        for n = 1:N
+        for n in 1:N
             promote_type(T, eltype(maps[n])) == T || throw(InexactError())
         end
         new{T, As}(maps)
@@ -91,9 +91,7 @@ function Base.:(*)(A₁::LinearMap, A₂::LinearMap)
     return CompositeMap{T}(tuple(A₂, A₁))
 end
 Base.:(*)(A₁::LinearMap, A₂::UniformScaling) = A₁ * A₂.λ
-Base.:(*)(A₁::LinearMap, A₂::UniformScaling{Bool}) = A₂.λ ? A₁ : A₁ * A₂.λ
 Base.:(*)(A₁::UniformScaling, A₂::LinearMap) = A₁.λ * A₂
-Base.:(*)(A₁::UniformScaling{Bool}, A₂::LinearMap) = A₁.λ ? A₂ : A₁.λ * A₂
 
 # special transposition behavior
 LinearAlgebra.transpose(A::CompositeMap{T}) where {T} = CompositeMap{T}(map(transpose, reverse(A.maps)))
@@ -116,7 +114,7 @@ function A_mul_B!(y::AbstractVector, A::CompositeMap, x::AbstractVector)
         if N>2
             dest = Array{T}(undef, size(A.maps[2], 1))
         end
-        for n=2:N-1
+        for n in 2:N-1
             try
                 resize!(dest, size(A.maps[n], 1))
             catch err
