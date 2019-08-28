@@ -12,6 +12,13 @@ KroneckerMap{T}(maps::As) where {T, As<:Tuple{LinearMap,LinearMap}} = KroneckerM
 Base.kron(A::LinearMap{TA}, B::LinearMap{TB}) where {TA,TB} = KroneckerMap{promote_type(TA,TB)}((A, B))
 Base.kron(A::LinearMap, B::AbstractArray) = kron(A, LinearMap(B))
 Base.kron(A::AbstractArray, B::LinearMap) = kron(LinearMap(A), B)
+for k in 3:8 # is 8 sufficient?
+    Is = ntuple(n->:($(Symbol(:A,n))::AbstractMatrix), Val(k-1))
+    L = :($(Symbol(:A,k))::LinearMap)
+    mapargs = ntuple(n -> :(LinearMap($(Symbol(:A,n)))), Val(k-1))
+
+    @eval Base.kron($(Is...), $L, As::Union{LinearMap,AbstractMatrix}...) = kron($(mapargs...), $(Symbol(:A,k)), As...)
+end
 
 Base.size(A::KroneckerMap) = size(A.maps[1]) .* size(A.maps[2])
 
