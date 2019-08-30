@@ -1,3 +1,22 @@
+"""
+    UniformScalingMap(λ::Number, n::Int)
+
+Construct an `n×n` linear map that acts on vectors by uniformly scaling with `λ`.
+This should only be used in the construction of linear maps in which the size of
+the uniform scaling cannot be inferred automatically, like in the Kronecker product.
+In all other cases, it is recommended to use `LinearAlgebra`'s `I::UniformScaling`.
+
+## Examples
+```jldoctest; setup = :(using LinearMaps)
+julia> J = UniformScalingMap(2.0, 10);
+
+julia> size(J)
+(10, 10)
+
+julia> eltype(J)
+Float64
+```
+"""
 struct UniformScalingMap{T} <: LinearMap{T}
     λ::T
     M::Int
@@ -8,19 +27,27 @@ struct UniformScalingMap{T} <: LinearMap{T}
 end
 UniformScalingMap(λ::Number, M::Int, N::Int) =
     (M == N ? UniformScalingMap(λ, M) : error("UniformScalingMap needs to be square"))
-UniformScalingMap(λ::Number, sz::Tuple{Int, Int}) =
+UniformScalingMap(λ::T, sz::Dims{2}) where {T} =
     (sz[1] == sz[2] ? UniformScalingMap(λ, sz[1]) : error("UniformScalingMap needs to be square"))
 
 # properties
+Base.size(A::UniformScalingMap, n) = (n==1 || n==2 ? A.M : error("LinearMap objects have only 2 dimensions"))
 Base.size(A::UniformScalingMap) = (A.M, A.M)
 Base.isreal(A::UniformScalingMap) = isreal(A.λ)
 LinearAlgebra.issymmetric(::UniformScalingMap) = true
 LinearAlgebra.ishermitian(A::UniformScalingMap) = isreal(A)
 LinearAlgebra.isposdef(A::UniformScalingMap) = isposdef(A.λ)
 
+# comparison of UniformScalingMap objects, sufficient but not necessary
+Base.:(==)(A::UniformScalingMap, B::UniformScalingMap) = (eltype(A) == eltype(B) && A.λ == B.λ && A.M == B.M)
+
 # special transposition behavior
 LinearAlgebra.transpose(A::UniformScalingMap) = A
 LinearAlgebra.adjoint(A::UniformScalingMap)   = UniformScalingMap(conj(A.λ), size(A))
+
+# multiplication with scalar
+Base.:(*)(α::Number, J::UniformScalingMap) = UniformScalingMap(α * J.λ, size(J))
+Base.:(*)(J::UniformScalingMap, α::Number) = UniformScalingMap(J.λ * α, size(J))
 
 # multiplication with vector
 Base.:(*)(A::UniformScalingMap, x::AbstractVector) =

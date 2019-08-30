@@ -1,6 +1,6 @@
 module LinearMaps
 
-export LinearMap
+export LinearMap, UniformScalingMap
 
 using LinearAlgebra
 using SparseArrays
