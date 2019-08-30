@@ -47,7 +47,7 @@ function Base.:(*)(α::Number, A::CompositeMap)
     T = promote_type(typeof(α), eltype(A))
     Alast = last(A.maps)
     if Alast isa UniformScalingMap
-        return CompositeMap{T}(tuple(Base.front(A.maps)..., UniformScalingMap(α * Alast.λ, size(Alast, 1))))
+        return CompositeMap{T}(tuple(Base.front(A.maps)..., α * Alast))
     else
         return CompositeMap{T}(tuple(A.maps..., UniformScalingMap(α, size(A, 1))))
     end
@@ -60,7 +60,7 @@ function Base.:(*)(A::CompositeMap, α::Number)
     T = promote_type(typeof(α), eltype(A))
     Afirst = first(A.maps)
     if Afirst isa UniformScalingMap
-        return CompositeMap{T}(tuple(UniformScalingMap(Afirst.λ * α, size(Afirst, 1)), Base.tail(A.maps)...))
+        return CompositeMap{T}(tuple(Afirst * α, Base.tail(A.maps)...))
     else
         return CompositeMap{T}(tuple(UniformScalingMap(α, size(A, 2)), A.maps...))
     end
