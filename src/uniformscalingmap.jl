@@ -22,8 +22,7 @@ LinearAlgebra.adjoint(A::UniformScalingMap)   = UniformScalingMap(conj(A.λ), si
 Base.:(*)(A::UniformScalingMap, x::AbstractVector) =
     length(x) == A.M ? A.λ * x : throw(DimensionMismatch("A_mul_B!"))
 
-# call of LinearAlgebra.generic_mul! since order of arguments in mul! in stdlib/LinearAlgebra/src/generic.jl
-# TODO: either leave it as is or use mul! (and lower bound on version) once fixed in LinearAlgebra
+if VERSION < v"1.3.0-alpha.115"
 function A_mul_B!(y::AbstractVector, A::UniformScalingMap, x::AbstractVector)
     (length(x) == length(y) == A.M || throw(DimensionMismatch("A_mul_B!")))
     if iszero(A.λ)
@@ -31,27 +30,41 @@ function A_mul_B!(y::AbstractVector, A::UniformScalingMap, x::AbstractVector)
     elseif isone(A.λ)
         return copyto!(y, x)
     else
+        # call of LinearAlgebra.generic_mul! since order of arguments in mul! in
+        # stdlib/LinearAlgebra/src/generic.jl reversed
         return LinearAlgebra.generic_mul!(y, A.λ, x)
     end
 end
-At_mul_B!(y::AbstractVector, A::UniformScalingMap, x::AbstractVector) = A_mul_B!(y, transpose(A), x)
-Ac_mul_B!(y::AbstractVector, A::UniformScalingMap, x::AbstractVector) = A_mul_B!(y, adjoint(A), x)
+else # 5-arg mul! exists and order of arguments is corrected
+function A_mul_B!(y::AbstractVector, A::UniformScalingMap, x::AbstractVector)
+    (length(x) == length(y) == A.M || throw(DimensionMismatch("A_mul_B!")))
+    λ = A.λ
+    if iszero(λ)
+        return fill!(y, 0)
+    elseif isone(λ)
+        return copyto!(y, x)
+    else
+        return y .= λ .* x
+    end
+end
+end # VERSION
 
 function LinearAlgebra.mul!(y::AbstractVector, J::UniformScalingMap{T}, x::AbstractVector, α::Number=one(T), β::Number=zero(T)) where {T}
     @boundscheck (length(x) == length(y) == J.M || throw(DimensionMismatch("mul!")))
+    λ = J.λ
     @inbounds if isone(α)
         if iszero(β)
             A_mul_B!(y, J, x)
             return y
         elseif isone(β)
-            iszero(J.λ) && return y
-            isone(J.λ) && return y .+= x
-            y .+= J.λ .* x
+            iszero(λ) && return y
+            isone(λ) && return y .+= x
+            y .+= λ .* x
             return y
         else # β != 0, 1
-            iszero(J.λ) && (rmul!(y, β); return y)
-            isone(J.λ) && (y .= y .* β .+ x; return y)
-            y .= y .* β .+ J.λ .* x
+            iszero(λ) && (rmul!(y, β); return y)
+            isone(λ) && (y .= y .* β .+ x; return y)
+            y .= y .* β .+ λ .* x
             return y
         end
     elseif iszero(α)
@@ -61,16 +74,20 @@ function LinearAlgebra.mul!(y::AbstractVector, J::UniformScalingMap{T}, x::Abstr
         rmul!(y, β)
         return y
     else # α != 0, 1
-        iszero(β) && (y .= J.λ .* x .* α; return y)
-        isone(β) && (y .+= J.λ .* x .* α; return y)
+        iszero(β) && (y .= λ .* x .* α; return y)
+        isone(β) && (y .+= λ .* x .* α; return y)
         # β != 0, 1
-        y .= y .* β .+ J.λ .* x .* α
+        y .= y .* β .+ λ .* x .* α
         return y
     end
 end
 
+At_mul_B!(y::AbstractVector, A::UniformScalingMap, x::AbstractVector) = A_mul_B!(y, transpose(A), x)
+Ac_mul_B!(y::AbstractVector, A::UniformScalingMap, x::AbstractVector) = A_mul_B!(y, adjoint(A), x)
+
+
 # combine LinearMap and UniformScaling objects in linear combinations
-Base.:(+)(A1::LinearMap, A2::UniformScaling) = A1 + UniformScalingMap(A2.λ, size(A1, 1))
-Base.:(+)(A1::UniformScaling, A2::LinearMap) = UniformScalingMap(A1.λ, size(A2, 1)) + A2
-Base.:(-)(A1::LinearMap, A2::UniformScaling) = A1 - UniformScalingMap(A2.λ, size(A1, 1))
-Base.:(-)(A1::UniformScaling, A2::LinearMap) = UniformScalingMap(A1.λ, size(A2, 1)) - A2
+Base.:(+)(A₁::LinearMap, A₂::UniformScaling) = A₁ + UniformScalingMap(A₂.λ, size(A₁, 1))
+Base.:(+)(A₁::UniformScaling, A₂::LinearMap) = UniformScalingMap(A₁.λ, size(A₂, 1)) + A₂
+Base.:(-)(A₁::LinearMap, A₂::UniformScaling) = A₁ - UniformScalingMap(A₂.λ, size(A₁, 1))
+Base.:(-)(A₁::UniformScaling, A₂::LinearMap) = UniformScalingMap(A₁.λ, size(A₂, 1)) - A₂

@@ -172,7 +172,7 @@ promote_to_lmaps(n, k, dim, A) = (promote_to_lmaps_(n[k], dim, A),)
 function isblocksquare(A::BlockMap)
     rows = A.rows
     N = length(rows)
-    return all(r -> r == N, rows)
+    return all(==(N), rows)
 end
 
 # the following rules are sufficient but not necessary

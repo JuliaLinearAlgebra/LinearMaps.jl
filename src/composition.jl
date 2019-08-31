@@ -2,10 +2,10 @@ struct CompositeMap{T, As<:Tuple{Vararg{LinearMap}}} <: LinearMap{T}
     maps::As # stored in order of application to vector
     function CompositeMap{T, As}(maps::As) where {T, As}
         N = length(maps)
-        for n = 2:N
+        for n in 2:N
             size(maps[n], 2) == size(maps[n-1], 1) || throw(DimensionMismatch("CompositeMap"))
         end
-        for n = 1:N
+        for n in 1:N
             promote_type(T, eltype(maps[n])) == T || throw(InexactError())
         end
         new{T, As}(maps)
@@ -40,11 +40,11 @@ end
 
 # scalar multiplication and division
 function Base.:(*)(α::Number, A::LinearMap)
-    T = promote_type(eltype(α), eltype(A))
+    T = promote_type(typeof(α), eltype(A))
     return CompositeMap{T}(tuple(A, UniformScalingMap(α, size(A, 1))))
 end
 function Base.:(*)(α::Number, A::CompositeMap)
-    T = promote_type(eltype(α), eltype(A))
+    T = promote_type(typeof(α), eltype(A))
     Alast = last(A.maps)
     if Alast isa UniformScalingMap
         return CompositeMap{T}(tuple(Base.front(A.maps)..., UniformScalingMap(α * Alast.λ, size(Alast, 1))))
@@ -53,11 +53,11 @@ function Base.:(*)(α::Number, A::CompositeMap)
     end
 end
 function Base.:(*)(A::LinearMap, α::Number)
-    T = promote_type(eltype(α), eltype(A))
+    T = promote_type(typeof(α), eltype(A))
     return CompositeMap{T}(tuple(UniformScalingMap(α, size(A, 2)), A))
 end
 function Base.:(*)(A::CompositeMap, α::Number)
-    T = promote_type(eltype(α), eltype(A))
+    T = promote_type(typeof(α), eltype(A))
     Afirst = first(A.maps)
     if Afirst isa UniformScalingMap
         return CompositeMap{T}(tuple(UniformScalingMap(Afirst.λ * α, size(Afirst, 1)), Base.tail(A.maps)...))
@@ -70,28 +70,28 @@ Base.:(/)(A::LinearMap, α::Number) = A * inv(α)
 Base.:(-)(A::LinearMap) = -1 * A
 
 # composition of linear maps
-function Base.:(*)(A1::CompositeMap, A2::CompositeMap)
-    size(A1, 2) == size(A2, 1) || throw(DimensionMismatch("*"))
-    T = promote_type(eltype(A1), eltype(A2))
-    return CompositeMap{T}(tuple(A2.maps..., A1.maps...))
+function Base.:(*)(A₁::CompositeMap, A₂::CompositeMap)
+    size(A₁, 2) == size(A₂, 1) || throw(DimensionMismatch("*"))
+    T = promote_type(eltype(A₁), eltype(A₂))
+    return CompositeMap{T}(tuple(A₂.maps..., A₁.maps...))
 end
-function Base.:(*)(A1::LinearMap, A2::CompositeMap)
-    size(A1, 2) == size(A2, 1) || throw(DimensionMismatch("*"))
-    T = promote_type(eltype(A1), eltype(A2))
-    return CompositeMap{T}(tuple(A2.maps..., A1))
+function Base.:(*)(A₁::LinearMap, A₂::CompositeMap)
+    size(A₁, 2) == size(A₂, 1) || throw(DimensionMismatch("*"))
+    T = promote_type(eltype(A₁), eltype(A₂))
+    return CompositeMap{T}(tuple(A₂.maps..., A₁))
 end
-function Base.:(*)(A1::CompositeMap, A2::LinearMap)
-    size(A1, 2) == size(A2, 1) || throw(DimensionMismatch("*"))
-    T = promote_type(eltype(A1), eltype(A2))
-    return CompositeMap{T}(tuple(A2, A1.maps...))
+function Base.:(*)(A₁::CompositeMap, A₂::LinearMap)
+    size(A₁, 2) == size(A₂, 1) || throw(DimensionMismatch("*"))
+    T = promote_type(eltype(A₁), eltype(A₂))
+    return CompositeMap{T}(tuple(A₂, A₁.maps...))
 end
-function Base.:(*)(A1::LinearMap, A2::LinearMap)
-    size(A1, 2) == size(A2, 1) || throw(DimensionMismatch("*"))
-    T = promote_type(eltype(A1),eltype(A2))
-    return CompositeMap{T}(tuple(A2, A1))
+function Base.:(*)(A₁::LinearMap, A₂::LinearMap)
+    size(A₁, 2) == size(A₂, 1) || throw(DimensionMismatch("*"))
+    T = promote_type(eltype(A₁), eltype(A₂))
+    return CompositeMap{T}(tuple(A₂, A₁))
 end
-Base.:(*)(A1::LinearMap, A2::UniformScaling{T}) where {T} = A1 * A2[1,1]
-Base.:(*)(A1::UniformScaling{T}, A2::LinearMap) where {T} = A1[1,1] * A2
+Base.:(*)(A₁::LinearMap, A₂::UniformScaling) = A₁ * A₂.λ
+Base.:(*)(A₁::UniformScaling, A₂::LinearMap) = A₁.λ * A₂
 
 # special transposition behavior
 LinearAlgebra.transpose(A::CompositeMap{T}) where {T} = CompositeMap{T}(map(transpose, reverse(A.maps)))
@@ -114,7 +114,7 @@ function A_mul_B!(y::AbstractVector, A::CompositeMap, x::AbstractVector)
         if N>2
             dest = Array{T}(undef, size(A.maps[2], 1))
         end
-        for n=2:N-1
+        for n in 2:N-1
             try
                 resize!(dest, size(A.maps[n], 1))
             catch err

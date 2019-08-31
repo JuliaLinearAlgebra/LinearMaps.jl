@@ -3,7 +3,7 @@ struct LinearCombination{T, As<:Tuple{Vararg{LinearMap}}} <: LinearMap{T}
     function LinearCombination{T, As}(maps::As) where {T, As}
         N = length(maps)
         sz = size(maps[1])
-        for n = 1:N
+        for n in 1:N
             size(maps[n]) == sz || throw(DimensionMismatch("LinearCombination"))
             promote_type(T, eltype(maps[n])) == T || throw(InexactError())
         end
@@ -20,23 +20,23 @@ LinearAlgebra.ishermitian(A::LinearCombination) = all(ishermitian, A.maps) # suf
 LinearAlgebra.isposdef(A::LinearCombination) = all(isposdef, A.maps) # sufficient but not necessary
 
 # adding linear maps
-function Base.:(+)(A1::LinearCombination, A2::LinearCombination)
-    size(A1) == size(A2) || throw(DimensionMismatch("+"))
-    T = promote_type(eltype(A1), eltype(A2))
-    return LinearCombination{T}(tuple(A1.maps..., A2.maps...))
+function Base.:(+)(A₁::LinearCombination, A₂::LinearCombination)
+    size(A₁) == size(A₂) || throw(DimensionMismatch("+"))
+    T = promote_type(eltype(A₁), eltype(A₂))
+    return LinearCombination{T}(tuple(A₁.maps..., A₂.maps...))
 end
-function Base.:(+)(A1::LinearMap, A2::LinearCombination)
-    size(A1) == size(A2) || throw(DimensionMismatch("+"))
-    T = promote_type(eltype(A1), eltype(A2))
-    return LinearCombination{T}(tuple(A1, A2.maps...))
+function Base.:(+)(A₁::LinearMap, A₂::LinearCombination)
+    size(A₁) == size(A₂) || throw(DimensionMismatch("+"))
+    T = promote_type(eltype(A₁), eltype(A₂))
+    return LinearCombination{T}(tuple(A₁, A₂.maps...))
 end
-Base.:(+)(A1::LinearCombination, A2::LinearMap) = +(A2, A1)
-function Base.:(+)(A1::LinearMap, A2::LinearMap)
-    size(A1)==size(A2) || throw(DimensionMismatch("+"))
-    T = promote_type(eltype(A1), eltype(A2))
-    return LinearCombination{T}(tuple(A1, A2))
+Base.:(+)(A₁::LinearCombination, A₂::LinearMap) = +(A₂, A₁)
+function Base.:(+)(A₁::LinearMap, A₂::LinearMap)
+    size(A₁) == size(A₂) || throw(DimensionMismatch("+"))
+    T = promote_type(eltype(A₁), eltype(A₂))
+    return LinearCombination{T}(tuple(A₁, A₂))
 end
-Base.:(-)(A1::LinearMap, A2::LinearMap) = +(A1, -A2)
+Base.:(-)(A₁::LinearMap, A₂::LinearMap) = +(A₁, -A₂)
 
 # comparison of LinearCombination objects, sufficient but not necessary
 Base.:(==)(A::LinearCombination, B::LinearCombination) = (eltype(A) == eltype(B) && A.maps == B.maps)
@@ -52,7 +52,7 @@ function A_mul_B!(y::AbstractVector, A::LinearCombination, x::AbstractVector)
     l = length(A.maps)
     if l>1
         z = similar(y)
-        for n=2:l
+        for n in 2:l
             A_mul_B!(z, A.maps[n], x)
             y .+= z
         end
