@@ -112,6 +112,7 @@ include("wrappedmap.jl") # wrap a matrix of linear map in a new type, thereby al
 include("uniformscalingmap.jl") # the uniform scaling map, to be able to make linear combinations of LinearMap objects and multiples of I
 include("functionmap.jl") # using a function as linear map
 include("blockmap.jl") # block linear maps
+include("indexmap.jl") # single block map defined by row/col index
 
 """
     LinearMap(A; kwargs...)
