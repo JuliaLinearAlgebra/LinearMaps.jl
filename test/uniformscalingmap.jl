@@ -39,4 +39,9 @@ using Test, LinearMaps, LinearAlgebra, BenchmarkTools
         J = @inferred LinearMap(LinearMaps.UniformScalingMap(λ, 10))
         @test transform(J) * x == transform(λ) * x
     end
+    LA = LinearMap(A)
+    @test LA * I == LA == I * LA
+    @test LA * I === LA === I * LA
+    @test LA * (false*I) isa LinearMaps.CompositeMap
+    @test (false*I) * LA isa LinearMaps.CompositeMap
 end
