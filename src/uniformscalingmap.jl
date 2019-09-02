@@ -8,6 +8,7 @@ UniformScalingMap(λ::T, sz::Tuple{Int, Int}) where {T} =
     (sz[1] == sz[2] ? UniformScalingMap(λ, sz[1]) : error("UniformScalingMap needs to be square"))
 
 # properties
+Base.size(A::UniformScalingMap, n) = n in (1, 2) ? A.M : error("LinearMap objects have only 2 dimensions")
 Base.size(A::UniformScalingMap) = (A.M, A.M)
 Base.isreal(A::UniformScalingMap) = isreal(A.λ)
 LinearAlgebra.issymmetric(::UniformScalingMap) = true

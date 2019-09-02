@@ -15,7 +15,7 @@ LinearAlgebra.adjoint(A::LinearMap) = AdjointMap(A)
 
 # properties
 Base.size(A::Union{TransposeMap, AdjointMap}, n) = n==1 ? size(A.lmap, 2) : n==2 ? size(A.lmap, 1) : error("LinearMap objects have only 2 dimensions")
-Base.size(A::Union{TransposeMap, AdjointMap}) = (size(A.lmap, 2), size(A.lmap, 1))
+Base.size(A::Union{TransposeMap, AdjointMap}) = reverse(size(A.lmap))
 LinearAlgebra.issymmetric(A::Union{TransposeMap, AdjointMap}) = issymmetric(A.lmap)
 LinearAlgebra.ishermitian(A::Union{TransposeMap, AdjointMap}) = ishermitian(A.lmap)
 LinearAlgebra.isposdef(A::Union{TransposeMap, AdjointMap}) = isposdef(A.lmap)
