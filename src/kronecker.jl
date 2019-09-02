@@ -25,7 +25,8 @@ for k in 3:8 # is 8 sufficient?
         kron($(mapargs...), $(Symbol(:A,k)), As...)
 end
 
-Base.size(A::KroneckerMap) = size(A.maps[1]) .* size(A.maps[2])
+Base.size(A::KroneckerMap, i) = prod(size.(A.maps, i))
+Base.size(A::KroneckerMap) = (size(A, 1), size(A, 2))
 
 LinearAlgebra.issymmetric(A::KroneckerMap) = all(issymmetric, A.maps)
 LinearAlgebra.ishermitian(A::KroneckerMap{<:Real}) = all(issymmetric, A.maps)
