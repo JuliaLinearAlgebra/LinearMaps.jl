@@ -17,6 +17,18 @@ function WrappedMap{T}(lmap::Union{AbstractMatrix, LinearMap};
     WrappedMap{T, typeof(lmap)}(lmap, issymmetric, ishermitian, isposdef)
 end
 
+if VERSION ≥ v"1.3.0-alpha.115"
+
+const MatrixMap{T} = WrappedMap{T,<:AbstractMatrix}
+
+transpose(A::MatrixMap) = LinearMap(transpose(A.lmap))
+adjoint(A::MatrixMap) = LinearMap(adjoint(A.lmap))
+
+LinearAlgebra.mul!(y::AbstractVector, A::MatrixMap, x::AbstractVector, α::Number=true, β::Number=false) =
+    mul!(y, A.lmap, x, α, β)
+
+end # VERSION
+
 # properties
 Base.size(A::WrappedMap) = size(A.lmap)
 LinearAlgebra.issymmetric(A::WrappedMap) = A._issymmetric

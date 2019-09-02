@@ -46,6 +46,8 @@ LinearAlgebra.transpose(A::LinearCombination) = LinearCombination{eltype(A)}(map
 LinearAlgebra.adjoint(A::LinearCombination)   = LinearCombination{eltype(A)}(map(adjoint, A.maps))
 
 # multiplication with vectors
+if VERSION < v"1.3.0-alpha.115"
+
 function A_mul_B!(y::AbstractVector, A::LinearCombination, x::AbstractVector)
     # no size checking, will be done by individual maps
     A_mul_B!(y, A.maps[1], x)
@@ -59,6 +61,29 @@ function A_mul_B!(y::AbstractVector, A::LinearCombination, x::AbstractVector)
     end
     return y
 end
+
+else # 5-arg mul! is available for matrices
+
+function A_mul_B!(y::AbstractVector, A::LinearCombination, x::AbstractVector)
+    # no size checking, will be done by individual maps
+    A_mul_B!(y, A.maps[1], x)
+    l = length(A.maps)
+    if l>1
+        z = similar(y)
+        for n in 2:l
+            An = A.maps[n]
+            if An isa MatrixMap
+                mul!(y, An, x, true, true)
+            else
+                A_mul_B!(z, A.maps[n], x)
+                y .+= z
+            end
+        end
+    end
+    return y
+end
+
+end # VERSION
 
 At_mul_B!(y::AbstractVector, A::LinearCombination, x::AbstractVector) = A_mul_B!(y, transpose(A), x)
 
