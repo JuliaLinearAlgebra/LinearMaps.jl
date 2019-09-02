@@ -46,6 +46,7 @@ end
 Base.:(==)(A::KroneckerMap, B::KroneckerMap) = (eltype(A) == eltype(B) && A.maps == B.maps)
 
 function LinearMaps.A_mul_B!(y::AbstractVector, L::KroneckerMap, x::AbstractVector)
+    # require_one_based_indexing(y, x)
     A, B = L.maps
     ma, na = size(A)
     mb, nb = size(B)
