@@ -221,6 +221,7 @@ LinearAlgebra.adjoint(A::BlockMap)  = AdjointMap(A)
 ############
 
 function A_mul_B!(y::AbstractVector, A::BlockMap, x::AbstractVector)
+    require_one_based_indexing(y, x)
     m, n = size(A)
     @boundscheck (m == length(y) && n == length(x)) || throw(DimensionMismatch("A_mul_B!"))
     maps, rows, yinds, xinds = A.maps, A.rows, A.rowranges, A.colranges
@@ -238,6 +239,7 @@ function A_mul_B!(y::AbstractVector, A::BlockMap, x::AbstractVector)
 end
 
 function At_mul_B!(y::AbstractVector, A::BlockMap, x::AbstractVector)
+    require_one_based_indexing(y, x)
     m, n = size(A)
     @boundscheck (n == length(y) && m == length(x)) || throw(DimensionMismatch("At_mul_B!"))
     maps, rows, xinds, yinds = A.maps, A.rows, A.rowranges, A.colranges
@@ -262,6 +264,7 @@ function At_mul_B!(y::AbstractVector, A::BlockMap, x::AbstractVector)
 end
 
 function Ac_mul_B!(y::AbstractVector, A::BlockMap, x::AbstractVector)
+    require_one_based_indexing(y, x)
     m, n = size(A)
     @boundscheck (n == length(y) && m == length(x)) || throw(DimensionMismatch("At_mul_B!"))
     maps, rows, xinds, yinds = A.maps, A.rows, A.rowranges, A.colranges
