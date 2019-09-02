@@ -17,3 +17,5 @@ include("uniformscalingmap.jl")
 include("numbertypes.jl")
 
 include("blockmap.jl")
+
+include("kronecker.jl")
