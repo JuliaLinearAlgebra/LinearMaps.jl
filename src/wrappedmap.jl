@@ -19,8 +19,8 @@ end
 
 const MatrixMap{T} = WrappedMap{T,<:AbstractMatrix}
 
-transpose(A::MatrixMap) = LinearMap(transpose(A.lmap))
-adjoint(A::MatrixMap) = LinearMap(adjoint(A.lmap))
+LinearAlgebra.transpose(A::MatrixMap) = LinearMap(transpose(A.lmap))
+LinearAlgebra.adjoint(A::MatrixMap) = LinearMap(adjoint(A.lmap))
 
 if VERSION ≥ v"1.3.0-alpha.115"
 
