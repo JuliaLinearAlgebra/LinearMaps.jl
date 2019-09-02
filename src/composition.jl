@@ -14,6 +14,7 @@ end
 CompositeMap{T}(maps::As) where {T, As<:Tuple{Vararg{LinearMap}}} = CompositeMap{T, As}(maps)
 
 # basic methods
+Base.size(A::CompositeMap, n) = n==1 ? size(A.maps[end], 1) : n==2 ? size(A.maps[1], 2) : error("LinearMap objects have only 2 dimensions")
 Base.size(A::CompositeMap) = (size(A.maps[end], 1), size(A.maps[1], 2))
 Base.isreal(A::CompositeMap) = all(isreal, A.maps) # sufficient but not necessary
 

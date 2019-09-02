@@ -30,12 +30,19 @@ function Base.show(io::IO, A::FunctionMap{T}) where {T}
 end
 
 # properties
+Base.size(A::FunctionMap, n) = n==1 ? A.M : n==2 ? A.N : error("LinearMap objects have only 2 dimensions")
 Base.size(A::FunctionMap) = (A.M, A.N)
 LinearAlgebra.issymmetric(A::FunctionMap) = A._issymmetric
 LinearAlgebra.ishermitian(A::FunctionMap) = A._ishermitian
 LinearAlgebra.isposdef(A::FunctionMap)    = A._isposdef
 ismutating(A::FunctionMap) = A._ismutating
-_ismutating(f) = first(methods(f)).nargs == 3
+_ismutating(f) = (mf = methods(f); !isempty(mf) ? first(methods(f)).nargs == 3 : error("transpose/adjoint not implemented"))
+
+# special transposition behavior
+LinearAlgebra.transpose(A::FunctionMap{T}) where {T<:Real} =
+    FunctionMap{T}(A.fc, A.f, A.N, A.M; issymmetric=A._issymmetric, ishermitian=A._ishermitian, isposdef=A._isposdef)
+LinearAlgebra.adjoint(A::FunctionMap{T}) where {T} =
+    FunctionMap{T}(A.fc, A.f, A.N, A.M; issymmetric=A._issymmetric, ishermitian=A._ishermitian, isposdef=A._isposdef)
 
 # multiplication with vector
 function Base.:(*)(A::FunctionMap, x::AbstractVector)
