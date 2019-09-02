@@ -1,19 +1,19 @@
 using Test, LinearMaps, LinearAlgebra
 
-@testset "composition" begin
-    # new type
-    struct SimpleFunctionMap <: LinearMap{Float64}
-        f::Function
-        N::Int
-    end
-    struct SimpleComplexFunctionMap <: LinearMap{Complex{Float64}}
-        f::Function
-        N::Int
-    end
-    Base.size(A::Union{SimpleFunctionMap,SimpleComplexFunctionMap}) = (A.N, A.N)
-    Base.:(*)(A::Union{SimpleFunctionMap,SimpleComplexFunctionMap}, v::Vector) = A.f(v)
-    LinearAlgebra.mul!(y::Vector, A::Union{SimpleFunctionMap,SimpleComplexFunctionMap}, x::Vector) = copyto!(y, *(A, x))
+# new type
+struct SimpleFunctionMap <: LinearMap{Float64}
+    f::Function
+    N::Int
+end
+struct SimpleComplexFunctionMap <: LinearMap{Complex{Float64}}
+    f::Function
+    N::Int
+end
+Base.size(A::Union{SimpleFunctionMap,SimpleComplexFunctionMap}) = (A.N, A.N)
+Base.:(*)(A::Union{SimpleFunctionMap,SimpleComplexFunctionMap}, v::Vector) = A.f(v)
+LinearAlgebra.mul!(y::Vector, A::Union{SimpleFunctionMap,SimpleComplexFunctionMap}, x::Vector) = copyto!(y, *(A, x))
 
+@testset "composition" begin
     F = @inferred LinearMap(cumsum, y -> reverse(cumsum(reverse(x))), 10; ismutating=false)
     A = 2 * rand(ComplexF64, (10, 10)) .- 1
     B = rand(size(A)...)
