@@ -19,8 +19,12 @@ end
 
 const MatrixMap{T} = WrappedMap{T,<:AbstractMatrix}
 
-LinearAlgebra.transpose(A::MatrixMap) = LinearMap(transpose(A.lmap))
-LinearAlgebra.adjoint(A::MatrixMap) = LinearMap(adjoint(A.lmap))
+LinearAlgebra.transpose(A::MatrixMap{T}) where {T} =
+    WrappedMap{T}(transpose(A.lmap); issymmetric=A._issymmetric, ishermitian=A._ishermitian, isposdef=A._isposdef)
+LinearAlgebra.adjoint(A::MatrixMap{T}) where {T} =
+    WrappedMap{T}(adjoint(A.lmap); issymmetric=A._issymmetric, ishermitian=A._ishermitian, isposdef=A._isposdef)
+
+Base.:(==)(A::MatrixMap, B::MatrixMap) = (eltype(A) == eltype(B) && A.lmap == B.lmap)
 
 if VERSION ≥ v"1.3.0-alpha.115"
 
