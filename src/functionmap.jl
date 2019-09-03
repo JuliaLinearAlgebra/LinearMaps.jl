@@ -36,7 +36,7 @@ LinearAlgebra.issymmetric(A::FunctionMap) = A._issymmetric
 LinearAlgebra.ishermitian(A::FunctionMap) = A._ishermitian
 LinearAlgebra.isposdef(A::FunctionMap)    = A._isposdef
 ismutating(A::FunctionMap) = A._ismutating
-_ismutating(f) = (mf = methods(f); !isempty(mf) ? first(methods(f)).nargs == 3 : error("transpose/adjoint not implemented"))
+_ismutating(f) = first(methods(f)).nargs == 3
 
 # special transposition behavior
 function LinearAlgebra.transpose(A::FunctionMap)
