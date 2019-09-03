@@ -49,4 +49,24 @@ using Test, LinearMaps, LinearAlgebra
     B = @inferred LinearMap(Hermitian(rand(ComplexF64, 10, 10)))
     @test adjoint(B) == B
     @test B == B'
+
+    CS = @inferred LinearMap{ComplexF64}(cumsum, x -> reverse(cumsum(reverse(x))), 10; ismutating=false)
+    for transform in (adjoint, transpose)
+        @test transform(transform(CS)) == CS
+    end
+    @test transpose(CS) != adjoint(CS)
+    @test adjoint(CS) != transpose(CS)
+    M = Matrix(CS)
+    x = rand(ComplexF64, 10)
+    for transform1 in (adjoint, transpose), transform2 in (adjoint, transpose)
+        @test transform2(LinearMap(transform1(CS))) * x ≈ transform2(transform1(M))*x
+    end
+
+    id = @inferred LinearMap(identity, identity, 10; issymmetric=true, ishermitian=true, isposdef=true)
+    for transform in (adjoint, transpose)
+        @test transform(id) == id
+        for prop in (issymmetric, ishermitian, isposdef)
+            @test prop(transform(id))
+        end
+    end
 end
