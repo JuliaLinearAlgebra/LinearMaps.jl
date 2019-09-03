@@ -82,6 +82,56 @@ function A_mul_B!(y::AbstractVector, A::LinearCombination, x::AbstractVector)
     end
     return y
 end
+function A_mul_B!(y::AbstractVector, A::LinearCombination{T,As}, x::AbstractVector) where {T, As<:Tuple{Vararg{MatrixMap}}}
+    # no size checking, will be done by individual maps
+    A_mul_B!(y, A.maps[1], x)
+    for n in 2:length(A.maps)
+        mul!(y, A.maps[n], x, true, true)
+    end
+    return y
+end
+
+function LinearAlgebra.mul!(y::AbstractVector, A::LinearCombination{T,As}, x::AbstractVector, α::Number=true, β::Number=false) where {T, As<:Tuple{Vararg{MatrixMap}}}
+    length(y) == size(A, 1) || throw(DimensionMismatch("mul!"))
+    if isone(α)
+        iszero(β) && (A_mul_B!(y, A, x); return y)
+        if isone(β)
+            for n in 1:length(A.maps)
+                mul!(y, A.maps[n], x, α, β)
+            end
+            return y
+        else # β != 0, 1
+            rmul!(y, β)
+            for n in 1:length(A.maps)
+                mul!(y, A.maps[n], x, α, β)
+            end
+            return y
+        end
+    elseif iszero(α)
+        iszero(β) && (fill!(y, zero(eltype(y))); return y)
+        isone(β) && return y
+        # β != 0, 1
+        rmul!(y, β)
+        return y
+    else # α != 0, 1
+        if iszero(β)
+            A_mul_B!(y, A, x)
+            rmul!(y, α)
+            return y
+        elseif isone(β)
+            for n in 1:length(A.maps)
+                mul!(y, A.maps[n], x, α, β)
+            end
+            return y
+        else # β != 0, 1
+            rmul!(y, β)
+            for n in 1:length(A.maps)
+                mul!(y, A.maps[n], x, α, true)
+            end
+            return y
+        end # β-cases
+    end # α-cases
+end
 
 end # VERSION
 
