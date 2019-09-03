@@ -29,6 +29,11 @@ using Test, LinearMaps, LinearAlgebra, BenchmarkTools
         for α in (false, true, rand(ComplexF64)), β in (false, true, rand(ComplexF64))
             b = @benchmarkable mul!($w, $LC, $v, $α, $β)
             @test run(b, samples=3).allocs == 0
+            b = @benchmarkable mul!($w, $(LC + I), $v, $α, $β)
+            @test run(b, samples=3).allocs == 0
+            y = rand(ComplexF64, size(v))
+            @test mul!(copy(y), LC, v, α, β) ≈ Matrix(LC)*v*α + y*β
+            @test mul!(copy(y), LC+I, v, α, β) ≈ Matrix(LC + I)*v*α + y*β
         end
     end
     # @test_throws ErrorException LinearMaps.LinearCombination{ComplexF64}((M, N), (1, 2, 3))
@@ -48,7 +53,7 @@ using Test, LinearMaps, LinearAlgebra, BenchmarkTools
     @test @inferred Matrix(-LC) == -A - B
     @test @inferred Matrix(3 * M) == 3 * A
     @test @inferred Matrix(M * 3) == 3 * A
-    @test Matrix(3.0 * LC) ≈ Matrix(LC * 3) == 3A + 3B
+    @test Matrix(3.0 * LC) ≈ Matrix(LC * 3) ≈ 3A + 3B
     @test @inferred Matrix(3 \ M) ≈ A/3
     @test @inferred Matrix(M / 3) ≈ A/3
     @test @inferred Matrix(3 \ LC) ≈ (A + B) / 3

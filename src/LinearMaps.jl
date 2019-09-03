@@ -106,10 +106,10 @@ function SparseArrays.sparse(A::LinearMap{T}) where {T}
 end
 
 include("wrappedmap.jl") # wrap a matrix of linear map in a new type, thereby allowing to alter its properties
+include("uniformscalingmap.jl") # the uniform scaling map, to be able to make linear combinations of LinearMap objects and multiples of I
 include("transpose.jl") # transposing linear maps
 include("linearcombination.jl") # defining linear combinations of linear maps
 include("composition.jl") # composition of linear maps
-include("uniformscalingmap.jl") # the uniform scaling map, to be able to make linear combinations of LinearMap objects and multiples of I
 include("functionmap.jl") # using a function as linear map
 include("blockmap.jl") # block linear maps
 
