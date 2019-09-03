@@ -1,6 +1,10 @@
 struct UniformScalingMap{T} <: LinearMap{T}
     λ::T
     M::Int
+    function UniformScalingMap(λ::T, M::Int) where {T}
+        M ≤ 0 && throw(ArgumentError("size of UniformScalingMap must be (strictly) positive, got $M"))
+        return new{T}(λ, M)
+    end
 end
 UniformScalingMap(λ::T, M::Int, N::Int) where {T} =
     (M == N ? UniformScalingMap(λ, M) : error("UniformScalingMap needs to be square"))
