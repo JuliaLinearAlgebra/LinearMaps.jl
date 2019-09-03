@@ -46,6 +46,7 @@ function LinearAlgebra.transpose(A::FunctionMap)
         error("transpose not implemented for $A")
     end
 end
+LinearAlgebra.adjoint(A::FunctionMap{<:Real}) = transpose(A)
 function LinearAlgebra.adjoint(A::FunctionMap)
     if A.fc!==nothing || A._ishermitian
         return AdjointMap(A)
