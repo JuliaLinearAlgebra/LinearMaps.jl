@@ -123,10 +123,12 @@ include("kronecker.jl") # Kronecker product of linear maps
 
 """
     LinearMap(A; kwargs...)
+    LinearMap(J, M::Int)
     LinearMap{T=Float64}(f, [fc,], M::Int, N::Int = M; kwargs...)
 
 Construct a linear map object, either from an existing `LinearMap` or `AbstractMatrix` `A`,
-with the purpose of redefining its properties via the keyword arguments `kwargs`, or
+with the purpose of redefining its properties via the keyword arguments `kwargs`;
+a `UniformScaling` object `J` with specified (square) dimension `M`; or
 from a function or callable object `f`. In the latter case, one also needs to specify
 the size of the equivalent matrix representation `(M, N)`, i.e. for functions `f` acting
 on length `N` vectors and producing length `M` vectors (with default value `N=M`). Preferably,
@@ -142,7 +144,7 @@ The keyword arguments and their default values for functions `f` are
 For existing linear maps or matrices `A`, the default values will be taken by calling
 `issymmetric`, `ishermitian` and `isposdef` on the existing object `A`.
 
-For functions `f`, there is one more keyword arguments
+For functions `f`, there is one more keyword argument
 *   ismutating::Bool : flags whether the function acts as a mutating matrix multiplication
     `f(y,x)` where the result vector `y` is the first argument (in case of `true`),
     or as a normal matrix multiplication that is called as `y=f(x)` (in case of `false`).
