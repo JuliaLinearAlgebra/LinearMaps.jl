@@ -34,6 +34,11 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays, BenchmarkTools
         B[rand(1:length(A), 30)] .= 0
         MS = LinearMap(B)
         @test sparse(MS) == sparse(Array(MS)) == sparse(B)
+
+        J = LinearMap(I, 10)
+        @test J isa LinearMap{Bool}
+        @test sparse(J) == Matrix{Bool}(I, 10, 10)
+        @test nnz(sparse(J)) == 10
     end
 
     Av = A * v

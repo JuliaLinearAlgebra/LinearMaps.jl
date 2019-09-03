@@ -1,6 +1,6 @@
 module LinearMaps
 
-export LinearMap, UniformScalingMap
+export LinearMap
 
 using LinearAlgebra
 using SparseArrays
@@ -150,6 +150,7 @@ For functions `f`, there is one more keyword arguments
     of `f` in the method table.
 """
 LinearMap(A::Union{AbstractMatrix, LinearMap}; kwargs...) = WrappedMap(A; kwargs...)
+LinearMap(J::UniformScaling, M::Int) = UniformScalingMap(J.λ, M)
 LinearMap(f, M::Int; kwargs...) = LinearMap{Float64}(f, M; kwargs...)
 LinearMap(f, M::Int, N::Int; kwargs...) = LinearMap{Float64}(f, M, N; kwargs...)
 LinearMap(f, fc, M::Int; kwargs...) = LinearMap{Float64}(f, fc, M; kwargs...)

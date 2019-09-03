@@ -1,22 +1,3 @@
-"""
-    UniformScalingMap(λ::Number, n::Int)
-
-Construct an `n×n` linear map that acts on vectors by uniformly scaling with `λ`.
-This should only be used in the construction of linear maps in which the size of
-the uniform scaling cannot be inferred automatically, like in the Kronecker product.
-In all other cases, it is recommended to use `LinearAlgebra`'s `I::UniformScaling`.
-
-## Examples
-```jldoctest; setup = :(using LinearMaps)
-julia> J = UniformScalingMap(2.0, 10);
-
-julia> size(J)
-(10, 10)
-
-julia> eltype(J)
-Float64
-```
-"""
 struct UniformScalingMap{T} <: LinearMap{T}
     λ::T
     M::Int
