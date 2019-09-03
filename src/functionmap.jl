@@ -39,10 +39,20 @@ ismutating(A::FunctionMap) = A._ismutating
 _ismutating(f) = (mf = methods(f); !isempty(mf) ? first(methods(f)).nargs == 3 : error("transpose/adjoint not implemented"))
 
 # special transposition behavior
-LinearAlgebra.transpose(A::FunctionMap{T}) where {T<:Real} =
-    FunctionMap{T}(A.fc, A.f, A.N, A.M; issymmetric=A._issymmetric, ishermitian=A._ishermitian, isposdef=A._isposdef)
-LinearAlgebra.adjoint(A::FunctionMap{T}) where {T} =
-    FunctionMap{T}(A.fc, A.f, A.N, A.M; issymmetric=A._issymmetric, ishermitian=A._ishermitian, isposdef=A._isposdef)
+function LinearAlgebra.transpose(A::FunctionMap)
+    if A.fc!==nothing || A._issymmetric
+        return TransposeMap(A)
+    else
+        error("transpose not implemented for $A")
+    end
+end
+function LinearAlgebra.adjoint(A::FunctionMap)
+    if A.fc!==nothing || A._ishermitian
+        return AdjointMap(A)
+    else
+        error("adjoint not implemented for $A")
+    end
+end
 
 # multiplication with vector
 function Base.:(*)(A::FunctionMap, x::AbstractVector)
@@ -57,19 +67,19 @@ function Base.:(*)(A::FunctionMap, x::AbstractVector)
 end
 
 function A_mul_B!(y::AbstractVector, A::FunctionMap, x::AbstractVector)
-    (length(x) == A.N && length(y) == A.M) || throw(DimensionMismatch())
+    (length(x) == A.N && length(y) == A.M) || throw(DimensionMismatch("A_mul_B!"))
     ismutating(A) ? A.f(y, x) : copyto!(y, A.f(x))
     return y
 end
 
 function At_mul_B!(y::AbstractVector, A::FunctionMap, x::AbstractVector)
     issymmetric(A) && return A_mul_B!(y, A, x)
-    (length(x) == A.M && length(y) == A.N) || throw(DimensionMismatch())
+    (length(x) == A.M && length(y) == A.N) || throw(DimensionMismatch("At_mul_B!"))
     if A.fc !== nothing
         if !isreal(A)
             x = conj(x)
         end
-        (ismutating(A) ? A.fc(y, x) : copyto!(y, A.fc(x)))
+        ismutating(A) ? A.fc(y, x) : copyto!(y, A.fc(x))
         if !isreal(A)
             conj!(y)
         end
@@ -81,9 +91,10 @@ end
 
 function Ac_mul_B!(y::AbstractVector, A::FunctionMap, x::AbstractVector)
     ishermitian(A) && return A_mul_B!(y, A, x)
-    (length(x) == A.M && length(y) == A.N) || throw(DimensionMismatch())
+    (length(x) == A.M && length(y) == A.N) || throw(DimensionMismatch("Ac_mul_B!"))
     if A.fc !== nothing
-        return (ismutating(A) ? A.fc(y, x) : copyto!(y, A.fc(x)))
+        ismutating(A) ? A.fc(y, x) : copyto!(y, A.fc(x))
+        return y
     else
         error("adjoint not implemented for $A")
     end
