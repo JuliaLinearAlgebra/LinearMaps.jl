@@ -50,7 +50,7 @@ function A_mul_B!(y::AbstractVector, A::UniformScalingMap, x::AbstractVector)
 end
 end # VERSION
 
-function LinearAlgebra.mul!(y::AbstractVector, J::UniformScalingMap{T}, x::AbstractVector, α::Number=one(T), β::Number=zero(T)) where {T}
+function LinearAlgebra.mul!(y::AbstractVector, J::UniformScalingMap, x::AbstractVector, α::Number=true, β::Number=false)
     @boundscheck (length(x) == length(y) == J.M || throw(DimensionMismatch("mul!")))
     λ = J.λ
     @inbounds if isone(α)
