@@ -21,10 +21,26 @@ LinearAlgebra.ishermitian(A::LinearCombination) = all(ishermitian, A.maps) # suf
 LinearAlgebra.isposdef(A::LinearCombination) = all(isposdef, A.maps) # sufficient but not necessary
 
 # adding linear maps
-function Base.:(+)(A₁::LinearCombination, A₂::LinearCombination)
+"""
+    A::LinearMap + B::LinearMap
+
+Construct a `LinearCombination <: LinearMap`, a (lazy) representation of the sum
+of the two operators. Sums of `LinearMap`/`LinearCombination` objects and
+`LinearMap`/`LinearCombination` objects are reduced to a single `LinearCombination`.
+In sums of `LinearMap`s and `AbstractMatrix`/`UniformScaling` objects, the latter
+get promoted to `LinearMap`s automatically.
+
+# Examples
+```jldoctest; setup=(using LinearAlgebra, LinearMaps)
+julia> CS = LinearMap{Int}(cumsum, 3)::LinearMaps.FunctionMap;
+
+julia> LinearMap(ones(Int, 3, 3)) + CS + I + rand(3, 3);
+```
+"""
+function Base.:(+)(A₁::LinearMap, A₂::LinearMap)
     size(A₁) == size(A₂) || throw(DimensionMismatch("+"))
     T = promote_type(eltype(A₁), eltype(A₂))
-    return LinearCombination{T}(tuple(A₁.maps..., A₂.maps...))
+    return LinearCombination{T}(tuple(A₁, A₂))
 end
 function Base.:(+)(A₁::LinearMap, A₂::LinearCombination)
     size(A₁) == size(A₂) || throw(DimensionMismatch("+"))
@@ -32,10 +48,10 @@ function Base.:(+)(A₁::LinearMap, A₂::LinearCombination)
     return LinearCombination{T}(tuple(A₁, A₂.maps...))
 end
 Base.:(+)(A₁::LinearCombination, A₂::LinearMap) = +(A₂, A₁)
-function Base.:(+)(A₁::LinearMap, A₂::LinearMap)
+function Base.:(+)(A₁::LinearCombination, A₂::LinearCombination)
     size(A₁) == size(A₂) || throw(DimensionMismatch("+"))
     T = promote_type(eltype(A₁), eltype(A₂))
-    return LinearCombination{T}(tuple(A₁, A₂))
+    return LinearCombination{T}(tuple(A₁.maps..., A₂.maps...))
 end
 Base.:(-)(A₁::LinearMap, A₂::LinearMap) = +(A₁, -A₂)
 

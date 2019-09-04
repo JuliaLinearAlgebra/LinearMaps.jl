@@ -50,7 +50,7 @@ end
 Base.size(A::BlockMap) = (last(A.rowranges[end]), last(A.colranges[end]))
 
 ############
-# hcat
+# concatenation
 ############
 
 for k in 1:8 # is 8 sufficient?
@@ -62,6 +62,32 @@ for k in 1:8 # is 8 sufficient?
     @eval Base.vcat($(Is...), $L, As::Union{LinearMap,UniformScaling}...) = _vcat($(args...), As...)
     @eval Base.hvcat(rows::Tuple{Vararg{Int}}, $(Is...), $L, As::Union{LinearMap,UniformScaling}...) = _hvcat(rows, $(args...), As...)
 end
+
+############
+# hcat
+############
+"""
+    hcat(As::Union{LinearMap,UniformScaling}...)
+
+Construct a `BlockMap <: LinearMap` object, a (lazy) representation of the
+horizontal concatenation of the arguments. `UniformScaling` objects are promoted
+to `LinearMap` automatically. To avoid fallback to the generic [`Base.hcat`](@ref),
+there must be a `LinearMap` object among the first 8 arguments.
+
+# Examples
+```jldoctest; setup=(using LinearMaps)
+julia> CS = LinearMap{Int}(cumsum, 3)::LinearMaps.FunctionMap;
+
+julia> L = [CS LinearMap(ones(Int, 3, 3))]::LinearMaps.BlockMap;
+
+julia> L * ones(Int, 6)
+3-element Array{Int64,1}:
+ 4
+ 5
+ 6
+```
+"""
+Base.hcat
 
 function _hcat(As::Union{LinearMap,UniformScaling}...)
     T = promote_type(map(eltype, As)...)
@@ -82,6 +108,31 @@ end
 ############
 # vcat
 ############
+"""
+    vcat(As::Union{LinearMap,UniformScaling}...)
+
+Construct a `BlockMap <: LinearMap` object, a (lazy) representation of the
+vertical concatenation of the arguments. `UniformScaling` objects are promoted
+to `LinearMap` automatically. To avoid fallback to the generic [`Base.vcat`](@ref),
+there must be a `LinearMap` object among the first 8 arguments.
+
+# Examples
+```jldoctest; setup=(using LinearMaps)
+julia> CS = LinearMap{Int}(cumsum, 3)::LinearMaps.FunctionMap;
+
+julia> L = [CS; LinearMap(ones(Int, 3, 3))]::LinearMaps.BlockMap;
+
+julia> L * ones(Int, 3)
+6-element Array{Int64,1}:
+ 1
+ 2
+ 3
+ 3
+ 3
+ 3
+```
+"""
+Base.vcat
 
 function _vcat(As::Union{LinearMap,UniformScaling}...)
     T = promote_type(map(eltype, As)...)
@@ -103,6 +154,35 @@ end
 ############
 # hvcat
 ############
+"""
+    hvcat(rows::Tuple{Vararg{Int}}, As::Union{LinearMap,UniformScaling}...)
+
+Construct a `BlockMap <: LinearMap` object, a (lazy) representation of the
+horizontal-vertical concatenation of the arguments. The first argument specifies
+the number of arguments to concatenate in each block row. `UniformScaling` objects
+are promoted to `LinearMap` automatically. To avoid fallback to the generic
+[`Base.hvcat`](@ref), there must be a `LinearMap` object among the first 8 arguments.
+
+# Examples
+```jldoctest; setup=(using LinearMaps)
+julia> CS = LinearMap{Int}(cumsum, 3)::LinearMaps.FunctionMap;
+
+julia> L = [CS CS; CS CS]::LinearMaps.BlockMap;
+
+julia> L.rows
+(2, 2)
+
+julia> L * ones(Int, 6)
+6-element Array{Int64,1}:
+ 2
+ 4
+ 6
+ 2
+ 4
+ 6
+```
+"""
+Base.hvcat
 
 function _hvcat(rows::Tuple{Vararg{Int}}, As::Union{LinearMap,UniformScaling}...)
     nr = length(rows)

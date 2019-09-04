@@ -71,10 +71,26 @@ Base.:(/)(A::LinearMap, α::Number) = A * inv(α)
 Base.:(-)(A::LinearMap) = -1 * A
 
 # composition of linear maps
-function Base.:(*)(A₁::CompositeMap, A₂::CompositeMap)
+"""
+    A::LinearMap * B::LinearMap
+
+Construct a `CompositeMap <: LinearMap`, a (lazy) representation of the product
+of the two operators. Products of `LinearMap`/`CompositeMap` objects and
+`LinearMap`/`CompositeMap` objects are reduced to a single `CompositeMap`.
+In products of `LinearMap`s and `AbstractMatrix`/`UniformScaling` objects, the
+latter get promoted to `LinearMap`s automatically.
+
+# Examples
+```jldoctest; setup=(using LinearAlgebra, LinearMaps)
+julia> CS = LinearMap{Int}(cumsum, 3)::LinearMaps.FunctionMap;
+
+julia> LinearMap(ones(Int, 3, 3)) * CS * I * rand(3, 3);
+```
+"""
+function Base.:(*)(A₁::LinearMap, A₂::LinearMap)
     size(A₁, 2) == size(A₂, 1) || throw(DimensionMismatch("*"))
     T = promote_type(eltype(A₁), eltype(A₂))
-    return CompositeMap{T}(tuple(A₂.maps..., A₁.maps...))
+    return CompositeMap{T}(tuple(A₂, A₁))
 end
 function Base.:(*)(A₁::LinearMap, A₂::CompositeMap)
     size(A₁, 2) == size(A₂, 1) || throw(DimensionMismatch("*"))
@@ -86,10 +102,10 @@ function Base.:(*)(A₁::CompositeMap, A₂::LinearMap)
     T = promote_type(eltype(A₁), eltype(A₂))
     return CompositeMap{T}(tuple(A₂, A₁.maps...))
 end
-function Base.:(*)(A₁::LinearMap, A₂::LinearMap)
+function Base.:(*)(A₁::CompositeMap, A₂::CompositeMap)
     size(A₁, 2) == size(A₂, 1) || throw(DimensionMismatch("*"))
     T = promote_type(eltype(A₁), eltype(A₂))
-    return CompositeMap{T}(tuple(A₂, A₁))
+    return CompositeMap{T}(tuple(A₂.maps..., A₁.maps...))
 end
 Base.:(*)(A₁::LinearMap, A₂::UniformScaling) = A₁ * A₂.λ
 Base.:(*)(A₁::UniformScaling, A₂::LinearMap) = A₁.λ * A₂
