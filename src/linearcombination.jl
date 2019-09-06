@@ -37,6 +37,18 @@ function Base.:(+)(A₁::LinearMap, A₂::LinearMap)
     return LinearCombination{T}(tuple(A₁, A₂))
 end
 Base.:(-)(A₁::LinearMap, A₂::LinearMap) = +(A₁, -A₂)
+function Base.:(+)(O::ZeroMap, A::LinearMap)
+    size(O) == size(A) || throw(DimensionMismatch("+"))
+    T = promote_type(eltype(O), eltype(A))
+    return A
+end
+Base.:(+)(A::LinearMap, O::ZeroMap) = +(O, A)
+function Base.:(+)(O₁::ZeroMap, O₂::ZeroMap)
+    size(O₁) == size(O₂) || throw(DimensionMismatch("+"))
+    T = promote_type(eltype(O₁), eltype(O₂))
+    return O₁
+end
+
 
 # comparison of LinearCombination objects, sufficient but not necessary
 Base.:(==)(A::LinearCombination, B::LinearCombination) = (eltype(A) == eltype(B) && A.maps == B.maps)

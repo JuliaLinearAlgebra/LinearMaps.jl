@@ -91,9 +91,12 @@ function Base.:(*)(A₁::LinearMap, A₂::LinearMap)
     return CompositeMap{T}(tuple(A₂, A₁))
 end
 Base.:(*)(A₁::LinearMap, A₂::UniformScaling) = A₁ * A₂.λ
-Base.:(*)(A₁::LinearMap, A₂::UniformScaling{Bool}) = A₂.λ ? A₁ : A₁ * A₂.λ
+Base.:(*)(A₁::LinearMap, A₂::UniformScaling{Bool}) = A₂.λ ? A₁ : ZeroMap{eltype(A₁)}(size(A₁))
 Base.:(*)(A₁::UniformScaling, A₂::LinearMap) = A₁.λ * A₂
-Base.:(*)(A₁::UniformScaling{Bool}, A₂::LinearMap) = A₁.λ ? A₂ : A₁.λ * A₂
+Base.:(*)(A₁::UniformScaling{Bool}, A₂::LinearMap) = A₁.λ ? A₂ : ZeroMap{eltype(A₂)}(size(A₂))
+Base.:(*)(A::LinearMap, O::ZeroMap) = ZeroMap{promote_type(eltype(A), eltype(O))}(size(A, 1), size(O, 2))
+Base.:(*)(O::ZeroMap, A::LinearMap) = ZeroMap{promote_type(eltype(A), eltype(O))}(size(O, 1), size(A, 2))
+Base.:(*)(A::ZeroMap, B::ZeroMap) = ZeroMap{promote_type(eltype(A), eltype(B))}(size(A, 1), size(B, 2))
 
 # special transposition behavior
 LinearAlgebra.transpose(A::CompositeMap{T}) where {T} = CompositeMap{T}(map(transpose, reverse(A.maps)))

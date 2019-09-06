@@ -42,6 +42,8 @@ using Test, LinearMaps, LinearAlgebra, BenchmarkTools
     LA = LinearMap(A)
     @test LA * I == LA == I * LA
     @test LA * I === LA === I * LA
-    @test LA * (false*I) isa LinearMaps.CompositeMap
-    @test (false*I) * LA isa LinearMaps.CompositeMap
+    O = false*I
+    @test (LA * O) isa LinearMaps.ZeroMap
+    @test (O * LA) isa LinearMaps.ZeroMap
+    @test LA*LA*O*LA isa LinearMaps.ZeroMap
 end

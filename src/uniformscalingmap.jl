@@ -85,9 +85,49 @@ end
 At_mul_B!(y::AbstractVector, A::UniformScalingMap, x::AbstractVector) = A_mul_B!(y, transpose(A), x)
 Ac_mul_B!(y::AbstractVector, A::UniformScalingMap, x::AbstractVector) = A_mul_B!(y, adjoint(A), x)
 
-
 # combine LinearMap and UniformScaling objects in linear combinations
 Base.:(+)(A₁::LinearMap, A₂::UniformScaling) = A₁ + UniformScalingMap(A₂.λ, size(A₁, 1))
 Base.:(+)(A₁::UniformScaling, A₂::LinearMap) = UniformScalingMap(A₁.λ, size(A₂, 1)) + A₂
 Base.:(-)(A₁::LinearMap, A₂::UniformScaling) = A₁ - UniformScalingMap(A₂.λ, size(A₁, 1))
 Base.:(-)(A₁::UniformScaling, A₂::LinearMap) = UniformScalingMap(A₁.λ, size(A₂, 1)) - A₂
+
+struct ZeroMap{T} <: LinearMap{T}
+    M::Int
+    N::Int
+end
+
+ZeroMap{T}(dims::Dims{2}) where {T} = ZeroMap{T}(dims...)
+
+Base.size(A::ZeroMap) = (A.M, A.N)
+Base.isreal(A::ZeroMap) = isreal(A.λ)
+LinearAlgebra.issymmetric(A::ZeroMap) = A.M == A.N
+LinearAlgebra.ishermitian(A::ZeroMap) = A.M == A.N
+LinearAlgebra.isposdef(A::ZeroMap) = false
+
+# special transposition behavior
+LinearAlgebra.transpose(A::ZeroMap) = ZeroMap{eltype(A)}(A.N, A.M)
+LinearAlgebra.adjoint(A::ZeroMap)   = ZeroMap{eltype(A)}(A.N, A.M)
+
+# multiplication with vector
+Base.:(*)(A::ZeroMap, x::AbstractVector) =
+    length(x) == A.N ? zero(promote_type(eltype(A), eltype(x)), A.M) : throw(DimensionMismatch("A_mul_B!"))
+
+function A_mul_B!(y::AbstractVector, O::ZeroMap, x::AbstractVector)
+    (length(x) == O.N && length(y) == O.M) || throw(DimensionMismatch("A_mul_B!"))
+    fill!(y, zero(eltype(y)))
+    return y
+end
+
+At_mul_B!(y::AbstractVector, A::ZeroMap, x::AbstractVector) = A_mul_B!(y, transpose(A), x)
+
+Ac_mul_B!(y::AbstractVector, A::ZeroMap, x::AbstractVector) = A_mul_B!(y, adjoint(A), x)
+
+function LinearAlgebra.mul!(y::AbstractVector, O::ZeroMap, x::AbstractVector, α::Number=true, β::Number=false)
+    (length(x) == O.N && length(y) == O.M) || throw(DimensionMismatch("mul!"))
+    λ = J.λ
+    iszero(β) && (A_mul_B!(y, O, x); return y)
+    isone(β) && return y
+    # β != 0, 1
+    rmul!(y, β)
+    return y
+end
