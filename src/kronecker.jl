@@ -9,6 +9,38 @@ struct KroneckerMap{T, As<:Tuple{LinearMap,LinearMap}} <: LinearMap{T}
 end
 
 KroneckerMap{T}(maps::As) where {T, As<:Tuple{LinearMap,LinearMap}} = KroneckerMap{T, As}(maps)
+
+"""
+    kron(A::LinearMap, B::LinearMap)
+
+Construct a `KroneckerMap <: LinearMap` object, a (lazy) representation of the
+Kronecker product of two `LinearMap`s. One of the two factors can be an `AbstractMatrix`
+object, which then is promoted to `LinearMap` automatically. To avoid fallback to
+the generic [`Base.kron`](@ref), there must be a `LinearMap` object among the
+first 8 arguments in usage like `kron(A, B, Cs...)`.
+
+Note: If `A`, `B`, `C` and `D` are linear maps of such size that one can form the
+matrix products `A*C` and `B*D`, then the mixed-product property `(A⊗B)*(C⊗D)`
+holds. Upon multiplication of Kronecker products, this rule is checked for
+applicability, which leads to type-instability with a union of two types.
+
+# Examples
+```jldoctest; setup=(using LinearAlgebra, SparseArrays, LinearMaps)
+julia> J = LinearMap(I, 2) # 2×2 identity map
+LinearMaps.UniformScalingMap{Bool}(true, 2)
+
+julia> E = spdiagm(-1 => trues(1)); D = E + E' - 2I;
+
+julia> Δ = kron(D, J) + kron(J, D); # discrete 2D-Laplace operator
+
+julia> Matrix(Δ)
+4×4 Array{Int64,2}:
+ -4   1   1   0
+  1  -4   0   1
+  1   0  -4   1
+  0   1   1  -4
+```
+"""
 Base.kron(A::LinearMap{TA}, B::LinearMap{TB}) where {TA,TB} = KroneckerMap{promote_type(TA,TB)}((A, B))
 Base.kron(A::LinearMap, B::AbstractArray) = kron(A, LinearMap(B))
 Base.kron(A::AbstractArray, B::LinearMap) = kron(LinearMap(A), B)
