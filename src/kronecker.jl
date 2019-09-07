@@ -188,3 +188,46 @@ end
 LinearMaps.At_mul_B!(y::AbstractVector, A::KroneckerSumMap, x::AbstractVector) = A_mul_B!(y, transpose(A), x)
 
 LinearMaps.Ac_mul_B!(y::AbstractVector, A::KroneckerSumMap, x::AbstractVector) = A_mul_B!(y, adjoint(A), x)
+
+struct KroneckerPowerMap{T, TA<:LinearMap, N} <: LinearMap{T}
+   lmap::TA
+   k::Int
+   function KroneckerPowerMap(A::TA, k::Int) where {TA<:LinearMap}
+      k > 1 || throw(ArgumentError("the Kronecker power is only defined for exponents larger than 1, got $k"))
+      return new{eltype(A),TA,k}(A, k)
+    end
+end
+
+"""
+    kron(A::LinearMap, k::Int)
+Construct a `KroneckerPowerMap<:LinearMap` object, a lazy representation of the
+`k`-th Kronecker power `A ⊗ A ⊗ ... ⊗ A` for `k≥2`.
+"""
+kron(A::LinearMap, k::Int) = KroneckerPowerMap(A, k)
+
+Base.size(A::KroneckerPowerMap) = size(A.lmap).^A.k
+
+LinearAlgebra.adjoint(A::KroneckerPowerMap) = KroneckerPowerMap(adjoint(A.lmap), A.k)
+LinearAlgebra.transpose(A::KroneckerPowerMap) = KroneckerPowerMap(transpose(A.lmap), A.k)
+
+function Base.:*(A::KroneckerPowerMap{TA, <:LinearMap, N}, B::KroneckerPowerMap{TB, <:LinearMap, N}) where {TA, TB, N}
+    if size(A, 2) == size(B, 1)
+        return KroneckerPowerMap(A.lmap * B.lmap, N)
+    else
+        return CompositeMap{promote_type(eltype(A), eltype(B))}((B, A))
+    end
+end
+
+getmaps(A::KroneckerPowerMap{T, <:LinearMap, N}) where {T, N} = (A.lmap, KroneckerPowerMap(A.lmap, A.k-1))
+getmaps(A::KroneckerPowerMap{T, <:LinearMap, 2}) where {T} = (A.lmap, A.lmap)
+
+function LinearMaps.A_mul_B!(y::AbstractVector, L::KroneckerPowerMap, x::AbstractVector)
+    A, B = getmaps(L)
+    K = kron(A, B)
+    A_mul_B!(y, K, x)
+    return y
+end
+
+LinearMaps.At_mul_B!(y::AbstractVector, A::KroneckerSumMap, x::AbstractVector) = A_mul_B!(y, transpose(A), x)
+
+LinearMaps.Ac_mul_B!(y::AbstractVector, A::KroneckerSumMap, x::AbstractVector) = A_mul_B!(y, adjoint(A), x)
