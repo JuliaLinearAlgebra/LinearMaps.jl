@@ -14,7 +14,6 @@ end
 LinearCombination{T}(maps::As) where {T, As} = LinearCombination{T, As}(maps)
 
 # basic methods
-Base.size(A::LinearCombination, n) = n==1 ? size(A.maps[1], 1) : n==2 ? size(A.maps[1], 2) : error("LinearMap objects have only 2 dimensions")
 Base.size(A::LinearCombination) = size(A.maps[1])
 LinearAlgebra.issymmetric(A::LinearCombination) = all(issymmetric, A.maps) # sufficient but not necessary
 LinearAlgebra.ishermitian(A::LinearCombination) = all(ishermitian, A.maps) # sufficient but not necessary

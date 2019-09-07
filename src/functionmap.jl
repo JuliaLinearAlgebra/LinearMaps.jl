@@ -30,7 +30,6 @@ function Base.show(io::IO, A::FunctionMap{T}) where {T}
 end
 
 # properties
-Base.size(A::FunctionMap, n) = n==1 ? A.M : n==2 ? A.N : error("LinearMap objects have only 2 dimensions")
 Base.size(A::FunctionMap) = (A.M, A.N)
 LinearAlgebra.issymmetric(A::FunctionMap) = A._issymmetric
 LinearAlgebra.ishermitian(A::FunctionMap) = A._ishermitian
