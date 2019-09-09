@@ -37,23 +37,6 @@ LinearAlgebra.isposdef(A::FunctionMap)    = A._isposdef
 ismutating(A::FunctionMap) = A._ismutating
 _ismutating(f) = first(methods(f)).nargs == 3
 
-# special transposition behavior
-function LinearAlgebra.transpose(A::FunctionMap)
-    if A._issymmetric || (eltype(A) <: Real && A.fc !== nothing)
-        return TransposeMap(A)
-    else
-        error("transpose not implemented for $A")
-    end
-end
-LinearAlgebra.adjoint(A::FunctionMap{<:Real}) = transpose(A)
-function LinearAlgebra.adjoint(A::FunctionMap)
-    if A.fc!==nothing || A._ishermitian
-        return AdjointMap(A)
-    else
-        error("adjoint not implemented for $A")
-    end
-end
-
 # multiplication with vector
 function Base.:(*)(A::FunctionMap, x::AbstractVector)
     length(x) == A.N || throw(DimensionMismatch())
