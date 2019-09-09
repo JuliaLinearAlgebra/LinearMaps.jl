@@ -39,7 +39,7 @@ _ismutating(f) = first(methods(f)).nargs == 3
 
 # special transposition behavior
 function LinearAlgebra.transpose(A::FunctionMap)
-    if A.fc!==nothing || A._issymmetric
+    if A._issymmetric || (eltype(A) <: Real && A.fc !== nothing)
         return TransposeMap(A)
     else
         error("transpose not implemented for $A")
