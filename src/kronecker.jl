@@ -41,11 +41,13 @@ julia> Matrix(Δ)
   0   1   1  -4
 ```
 """
-# Base.kron(A::LinearMap, B::LinearMap) = KroneckerMap{promote_type(eltype(A), eltype(B))}((A, B))
-# Base.kron(A::LinearMap{TA}, B::LinearMap{TB}) where {TA,TB} = KroneckerMap{promote_type(TA,TB)}((A, B))
-Base.kron(As::LinearMap...) = KroneckerMap{promote_type(map(eltype, As)...)}(tuple(As...))
-Base.kron(A::LinearMap, B::AbstractArray) = kron(A, LinearMap(B))
-Base.kron(A::AbstractArray, B::LinearMap) = kron(LinearMap(A), B)
+Base.kron(A::LinearMap, B::LinearMap) = KroneckerMap{promote_type(eltype(A), eltype(B))}((A, B))
+Base.kron(A::LinearMap, B::KroneckerMap) = KroneckerMap{promote_type(eltype(A), eltype(B))}(tuple(A, B.maps...))
+Base.kron(A::KroneckerMap, B::LinearMap) = KroneckerMap{promote_type(eltype(A), eltype(B))}(tuple(A.maps..., B))
+Base.kron(A::KroneckerMap, B::KroneckerMap) = KroneckerMap{promote_type(eltype(A), eltype(B))}(tuple(A.maps..., B.maps...))
+Base.kron(A::LinearMap, B::LinearMap, Cs::LinearMap...) = KroneckerMap{promote_type(eltype(A), eltype(B), map(eltype, Cs)...)}(tuple(A, B, Cs...))
+Base.kron(A::AbstractMatrix, B::LinearMap) = kron(LinearMap(A), B)
+Base.kron(A::LinearMap, B::AbstractMatrix) = kron(A, LinearMap(B))
 # promote AbstractMatrix arguments to LinearMaps, then take LinearMap-Kronecker product
 for k in 3:8 # is 8 sufficient?
     Is = ntuple(n->:($(Symbol(:A,n))::AbstractMatrix), Val(k-1))
@@ -75,14 +77,6 @@ LinearAlgebra.ishermitian(A::KroneckerMap) = all(ishermitian, A.maps)
 LinearAlgebra.adjoint(A::KroneckerMap{T}) where {T} = KroneckerMap{T}(map(adjoint, A.maps))
 LinearAlgebra.transpose(A::KroneckerMap{T}) where {T} = KroneckerMap{T}(map(transpose, A.maps))
 
-function Base.:(*)(A::KroneckerMap, B::KroneckerMap)
-    if length(A.maps) == length(B.maps) && all(M -> size(M[1], 2) == size(M[2], 1), zip(A.maps, B.maps))
-        return kron(map(prod, zip(A.maps, B.maps))...)
-    else
-        return CompositeMap{T}(tuple(B, A))
-    end
-end
-
 Base.:(==)(A::KroneckerMap, B::KroneckerMap) = (eltype(A) == eltype(B) && A.maps == B.maps)
 
 function LinearMaps.A_mul_B!(y::AbstractVector, L::KroneckerMap{T,<:NTuple{2,LinearMap}}, x::AbstractVector) where {T}
@@ -101,6 +95,30 @@ function LinearMaps.A_mul_B!(y::AbstractVector, L::KroneckerMap{T}, x::AbstractV
     X = LinearMap(reshape(x, (size(B, 2), size(A, 2))); issymmetric=false, ishermitian=false, isposdef=false)
     _kronmul!(y, B, X, transpose(A), T)
     return y
+end
+# mixed-product rule, prefer the right if possible
+# (A₁ ⊗ A₂ ⊗ ... ⊗ Aᵣ) * (B₁ ⊗ B₂ ⊗ ... ⊗ Bᵣ) = (A₁B₁) ⊗ (A₂B₂) ⊗ ... ⊗ (AᵣBᵣ)
+function A_mul_B!(y::AbstractVector, L::CompositeMap{<:Any,<:Tuple{KroneckerMap,KroneckerMap}}, x::AbstractVector)
+    B, A = L.maps
+    if length(A.maps) == length(B.maps) && all(M -> check_dim_mul(M[1], M[2]), zip(A.maps, B.maps))
+        A_mul_B!(y, kron(map(prod, zip(A.maps, B.maps))...), x)
+    else
+        A_mul_B!(y, LinearMap(A)*B, x)
+    end
+end
+# mixed-product rule, prefer the right if possible
+# (A₁ ⊗ B₁)*(A₂⊗B₂)*...*(Aᵣ⊗Bᵣ) = (A₁*A₂*...*Aᵣ) ⊗ (B₁*B₂*...*Bᵣ)
+function A_mul_B!(y::AbstractVector, L::CompositeMap{T,<:Tuple{Vararg{KroneckerMap{<:Any,<:Tuple{LinearMap,LinearMap}}}}}, x::AbstractVector) where {T}
+    As = map(AB -> AB.maps[1], L.maps)
+    Bs = map(AB -> AB.maps[2], L.maps)
+    As1, As2 = Base.front(As), Base.tail(As)
+    Bs1, Bs2 = Base.front(Bs), Base.tail(Bs)
+    apply = all(A -> check_dim_mul(A...), zip(As1, As2)) && all(A -> check_dim_mul(A...), zip(Bs1, Bs2))
+    if apply
+        A_mul_B!(y, kron(prod(As), prod(Bs)), x)
+    else
+        A_mul_B!(y, CompositeMap{T}(map(LinearMap, L.maps)), x)
+    end
 end
 
 function _kronmul!(y, B, X, At, T)

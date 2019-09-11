@@ -22,16 +22,23 @@ using Test, LinearMaps, LinearAlgebra
         K = @inferred kron(A, A, A, LA)
         @test K isa LinearMaps.KroneckerMap
         @test Matrix(K) ≈ kron(A, A, A, A)
-        @test K*K isa LinearMaps.KroneckerMap{ComplexF64,<:Tuple{Vararg{LinearMaps.CompositeMap}}}
+        @test Matrix(@inferred K*K) ≈ kron(A, A, A, A)*kron(A, A, A, A)
         K4 = @inferred kron(A, B, B, LB)
         # check that matrices don't get Kronecker-multiplied, but that all is lazy
         @test K4.maps[1].lmap === A
         @test @inferred kron(LA, LB)' == @inferred kron(LA', LB')
-        @test kron(LA, B) == kron(LA, LB) == kron(A, LB)
-        @test ishermitian(kron(LA'LA, LB'LB))
+        @test (@inferred kron(LA, B)) == (@inferred kron(LA, LB)) == (@inferred kron(A, LB))
+        @test @inferred ishermitian(kron(LA'LA, LB'LB))
         A = rand(3, 3); B = rand(2, 2); LA = LinearMap(A); LB = LinearMap(B)
-        @test issymmetric(kron(LA'LA, LB'LB))
-        @test ishermitian(kron(LA'LA, LB'LB))
+        @test @inferred issymmetric(kron(LA'LA, LB'LB))
+        @test @inferred ishermitian(kron(LA'LA, LB'LB))
+        # use mixed-product rule
+        K = kron(LA, LB) * kron(LA, LB) * kron(LA, LB)
+        @test Matrix(K) ≈ kron(A, B)^3
+        # example that doesn't use mixed-product rule
+        A = rand(3, 2); B = rand(2, 3)
+        K = @inferred kron(A, LinearMap(B))
+        @test Matrix(@inferred K*K) ≈ kron(A, B)*kron(A, B)
     end
     @testset "Kronecker sum" begin
         A = rand(ComplexF64, 3, 3)
