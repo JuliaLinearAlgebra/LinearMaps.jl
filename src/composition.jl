@@ -108,25 +108,67 @@ function A_mul_B!(y::AbstractVector, A::CompositeMap, x::AbstractVector)
         A_mul_B!(y, A.maps[1], x)
     else
         T = eltype(y)
-        dest = Array{T}(undef, size(A.maps[1], 1))
-        A_mul_B!(dest, A.maps[1], x)
-        source = dest
-        if N>2
-            dest = Array{T}(undef, size(A.maps[2], 1))
-        end
-        for n in 2:N-1
-            try
-                resize!(dest, size(A.maps[n], 1))
-            catch err
-                if err == ErrorException("cannot resize array with shared data")
-                    dest = Array{T}(undef, size(A.maps[n], 1))
-                else
-                    rethrow(err)
-                end
+        # apply A₁
+        A1 = A.maps[1]
+        if A1 isa UniformScalingMap
+            if isone(A1.λ)
+                dest = copy(x)
+            elseif iszero(A1.λ)
+                return fill!(y, zero(T))
+            else
+                dest = A1 * x
             end
-            A_mul_B!(dest, A.maps[n], source)
-            dest, source = source, dest # alternate dest and source
+        else # A1 is not a UniformScaling
+            dest = A1 * x
         end
+        # dest now contains the result of (A₁ * x), next shifted to source
+        source = dest
+        # if N>2 then we need a second temporary variable to store intermediate results,
+        # otherwise we simply apply A₂ to source, store in y, and return y
+        if N>2
+            # apply A₂
+            A2 = A.maps[2]
+            if A2 isa UniformScalingMap
+                if isone(A2.λ)
+                    dest = copy(source)
+                elseif iszero(A2.λ)
+                    return fill!(y, zero(T))
+                else
+                    dest = A2 * source
+                end
+            else # A1 is not a UniformScaling
+                dest = A2 * source
+            end
+            # dest now contains the result of (A₂ * source), next alternated with source
+            dest, source = source, dest # alternate dest and source
+            for i in 3:N-1
+                Ai = A.maps[i]
+                try
+                    resize!(dest, size(Ai, 1))
+                catch err
+                    if err == ErrorException("cannot resize array with shared data")
+                        dest = Array{T}(undef, size(Ai, 1))
+                    else
+                        rethrow(err)
+                    end
+                end
+                # apply Aᵢ
+                if Ai isa UniformScalingMap
+                    if isone(Ai.λ)
+                        dest, source = source, dest # alternate dest and source
+                    elseif iszero(Ai.λ)
+                        return fill!(y, zero(T))
+                    else
+                        mul!(dest, Ai, source)
+                    end
+                else # An is not a UniformScaling
+                    mul!(dest, Ai, source)
+                end
+                # dest now contains the result of (Aᵢ * source), next alternated with source
+                dest, source = source, dest # alternate dest and source
+            end
+        end
+        # apply final map to source
         A_mul_B!(y, A.maps[N], source)
     end
     return y
