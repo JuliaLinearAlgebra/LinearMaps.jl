@@ -28,7 +28,7 @@ Base.:(==)(A::MatrixMap, B::MatrixMap) = (eltype(A) == eltype(B) && A.lmap == B.
 
 if VERSION ≥ v"1.3.0-alpha.115"
 
-@inline LinearAlgebra.mul!(y::AbstractVector, A::MatrixMap, x::AbstractVector, α::Number=true, β::Number=false) =
+LinearAlgebra.mul!(y::AbstractVector, A::WrappedMap, x::AbstractVector, α::Number=true, β::Number=false) =
     mul!(y, A.lmap, x, α, β)
 
 end # VERSION
