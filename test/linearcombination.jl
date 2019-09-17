@@ -44,10 +44,10 @@ using Test, LinearMaps, LinearAlgebra, BenchmarkTools
     @test @inferred convert(Matrix, M + LC) ≈ 2A + B
     @test @inferred convert(Matrix, M + M) ≈ 2A
     # subtraction
-    @test Matrix(LC - LC) ≈ zeros(eltype(LC), size(LC)) atol=10eps()
-    @test @inferred Matrix(LC - M) ≈ B
-    @test @inferred Matrix(N - LC) ≈ -A
-    @test Matrix(M - M) ≈ zeros(size(M)) atol=10eps()
+    @test (@inferred Matrix(LC - LC)) ≈ zeros(eltype(LC), size(LC)) atol=10eps()
+    @test (@inferred Matrix(LC - M)) ≈ B
+    @test (@inferred Matrix(N - LC)) ≈ -A
+    @test (@inferred Matrix(M - M)) ≈ zeros(size(M)) atol=10eps()
     # scalar multiplication
     @test @inferred Matrix(-M) == -A
     @test @inferred Matrix(-LC) == -A - B
