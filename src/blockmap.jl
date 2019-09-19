@@ -48,7 +48,7 @@ function rowcolranges(maps, rows)::Tuple{Vector{UnitRange{Int}},Vector{UnitRange
 end
 
 function Base.size(A::BlockMap)
-    return A.rowranges[end][end], A.colranges[end][end]
+    return last(A.rowranges[end]), last(A.colranges[end])
 end
 
 ############

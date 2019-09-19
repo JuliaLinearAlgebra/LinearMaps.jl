@@ -2,13 +2,13 @@ using Test, LinearMaps, LinearAlgebra
 
 @testset "block maps" begin
     @testset "hcat" begin
-        for elty in (Float32, Float64, ComplexF64)
+        for elty in (Float32, Float64, ComplexF64), n2 = (0, 20)
             A11 = rand(elty, 10, 10)
-            A12 = rand(elty, 10, 20)
+            A12 = rand(elty, 10, n2)
             L = @inferred hcat(LinearMap(A11), LinearMap(A12))
             @test L isa LinearMaps.BlockMap{elty}
             A = [A11 A12]
-            x = rand(30)
+            x = rand(10+n2)
             @test size(L) == size(A)
             @test Matrix(L) ≈ A
             @test L * x ≈ A * x
@@ -22,7 +22,7 @@ using Test, LinearMaps, LinearAlgebra
             @test L isa LinearMaps.BlockMap{elty}
             @test L * x ≈ A * x
             A11 = rand(elty, 11, 10)
-            A12 = rand(elty, 10, 20)
+            A12 = rand(elty, 10, n2)
             @test_throws DimensionMismatch hcat(LinearMap(A11), LinearMap(A12))
         end
     end
