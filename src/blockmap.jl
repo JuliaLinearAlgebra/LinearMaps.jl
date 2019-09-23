@@ -56,13 +56,13 @@ Base.size(A::BlockMap) = (last(last(A.rowranges)), last(last(A.colranges)))
 ############
 
 for k in 1:8 # is 8 sufficient?
-    Is = ntuple(n->:($(Symbol(:A,n))::UniformScaling), Val(k-1))
+    Is = ntuple(n->:($(Symbol(:A,n))::Union{AbstractMatrix,UniformScaling}), Val(k-1))
     L = :($(Symbol(:A,k))::LinearMap)
     args = ntuple(n->Symbol(:A,n), Val(k))
 
-    @eval Base.hcat($(Is...), $L, As::Union{LinearMap,UniformScaling}...) = _hcat($(args...), As...)
-    @eval Base.vcat($(Is...), $L, As::Union{LinearMap,UniformScaling}...) = _vcat($(args...), As...)
-    @eval Base.hvcat(rows::Tuple{Vararg{Int}}, $(Is...), $L, As::Union{LinearMap,UniformScaling}...) = _hvcat(rows, $(args...), As...)
+    @eval Base.hcat($(Is...), $L, As::Union{LinearMap,UniformScaling,AbstractMatrix}...) = _hcat($(args...), As...)
+    @eval Base.vcat($(Is...), $L, As::Union{LinearMap,UniformScaling,AbstractMatrix}...) = _vcat($(args...), As...)
+    @eval Base.hvcat(rows::Tuple{Vararg{Int}}, $(Is...), $L, As::Union{LinearMap,UniformScaling,AbstractMatrix}...) = _hvcat(rows, $(args...), As...)
 end
 
 ############
@@ -136,7 +136,7 @@ julia> L * ones(Int, 3)
 """
 Base.vcat
 
-function _vcat(As::Union{LinearMap,UniformScaling}...)
+function _vcat(As::Union{LinearMap,UniformScaling,AbstractMatrix}...)
     T = promote_type(map(eltype, As)...)
     nbr = length(As)
 
@@ -186,7 +186,7 @@ julia> L * ones(Int, 6)
 """
 Base.hvcat
 
-function _hvcat(rows::Tuple{Vararg{Int}}, As::Union{LinearMap,UniformScaling}...)
+function _hvcat(rows::Tuple{Vararg{Int}}, As::Union{LinearMap,UniformScaling,AbstractMatrix}...)
     nr = length(rows)
     T = promote_type(map(eltype, As)...)
     sum(rows) == length(As) || throw(ArgumentError("mismatch between row sizes and number of arguments"))
@@ -238,6 +238,7 @@ function _hvcat(rows::Tuple{Vararg{Int}}, As::Union{LinearMap,UniformScaling}...
     return BlockMap{T}(promote_to_lmaps(n, 1, 1, As...), rows)
 end
 
+promote_to_lmaps_(n::Int, dim, A::AbstractMatrix) = LinearMap(A)
 promote_to_lmaps_(n::Int, dim, J::UniformScaling) = UniformScalingMap(J.λ, n)
 promote_to_lmaps_(n::Int, dim, A::LinearMap) = (check_dim(A, dim, n); A)
 promote_to_lmaps(n, k, dim) = ()
