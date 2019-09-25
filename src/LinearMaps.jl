@@ -29,22 +29,22 @@ Base.length(A::LinearMap) = size(A)[1] * size(A)[2]
 Base.:(*)(A::LinearMap, x::AbstractVector) = mul!(similar(x, promote_type(eltype(A), eltype(x)), size(A, 1)), A, x)
 function LinearAlgebra.mul!(y::AbstractVector, A::LinearMap, x::AbstractVector, α::Number=true, β::Number=false)
     length(y) == size(A, 1) || throw(DimensionMismatch("mul!"))
-    if α == 1
-        β == 0 && (A_mul_B!(y, A, x); return y)
-        β == 1 && (y .+= A * x; return y)
+    if isone(α)
+        iszero(β) && (A_mul_B!(y, A, x); return y)
+        isone(β) && (y .+= A * x; return y)
         # β != 0, 1
         rmul!(y, β)
         y .+= A * x
         return y
-    elseif α == 0
-        β == 0 && (fill!(y, zero(eltype(y))); return y)
-        β == 1 && return y
+    elseif iszero(α)
+        iszero(β) && (fill!(y, zero(eltype(y))); return y)
+        isone(β) && return y
         # β != 0, 1
         rmul!(y, β)
         return y
     else # α != 0, 1
-        β == 0 && (A_mul_B!(y, A, x); rmul!(y, α); return y)
-        β == 1 && (y .+= rmul!(A * x, α); return y)
+        iszero(β) && (A_mul_B!(y, A, x); rmul!(y, α); return y)
+        isone(β) && (y .+= rmul!(A * x, α); return y)
         # β != 0, 1
         rmul!(y, β)
         y .+= rmul!(A * x, α)

@@ -2,7 +2,7 @@ struct UniformScalingMap{T} <: LinearMap{T}
     λ::T
     M::Int
     function UniformScalingMap(λ::Number, M::Int)
-        M ≤ 0 && throw(ArgumentError("size of UniformScalingMap must be (strictly) positive, got $M"))
+        M < 0 && throw(ArgumentError("size of UniformScalingMap must be non-negative, got $M"))
         return new{typeof(λ)}(λ, M)
     end
 end
