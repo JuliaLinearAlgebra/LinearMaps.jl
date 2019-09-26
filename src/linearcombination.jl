@@ -67,6 +67,14 @@ else # 5-arg mul! is available for matrices
 # map types that have an allocation-free 5-arg mul! implementation
 const FreeMap = Union{MatrixMap,UniformScalingMap}
 
+function A_mul_B!(y::AbstractVector, A::LinearCombination{T,As}, x::AbstractVector) where {T, As<:Tuple{Vararg{FreeMap}}}
+    # no size checking, will be done by individual maps
+    A_mul_B!(y, A.maps[1], x)
+    for n in 2:length(A.maps)
+        mul!(y, A.maps[n], x, true, true)
+    end
+    return y
+end
 function A_mul_B!(y::AbstractVector, A::LinearCombination, x::AbstractVector)
     # no size checking, will be done by individual maps
     A_mul_B!(y, A.maps[1], x)
@@ -82,14 +90,6 @@ function A_mul_B!(y::AbstractVector, A::LinearCombination, x::AbstractVector)
                 y .+= z
             end
         end
-    end
-    return y
-end
-function A_mul_B!(y::AbstractVector, A::LinearCombination{T,As}, x::AbstractVector) where {T, As<:Tuple{Vararg{FreeMap}}}
-    # no size checking, will be done by individual maps
-    A_mul_B!(y, A.maps[1], x)
-    for n in 2:length(A.maps)
-        mul!(y, A.maps[n], x, true, true)
     end
     return y
 end

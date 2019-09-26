@@ -24,7 +24,9 @@ LinearAlgebra.transpose(A::MatrixMap{T}) where {T} =
 LinearAlgebra.adjoint(A::MatrixMap{T}) where {T} =
     WrappedMap{T}(adjoint(A.lmap); issymmetric=A._issymmetric, ishermitian=A._ishermitian, isposdef=A._isposdef)
 
-Base.:(==)(A::MatrixMap, B::MatrixMap) = (eltype(A) == eltype(B) && A.lmap == B.lmap)
+Base.:(==)(A::MatrixMap, B::MatrixMap) =
+    (eltype(A)==eltype(B) && A.lmap==B.lmap && A._issymmetric==B._issymmetric &&
+     A._ishermitian==B._ishermitian && A._isposdef==B._isposdef)
 
 if VERSION ≥ v"1.3.0-alpha.115"
 
