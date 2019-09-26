@@ -83,7 +83,7 @@ function LinearMaps.A_mul_B!(y::AbstractVector, L::KroneckerMap{T,<:NTuple{2,Lin
     # require_one_based_indexing(y)
     (length(y) == size(L, 1) && length(x) == size(L, 2)) || throw(DimensionMismatch("A_mul_B!"))
     A, B = L.maps
-    X = LinearMap(reshape(x, (size(B, 2), size(A, 2))); issymmetric=false, ishermitian=false, isposdef=false)
+    X = reshape(x, (size(B, 2), size(A, 2)))
     _kronmul!(y, B, X, transpose(A), T)
     return y
 end
@@ -137,16 +137,16 @@ function _kronmul!(y, B, X, At, T)
     end
     return y
 end
-# function _kronmul!(y, B::MatrixMap, X, At::MatrixMap, T)
-#     na, ma = size(At)
-#     mb, nb = size(B)
-#     if (nb + ma) * na < (ma + mb) * nb
-#         mul!(reshape(y, (size(B, 1), size(At, 2))), B.lmap, X*At.lmap)
-#     else
-#         mul!(reshape(y, (size(B, 1), size(At, 2))), B.lmap*X, At.lmap)
-#     end
-#     return y
-# end
+function _kronmul!(y, B::FreeMap, X, At::FreeMap, T)
+    na, ma = size(At)
+    mb, nb = size(B)
+    if (nb + ma) * na < (ma + mb) * nb
+        mul!(reshape(y, (mb, ma)), B, convert(Matrix, X*At))
+    else
+        mul!(reshape(y, (mb, ma)), convert(Matrix, B*X), At isa MatrixMap ? At.lmap : At.λ)
+    end
+    return y
+end
 
 LinearMaps.At_mul_B!(y::AbstractVector, A::KroneckerMap, x::AbstractVector) = A_mul_B!(y, transpose(A), x)
 

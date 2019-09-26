@@ -35,6 +35,9 @@ LinearAlgebra.mul!(y::AbstractVector, A::WrappedMap, x::AbstractVector, α::Numb
 
 end # VERSION
 
+LinearAlgebra.mul!(Y::AbstractMatrix, A::MatrixMap, X::AbstractMatrix, α::Number=true, β::Number=false) =
+    mul!(Y, A.lmap, X, α, β)
+
 # properties
 Base.size(A::WrappedMap) = size(A.lmap)
 LinearAlgebra.issymmetric(A::WrappedMap) = A._issymmetric

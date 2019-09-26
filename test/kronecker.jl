@@ -47,12 +47,12 @@ using Test, LinearMaps, LinearAlgebra
         LB = LinearMap(B)
         KS = @inferred LinearMaps.kronsum(LA, B)
         KSmat = kron(A, Matrix(I, 2, 2)) + kron(Matrix(I, 3, 3), B)
-        @test_skip Matrix(KS) ≈ Matrix(kron(A, LinearMap(I, 2)) + kron(LinearMap(I, 3), B))
+        @test Matrix(KS) ≈ Matrix(kron(A, LinearMap(I, 2)) + kron(LinearMap(I, 3), B))
         @test size(KS) == size(kron(A, Matrix(I, 2, 2)))
         for transform in (identity, transpose, adjoint)
-            @test_skip Matrix(transform(KS)) ≈ transform(Matrix(KS)) ≈ transform(KSmat)
-            @test_skip Matrix(LinearMaps.kronsum(transform(LA), transform(LB))) ≈ transform(KSmat)
-            @test_skip Matrix(transform(LinearMap(LinearMaps.kronsum(LA, LB)))) ≈ Matrix(transform(KS)) ≈ transform(KSmat)
+            @test Matrix(transform(KS)) ≈ transform(Matrix(KS)) ≈ transform(KSmat)
+            @test Matrix(LinearMaps.kronsum(transform(LA), transform(LB))) ≈ transform(KSmat)
+            @test Matrix(transform(LinearMap(LinearMaps.kronsum(LA, LB)))) ≈ Matrix(transform(KS)) ≈ transform(KSmat)
         end
         @inferred LinearMaps.kronsum(A, A, LB)
     end
