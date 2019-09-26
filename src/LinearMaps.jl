@@ -68,50 +68,6 @@ A_mul_B!(y::AbstractVector, A::AbstractMatrix, x::AbstractVector)  = mul!(y, A, 
 At_mul_B!(y::AbstractVector, A::AbstractMatrix, x::AbstractVector) = mul!(y, transpose(A), x)
 Ac_mul_B!(y::AbstractVector, A::AbstractMatrix, x::AbstractVector) = mul!(y, adjoint(A), x)
 
-# Matrix: create matrix representation of LinearMap
-function Base.Matrix(A::LinearMap)
-    M, N = size(A)
-    T = eltype(A)
-    mat = Matrix{T}(undef, (M, N))
-    v = fill(zero(T), N)
-    @inbounds for i = 1:N
-        v[i] = one(T)
-        mul!(view(mat, :, i), A, v)
-        v[i] = zero(T)
-    end
-    return mat
-end
-
-Base.Array(A::LinearMap) = Matrix(A)
-Base.convert(::Type{Matrix}, A::LinearMap) = Matrix(A)
-Base.convert(::Type{Array}, A::LinearMap) = Matrix(A)
-Base.convert(::Type{SparseMatrixCSC}, A::LinearMap) = sparse(A)
-
-# sparse: create sparse matrix representation of LinearMap
-function SparseArrays.sparse(A::LinearMap{T}) where {T}
-    M, N = size(A)
-    rowind = Int[]
-    nzval = T[]
-    colptr = Vector{Int}(undef, N+1)
-    v = fill(zero(T), N)
-    Av = Vector{T}(undef, M)
-
-    for i = 1:N
-        v[i] = one(T)
-        mul!(Av, A, v)
-        js = findall(!iszero, Av)
-        colptr[i] = length(nzval) + 1
-        if length(js) > 0
-            append!(rowind, js)
-            append!(nzval, Av[js])
-        end
-        v[i] = zero(T)
-    end
-    colptr[N+1] = length(nzval) + 1
-
-    return SparseMatrixCSC(M, N, colptr, rowind, nzval)
-end
-
 include("wrappedmap.jl") # wrap a matrix of linear map in a new type, thereby allowing to alter its properties
 include("uniformscalingmap.jl") # the uniform scaling map, to be able to make linear combinations of LinearMap objects and multiples of I
 include("transpose.jl") # transposing linear maps
@@ -120,6 +76,7 @@ include("composition.jl") # composition of linear maps
 include("functionmap.jl") # using a function as linear map
 include("blockmap.jl") # block linear maps
 include("kronecker.jl") # Kronecker product of linear maps
+include("conversion.jl") # conversion of linear maps to matrices
 
 """
     LinearMap(A; kwargs...)
