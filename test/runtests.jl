@@ -19,3 +19,5 @@ include("numbertypes.jl")
 include("blockmap.jl")
 
 include("kronecker.jl")
+
+include("conversion.jl")

@@ -79,7 +79,7 @@ LinearAlgebra.transpose(A::KroneckerMap{T}) where {T} = KroneckerMap{T}(map(tran
 
 Base.:(==)(A::KroneckerMap, B::KroneckerMap) = (eltype(A) == eltype(B) && A.maps == B.maps)
 
-function LinearMaps.A_mul_B!(y::AbstractVector, L::KroneckerMap{T,<:NTuple{2,LinearMap}}, x::AbstractVector) where {T}
+function A_mul_B!(y::AbstractVector, L::KroneckerMap{T,<:NTuple{2,LinearMap}}, x::AbstractVector) where {T}
     # require_one_based_indexing(y)
     (length(y) == size(L, 1) && length(x) == size(L, 2)) || throw(DimensionMismatch("A_mul_B!"))
     A, B = L.maps
@@ -87,7 +87,7 @@ function LinearMaps.A_mul_B!(y::AbstractVector, L::KroneckerMap{T,<:NTuple{2,Lin
     _kronmul!(y, B, X, transpose(A), T)
     return y
 end
-function LinearMaps.A_mul_B!(y::AbstractVector, L::KroneckerMap{T}, x::AbstractVector) where {T}
+function A_mul_B!(y::AbstractVector, L::KroneckerMap{T}, x::AbstractVector) where {T}
     # require_one_based_indexing(y)
     (length(y) == size(L, 1) && length(x) == size(L, 2)) || throw(DimensionMismatch("A_mul_B!"))
     A = first(L.maps)
@@ -247,4 +247,15 @@ for `k≥2`. This function is currently not type-stable!
 function Base.kron(A::LinearMap, k::Int)
     k > 1 || throw(ArgumentError("the Kronecker power is only defined for exponents larger than 1, got $k"))
     return kron(Base.fill_to_length((), A, Val(k))...)
+end
+
+"""
+    kronsum(A::LinearMap, k::Int)
+
+Construct a lazy representation of the `k`-th Kronecker sum power `A ⊕ A ⊕ ... ⊕ A`
+for `k≥2`. This function is currently not type-stable!
+"""
+function kronsum(A::LinearMap, k::Int)
+    k > 1 || throw(ArgumentError("the Kronecker sum power is only defined for exponents larger than 1, got $k"))
+    return kronsum(Base.fill_to_length((), A, Val(k))...)
 end

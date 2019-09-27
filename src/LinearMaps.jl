@@ -1,6 +1,7 @@
 module LinearMaps
 
 export LinearMap
+export kronsum
 
 using LinearAlgebra
 using SparseArrays

@@ -38,7 +38,7 @@ if VERSION < v"1.3.0-alpha.115"
 function A_mul_B!(y::AbstractVector, A::UniformScalingMap, x::AbstractVector)
     (length(x) == length(y) == A.M || throw(DimensionMismatch("A_mul_B!")))
     if iszero(A.λ)
-        return fill!(y, 0)
+        return fill!(y, zero(eltype(y)))
     elseif isone(A.λ)
         return copyto!(y, x)
     else
@@ -52,7 +52,7 @@ function A_mul_B!(y::AbstractVector, A::UniformScalingMap, x::AbstractVector)
     (length(x) == length(y) == A.M || throw(DimensionMismatch("A_mul_B!")))
     λ = A.λ
     if iszero(λ)
-        return fill!(y, 0)
+        return fill!(y, zero(eltype(y)))
     elseif isone(λ)
         return copyto!(y, x)
     else
@@ -71,14 +71,16 @@ end
     @boundscheck size(X) == size(Y) || throw(DimensionMismatch("mul!"))
     @boundscheck size(X,1) == J.M || throw(DimensionMismatch("mul!"))
     _scaling!(Y, J, X, α, β)
-    return y
+    return Y
 end
 
 function _scaling!(y, J::UniformScalingMap, x, α::Number=true, β::Number=false)
     λ = J.λ
     @inbounds if isone(α)
         if iszero(β)
-            A_mul_B!(y, J, x)
+            iszero(λ) && return fill!(y, zero(eltype(y)))
+            isone(λ) && return copyto!(y, x)
+            y .= λ .* x
             return y
         elseif isone(β)
             iszero(λ) && return y
