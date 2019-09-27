@@ -22,10 +22,11 @@ using Test, LinearMaps, LinearAlgebra, BenchmarkTools
     @test (3 * I + 2 * M') * v == 2 * A'v + 3v
     @test (2 * M' - 3 * I) * v == 2 * A'v - 3v
     @test (3 * I - 2 * M') * v == -2 * A'v + 3v
+    @test (3 * I - 2 * M') * v == -2 * A'v + 3v
     @test transpose(LinearMap(2 * M' + 3 * I)) * v ≈ transpose(2 * A' + 3 * I) * v
-    @test LinearMap(2 * M' + 3 * I)' * v ≈ (2 * A' + 3 * I)' * v
+    @test LinearMap(2 * M' + 0I)' * v ≈ (2 * A')' * v
     for λ in (0, 1, rand()), α in (0, 1, rand()), β in (0, 1, rand())
-        Λ = @inferred LinearMaps.UniformScalingMap(λ, 10)
+        Λ = @inferred LinearMap(λ*I, 10)
         x = rand(10)
         y = rand(10)
         b = @benchmarkable mul!($y, $Λ, $x, $α, $β)

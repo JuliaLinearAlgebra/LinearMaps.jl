@@ -12,7 +12,6 @@ UniformScalingMap(λ::T, sz::Dims{2}) where {T} =
     (sz[1] == sz[2] ? UniformScalingMap(λ, sz[1]) : error("UniformScalingMap needs to be square"))
 
 # properties
-Base.size(A::UniformScalingMap, n) = (n==1 || n==2 ? A.M : error("LinearMap objects have only 2 dimensions"))
 Base.size(A::UniformScalingMap) = (A.M, A.M)
 Base.isreal(A::UniformScalingMap) = isreal(A.λ)
 LinearAlgebra.issymmetric(::UniformScalingMap) = true
@@ -48,17 +47,9 @@ function A_mul_B!(y::AbstractVector, A::UniformScalingMap, x::AbstractVector)
     end
 end
 else # 5-arg mul! exists and order of arguments is corrected
-function A_mul_B!(y::AbstractVector, A::UniformScalingMap, x::AbstractVector)
-    (length(x) == length(y) == A.M || throw(DimensionMismatch("A_mul_B!")))
-    λ = A.λ
-    if iszero(λ)
-        return fill!(y, zero(eltype(y)))
-    elseif isone(λ)
-        return copyto!(y, x)
-    else
-        return y .= λ .* x
-    end
-end
+
+A_mul_B!(y::AbstractVector, J::UniformScalingMap, x::AbstractVector) = mul!(y, J, x)
+
 end # VERSION
 
 @inline function LinearAlgebra.mul!(y::AbstractVector, J::UniformScalingMap, x::AbstractVector, α::Number=true, β::Number=false)
@@ -76,7 +67,7 @@ end
 
 function _scaling!(y, J::UniformScalingMap, x, α::Number=true, β::Number=false)
     λ = J.λ
-    @inbounds if isone(α)
+    if isone(α)
         if iszero(β)
             iszero(λ) && return fill!(y, zero(eltype(y)))
             isone(λ) && return copyto!(y, x)
