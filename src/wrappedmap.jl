@@ -33,10 +33,15 @@ if VERSION ≥ v"1.3.0-alpha.115"
 LinearAlgebra.mul!(y::AbstractVector, A::WrappedMap, x::AbstractVector, α::Number=true, β::Number=false) =
     mul!(y, A.lmap, x, α, β)
 
-end # VERSION
-
 LinearAlgebra.mul!(Y::AbstractMatrix, A::MatrixMap, X::AbstractMatrix, α::Number=true, β::Number=false) =
     mul!(Y, A.lmap, X, α, β)
+
+else
+
+LinearAlgebra.mul!(Y::AbstractMatrix, A::MatrixMap, X::AbstractMatrix) =
+    mul!(Y, A.lmap, X)
+
+end # VERSION
 
 # properties
 Base.size(A::WrappedMap) = size(A.lmap)

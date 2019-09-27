@@ -137,7 +137,7 @@ function _kronmul!(y, B, X, At, T)
     end
     return y
 end
-function _kronmul!(y, B::FreeMap, X, At::FreeMap, T)
+function _kronmul!(y, B::Union{MatrixMap,UniformScalingMap}, X, At::Union{MatrixMap,UniformScalingMap}, T)
     na, ma = size(At)
     mb, nb = size(B)
     if (nb + ma) * na < (ma + mb) * nb
