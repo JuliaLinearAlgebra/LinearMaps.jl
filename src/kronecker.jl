@@ -195,8 +195,6 @@ true
 """
 kronsum(A::LinearMap{TA}, B::LinearMap{TB}) where {TA,TB} = KroneckerSumMap{promote_type(TA,TB)}((A, B))
 kronsum(A::LinearMap, B::LinearMap, C::LinearMap, Ds::LinearMap...) = kronsum(A, kronsum(B, C, Ds...))
-# kronsum(A::LinearMap, B::AbstractArray) = kronsum(A, LinearMap(B))
-# kronsum(A::AbstractArray, B::LinearMap) = kronsum(LinearMap(A), B)
 # promote AbstractMatrix arguments to LinearMaps, then take LinearMap-Kronecker sum
 for k in 1:8 # is 8 sufficient?
     Is = ntuple(n->:($(Symbol(:A,n))::AbstractMatrix), Val(k-1))

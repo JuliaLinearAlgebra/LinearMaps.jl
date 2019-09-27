@@ -18,6 +18,8 @@ using Test, LinearMaps, LinearAlgebra
             @test Matrix(kron(transform(LA), transform(LB))) ≈ transform(kron(A, B))
             @test Matrix(transform(LinearMap(LK))) ≈ transform(Matrix(LK)) ≈ transform(kron(A, B))
         end
+        @test kron(LA, kron(LA, B)) == kron(LA, LA, LB)
+        @test kron(kron(LA, LB), kron(LA, LB)) == kron(LA, LB, LA, LB)
         @test kron(A, A, A) ≈ Matrix(@inferred kron(LA, LA, LA)) ≈ Matrix(kron(LA, 3))
         K = @inferred kron(A, A, A, LA)
         @test K isa LinearMaps.KroneckerMap
@@ -59,6 +61,7 @@ using Test, LinearMaps, LinearAlgebra
             end
             @inferred kronsum(A, A, LB)
             @test Matrix(kronsum(LA, 3)) ≈ Matrix(kronsum(LA, A, A))
+            @test kronsum(LA, LA, LB) == kronsum(LA, kronsum(LA, LB))
         end
     end
 end
