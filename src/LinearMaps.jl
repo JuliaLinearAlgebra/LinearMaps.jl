@@ -5,6 +5,13 @@ export LinearMap
 using LinearAlgebra
 using SparseArrays
 
+if VERSION < v"1.2-"
+    import Base: has_offset_axes
+    require_one_based_indexing(A...) = !has_offset_axes(A...) || throw(ArgumentError("offset arrays are not supported but got an array with index other than 1"))
+else
+    import Base: require_one_based_indexing
+end
+
 abstract type LinearMap{T} end
 
 Base.eltype(::LinearMap{T}) where {T} = T
@@ -20,24 +27,24 @@ Base.size(A::LinearMap, n) = (n==1 || n==2 ? size(A)[n] : error("LinearMap objec
 Base.length(A::LinearMap) = size(A)[1] * size(A)[2]
 
 Base.:(*)(A::LinearMap, x::AbstractVector) = mul!(similar(x, promote_type(eltype(A), eltype(x)), size(A, 1)), A, x)
-function LinearAlgebra.mul!(y::AbstractVector, A::LinearMap{T}, x::AbstractVector, α::Number=one(T), β::Number=zero(T)) where {T}
+function LinearAlgebra.mul!(y::AbstractVector, A::LinearMap, x::AbstractVector, α::Number=true, β::Number=false)
     length(y) == size(A, 1) || throw(DimensionMismatch("mul!"))
-    if α == 1
-        β == 0 && (A_mul_B!(y, A, x); return y)
-        β == 1 && (y .+= A * x; return y)
+    if isone(α)
+        iszero(β) && (A_mul_B!(y, A, x); return y)
+        isone(β) && (y .+= A * x; return y)
         # β != 0, 1
         rmul!(y, β)
         y .+= A * x
         return y
-    elseif α == 0
-        β == 0 && (fill!(y, zero(eltype(y))); return y)
-        β == 1 && return y
+    elseif iszero(α)
+        iszero(β) && (fill!(y, zero(eltype(y))); return y)
+        isone(β) && return y
         # β != 0, 1
         rmul!(y, β)
         return y
     else # α != 0, 1
-        β == 0 && (A_mul_B!(y, A, x); rmul!(y, α); return y)
-        β == 1 && (y .+= rmul!(A * x, α); return y)
+        iszero(β) && (A_mul_B!(y, A, x); rmul!(y, α); return y)
+        isone(β) && (y .+= rmul!(A * x, α); return y)
         # β != 0, 1
         rmul!(y, β)
         y .+= rmul!(A * x, α)
@@ -45,7 +52,7 @@ function LinearAlgebra.mul!(y::AbstractVector, A::LinearMap{T}, x::AbstractVecto
     end
 end
 # the following is of interest in, e.g., subspace-iteration methods
-function LinearAlgebra.mul!(Y::AbstractMatrix, A::LinearMap{T}, X::AbstractMatrix, α::Number=one(T), β::Number=zero(T)) where {T}
+function LinearAlgebra.mul!(Y::AbstractMatrix, A::LinearMap, X::AbstractMatrix, α::Number=true, β::Number=false)
     (size(Y, 1) == size(A, 1) && size(X, 1) == size(A, 2) && size(Y, 2) == size(X, 2)) || throw(DimensionMismatch("mul!"))
     @inbounds @views for i = 1:size(X, 2)
         mul!(Y[:, i], A, X[:, i], α, β)

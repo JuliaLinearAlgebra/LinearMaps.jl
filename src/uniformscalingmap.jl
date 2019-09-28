@@ -1,10 +1,14 @@
 struct UniformScalingMap{T} <: LinearMap{T}
     λ::T
     M::Int
+    function UniformScalingMap(λ::Number, M::Int)
+        M < 0 && throw(ArgumentError("size of UniformScalingMap must be non-negative, got $M"))
+        return new{typeof(λ)}(λ, M)
+    end
 end
-UniformScalingMap(λ::T, M::Int, N::Int) where {T} =
+UniformScalingMap(λ::Number, M::Int, N::Int) =
     (M == N ? UniformScalingMap(λ, M) : error("UniformScalingMap needs to be square"))
-UniformScalingMap(λ::T, sz::Tuple{Int, Int}) where {T} =
+UniformScalingMap(λ::Number, sz::Tuple{Int, Int}) =
     (sz[1] == sz[2] ? UniformScalingMap(λ, sz[1]) : error("UniformScalingMap needs to be square"))
 
 # properties
@@ -49,7 +53,7 @@ function A_mul_B!(y::AbstractVector, A::UniformScalingMap, x::AbstractVector)
 end
 end # VERSION
 
-function LinearAlgebra.mul!(y::AbstractVector, J::UniformScalingMap{T}, x::AbstractVector, α::Number=one(T), β::Number=zero(T)) where {T}
+function LinearAlgebra.mul!(y::AbstractVector, J::UniformScalingMap, x::AbstractVector, α::Number=true, β::Number=false)
     @boundscheck (length(x) == length(y) == J.M || throw(DimensionMismatch("mul!")))
     λ = J.λ
     @inbounds if isone(α)

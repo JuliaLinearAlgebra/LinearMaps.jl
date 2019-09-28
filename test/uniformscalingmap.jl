@@ -1,6 +1,7 @@
 using Test, LinearMaps, LinearAlgebra, BenchmarkTools
 
 @testset "identity/scaling map" begin
+    @test_throws ArgumentError LinearMaps.UniformScalingMap(true, -1)
     A = 2 * rand(ComplexF64, (10, 10)) .- 1
     B = rand(size(A)...)
     M = @inferred 1 * LinearMap(A)

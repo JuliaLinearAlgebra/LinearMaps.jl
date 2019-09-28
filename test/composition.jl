@@ -15,6 +15,7 @@ LinearAlgebra.mul!(y::Vector, A::Union{SimpleFunctionMap,SimpleComplexFunctionMa
 
 @testset "composition" begin
     F = @inferred LinearMap(cumsum, y -> reverse(cumsum(reverse(x))), 10; ismutating=false)
+    FC = @inferred LinearMap{ComplexF64}(cumsum, y -> reverse(cumsum(reverse(x))), 10; ismutating=false)
     A = 2 * rand(ComplexF64, (10, 10)) .- 1
     B = rand(size(A)...)
     M = @inferred 1 * LinearMap(A)
@@ -32,6 +33,10 @@ LinearAlgebra.mul!(y::Vector, A::Union{SimpleFunctionMap,SimpleComplexFunctionMa
     @test @inferred ishermitian(N * N')
     @test @inferred !issymmetric(M' * M)
     @test @inferred ishermitian(M' * M)
+    @test @inferred issymmetric(F'F)
+    @test @inferred ishermitian(F'F)
+    @test @inferred !issymmetric(FC'FC)
+    @test @inferred ishermitian(FC'FC)
     @test @inferred isposdef(transpose(F) * F * 3)
     @test @inferred isposdef(transpose(F) * 3 * F)
     @test @inferred !isposdef(-5*transpose(F) * F)
