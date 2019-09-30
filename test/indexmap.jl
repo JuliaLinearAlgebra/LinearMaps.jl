@@ -3,7 +3,7 @@ test/indexmap.jl
 2019-09-29 Jeff Fessler, University of Michigan
 =#
 
-using LinearAlgebra: mul!
+using LinearAlgebra: mul!, issymmetric, ishermitian
 using LinearMaps: LinearMap
 using Random: seed!
 using Test: @test, @testset
@@ -20,6 +20,11 @@ using Test: @test, @testset
 		zeros(size(M1,1),offset[2]) M1]
 	BL1 = @inferred LinearMap(L1, size(BM1) ; offset=offset)
 	(s1,s2) = size(BM1)
+
+	@test @inferred !issymmetric(BL1)
+	@test @inferred !ishermitian(BL1)
+	@test @inferred LinearMap(L1, size(BM1),
+		(offset[1] .+ (1:m), offset[2] .+ (1:(n+1)))) == BL1 # test tuple and ==
 
 	seed!(0)
 	x = randn(s2)
@@ -44,6 +49,7 @@ using Test: @test, @testset
 
 	@test @inferred Matrix(BL1) == BM1
 	@test @inferred Matrix(BL1') == Matrix(BL1)'
+	@test @inferred transpose(BL1) * y ≈ transpose(BM1) * y
 
 #end
 
@@ -59,19 +65,3 @@ using Test: @test, @testset
 	@test Mh * x ≈ Bh * x
 
 end
-
-#=
-todo
-@testset "blockdiag" begin
-
-	using SparseArrays: blockdiag, sparse
-	Md = Matrix(blockdiag(sparse.((M1, M2, M3, M2, M1))...))
-	# Md = diag(M1, M2, M3)
-	x = randn(size(Md,2))
-	Bd = blockdiag(L1, L2, L3, L2, L1)
-	@test @inferred Bd * x ≈ Md * x
-	@test @inferred Matrix(Bd) == Md
-	@test @inferred Matrix(Bd') == Matrix(Bd)'
-
-end
-=#
