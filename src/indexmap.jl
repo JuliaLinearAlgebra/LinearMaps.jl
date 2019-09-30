@@ -86,6 +86,9 @@ LinearMap(A::LinearMap, dims::Dims{2},
 LinearMap(A::LinearMap, dims::Dims{2} ; offset::Dims{2}) =
     IndexMap(A, dims ; offset=offset) # given offset
 
+#LinearMap{T}(A::LinearMap, dims::Dims{2} ; offset::Dims{2}) where {T} =
+#   IndexMap{T}(A, dims ; offset=offset) # given offset
+
 #=
 LinearMap(A::LinearMap ; offset::Dims{2}, dims::Dims{2}=size(A) .+ offset) =
     IndexMap(A, dims, offset) # possible alternative offset syntax
@@ -133,8 +136,11 @@ function hcat_new(As::LinearMap...)
     nmap = length(As)
     col_offsets = [0; cumsum(cols)[1:nmap-1]]
     dims = (rows[1], sum(cols))
-    return +([IndexMap(As[ii], dims ; offset=(0, col_offsets[ii]))
-        for ii in 1:nmap]...)
+    T = promote_type(map(eltype, As)...)
+#   return +([LinearMap{T}(As[ii], dims ; offset=(0, col_offsets[ii]))
+#       for ii in 1:nmap]...)
+     return +([IndexMap{T}(As[ii], dims ; offset=(0, col_offsets[ii]))
+         for ii in 1:nmap]...)
 end
 
 
@@ -151,7 +157,8 @@ function block_diag(As::LinearMap...)
     nmap = length(As)
     col_offsets = [0; cumsum(cols)[1:nmap-1]]
     row_offsets = [0; cumsum(rows)[1:nmap-1]]
-    return +([IndexMap(As[ii], dims ; offset=(row_offsets[ii], col_offsets[ii]))
+    T = promote_type(map(eltype, As)...)
+    return +([IndexMap{T}(As[ii], dims ; offset=(row_offsets[ii], col_offsets[ii]))
         for ii in 1:nmap]...)
 end
 
