@@ -21,10 +21,13 @@ using Test: @test, @testset
     BL1 = @inferred LinearMap(L1, size(BM1) ; offset=offset)
     (s1,s2) = size(BM1)
 
-    @test @inferred !ishermitian(1im * BL1)
+    @test @inferred !ishermitian(BL1)
     @test @inferred !issymmetric(BL1)
     @test @inferred LinearMap(L1, size(BM1),
         (offset[1] .+ (1:m), offset[2] .+ (1:(n+1)))) == BL1 # test tuple and ==
+    Wc = @inferred LinearMap([2 im; -im 0])
+    Bc = @inferred LinearMap(Wc, (4,4) ; offset=(2,2))
+    @test @inferred ishermitian(Bc)
 
     seed!(0)
     x = randn(s2)
