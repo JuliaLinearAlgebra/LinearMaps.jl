@@ -1,5 +1,7 @@
 using Test, LinearMaps
 
+include("indexmap.jl")
+
 include("linearmaps.jl")
 
 include("transpose.jl")
