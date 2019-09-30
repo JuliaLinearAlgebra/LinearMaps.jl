@@ -33,8 +33,6 @@ using Test: @test, @testset
     @test @inferred BL1 * x ≈ BM1 * x
     @test @inferred BL1' * y ≈ BM1' * y
 
-    # todo: add @test_throws
-
     # test all flavors of 5-arg mul! for IndexMap
     for α in (0, 0.3, 1)
         for β in (0, 0.4, 1)
@@ -57,8 +55,9 @@ using Test: @test, @testset
 #@testset "hcat_new" begin
 
     x = randn(size(Mh,2))
+#   Bh = @inferred hcat_new(L1, L2, L3) # todo: type instability
     Bh = hcat_new(L1, L2, L3)
-#    Bh = @inferred hcat_new(L1, L2, L3) # todo: type instability
+    @test Bh isa LinearMaps.LinearCombination
     @test Mh == Matrix(Lh)
     @test Mh == Matrix(Bh)
     @test Matrix(Bh') == Matrix(Bh)'
