@@ -3,7 +3,8 @@ indexmap.jl
 2019-08-29 Jeff Fessler, University of Michigan
 =#
 
-export hcat_new, blockdiag
+export hcat_new
+export block_diag # use _ to avoid odd conflict with SparseArrays.blockdiag
 
 
 """
@@ -14,6 +15,7 @@ Insist on monotone increasing too because it is the easiest way to
 ensure no repeats and is probably better for cache too.
 """
 function check_index(index::AbstractVector{Int}, dimA::Int, dimB::Int)
+#@show index, dimA, dimB
 	length(index) != dimA && throw("invalid index length")
 	minimum(index) < 0 && throw("negative index")
 	maximum(index) > dimB &&
@@ -137,12 +139,12 @@ end
 
 
 """
-`B = blockdiag(As::LinearMap...)`
+`B = block_diag(As::LinearMap...)`
 
 Block diagonal `LinearMap`, akin to `SparseArrays.blockdiag()`
 Requires 5-arg mul! to be efficient.
 """
-function blockdiag(As::LinearMap...)
+function block_diag(As::LinearMap...)
 	rows = collect(map(A -> size(A,1), As))
 	cols = collect(map(A -> size(A,2), As))
 	dims = (sum(rows), sum(cols))
