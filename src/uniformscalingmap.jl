@@ -18,8 +18,8 @@ LinearAlgebra.issymmetric(::UniformScalingMap) = true
 LinearAlgebra.ishermitian(A::UniformScalingMap) = isreal(A)
 LinearAlgebra.isposdef(A::UniformScalingMap) = isposdef(A.λ)
 
-# comparison of UniformScalingMap objects, sufficient but not necessary
-Base.:(==)(A::UniformScalingMap, B::UniformScalingMap) = (eltype(A) == eltype(B) && A.λ == B.λ && A.M == B.M)
+# comparison of UniformScalingMap objects
+Base.:(==)(A::UniformScalingMap, B::UniformScalingMap) = (A.λ == B.λ && A.M == B.M)
 
 # special transposition behavior
 LinearAlgebra.transpose(A::UniformScalingMap) = A

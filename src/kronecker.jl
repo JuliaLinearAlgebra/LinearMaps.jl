@@ -19,10 +19,9 @@ object, which then is promoted to `LinearMap` automatically. To avoid fallback t
 the generic [`Base.kron`](@ref), there must be a `LinearMap` object among the
 first 8 arguments in usage like `kron(A, B, Cs...)`.
 
-Note: If `A`, `B`, `C` and `D` are linear maps of such size that one can form the
-matrix products `A*C` and `B*D`, then the mixed-product property `(A⊗B)*(C⊗D)`
-holds. Upon multiplication of Kronecker products, this rule is checked for
-applicability, which leads to type-instability with a union of two types.
+If `A`, `B`, `C` and `D` are linear maps of such size that one can form the matrix
+products `A*C` and `B*D`, then the mixed-product property `(A⊗B)*(C⊗D) = (A*C)⊗(B*D)`
+holds. Upon vector multiplication, this rule is checked for applicability.
 
 # Examples
 ```jldoctest; setup=(using LinearAlgebra, SparseArrays, LinearMaps)
