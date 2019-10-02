@@ -67,7 +67,18 @@ promote_to_lmaps(A) = (promote_to_lmaps_(A),)
 @inline promote_to_lmaps(A, B, Cs...) =
     (promote_to_lmaps_(A), promote_to_lmaps_(B), promote_to_lmaps(Cs...)...)
 
-Base.size(A::KroneckerMap) = (prod(size.(A.maps, 1)), prod(size.(A.maps, 2)))
+"""
+    kron(A::LinearMap, k::Int)
+
+Construct a lazy representation of the `k`-th Kronecker power `A ⊗ A ⊗ ... ⊗ A`
+for `k≥2`. This function is currently not type-stable!
+"""
+@inline function Base.kron(A::LinearMap, k::Int)
+    k > 1 || throw(ArgumentError("the Kronecker power is only defined for exponents larger than 1, got $k"))
+    return kron(Base.fill_to_length((), A, Val(k))...)
+end
+
+Base.size(A::KroneckerMap) = map(*, size.(A.maps)...)
 
 LinearAlgebra.issymmetric(A::KroneckerMap) = all(issymmetric, A.maps)
 LinearAlgebra.ishermitian(A::KroneckerMap{<:Real}) = all(issymmetric, A.maps)
@@ -79,7 +90,7 @@ LinearAlgebra.transpose(A::KroneckerMap{T}) where {T} = KroneckerMap{T}(map(tran
 Base.:(==)(A::KroneckerMap, B::KroneckerMap) = (eltype(A) == eltype(B) && A.maps == B.maps)
 
 function A_mul_B!(y::AbstractVector, L::KroneckerMap{T,<:NTuple{2,LinearMap}}, x::AbstractVector) where {T}
-    # require_one_based_indexing(y)
+    require_one_based_indexing(y)
     (length(y) == size(L, 1) && length(x) == size(L, 2)) || throw(DimensionMismatch("A_mul_B!"))
     A, B = L.maps
     X = reshape(x, (size(B, 2), size(A, 2)))
@@ -87,7 +98,7 @@ function A_mul_B!(y::AbstractVector, L::KroneckerMap{T,<:NTuple{2,LinearMap}}, x
     return y
 end
 function A_mul_B!(y::AbstractVector, L::KroneckerMap{T}, x::AbstractVector) where {T}
-    # require_one_based_indexing(y)
+    require_one_based_indexing(y)
     (length(y) == size(L, 1) && length(x) == size(L, 2)) || throw(DimensionMismatch("A_mul_B!"))
     A = first(L.maps)
     B = kron(Base.tail(L.maps)...)
@@ -100,7 +111,7 @@ end
 function A_mul_B!(y::AbstractVector, L::CompositeMap{<:Any,<:Tuple{KroneckerMap,KroneckerMap}}, x::AbstractVector)
     B, A = L.maps
     if length(A.maps) == length(B.maps) && all(M -> check_dim_mul(M[1], M[2]), zip(A.maps, B.maps))
-        A_mul_B!(y, kron(map(prod, zip(A.maps, B.maps))...), x)
+        A_mul_B!(y, kron(map(*, A.maps, B.maps)...), x)
     else
         A_mul_B!(y, LinearMap(A)*B, x)
     end
@@ -234,17 +245,6 @@ end
 LinearMaps.At_mul_B!(y::AbstractVector, A::KroneckerSumMap, x::AbstractVector) = A_mul_B!(y, transpose(A), x)
 
 LinearMaps.Ac_mul_B!(y::AbstractVector, A::KroneckerSumMap, x::AbstractVector) = A_mul_B!(y, adjoint(A), x)
-
-"""
-    kron(A::LinearMap, k::Int)
-
-Construct a lazy representation of the `k`-th Kronecker power `A ⊗ A ⊗ ... ⊗ A`
-for `k≥2`. This function is currently not type-stable!
-"""
-function Base.kron(A::LinearMap, k::Int)
-    k > 1 || throw(ArgumentError("the Kronecker power is only defined for exponents larger than 1, got $k"))
-    return kron(Base.fill_to_length((), A, Val(k))...)
-end
 
 """
     kronsum(A::LinearMap, k::Int)
