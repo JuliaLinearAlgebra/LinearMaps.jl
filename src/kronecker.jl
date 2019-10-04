@@ -14,10 +14,12 @@ KroneckerMap{T}(maps::As) where {T, As<:Tuple{Vararg{LinearMap}}} = KroneckerMap
     kron(A::LinearMap, B::LinearMap)
 
 Construct a `KroneckerMap <: LinearMap` object, a (lazy) representation of the
-Kronecker product of two `LinearMap`s. One of the two factors can be an `AbstractMatrix`
-object, which then is promoted to `LinearMap` automatically. To avoid fallback to
+Kronecker product of two `LinearMap`s. One of the two factors can be an `AbstractMatrix`,
+which is then promoted to a `LinearMap` automatically. To avoid fallback to
 the generic [`Base.kron`](@ref), there must be a `LinearMap` object among the
-first 8 arguments in usage like `kron(A, B, Cs...)`.
+first 8 arguments in usage like `kron(A, B, Cs...)`. For convenience, one can
+also use `A ⊗ B` or `⊗(A, B, Cs...)` (typed as `\\otimes+TAB`) to construct the
+`KroneckerMap`.
 
 If `A`, `B`, `C` and `D` are linear maps of such size that one can form the matrix
 products `A*C` and `B*D`, then the mixed-product property `(A⊗B)*(C⊗D) = (A*C)⊗(B*D)`
@@ -67,16 +69,25 @@ promote_to_lmaps(A) = (promote_to_lmaps_(A),)
 @inline promote_to_lmaps(A, B, Cs...) =
     (promote_to_lmaps_(A), promote_to_lmaps_(B), promote_to_lmaps(Cs...)...)
 
-"""
-    kron(A::LinearMap, k::Int)
-
-Construct a lazy representation of the `k`-th Kronecker power `A ⊗ A ⊗ ... ⊗ A`
-for `k≥2`. This function is currently not type-stable!
-"""
-@inline function Base.kron(A::LinearMap, k::Int)
-    k > 1 || throw(ArgumentError("the Kronecker power is only defined for exponents larger than 1, got $k"))
-    return kron(Base.fill_to_length((), A, Val(k))...)
+struct KronPower{T<:Integer}
+    p::T
+    function KronPower(p::Integer)
+        p > 1 || throw(ArgumentError("the Kronecker power is only defined for exponents larger than 1, got $k"))
+        return new{typeof(p)}(p)
+    end
 end
+
+"""
+    ⊗(k::Integer)
+
+Construct a lazy representation of the `k`-th Kronecker power `A^⊗(k) = A ⊗ A ⊗ ... ⊗ A`,
+where `A` can be an `AbstractMatrix` or a `LinearMap`.
+"""
+⊗(k::Integer) = KronPower(k)
+
+⊗(a, b, c...) = kron(a, b, c...)
+
+Base.:(^)(a::Union{LinearMap,AbstractMatrix}, p::KronPower) = kron(ntuple(n->promote_to_lmaps_(a), p.p)...)
 
 Base.size(A::KroneckerMap) = map(*, size.(A.maps)...)
 
@@ -183,10 +194,12 @@ KroneckerSumMap{T}(maps::As) where {T, As<:Tuple{LinearMap,LinearMap}} = Kroneck
     kronsum(A, B, Cs...)
 
 Construct a `KroneckerSumMap <: LinearMap` object, a (lazy) representation of the
-Kronecker sum `A⊕B = kron(A, Ib) + kron(Ia, B)` of two square `LinearMap`s. Here,
+Kronecker sum `A⊕B = A ⊗ Ib + Ia ⊗ B` of two square `LinearMap`s. Here,
 `Ia` and `Ib` are identity operators of the size of `A` and `B`, respectively.
 Arguments of type `AbstractMatrix` are promoted to `LinearMap`s as long as there
-is a `LinearMap` object among the first 8 arguments.
+is a `LinearMap` object among the first 8 arguments. For convenience, one can
+also use `A ⊕ B` or `⊕(A, B, Cs...)` (typed as `\\oplus+TAB`) to construct the
+`KroneckerSumMap`.
 
 # Examples
 ```jldoctest; setup=(using LinearAlgebra, SparseArrays, LinearMaps)
@@ -195,11 +208,13 @@ LinearMaps.UniformScalingMap{Bool}(true, 2)
 
 julia> E = spdiagm(-1 => trues(1)); D = LinearMap(E + E' - 2I);
 
-julia> Δ₁ = kron(D, J) + kron(J, D); # discrete 2D-Laplace operator
+julia> Δ₁ = kron(D, J) + kron(J, D); # discrete 2D-Laplace operator, Kronecker sum
 
-julia> Δ₂ = LinearMaps.kronsum(D, D); # same operator as Kronecker sum
+julia> Δ₂ = kronsum(D, D);
 
-julia> Matrix(Δ₁) == Matrix(Δ₂)
+julia> Δ₃ = D^⊕(2);
+
+julia> Matrix(Δ₁) == Matrix(Δ₂) == Matrix(Δ₃)
 true
 ```
 """
@@ -217,6 +232,26 @@ for k in 1:8 # is 8 sufficient?
     @eval kronsum($(Is...), $L, As::Union{LinearMap,AbstractMatrix}...) =
         kronsum($(mapargs...), $(Symbol(:A,k)), promote_to_lmaps(As...)...)
 end
+
+struct KronSumPower{T<:Integer}
+    p::T
+    function KronSumPower(p::Integer)
+        p > 1 || throw(ArgumentError("the Kronecker power is only defined for exponents larger than 1, got $k"))
+        return new{typeof(p)}(p)
+    end
+end
+
+"""
+    ⊕(k::Integer)
+
+Construct a lazy representation of the `k`-th Kronecker sum power `A^⊕(k) = A ⊕ A ⊕ ... ⊕ A`,
+where `A` can be a square `AbstractMatrix` or a `LinearMap`.
+"""
+⊕(k::Integer) = KronSumPower(k)
+
+⊕(a, b, c...) = kronsum(a, b, c...)
+
+Base.:(^)(a::Union{LinearMap,AbstractMatrix}, p::KronSumPower) = kronsum(ntuple(n->promote_to_lmaps_(a), p.p)...)
 
 Base.size(A::KroneckerSumMap, i) = prod(size.(A.maps, i))
 Base.size(A::KroneckerSumMap) = (size(A, 1), size(A, 2))
@@ -245,14 +280,3 @@ end
 LinearMaps.At_mul_B!(y::AbstractVector, A::KroneckerSumMap, x::AbstractVector) = A_mul_B!(y, transpose(A), x)
 
 LinearMaps.Ac_mul_B!(y::AbstractVector, A::KroneckerSumMap, x::AbstractVector) = A_mul_B!(y, adjoint(A), x)
-
-"""
-    kronsum(A::LinearMap, k::Int)
-
-Construct a lazy representation of the `k`-th Kronecker sum power `A ⊕ A ⊕ ... ⊕ A`
-for `k≥2`. This function is currently not type-stable!
-"""
-function kronsum(A::LinearMap, k::Int)
-    k > 1 || throw(ArgumentError("the Kronecker sum power is only defined for exponents larger than 1, got $k"))
-    return kronsum(Base.fill_to_length((), A, Val(k))...)
-end

@@ -1,7 +1,7 @@
 module LinearMaps
 
 export LinearMap
-export kronsum
+export ⊗, kronsum, ⊕
 
 using LinearAlgebra
 using SparseArrays
