@@ -69,11 +69,10 @@ promote_to_lmaps(A) = (promote_to_lmaps_(A),)
 @inline promote_to_lmaps(A, B, Cs...) =
     (promote_to_lmaps_(A), promote_to_lmaps_(B), promote_to_lmaps(Cs...)...)
 
-struct KronPower{T<:Integer}
-    p::T
+struct KronPower{p}
     function KronPower(p::Integer)
         p > 1 || throw(ArgumentError("the Kronecker power is only defined for exponents larger than 1, got $k"))
-        return new{typeof(p)}(p)
+        return new{p}()
     end
 end
 
@@ -87,7 +86,7 @@ where `A` can be an `AbstractMatrix` or a `LinearMap`.
 
 ⊗(a, b, c...) = kron(a, b, c...)
 
-Base.:(^)(a::Union{LinearMap,AbstractMatrix}, p::KronPower) = kron(ntuple(n->promote_to_lmaps_(a), p.p)...)
+Base.:(^)(A::Union{LinearMap,AbstractMatrix}, ::KronPower{p}) where {p} = kron(Base.fill_to_length((), promote_to_lmaps_(A), Val(p))...)
 
 Base.size(A::KroneckerMap) = map(*, size.(A.maps)...)
 
@@ -233,11 +232,10 @@ for k in 1:8 # is 8 sufficient?
         kronsum($(mapargs...), $(Symbol(:A,k)), promote_to_lmaps(As...)...)
 end
 
-struct KronSumPower{T<:Integer}
-    p::T
+struct KronSumPower{p}
     function KronSumPower(p::Integer)
-        p > 1 || throw(ArgumentError("the Kronecker power is only defined for exponents larger than 1, got $k"))
-        return new{typeof(p)}(p)
+        p > 1 || throw(ArgumentError("the Kronecker sum power is only defined for exponents larger than 1, got $k"))
+        return new{p}()
     end
 end
 
@@ -251,7 +249,7 @@ where `A` can be a square `AbstractMatrix` or a `LinearMap`.
 
 ⊕(a, b, c...) = kronsum(a, b, c...)
 
-Base.:(^)(a::Union{LinearMap,AbstractMatrix}, p::KronSumPower) = kronsum(ntuple(n->promote_to_lmaps_(a), p.p)...)
+Base.:(^)(A::Union{LinearMap,AbstractMatrix}, ::KronSumPower{p}) where {p} = kronsum(Base.fill_to_length((), promote_to_lmaps_(A), Val(p))...)
 
 Base.size(A::KroneckerSumMap, i) = prod(size.(A.maps, i))
 Base.size(A::KroneckerSumMap) = (size(A, 1), size(A, 2))
