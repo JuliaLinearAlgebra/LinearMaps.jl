@@ -59,15 +59,15 @@ for k in 3:8 # is 8 sufficient?
     # yields (:LinearMap(A1), :LinearMap(A2), ..., :LinearMap(A(k-1)))
 
     @eval Base.kron($(Is...), $L, As::Union{LinearMap,AbstractMatrix}...) =
-        kron($(mapargs...), $(Symbol(:A,k)), promote_to_lmaps(As...)...)
+        kron($(mapargs...), $(Symbol(:A,k)), convert_to_lmaps(As...)...)
 end
 
-promote_to_lmaps_(A::AbstractMatrix) = LinearMap(A)
-promote_to_lmaps_(A::LinearMap) = A
-promote_to_lmaps() = ()
-promote_to_lmaps(A) = (promote_to_lmaps_(A),)
-@inline promote_to_lmaps(A, B, Cs...) =
-    (promote_to_lmaps_(A), promote_to_lmaps_(B), promote_to_lmaps(Cs...)...)
+convert_to_lmaps_(A::AbstractMatrix) = LinearMap(A)
+convert_to_lmaps_(A::LinearMap) = A
+convert_to_lmaps() = ()
+convert_to_lmaps(A) = (convert_to_lmaps_(A),)
+@inline convert_to_lmaps(A, B, Cs...) =
+    (convert_to_lmaps_(A), convert_to_lmaps_(B), convert_to_lmaps(Cs...)...)
 
 struct KronPower{p}
     function KronPower(p::Integer)
@@ -86,7 +86,7 @@ where `A` can be an `AbstractMatrix` or a `LinearMap`.
 
 ⊗(a, b, c...) = kron(a, b, c...)
 
-Base.:(^)(A::Union{LinearMap,AbstractMatrix}, ::KronPower{p}) where {p} = kron(Base.fill_to_length((), promote_to_lmaps_(A), Val(p))...)
+Base.:(^)(A::Union{LinearMap,AbstractMatrix}, ::KronPower{p}) where {p} = kron(Base.fill_to_length((), convert_to_lmaps_(A), Val(p))...)
 
 Base.size(A::KroneckerMap) = map(*, size.(A.maps)...)
 
@@ -229,7 +229,7 @@ for k in 1:8 # is 8 sufficient?
     # yields (:LinearMap(A1), :LinearMap(A2), ..., :LinearMap(A(k-1)))
 
     @eval kronsum($(Is...), $L, As::Union{LinearMap,AbstractMatrix}...) =
-        kronsum($(mapargs...), $(Symbol(:A,k)), promote_to_lmaps(As...)...)
+        kronsum($(mapargs...), $(Symbol(:A,k)), convert_to_lmaps(As...)...)
 end
 
 struct KronSumPower{p}
@@ -249,7 +249,7 @@ where `A` can be a square `AbstractMatrix` or a `LinearMap`.
 
 ⊕(a, b, c...) = kronsum(a, b, c...)
 
-Base.:(^)(A::Union{LinearMap,AbstractMatrix}, ::KronSumPower{p}) where {p} = kronsum(Base.fill_to_length((), promote_to_lmaps_(A), Val(p))...)
+Base.:(^)(A::Union{LinearMap,AbstractMatrix}, ::KronSumPower{p}) where {p} = kronsum(Base.fill_to_length((), convert_to_lmaps_(A), Val(p))...)
 
 Base.size(A::KroneckerSumMap, i) = prod(size.(A.maps, i))
 Base.size(A::KroneckerSumMap) = (size(A, 1), size(A, 2))
