@@ -149,27 +149,34 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
     end
 
     @testset "block diagonal maps" begin
-        m = 5; n = 6
-        M1 = 10*(1:m) .+ (1:(n+1))'; L1 = LinearMap(M1)
-        M2 = randn(m,n+2); L2 = LinearMap(M2)
-        M3 = randn(m,n+3); L3 = LinearMap(M3)
+        for elty in (Float64, ComplexF64)
+            m = 5; n = 6
+            M1 = 10*(1:m) .+ (1:(n+1))'; L1 = LinearMap(M1)
+            M2 = randn(elty, m, n+2); L2 = LinearMap(M2)
+            M3 = randn(elty, m, n+3); L3 = LinearMap(M3)
 
-        # Md = diag(M1, M2, M3, M2, M1) # unsupported so use sparse:
-        Md = Matrix(blockdiag(sparse.((M1, M2, M3, M2, M1))...))
-        x = randn(size(Md, 2))
-        Bd = @inferred blockdiag(L1, L2, L3, L2, L1)
-        @test Bd == blockdiag(L1, M2, M3, M2, M1)
-        @test size(Bd) == (25, 39)
-        @test !issymmetric(Bd)
-        @test !ishermitian(Bd)
-        @test @inferred Bd * x ≈ Md * x
-        for transform in (identity, adjoint, transpose)
-            @test Matrix(@inferred transform(Bd)) == transform(Md)
-            @test Matrix(@inferred transform(LinearMap(Bd))) == transform(Md)
-        end
-        y = randn(size(Md, 1))
-        for α in (0, 1, rand()), β in (0, 1, rand())
-            @test mul!(copy(y), Bd, x, α, β) ≈ y*β .+ Md*x*α
+            # Md = diag(M1, M2, M3, M2, M1) # unsupported so use sparse:
+            Md = Matrix(blockdiag(sparse.((M1, M2, M3, M2, M1))...))
+            x = randn(elty, size(Md, 2))
+            Bd = @inferred blockdiag(L1, L2, L3, L2, L1)
+            @test Matrix(@inferred blockdiag(L1)) == M1
+            @test Matrix(@inferred blockdiag(L1, L2)) == blockdiag(sparse.((M1, M2))...)
+            Bd2 = @inferred cat(L1, L2, L3, L2, L1; dims=(1,2))
+            @test_throws ArgumentError cat(L1, L2, L3, L2, L1; dims=(2,2))
+            @test Bd == Bd2
+            @test Bd == blockdiag(L1, M2, M3, M2, M1)
+            @test size(Bd) == (25, 39)
+            @test !issymmetric(Bd)
+            @test !ishermitian(Bd)
+            @test @inferred Bd * x ≈ Md * x
+            for transform in (identity, adjoint, transpose)
+                @test Matrix(@inferred transform(Bd)) == transform(Md)
+                @test Matrix(@inferred transform(LinearMap(Bd))) == transform(Md)
+            end
+            y = randn(elty, size(Md, 1))
+            for α in (0, 1, rand(elty)), β in (0, 1, rand(elty))
+                @test mul!(copy(y), Bd, x, α, β) ≈ y*β .+ Md*x*α
+            end
         end
     end
 end
