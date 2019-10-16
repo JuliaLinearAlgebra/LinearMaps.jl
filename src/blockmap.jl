@@ -414,12 +414,16 @@ BlockDiagonalMap{T}(maps::As) where {T,As<:Tuple{Vararg{LinearMap}}} =
 BlockDiagonalMap(maps::LinearMap...) =
     BlockDiagonalMap{promote_type(map(eltype, maps)...)}(maps)
 
-SparseArrays.blockdiag(maps::LinearMap...) = BlockDiagonalMap(maps...)
+# needs to be removed after kron is merged
+convert_to_lmaps_(A::AbstractMatrix) = LinearMap(A)
+convert_to_lmaps_(A::LinearMap) = A
+convert_to_lmaps() = ()
+convert_to_lmaps(A) = (convert_to_lmaps_(A),)
+@inline convert_to_lmaps(A, B, Cs...) =
+    (convert_to_lmaps_(A), convert_to_lmaps_(B), convert_to_lmaps(Cs...)...)
+# end of needs to be removed
 
-Base.cat(maps::LinearMap...; dims::Dims{2}) = dims == (1,2) ? BlockDiagonalMap(maps...) :
-    throw(ArgumentError("dims keyword in cat must be (1,2)"))
-
-for k in 2:8 # is 8 sufficient?
+for k in 1:8 # is 8 sufficient?
     Is = ntuple(n->:($(Symbol(:A,n))::AbstractMatrix), Val(k-1))
     # yields (:A1, :A2, :A3, ..., :A(k-1))
     L = :($(Symbol(:A,k))::LinearMap)
@@ -427,10 +431,17 @@ for k in 2:8 # is 8 sufficient?
     mapargs = ntuple(n -> :(LinearMap($(Symbol(:A,n)))), Val(k-1))
     # yields (:LinearMap(A1), :LinearMap(A2), ..., :LinearMap(A(k-1)))
 
-    @eval SparseArrays.blockdiag($(Is...), $L, As::Union{LinearMap,AbstractMatrix}...) =
-        blockdiag($(mapargs...), $(Symbol(:A,k)), promote_to_lmaps(As...)...)
-    @eval Base.cat($(Is...), $L, As::Union{LinearMap,AbstractMatrix}...; dims::Dims{2}) =
-        blockdiag($(mapargs...), $(Symbol(:A,k)), promote_to_lmaps(As...)...; dims=dims)
+    @eval begin
+        SparseArrays.blockdiag($(Is...), $L, As::Union{LinearMap,AbstractMatrix}...) =
+            BlockDiagonalMap($(mapargs...), $(Symbol(:A,k)), convert_to_lmaps(As...)...)
+        function Base.cat($(Is...), $L, As::Union{LinearMap,AbstractMatrix}...; dims::Dims{2})
+            if dims == (1,2)
+                return BlockDiagonalMap($(mapargs...), $(Symbol(:A,k)), convert_to_lmaps(As...)...)
+            else
+                throw(ArgumentError("dims keyword in cat must be (1,2)"))
+            end
+        end
+    end
 end
 
 Base.size(A::BlockDiagonalMap) = (last(A.rowranges[end]), last(A.colranges[end]))
@@ -464,7 +475,7 @@ Ac_mul_B!(y::AbstractVector, A::BlockDiagonalMap, x::AbstractVector) = A_mul_B!(
     m, n = size(A)
     @boundscheck (m == length(y) && n == length(x)) || throw(DimensionMismatch("A_mul_B!"))
     maps, yinds, xinds = A.maps, A.rowranges, A.colranges
-    @views @inbounds for i in length(maps)
+    @views @inbounds for i in 1:length(maps)
         mul!(y[yinds[i]], maps[i], x[xinds[i]], α, β)
     end
     return y
