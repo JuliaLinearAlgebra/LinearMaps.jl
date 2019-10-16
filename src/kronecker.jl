@@ -168,9 +168,9 @@ function _kronmul!(y, B::Union{MatrixMap,UniformScalingMap}, X, At::Union{Matrix
     return y
 end
 
-LinearMaps.At_mul_B!(y::AbstractVector, A::KroneckerMap, x::AbstractVector) = A_mul_B!(y, transpose(A), x)
+At_mul_B!(y::AbstractVector, A::KroneckerMap, x::AbstractVector) = A_mul_B!(y, transpose(A), x)
 
-LinearMaps.Ac_mul_B!(y::AbstractVector, A::KroneckerMap, x::AbstractVector) = A_mul_B!(y, adjoint(A), x)
+Ac_mul_B!(y::AbstractVector, A::KroneckerMap, x::AbstractVector) = A_mul_B!(y, adjoint(A), x)
 
 ###############
 # KroneckerSumMap
@@ -263,7 +263,7 @@ LinearAlgebra.transpose(A::KroneckerSumMap{T}) where {T} = KroneckerSumMap{T}(ma
 
 Base.:(==)(A::KroneckerSumMap, B::KroneckerSumMap) = (eltype(A) == eltype(B) && A.maps == B.maps)
 
-function LinearMaps.A_mul_B!(y::AbstractVector, L::KroneckerSumMap, x::AbstractVector)
+function A_mul_B!(y::AbstractVector, L::KroneckerSumMap, x::AbstractVector)
     A, B = L.maps
     ma, na = size(A)
     mb, nb = size(B)
@@ -275,6 +275,6 @@ function LinearMaps.A_mul_B!(y::AbstractVector, L::KroneckerSumMap, x::AbstractV
     return y
 end
 
-LinearMaps.At_mul_B!(y::AbstractVector, A::KroneckerSumMap, x::AbstractVector) = A_mul_B!(y, transpose(A), x)
+At_mul_B!(y::AbstractVector, A::KroneckerSumMap, x::AbstractVector) = A_mul_B!(y, transpose(A), x)
 
-LinearMaps.Ac_mul_B!(y::AbstractVector, A::KroneckerSumMap, x::AbstractVector) = A_mul_B!(y, adjoint(A), x)
+Ac_mul_B!(y::AbstractVector, A::KroneckerSumMap, x::AbstractVector) = A_mul_B!(y, adjoint(A), x)
