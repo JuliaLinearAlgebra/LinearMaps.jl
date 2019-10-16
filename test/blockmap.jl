@@ -165,7 +165,7 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
         @test @inferred Bd * x ≈ Md * x
         for transform in (identity, adjoint, transpose)
             @test Matrix(@inferred transform(Bd)) == transform(Md)
-            @test Matrix(@inferred LinearMap(transform(Bd))) == transform(Md)
+            @test Matrix(@inferred transform(LinearMap(Bd))) == transform(Md)
         end
         y = randn(size(Md, 1))
         for α in (0, 1, rand()), β in (0, 1, rand())

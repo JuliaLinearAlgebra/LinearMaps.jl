@@ -478,7 +478,7 @@ Base.@propagate_inbounds function A_mul_B!(y::AbstractVector, A::BlockDiagonalMa
     m, n = size(A)
     @boundscheck (m == length(y) && n == length(x)) || throw(DimensionMismatch("A_mul_B!"))
     maps, yinds, xinds = A.maps, A.rowranges, A.colranges
-    @views @inbounds for i in length(maps)
+    @views @inbounds for i in 1:length(maps)
         A_mul_B!(y[yinds[i]], maps[i], x[xinds[i]])
     end
     return y
