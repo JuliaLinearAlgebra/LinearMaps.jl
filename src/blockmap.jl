@@ -302,7 +302,7 @@ LinearAlgebra.adjoint(A::BlockMap)  = AdjointMap(A)
 # multiplication with vectors
 ############
 
-@inline function A_mul_B!(y::AbstractVector, A::BlockMap, x::AbstractVector)
+Base.@propagate_inbounds function A_mul_B!(y::AbstractVector, A::BlockMap, x::AbstractVector)
     require_one_based_indexing(y, x)
     m, n = size(A)
     @boundscheck (m == length(y) && n == length(x)) || throw(DimensionMismatch("A_mul_B!"))
@@ -320,7 +320,7 @@ LinearAlgebra.adjoint(A::BlockMap)  = AdjointMap(A)
     return y
 end
 
-@inline function At_mul_B!(y::AbstractVector, A::BlockMap, x::AbstractVector)
+Base.@propagate_inbounds function At_mul_B!(y::AbstractVector, A::BlockMap, x::AbstractVector)
     require_one_based_indexing(y, x)
     m, n = size(A)
     @boundscheck (n == length(y) && m == length(x)) || throw(DimensionMismatch("At_mul_B!"))
@@ -345,7 +345,7 @@ end
     return y
 end
 
-@inline function Ac_mul_B!(y::AbstractVector, A::BlockMap, x::AbstractVector)
+Base.@propagate_inbounds function Ac_mul_B!(y::AbstractVector, A::BlockMap, x::AbstractVector)
     require_one_based_indexing(y, x)
     m, n = size(A)
     @boundscheck (n == length(y) && m == length(x)) || throw(DimensionMismatch("At_mul_B!"))
@@ -365,6 +365,24 @@ end
                 mapind +=1
                 mul!(y[yinds[mapind]], adjoint(maps[mapind]), xcol, true, true)
             end
+        end
+    end
+    return y
+end
+
+Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, A::BlockMap, x::AbstractVector, α::Number=true, β::Number=false)
+    require_one_based_indexing(y, x)
+    m, n = size(A)
+    @boundscheck (m == length(y) && n == length(x)) || throw(DimensionMismatch("A_mul_B!"))
+    iszero(β) && (A_mul_B!(y, A, x); rmul!(y, α); return y)
+    !isone(β) && rmul!(y, β)
+    maps, rows, yinds, xinds = A.maps, A.rows, A.rowranges, A.colranges
+    mapind = 0
+    @views @inbounds for rowind in 1:length(rows)
+        yrow = y[yinds[rowind]]
+        for colind in 1:rows[rowind]
+            mapind +=1
+            mul!(yrow, maps[mapind], x[xinds[mapind]], α, true)
         end
     end
     return y
@@ -414,14 +432,14 @@ BlockDiagonalMap{T}(maps::As) where {T,As<:Tuple{Vararg{LinearMap}}} =
 BlockDiagonalMap(maps::LinearMap...) =
     BlockDiagonalMap{promote_type(map(eltype, maps)...)}(maps)
 
-# needs to be removed after kron is merged
+################ needs to be removed after kron is merged ################
 convert_to_lmaps_(A::AbstractMatrix) = LinearMap(A)
 convert_to_lmaps_(A::LinearMap) = A
 convert_to_lmaps() = ()
 convert_to_lmaps(A) = (convert_to_lmaps_(A),)
 @inline convert_to_lmaps(A, B, Cs...) =
     (convert_to_lmaps_(A), convert_to_lmaps_(B), convert_to_lmaps(Cs...)...)
-# end of needs to be removed
+################# end of what needs to be removed ################
 
 for k in 1:8 # is 8 sufficient?
     Is = ntuple(n->:($(Symbol(:A,n))::AbstractMatrix), Val(k-1))
@@ -438,7 +456,7 @@ for k in 1:8 # is 8 sufficient?
             if dims == (1,2)
                 return BlockDiagonalMap($(mapargs...), $(Symbol(:A,k)), convert_to_lmaps(As...)...)
             else
-                throw(ArgumentError("dims keyword in cat must be (1,2)"))
+                throw(ArgumentError("dims keyword in cat of LinearMaps must be (1,2)"))
             end
         end
     end
@@ -455,7 +473,7 @@ LinearAlgebra.transpose(A::BlockDiagonalMap{T}) where {T} = BlockDiagonalMap{T}(
 
 Base.:(==)(A::BlockDiagonalMap, B::BlockDiagonalMap) = (eltype(A) == eltype(B) && A.maps == B.maps)
 
-@inline function A_mul_B!(y::AbstractVector, A::BlockDiagonalMap, x::AbstractVector)
+Base.@propagate_inbounds function A_mul_B!(y::AbstractVector, A::BlockDiagonalMap, x::AbstractVector)
     require_one_based_indexing(y, x)
     m, n = size(A)
     @boundscheck (m == length(y) && n == length(x)) || throw(DimensionMismatch("A_mul_B!"))
@@ -466,11 +484,11 @@ Base.:(==)(A::BlockDiagonalMap, B::BlockDiagonalMap) = (eltype(A) == eltype(B) &
     return y
 end
 
-At_mul_B!(y::AbstractVector, A::BlockDiagonalMap, x::AbstractVector) = A_mul_B!(y, transpose(A), x)
+Base.@propagate_inbounds At_mul_B!(y::AbstractVector, A::BlockDiagonalMap, x::AbstractVector) = A_mul_B!(y, transpose(A), x)
 
-Ac_mul_B!(y::AbstractVector, A::BlockDiagonalMap, x::AbstractVector) = A_mul_B!(y, adjoint(A), x)
+Base.@propagate_inbounds Ac_mul_B!(y::AbstractVector, A::BlockDiagonalMap, x::AbstractVector) = A_mul_B!(y, adjoint(A), x)
 
-@inline function LinearAlgebra.mul!(y::AbstractVector, A::BlockDiagonalMap, x::AbstractVector, α::Number=true, β::Number=false)
+Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, A::BlockDiagonalMap, x::AbstractVector, α::Number=true, β::Number=false)
     require_one_based_indexing(y, x)
     m, n = size(A)
     @boundscheck (m == length(y) && n == length(x)) || throw(DimensionMismatch("A_mul_B!"))

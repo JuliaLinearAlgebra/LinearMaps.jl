@@ -1,4 +1,4 @@
-using Test, LinearMaps, LinearAlgebra
+using Test, LinearMaps, LinearAlgebra, SparseArrays
 
 @testset "block maps" begin
     @testset "hcat" begin
@@ -79,6 +79,10 @@ using Test, LinearMaps, LinearAlgebra
             @test size(L) == (30, 30)
             @test Matrix(L) ≈ A
             @test L * x ≈ A * x
+            y = randn(elty, size(L, 1))
+            for α in (0, 1, rand(elty)), β in (0, 1, rand(elty))
+                @test mul!(copy(y), L, x, α, β) ≈ y*β .+ A*x*α
+            end
             A = rand(elty, 10,10); LA = LinearMap(A)
             B = rand(elty, 20,30); LB = LinearMap(B)
             @test [LA LA LA; LB] isa LinearMaps.BlockMap{elty}
@@ -141,6 +145,31 @@ using Test, LinearMaps, LinearAlgebra
             @test Lt isa LinearMaps.LinearMap{elty}
             @test Lt * x ≈ transform(A) * x
             @test Matrix(Lt) ≈ Matrix(transform(A))
+        end
+    end
+
+    @testset "block diagonal maps" begin
+        m = 5; n = 6
+        M1 = 10*(1:m) .+ (1:(n+1))'; L1 = LinearMap(M1)
+        M2 = randn(m,n+2); L2 = LinearMap(M2)
+        M3 = randn(m,n+3); L3 = LinearMap(M3)
+
+        # Md = diag(M1, M2, M3, M2, M1) # unsupported so use sparse:
+        Md = Matrix(blockdiag(sparse.((M1, M2, M3, M2, M1))...))
+        x = randn(size(Md, 2))
+        Bd = @inferred blockdiag(L1, L2, L3, L2, L1)
+        @test Bd == blockdiag(L1, M2, M3, M2, M1)
+        @test size(Bd) == (25, 39)
+        @test !issymmetric(Bd)
+        @test !ishermitian(Bd)
+        @test @inferred Bd * x ≈ Md * x
+        for transform in (identity, adjoint, transpose)
+            @test Matrix(@inferred transform(Bd)) == transform(Md)
+            @test Matrix(@inferred LinearMap(transform(Bd))) == transform(Md)
+        end
+        y = randn(size(Md, 1))
+        for α in (0, 1, rand()), β in (0, 1, rand())
+            @test mul!(copy(y), Bd, x, α, β) ≈ y*β .+ Md*x*α
         end
     end
 end
