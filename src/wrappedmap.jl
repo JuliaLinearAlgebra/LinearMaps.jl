@@ -32,8 +32,10 @@ Base.:(==)(A::MatrixMap, B::MatrixMap) =
 
 if VERSION ≥ v"1.3.0-alpha.115"
 
-LinearAlgebra.mul!(y::AbstractVector, A::WrappedMap, x::AbstractVector, α::Number=true, β::Number=false) =
+Base.@propagate_inbounds LinearAlgebra.mul!(y::AbstractVector, A::WrappedMap, x::AbstractVector, α::Number=true, β::Number=false) =
     mul!(y, A.lmap, x, α, β)
+Base.@propagate_inbounds LinearAlgebra.mul!(Y::AbstractMatrix, A::WrappedMap, X::AbstractMatrix, α::Number=true, β::Number=false) =
+    mul!(Y, A.lmap, X, α, β)
 
 LinearAlgebra.mul!(Y::AbstractMatrix, A::MatrixMap, X::AbstractMatrix, α::Number=true, β::Number=false) =
     mul!(Y, A.lmap, X, α, β)

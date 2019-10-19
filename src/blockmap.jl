@@ -374,7 +374,11 @@ Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, A::Block
     require_one_based_indexing(y, x)
     m, n = size(A)
     @boundscheck (m == length(y) && n == length(x)) || throw(DimensionMismatch("A_mul_B!"))
-    iszero(β) && (A_mul_B!(y, A, x); rmul!(y, α); return y)
+    if iszero(β)
+        A_mul_B!(y, A, x)
+        !isone(α) && rmul!(y, α)
+        return y
+    end
     !isone(β) && rmul!(y, β)
     maps, rows, yinds, xinds = A.maps, A.rows, A.rowranges, A.colranges
     mapind = 0
@@ -386,6 +390,29 @@ Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, A::Block
         end
     end
     return y
+end
+
+############
+# multiplication with matrices
+############
+
+Base.@propagate_inbounds function LinearAlgebra.mul!(Y::AbstractMatrix, A::BlockMap, X::AbstractMatrix, α::Number=true, β::Number=false)
+    require_one_based_indexing(Y, X)
+    m, n = size(A)
+    @boundscheck (m == size(Y, 1) && n == size(X, 1) && size(Y, 2) == size(X, 2)) || throw(DimensionMismatch("mul!"))
+    maps, rows, yinds, xinds = A.maps, A.rows, A.rowranges, A.colranges
+    mapind = 0
+    @views @inbounds for rowind in 1:length(rows)
+        Yslice = Y[yinds[rowind],:]
+        mapind += 1
+        @show @which mul!(Yslice, maps[mapind], X[xinds[mapind],:], α, β)
+        mul!(Yslice, maps[mapind], X[xinds[mapind],:], α, β)
+        for colind in 2:rows[rowind]
+            mapind +=1
+            mul!(Yslice, maps[mapind], X[xinds[mapind],:], α, true)
+        end
+    end
+    return Y
 end
 
 ############
@@ -497,4 +524,15 @@ Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, A::Block
         mul!(y[yinds[i]], maps[i], x[xinds[i]], α, β)
     end
     return y
+end
+
+Base.@propagate_inbounds function LinearAlgebra.mul!(Y::AbstractMatrix, A::BlockDiagonalMap, X::AbstractMatrix, α::Number=true, β::Number=false)
+    require_one_based_indexing(Y, X)
+    m, n = size(A)
+    @boundscheck (m == size(Y, 1) && n == size(X, 1) && size(Y, 2) == size(X, 2)) || throw(DimensionMismatch("mul!"))
+    maps, yinds, xinds = A.maps, A.rowranges, A.colranges
+    @views @inbounds for i in 1:length(maps)
+        mul!(Y[yinds[i],:], maps[i], X[xinds[i],:], α, β)
+    end
+    return Y
 end

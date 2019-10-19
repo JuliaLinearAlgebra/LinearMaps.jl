@@ -83,6 +83,11 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
             for α in (0, 1, rand(elty)), β in (0, 1, rand(elty))
                 @test mul!(copy(y), L, x, α, β) ≈ y*β .+ A*x*α
             end
+            X = rand(elty, 30, 10)
+            Y = randn(elty, size(L, 1), 10)
+            for α in (0, 1, rand(elty)), β in (0, 1, rand(elty))
+                @test mul!(copy(Y), L, X, α, β) ≈ Y*β .+ A*X*α
+            end
             A = rand(elty, 10,10); LA = LinearMap(A)
             B = rand(elty, 20,30); LB = LinearMap(B)
             @test [LA LA LA; LB] isa LinearMaps.BlockMap{elty}
@@ -176,6 +181,11 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
             y = randn(elty, size(Md, 1))
             for α in (0, 1, rand(elty)), β in (0, 1, rand(elty))
                 @test mul!(copy(y), Bd, x, α, β) ≈ y*β .+ Md*x*α
+            end
+            X = randn(elty, size(Md, 2), 10)
+            Y = randn(elty, size(Md, 1), 10)
+            for α in (0, 1, rand(elty)), β in (0, 1, rand(elty))
+                @test mul!(copy(Y), Bd, X, α, β) ≈ Y*β .+ Md*X*α
             end
         end
     end
