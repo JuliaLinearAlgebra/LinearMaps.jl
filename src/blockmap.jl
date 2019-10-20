@@ -405,7 +405,6 @@ Base.@propagate_inbounds function LinearAlgebra.mul!(Y::AbstractMatrix, A::Block
     @views @inbounds for rowind in 1:length(rows)
         Yslice = Y[yinds[rowind],:]
         mapind += 1
-        @show @which mul!(Yslice, maps[mapind], X[xinds[mapind],:], α, β)
         mul!(Yslice, maps[mapind], X[xinds[mapind],:], α, β)
         for colind in 2:rows[rowind]
             mapind +=1
@@ -433,6 +432,10 @@ end
 #     show(io, T)
 #     print(io, '}')
 # end
+
+############
+# BlockDiagonalMap
+############
 
 struct BlockDiagonalMap{T,As<:Tuple{Vararg{LinearMap}}} <: LinearMap{T}
     maps::As
