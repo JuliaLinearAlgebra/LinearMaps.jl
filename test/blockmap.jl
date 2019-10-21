@@ -149,7 +149,8 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
             Lt = @inferred transform(L)
             @test Lt isa LinearMaps.LinearMap{elty}
             @test Lt * x ≈ transform(A) * x
-            @test Matrix(Lt) ≈ Matrix(transform(A))
+            @test Matrix(Lt) ≈ Matrix(transform(LinearMap(L))) ≈ Matrix(transform(A))
+            @test Matrix(transform(LinearMap(L))+transform(LinearMap(L))) ≈ 2Matrix(transform(A))
             X = rand(elty, size(L, 1), 10)
             Y = randn(elty, size(L, 2), 10)
             for α in (0, 1, rand(elty)), β in (0, 1, rand(elty))
