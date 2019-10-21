@@ -150,6 +150,11 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
             @test Lt isa LinearMaps.LinearMap{elty}
             @test Lt * x ≈ transform(A) * x
             @test Matrix(Lt) ≈ Matrix(transform(A))
+            X = rand(elty, size(L, 1), 10)
+            Y = randn(elty, size(L, 2), 10)
+            for α in (0, 1, rand(elty)), β in (0, 1, rand(elty))
+                @test mul!(copy(Y), Lt, X, α, β) ≈ Y*β .+ transform(A)*X*α
+            end
         end
     end
 
