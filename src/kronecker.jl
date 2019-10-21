@@ -62,13 +62,6 @@ for k in 3:8 # is 8 sufficient?
         kron($(mapargs...), $(Symbol(:A,k)), convert_to_lmaps(As...)...)
 end
 
-convert_to_lmaps_(A::AbstractMatrix) = LinearMap(A)
-convert_to_lmaps_(A::LinearMap) = A
-convert_to_lmaps() = ()
-convert_to_lmaps(A) = (convert_to_lmaps_(A),)
-@inline convert_to_lmaps(A, B, Cs...) =
-    (convert_to_lmaps_(A), convert_to_lmaps_(B), convert_to_lmaps(Cs...)...)
-
 struct KronPower{p}
     function KronPower(p::Integer)
         p > 1 || throw(ArgumentError("the Kronecker power is only defined for exponents larger than 1, got $k"))
@@ -99,47 +92,9 @@ LinearAlgebra.transpose(A::KroneckerMap{T}) where {T} = KroneckerMap{T}(map(tran
 
 Base.:(==)(A::KroneckerMap, B::KroneckerMap) = (eltype(A) == eltype(B) && A.maps == B.maps)
 
-function A_mul_B!(y::AbstractVector, L::KroneckerMap{T,<:NTuple{2,LinearMap}}, x::AbstractVector) where {T}
-    require_one_based_indexing(y)
-    (length(y) == size(L, 1) && length(x) == size(L, 2)) || throw(DimensionMismatch("A_mul_B!"))
-    A, B = L.maps
-    X = reshape(x, (size(B, 2), size(A, 2)))
-    _kronmul!(y, B, X, transpose(A), T)
-    return y
-end
-function A_mul_B!(y::AbstractVector, L::KroneckerMap{T}, x::AbstractVector) where {T}
-    require_one_based_indexing(y)
-    (length(y) == size(L, 1) && length(x) == size(L, 2)) || throw(DimensionMismatch("A_mul_B!"))
-    A = first(L.maps)
-    B = kron(Base.tail(L.maps)...)
-    X = LinearMap(reshape(x, (size(B, 2), size(A, 2))); issymmetric=false, ishermitian=false, isposdef=false)
-    _kronmul!(y, B, X, transpose(A), T)
-    return y
-end
-# mixed-product rule, prefer the right if possible
-# (A₁ ⊗ A₂ ⊗ ... ⊗ Aᵣ) * (B₁ ⊗ B₂ ⊗ ... ⊗ Bᵣ) = (A₁B₁) ⊗ (A₂B₂) ⊗ ... ⊗ (AᵣBᵣ)
-function A_mul_B!(y::AbstractVector, L::CompositeMap{<:Any,<:Tuple{KroneckerMap,KroneckerMap}}, x::AbstractVector)
-    B, A = L.maps
-    if length(A.maps) == length(B.maps) && all(M -> check_dim_mul(M[1], M[2]), zip(A.maps, B.maps))
-        A_mul_B!(y, kron(map(*, A.maps, B.maps)...), x)
-    else
-        A_mul_B!(y, LinearMap(A)*B, x)
-    end
-end
-# mixed-product rule, prefer the right if possible
-# (A₁ ⊗ B₁)*(A₂⊗B₂)*...*(Aᵣ⊗Bᵣ) = (A₁*A₂*...*Aᵣ) ⊗ (B₁*B₂*...*Bᵣ)
-function A_mul_B!(y::AbstractVector, L::CompositeMap{T,<:Tuple{Vararg{KroneckerMap{<:Any,<:Tuple{LinearMap,LinearMap}}}}}, x::AbstractVector) where {T}
-    As = map(AB -> AB.maps[1], L.maps)
-    Bs = map(AB -> AB.maps[2], L.maps)
-    As1, As2 = Base.front(As), Base.tail(As)
-    Bs1, Bs2 = Base.front(Bs), Base.tail(Bs)
-    apply = all(A -> check_dim_mul(A...), zip(As1, As2)) && all(A -> check_dim_mul(A...), zip(Bs1, Bs2))
-    if apply
-        A_mul_B!(y, kron(prod(As), prod(Bs)), x)
-    else
-        A_mul_B!(y, CompositeMap{T}(map(LinearMap, L.maps)), x)
-    end
-end
+#################
+# multiplication helper functions
+#################
 
 function _kronmul!(y, B, X, At, T)
     na, ma = size(At)
@@ -168,9 +123,57 @@ function _kronmul!(y, B::Union{MatrixMap,UniformScalingMap}, X, At::Union{Matrix
     return y
 end
 
-At_mul_B!(y::AbstractVector, A::KroneckerMap, x::AbstractVector) = A_mul_B!(y, transpose(A), x)
+#################
+# multiplication with vectors
+#################
 
-Ac_mul_B!(y::AbstractVector, A::KroneckerMap, x::AbstractVector) = A_mul_B!(y, adjoint(A), x)
+@inline function A_mul_B!(y::AbstractVector, L::KroneckerMap{T,<:NTuple{2,LinearMap}}, x::AbstractVector) where {T}
+    require_one_based_indexing(y)
+    @boundscheck check_dim_mul(y, L, x)
+    A, B = L.maps
+    X = reshape(x, (size(B, 2), size(A, 2)))
+    _kronmul!(y, B, X, transpose(A), T)
+    return y
+end
+Base.@propagate_inbounds function A_mul_B!(y::AbstractVector, L::KroneckerMap{T}, x::AbstractVector) where {T}
+    require_one_based_indexing(y)
+    @boundscheck check_dim_mul(y, L, x)
+    A = first(L.maps)
+    B = kron(Base.tail(L.maps)...)
+    X = LinearMap(reshape(x, (size(B, 2), size(A, 2))); issymmetric=false, ishermitian=false, isposdef=false)
+    _kronmul!(y, B, X, transpose(A), T)
+    return y
+end
+# mixed-product rule, prefer the right if possible
+# (A₁ ⊗ A₂ ⊗ ... ⊗ Aᵣ) * (B₁ ⊗ B₂ ⊗ ... ⊗ Bᵣ) = (A₁B₁) ⊗ (A₂B₂) ⊗ ... ⊗ (AᵣBᵣ)
+Base.@propagate_inbounds function A_mul_B!(y::AbstractVector, L::CompositeMap{<:Any,<:Tuple{KroneckerMap,KroneckerMap}}, x::AbstractVector)
+    B, A = L.maps
+    if length(A.maps) == length(B.maps) && all(M -> check_dim_mul(M[1], M[2]), zip(A.maps, B.maps))
+        A_mul_B!(y, kron(map(*, A.maps, B.maps)...), x)
+    else
+        A_mul_B!(y, LinearMap(A)*B, x)
+    end
+end
+# mixed-product rule, prefer the right if possible
+# (A₁ ⊗ B₁)*(A₂⊗B₂)*...*(Aᵣ⊗Bᵣ) = (A₁*A₂*...*Aᵣ) ⊗ (B₁*B₂*...*Bᵣ)
+Base.@propagate_inbounds function A_mul_B!(y::AbstractVector, L::CompositeMap{T,<:Tuple{Vararg{KroneckerMap{<:Any,<:Tuple{LinearMap,LinearMap}}}}}, x::AbstractVector) where {T}
+    As = map(AB -> AB.maps[1], L.maps)
+    Bs = map(AB -> AB.maps[2], L.maps)
+    As1, As2 = Base.front(As), Base.tail(As)
+    Bs1, Bs2 = Base.front(Bs), Base.tail(Bs)
+    apply = all(A -> check_dim_mul(A...), zip(As1, As2)) && all(A -> check_dim_mul(A...), zip(Bs1, Bs2))
+    if apply
+        A_mul_B!(y, kron(prod(As), prod(Bs)), x)
+    else
+        A_mul_B!(y, CompositeMap{T}(map(LinearMap, L.maps)), x)
+    end
+end
+
+Base.@propagate_inbounds At_mul_B!(y::AbstractVector, A::KroneckerMap, x::AbstractVector) =
+    A_mul_B!(y, transpose(A), x)
+
+Base.@propagate_inbounds Ac_mul_B!(y::AbstractVector, A::KroneckerMap, x::AbstractVector) =
+    A_mul_B!(y, adjoint(A), x)
 
 ###############
 # KroneckerSumMap
@@ -263,11 +266,11 @@ LinearAlgebra.transpose(A::KroneckerSumMap{T}) where {T} = KroneckerSumMap{T}(ma
 
 Base.:(==)(A::KroneckerSumMap, B::KroneckerSumMap) = (eltype(A) == eltype(B) && A.maps == B.maps)
 
-function A_mul_B!(y::AbstractVector, L::KroneckerSumMap, x::AbstractVector)
+Base.@propagate_inbounds function A_mul_B!(y::AbstractVector, L::KroneckerSumMap, x::AbstractVector)
+    @boundscheck check_dim_mul(y, L, x)
     A, B = L.maps
     ma, na = size(A)
     mb, nb = size(B)
-    (length(y) == size(L, 1) && length(x) == size(L, 2)) || throw(DimensionMismatch("kronecker product"))
     X = reshape(x, (nb, na))
     Y = reshape(y, (nb, na))
     mul!(Y, X, convert(AbstractMatrix, transpose(A)))
@@ -275,6 +278,8 @@ function A_mul_B!(y::AbstractVector, L::KroneckerSumMap, x::AbstractVector)
     return y
 end
 
-At_mul_B!(y::AbstractVector, A::KroneckerSumMap, x::AbstractVector) = A_mul_B!(y, transpose(A), x)
+Base.@propagate_inbounds At_mul_B!(y::AbstractVector, A::KroneckerSumMap, x::AbstractVector) =
+    A_mul_B!(y, transpose(A), x)
 
-Ac_mul_B!(y::AbstractVector, A::KroneckerSumMap, x::AbstractVector) = A_mul_B!(y, adjoint(A), x)
+Base.@propagate_inbounds Ac_mul_B!(y::AbstractVector, A::KroneckerSumMap, x::AbstractVector) =
+    A_mul_B!(y, adjoint(A), x)

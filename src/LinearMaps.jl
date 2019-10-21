@@ -27,6 +27,26 @@ Base.ndims(::LinearMap) = 2
 Base.size(A::LinearMap, n) = (n==1 || n==2 ? size(A)[n] : error("LinearMap objects have only 2 dimensions"))
 Base.length(A::LinearMap) = size(A)[1] * size(A)[2]
 
+# check dimension consistency for y = A*x and Y = A*X
+function check_dim_mul(y::AbstractVector, A::LinearMap, x::AbstractVector)
+     m, n = size(A)
+     (m == length(y) && n == length(x)) || throw(DimensionMismatch("mul!"))
+     return nothing
+ end
+ function check_dim_mul(Y::AbstractMatrix, A::LinearMap, X::AbstractMatrix)
+     m, n = size(A)
+     (m == size(Y, 1) && n == size(X, 1) && size(Y, 2) == size(X, 2)) || throw(DimensionMismatch("mul!"))
+     return nothing
+ end
+
+# conversion of AbstractMatrix to LinearMap
+convert_to_lmaps_(A::AbstractMatrix) = LinearMap(A)
+convert_to_lmaps_(A::LinearMap) = A
+convert_to_lmaps() = ()
+convert_to_lmaps(A) = (convert_to_lmaps_(A),)
+@inline convert_to_lmaps(A, B, Cs...) =
+    (convert_to_lmaps_(A), convert_to_lmaps_(B), convert_to_lmaps(Cs...)...)
+
 Base.:(*)(A::LinearMap, x::AbstractVector) = mul!(similar(x, promote_type(eltype(A), eltype(x)), size(A, 1)), A, x)
 function LinearAlgebra.mul!(y::AbstractVector, A::LinearMap, x::AbstractVector, α::Number=true, β::Number=false)
     length(y) == size(A, 1) || throw(DimensionMismatch("mul!"))
