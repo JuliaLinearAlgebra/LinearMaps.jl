@@ -439,15 +439,6 @@ BlockDiagonalMap{T}(maps::As) where {T,As<:Tuple{Vararg{LinearMap}}} =
 BlockDiagonalMap(maps::LinearMap...) =
     BlockDiagonalMap{promote_type(map(eltype, maps)...)}(maps)
 
-################ needs to be removed after kron is merged ################
-convert_to_lmaps_(A::AbstractMatrix) = LinearMap(A)
-convert_to_lmaps_(A::LinearMap) = A
-convert_to_lmaps() = ()
-convert_to_lmaps(A) = (convert_to_lmaps_(A),)
-@inline convert_to_lmaps(A, B, Cs...) =
-    (convert_to_lmaps_(A), convert_to_lmaps_(B), convert_to_lmaps(Cs...)...)
-################# end of what needs to be removed ################
-
 for k in 1:8 # is 8 sufficient?
     Is = ntuple(n->:($(Symbol(:A,n))::AbstractMatrix), Val(k-1))
     # yields (:A1, :A2, :A3, ..., :A(k-1))
