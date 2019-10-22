@@ -48,15 +48,17 @@ Base.length(A::LinearMap) = size(A)[1] * size(A)[2]
 
 # check dimension consistency for y = A*x and Y = A*X
 function check_dim_mul(y::AbstractVector, A::LinearMap, x::AbstractVector)
-     m, n = size(A)
-     (m == length(y) && n == length(x)) || throw(DimensionMismatch("mul!"))
-     return nothing
- end
- function check_dim_mul(Y::AbstractMatrix, A::LinearMap, X::AbstractMatrix)
-     m, n = size(A)
-     (m == size(Y, 1) && n == size(X, 1) && size(Y, 2) == size(X, 2)) || throw(DimensionMismatch("mul!"))
-     return nothing
- end
+    # @info "checked vector dimensions" # uncomment for testing
+    m, n = size(A)
+    (m == length(y) && n == length(x)) || throw(DimensionMismatch("mul!"))
+    return nothing
+end
+function check_dim_mul(Y::AbstractMatrix, A::LinearMap, X::AbstractMatrix)
+    # @info "checked matrix dimensions" # uncomment for testing
+    m, n = size(A)
+    (m == size(Y, 1) && n == size(X, 1) && size(Y, 2) == size(X, 2)) || throw(DimensionMismatch("mul!"))
+    return nothing
+end
 
 # conversion of AbstractMatrix to LinearMap
 convert_to_lmaps_(A::AbstractMatrix) = LinearMap(A)

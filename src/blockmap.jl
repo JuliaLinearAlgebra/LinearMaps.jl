@@ -358,14 +358,14 @@ Base.@propagate_inbounds A_mul_B!(y::AbstractVector, A::AdjointMap{<:Any,<:Block
 Base.@propagate_inbounds Ac_mul_B!(y::AbstractVector, A::BlockMap, x::AbstractVector) =
     mul!(y, adjoint(A), x)
 
-@inline function LinearAlgebra.mul!(y::AbstractVector, A::BlockMap, x::AbstractVector, α::Number=true, β::Number=false)
+Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, A::BlockMap, x::AbstractVector, α::Number=true, β::Number=false)
     require_one_based_indexing(y, x)
     @boundscheck check_dim_mul(y, A, x)
     return _blockmul!(y, A, x, α, β)
 end
 
 for (maptype, transform) in ((:(TransposeMap{<:Any,<:BlockMap}), :transpose), (:(AdjointMap{<:Any,<:BlockMap}), :adjoint))
-    @eval @inline function LinearAlgebra.mul!(y::AbstractVector, wrapA::$maptype, x::AbstractVector, α::Number=true, β::Number=false)
+    @eval Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, wrapA::$maptype, x::AbstractVector, α::Number=true, β::Number=false)
         require_one_based_indexing(y, x)
         @boundscheck check_dim_mul(y, wrapA, x)
         return _transblockmul!(y, wrapA.lmap, x, α, β, $transform)
@@ -376,7 +376,7 @@ end
 # multiplication with matrices
 ############
 
-@inline function LinearAlgebra.mul!(Y::AbstractMatrix, A::BlockMap, X::AbstractMatrix, α::Number=true, β::Number=false)
+Base.@propagate_inbounds function LinearAlgebra.mul!(Y::AbstractMatrix, A::BlockMap, X::AbstractMatrix, α::Number=true, β::Number=false)
     require_one_based_indexing(Y, X)
     @boundscheck check_dim_mul(Y, A, X)
     maps, rows, yinds, xinds = A.maps, A.rows, A.rowranges, A.colranges
@@ -384,7 +384,7 @@ end
 end
 
 for (maptype, transform) in ((:(TransposeMap{<:Any,<:BlockMap}), :transpose), (:(AdjointMap{<:Any,<:BlockMap}), :adjoint))
-    @eval @inline function LinearAlgebra.mul!(Y::AbstractMatrix, wrapA::$maptype, X::AbstractMatrix, α::Number=true, β::Number=false)
+    @eval Base.@propagate_inbounds function LinearAlgebra.mul!(Y::AbstractMatrix, wrapA::$maptype, X::AbstractMatrix, α::Number=true, β::Number=false)
         require_one_based_indexing(Y, X)
         @boundscheck check_dim_mul(Y, wrapA, X)
         return _transblockmul!(Y, wrapA.lmap, X, α, β, $transform)
@@ -480,13 +480,13 @@ Base.@propagate_inbounds At_mul_B!(y::AbstractVector, A::BlockDiagonalMap, x::Ab
 Base.@propagate_inbounds Ac_mul_B!(y::AbstractVector, A::BlockDiagonalMap, x::AbstractVector) =
     mul!(y, adjoint(A), x, true, false)
 
-@inline function LinearAlgebra.mul!(y::AbstractVector, A::BlockDiagonalMap, x::AbstractVector, α::Number=true, β::Number=false)
+Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, A::BlockDiagonalMap, x::AbstractVector, α::Number=true, β::Number=false)
     require_one_based_indexing(y, x)
     @boundscheck check_dim_mul(y, A, x)
     return _blockscaling!(y, A, x, α, β)
 end
 
-@inline function LinearAlgebra.mul!(Y::AbstractMatrix, A::BlockDiagonalMap, X::AbstractMatrix, α::Number=true, β::Number=false)
+Base.@propagate_inbounds function LinearAlgebra.mul!(Y::AbstractMatrix, A::BlockDiagonalMap, X::AbstractMatrix, α::Number=true, β::Number=false)
     require_one_based_indexing(Y, X)
     @boundscheck check_dim_mul(Y, A, X)
     return _blockscaling!(Y, A, X, α, β)
