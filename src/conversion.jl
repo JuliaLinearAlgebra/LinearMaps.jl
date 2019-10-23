@@ -11,7 +11,6 @@ function Base.Matrix(A::LinearMap)
     end
     return mat
 end
-
 Base.Array(A::LinearMap) = Matrix(A)
 Base.convert(::Type{Matrix}, A::LinearMap) = Matrix(A)
 Base.convert(::Type{Array}, A::LinearMap) = convert(Matrix, A)
@@ -19,8 +18,8 @@ Base.convert(::Type{AbstractMatrix}, A::LinearMap) = convert(Matrix, A)
 Base.convert(::Type{AbstractArray}, A::LinearMap) = convert(AbstractMatrix, A)
 
 # special cases
-Base.convert(::Type{AbstractMatrix}, A::MatrixMap) = convert(AbstractMatrix, A.lmap)
-Base.convert(::Type{Matrix}, A::MatrixMap) = convert(Matrix, A.lmap)
+Base.convert(::Type{AbstractMatrix}, A::WrappedMap) = convert(AbstractMatrix, A.lmap)
+Base.convert(::Type{Matrix}, A::WrappedMap) = convert(Matrix, A.lmap)
 function Base.convert(::Type{Matrix}, ΣA::LinearCombination{<:Any,<:Tuple{Vararg{MatrixMap}}})
     if length(ΣA.maps) <= 10
         return (+).(map(A->getfield(A, :lmap), ΣA.maps)...)
@@ -44,6 +43,8 @@ function Base.convert(::Type{Matrix}, Aλ::CompositeMap{<:Any,<:Tuple{UniformSca
     J, A = Aλ.maps
     return A.lmap*J.λ
 end
+
+Base.Matrix(A::BlockMap) = hvcat(A.rows, convert.(AbstractMatrix, A.maps)...)
 
 # sparse: create sparse matrix representation of LinearMap
 function SparseArrays.sparse(A::LinearMap{T}) where {T}
@@ -71,3 +72,5 @@ function SparseArrays.sparse(A::LinearMap{T}) where {T}
 end
 
 Base.convert(::Type{SparseMatrixCSC}, A::LinearMap) = sparse(A)
+Base.convert(::Type{SparseMatrixCSC}, A::WrappedMap) = convert(SparseMatrixCSC, A.lmap)
+Base.convert(::Type{SparseMatrixCSC}, A::BlockMap) = hvcat(A.rows, convert.(SparseMatrixCSC, A.maps)...)

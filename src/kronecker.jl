@@ -96,7 +96,7 @@ Base.:(==)(A::KroneckerMap, B::KroneckerMap) = (eltype(A) == eltype(B) && A.maps
 # multiplication helper functions
 #################
 
-function _kronmul!(y, B, X, At, T)
+@inline function _kronmul!(y, B, X, At, T)
     na, ma = size(At)
     mb, nb = size(B)
     v = zeros(T, ma)
@@ -112,7 +112,7 @@ function _kronmul!(y, B, X, At, T)
     end
     return y
 end
-function _kronmul!(y, B::Union{MatrixMap,UniformScalingMap}, X, At::Union{MatrixMap,UniformScalingMap}, T)
+@inline function _kronmul!(y, B::Union{MatrixMap,UniformScalingMap}, X, At::Union{MatrixMap,UniformScalingMap}, T)
     na, ma = size(At)
     mb, nb = size(B)
     if (nb + ma) * na < (ma + mb) * nb
@@ -127,7 +127,7 @@ end
 # multiplication with vectors
 #################
 
-@inline function A_mul_B!(y::AbstractVector, L::KroneckerMap{T,<:NTuple{2,LinearMap}}, x::AbstractVector) where {T}
+Base.@propagate_inbounds function A_mul_B!(y::AbstractVector, L::KroneckerMap{T,<:NTuple{2,LinearMap}}, x::AbstractVector) where {T}
     require_one_based_indexing(y)
     @boundscheck check_dim_mul(y, L, x)
     A, B = L.maps
