@@ -220,20 +220,12 @@ julia> Matrix(Δ₁) == Matrix(Δ₂) == Matrix(Δ₃)
 true
 ```
 """
-kronsum(A::LinearMap{TA}, B::LinearMap{TB}) where {TA,TB} = KroneckerSumMap{promote_type(TA,TB)}((A, B))
-kronsum(A::LinearMap, B::LinearMap, C::LinearMap, Ds::LinearMap...) = kronsum(A, kronsum(B, C, Ds...))
-# promote AbstractMatrix arguments to LinearMaps, then take LinearMap-Kronecker sum
-for k in 1:8 # is 8 sufficient?
-    Is = ntuple(n->:($(Symbol(:A,n))::AbstractMatrix), Val(k-1))
-    # yields (:A1, :A2, :A3, ..., :A(k-1))
-    L = :($(Symbol(:A,k))::LinearMap)
-    # yields :Ak
-    mapargs = ntuple(n -> :(LinearMap($(Symbol(:A,n)))), Val(k-1))
-    # yields (:LinearMap(A1), :LinearMap(A2), ..., :LinearMap(A(k-1)))
-
-    @eval kronsum($(Is...), $L, As::Union{LinearMap,AbstractMatrix}...) =
-        kronsum($(mapargs...), $(Symbol(:A,k)), convert_to_lmaps(As...)...)
-end
+kronsum(A::Union{LinearMap,AbstractMatrix}, B::Union{LinearMap,AbstractMatrix}) =
+    KroneckerSumMap{promote_type(eltype(A), eltype(B))}(convert_to_lmaps(A, B))
+kronsum(As::Vararg{Union{LinearMap,AbstractMatrix}}) =
+    kronsum(kronsum(first(As)), kronsum(convert_to_lmaps(Base.tail(As)...)...))
+kronsum(A::Union{LinearMap,AbstractMatrix}) = convert_to_lmaps_(A)
+kronsum() = ()
 
 struct KronSumPower{p}
     function KronSumPower(p::Integer)

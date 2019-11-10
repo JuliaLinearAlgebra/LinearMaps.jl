@@ -61,7 +61,8 @@ using Test, LinearMaps, LinearAlgebra
             end
             @inferred kronsum(A, A, LB)
             @test Matrix(@inferred LA^⊕(3)) == Matrix(@inferred A^⊕(3)) ≈ Matrix(kronsum(LA, A, A))
-            @test kronsum(LA, LA, LB) == kronsum(LA, kronsum(LA, LB))
+            @test @inferred(kronsum(LA, LA, LB)) == @inferred(kronsum(LA, kronsum(LA, LB))) == @inferred(kronsum(A, A, B))
+            @test Matrix(@inferred kronsum(A, B, A, B, A, B)) ≈ Matrix(@inferred kronsum(LA, LB, LA, LB, LA, LB))
         end
     end
 end
