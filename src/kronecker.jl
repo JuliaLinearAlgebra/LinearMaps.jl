@@ -120,7 +120,7 @@ end
 @inline function _kronmul!(y, B::Union{MatrixMap,UniformScalingMap}, X, At::Union{MatrixMap,UniformScalingMap}, T)
     na, ma = size(At)
     mb, nb = size(B)
-    if (nb + ma) * na < (ma + mb) * nb
+    if nb*ma < mb*na
         mul!(reshape(y, (mb, ma)), B, convert(Matrix, X*At))
     else
         mul!(reshape(y, (mb, ma)), convert(Matrix, B*X), At isa MatrixMap ? At.lmap : At.λ)
@@ -136,7 +136,7 @@ Base.@propagate_inbounds function A_mul_B!(y::AbstractVector, L::KroneckerMap{T,
     require_one_based_indexing(y)
     @boundscheck check_dim_mul(y, L, x)
     A, B = L.maps
-    X = reshape(x, (size(B, 2), size(A, 2)))
+    X = LinearMap(reshape(x, (size(B, 2), size(A, 2))); issymmetric=false, ishermitian=false, isposdef=false)
     _kronmul!(y, B, X, transpose(A), T)
     return y
 end
