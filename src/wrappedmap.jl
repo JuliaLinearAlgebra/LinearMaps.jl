@@ -1,16 +1,16 @@
-struct WrappedMap{T, A<:Union{AbstractMatrix, LinearMap}} <: LinearMap{T}
+struct WrappedMap{T, A<:MapOrMatrix} <: LinearMap{T}
     lmap::A
     _issymmetric::Bool
     _ishermitian::Bool
     _isposdef::Bool
 end
-function WrappedMap(lmap::Union{AbstractMatrix{T}, LinearMap{T}};
+function WrappedMap(lmap::MapOrMatrix{T};
     issymmetric::Bool = issymmetric(lmap),
     ishermitian::Bool = ishermitian(lmap),
     isposdef::Bool = isposdef(lmap)) where {T}
     WrappedMap{T, typeof(lmap)}(lmap, issymmetric, ishermitian, isposdef)
 end
-function WrappedMap{T}(lmap::Union{AbstractMatrix, LinearMap};
+function WrappedMap{T}(lmap::MapOrMatrix;
     issymmetric::Bool = issymmetric(lmap),
     ishermitian::Bool = ishermitian(lmap),
     isposdef::Bool = isposdef(lmap)) where {T}
@@ -32,6 +32,14 @@ if VERSION ≥ v"1.3.0-alpha.115"
 
 LinearAlgebra.mul!(y::AbstractVector, A::WrappedMap, x::AbstractVector, α::Number=true, β::Number=false) =
     mul!(y, A.lmap, x, α, β)
+
+LinearAlgebra.mul!(Y::AbstractMatrix, A::MatrixMap, X::AbstractMatrix, α::Number=true, β::Number=false) =
+    mul!(Y, A.lmap, X, α, β)
+
+else
+
+LinearAlgebra.mul!(Y::AbstractMatrix, A::MatrixMap, X::AbstractMatrix) =
+    mul!(Y, A.lmap, X)
 
 end # VERSION
 

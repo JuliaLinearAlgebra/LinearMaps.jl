@@ -9,7 +9,7 @@ using Test, LinearMaps, LinearAlgebra, BenchmarkTools
     LC = @inferred M + N
     v = rand(ComplexF64, 10)
     w = similar(v)
-    Id = @inferred LinearMaps.UniformScalingMap(1, 10)
+    Id = @inferred LinearMap(I, 10)
     @test_throws ErrorException LinearMaps.UniformScalingMap(1, 10, 20)
     @test_throws ErrorException LinearMaps.UniformScalingMap(1, (10, 20))
     @test size(Id) == (10, 10)
@@ -22,10 +22,11 @@ using Test, LinearMaps, LinearAlgebra, BenchmarkTools
     @test (3 * I + 2 * M') * v == 2 * A'v + 3v
     @test (2 * M' - 3 * I) * v == 2 * A'v - 3v
     @test (3 * I - 2 * M') * v == -2 * A'v + 3v
+    @test (3 * I - 2 * M') * v == -2 * A'v + 3v
     @test transpose(LinearMap(2 * M' + 3 * I)) * v ≈ transpose(2 * A' + 3 * I) * v
-    @test LinearMap(2 * M' + 3 * I)' * v ≈ (2 * A' + 3 * I)' * v
+    @test LinearMap(2 * M' + 0I)' * v ≈ (2 * A')' * v
     for λ in (0, 1, rand()), α in (0, 1, rand()), β in (0, 1, rand())
-        Λ = @inferred LinearMaps.UniformScalingMap(λ, 10)
+        Λ = @inferred LinearMap(λ*I, 10)
         x = rand(10)
         y = rand(10)
         b = @benchmarkable mul!($y, $Λ, $x, $α, $β)
@@ -40,4 +41,6 @@ using Test, LinearMaps, LinearAlgebra, BenchmarkTools
         J = @inferred LinearMap(LinearMaps.UniformScalingMap(λ, 10))
         @test transform(J) * x == transform(λ) * x
     end
+    X = rand(10, 10); Y = similar(X)
+    @test mul!(Y, Id, X) == X
 end

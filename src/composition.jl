@@ -1,9 +1,12 @@
+# helper function
+check_dim_mul(A, B) = size(A, 2) == size(B, 1)
+
 struct CompositeMap{T, As<:Tuple{Vararg{LinearMap}}} <: LinearMap{T}
     maps::As # stored in order of application to vector
     function CompositeMap{T, As}(maps::As) where {T, As}
         N = length(maps)
         for n in 2:N
-            size(maps[n], 2) == size(maps[n-1], 1) || throw(DimensionMismatch("CompositeMap"))
+            check_dim_mul(maps[n], maps[n-1]) || throw(DimensionMismatch("CompositeMap"))
         end
         for n in 1:N
             promote_type(T, eltype(maps[n])) == T || throw(InexactError())
@@ -47,7 +50,7 @@ function Base.:(*)(α::Number, A::CompositeMap)
     T = promote_type(typeof(α), eltype(A))
     Alast = last(A.maps)
     if Alast isa UniformScalingMap
-        return CompositeMap{T}(tuple(Base.front(A.maps)..., UniformScalingMap(α * Alast.λ, size(Alast, 1))))
+        return CompositeMap{T}(tuple(Base.front(A.maps)..., α * Alast))
     else
         return CompositeMap{T}(tuple(A.maps..., UniformScalingMap(α, size(A, 1))))
     end
@@ -60,7 +63,7 @@ function Base.:(*)(A::CompositeMap, α::Number)
     T = promote_type(typeof(α), eltype(A))
     Afirst = first(A.maps)
     if Afirst isa UniformScalingMap
-        return CompositeMap{T}(tuple(UniformScalingMap(Afirst.λ * α, size(Afirst, 1)), Base.tail(A.maps)...))
+        return CompositeMap{T}(tuple(Afirst * α, Base.tail(A.maps)...))
     else
         return CompositeMap{T}(tuple(UniformScalingMap(α, size(A, 2)), A.maps...))
     end
@@ -87,22 +90,22 @@ julia> LinearMap(ones(Int, 3, 3)) * CS * I * rand(3, 3);
 ```
 """
 function Base.:(*)(A₁::LinearMap, A₂::LinearMap)
-    size(A₁, 2) == size(A₂, 1) || throw(DimensionMismatch("*"))
+    check_dim_mul(A₁, A₂) || throw(DimensionMismatch("*"))
     T = promote_type(eltype(A₁), eltype(A₂))
     return CompositeMap{T}(tuple(A₂, A₁))
 end
 function Base.:(*)(A₁::LinearMap, A₂::CompositeMap)
-    size(A₁, 2) == size(A₂, 1) || throw(DimensionMismatch("*"))
+    check_dim_mul(A₁, A₂) || throw(DimensionMismatch("*"))
     T = promote_type(eltype(A₁), eltype(A₂))
     return CompositeMap{T}(tuple(A₂.maps..., A₁))
 end
 function Base.:(*)(A₁::CompositeMap, A₂::LinearMap)
-    size(A₁, 2) == size(A₂, 1) || throw(DimensionMismatch("*"))
+    check_dim_mul(A₁, A₂) || throw(DimensionMismatch("*"))
     T = promote_type(eltype(A₁), eltype(A₂))
     return CompositeMap{T}(tuple(A₂, A₁.maps...))
 end
 function Base.:(*)(A₁::CompositeMap, A₂::CompositeMap)
-    size(A₁, 2) == size(A₂, 1) || throw(DimensionMismatch("*"))
+    check_dim_mul(A₁, A₂) || throw(DimensionMismatch("*"))
     T = promote_type(eltype(A₁), eltype(A₂))
     return CompositeMap{T}(tuple(A₂.maps..., A₁.maps...))
 end

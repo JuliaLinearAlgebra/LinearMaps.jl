@@ -1,6 +1,7 @@
 module LinearMaps
 
 export LinearMap
+export ⊗, kronsum, ⊕
 
 using LinearAlgebra
 using SparseArrays
@@ -14,6 +15,8 @@ end
 
 abstract type LinearMap{T} end
 
+const MapOrMatrix{T} = Union{LinearMap{T},AbstractMatrix{T}}
+
 Base.eltype(::LinearMap{T}) where {T} = T
 
 Base.isreal(A::LinearMap) = eltype(A) <: Real
@@ -25,6 +28,26 @@ LinearAlgebra.isposdef(::LinearMap) = false # default assumptions
 Base.ndims(::LinearMap) = 2
 Base.size(A::LinearMap, n) = (n==1 || n==2 ? size(A)[n] : error("LinearMap objects have only 2 dimensions"))
 Base.length(A::LinearMap) = size(A)[1] * size(A)[2]
+
+# check dimension consistency for y = A*x and Y = A*X
+function check_dim_mul(y::AbstractVector, A::LinearMap, x::AbstractVector)
+     m, n = size(A)
+     (m == length(y) && n == length(x)) || throw(DimensionMismatch("mul!"))
+     return nothing
+ end
+ function check_dim_mul(Y::AbstractMatrix, A::LinearMap, X::AbstractMatrix)
+     m, n = size(A)
+     (m == size(Y, 1) && n == size(X, 1) && size(Y, 2) == size(X, 2)) || throw(DimensionMismatch("mul!"))
+     return nothing
+ end
+
+# conversion of AbstractMatrix to LinearMap
+convert_to_lmaps_(A::AbstractMatrix) = LinearMap(A)
+convert_to_lmaps_(A::LinearMap) = A
+convert_to_lmaps() = ()
+convert_to_lmaps(A) = (convert_to_lmaps_(A),)
+@inline convert_to_lmaps(A, B, Cs...) =
+    (convert_to_lmaps_(A), convert_to_lmaps_(B), convert_to_lmaps(Cs...)...)
 
 Base.:(*)(A::LinearMap, x::AbstractVector) = mul!(similar(x, promote_type(eltype(A), eltype(x)), size(A, 1)), A, x)
 function LinearAlgebra.mul!(y::AbstractVector, A::LinearMap, x::AbstractVector, α::Number=true, β::Number=false)
@@ -68,50 +91,6 @@ A_mul_B!(y::AbstractVector, A::AbstractMatrix, x::AbstractVector)  = mul!(y, A, 
 At_mul_B!(y::AbstractVector, A::AbstractMatrix, x::AbstractVector) = mul!(y, transpose(A), x)
 Ac_mul_B!(y::AbstractVector, A::AbstractMatrix, x::AbstractVector) = mul!(y, adjoint(A), x)
 
-# Matrix: create matrix representation of LinearMap
-function Base.Matrix(A::LinearMap)
-    M, N = size(A)
-    T = eltype(A)
-    mat = Matrix{T}(undef, (M, N))
-    v = fill(zero(T), N)
-    @inbounds for i = 1:N
-        v[i] = one(T)
-        mul!(view(mat, :, i), A, v)
-        v[i] = zero(T)
-    end
-    return mat
-end
-
-Base.Array(A::LinearMap) = Matrix(A)
-Base.convert(::Type{Matrix}, A::LinearMap) = Matrix(A)
-Base.convert(::Type{Array}, A::LinearMap) = Matrix(A)
-Base.convert(::Type{SparseMatrixCSC}, A::LinearMap) = sparse(A)
-
-# sparse: create sparse matrix representation of LinearMap
-function SparseArrays.sparse(A::LinearMap{T}) where {T}
-    M, N = size(A)
-    rowind = Int[]
-    nzval = T[]
-    colptr = Vector{Int}(undef, N+1)
-    v = fill(zero(T), N)
-    Av = Vector{T}(undef, M)
-
-    for i = 1:N
-        v[i] = one(T)
-        mul!(Av, A, v)
-        js = findall(!iszero, Av)
-        colptr[i] = length(nzval) + 1
-        if length(js) > 0
-            append!(rowind, js)
-            append!(nzval, Av[js])
-        end
-        v[i] = zero(T)
-    end
-    colptr[N+1] = length(nzval) + 1
-
-    return SparseMatrixCSC(M, N, colptr, rowind, nzval)
-end
-
 include("wrappedmap.jl") # wrap a matrix of linear map in a new type, thereby allowing to alter its properties
 include("uniformscalingmap.jl") # the uniform scaling map, to be able to make linear combinations of LinearMap objects and multiples of I
 include("transpose.jl") # transposing linear maps
@@ -119,13 +98,17 @@ include("linearcombination.jl") # defining linear combinations of linear maps
 include("composition.jl") # composition of linear maps
 include("functionmap.jl") # using a function as linear map
 include("blockmap.jl") # block linear maps
+include("kronecker.jl") # Kronecker product of linear maps
+include("conversion.jl") # conversion of linear maps to matrices
 
 """
     LinearMap(A; kwargs...)
+    LinearMap(J, M::Int)
     LinearMap{T=Float64}(f, [fc,], M::Int, N::Int = M; kwargs...)
 
 Construct a linear map object, either from an existing `LinearMap` or `AbstractMatrix` `A`,
-with the purpose of redefining its properties via the keyword arguments `kwargs`, or
+with the purpose of redefining its properties via the keyword arguments `kwargs`;
+a `UniformScaling` object `J` with specified (square) dimension `M`; or
 from a function or callable object `f`. In the latter case, one also needs to specify
 the size of the equivalent matrix representation `(M, N)`, i.e. for functions `f` acting
 on length `N` vectors and producing length `M` vectors (with default value `N=M`). Preferably,
@@ -141,20 +124,21 @@ The keyword arguments and their default values for functions `f` are
 For existing linear maps or matrices `A`, the default values will be taken by calling
 `issymmetric`, `ishermitian` and `isposdef` on the existing object `A`.
 
-For functions `f`, there is one more keyword arguments
+For functions `f`, there is one more keyword argument
 *   ismutating::Bool : flags whether the function acts as a mutating matrix multiplication
     `f(y,x)` where the result vector `y` is the first argument (in case of `true`),
     or as a normal matrix multiplication that is called as `y=f(x)` (in case of `false`).
     The default value is guessed by looking at the number of arguments of the first occurence
     of `f` in the method table.
 """
-LinearMap(A::Union{AbstractMatrix, LinearMap}; kwargs...) = WrappedMap(A; kwargs...)
+LinearMap(A::MapOrMatrix; kwargs...) = WrappedMap(A; kwargs...)
+LinearMap(J::UniformScaling, M::Int) = UniformScalingMap(J.λ, M)
 LinearMap(f, M::Int; kwargs...) = LinearMap{Float64}(f, M; kwargs...)
 LinearMap(f, M::Int, N::Int; kwargs...) = LinearMap{Float64}(f, M, N; kwargs...)
 LinearMap(f, fc, M::Int; kwargs...) = LinearMap{Float64}(f, fc, M; kwargs...)
 LinearMap(f, fc, M::Int, N::Int; kwargs...) = LinearMap{Float64}(f, fc, M, N; kwargs...)
 
-LinearMap{T}(A::Union{AbstractMatrix, LinearMap}; kwargs...) where {T} = WrappedMap{T}(A; kwargs...)
+LinearMap{T}(A::MapOrMatrix; kwargs...) where {T} = WrappedMap{T}(A; kwargs...)
 LinearMap{T}(f, args...; kwargs...) where {T} = FunctionMap{T}(f, args...; kwargs...)
 
 end # module

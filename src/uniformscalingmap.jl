@@ -8,7 +8,7 @@ struct UniformScalingMap{T} <: LinearMap{T}
 end
 UniformScalingMap(λ::Number, M::Int, N::Int) =
     (M == N ? UniformScalingMap(λ, M) : error("UniformScalingMap needs to be square"))
-UniformScalingMap(λ::Number, sz::Tuple{Int, Int}) =
+UniformScalingMap(λ::T, sz::Dims{2}) where {T} =
     (sz[1] == sz[2] ? UniformScalingMap(λ, sz[1]) : error("UniformScalingMap needs to be square"))
 
 # properties
@@ -18,9 +18,16 @@ LinearAlgebra.issymmetric(::UniformScalingMap) = true
 LinearAlgebra.ishermitian(A::UniformScalingMap) = isreal(A)
 LinearAlgebra.isposdef(A::UniformScalingMap) = isposdef(A.λ)
 
+# comparison of UniformScalingMap objects
+Base.:(==)(A::UniformScalingMap, B::UniformScalingMap) = (A.λ == B.λ && A.M == B.M)
+
 # special transposition behavior
 LinearAlgebra.transpose(A::UniformScalingMap) = A
 LinearAlgebra.adjoint(A::UniformScalingMap)   = UniformScalingMap(conj(A.λ), size(A))
+
+# multiplication with scalar
+Base.:(*)(α::Number, J::UniformScalingMap) = UniformScalingMap(α * J.λ, size(J))
+Base.:(*)(J::UniformScalingMap, α::Number) = UniformScalingMap(J.λ * α, size(J))
 
 # multiplication with vector
 Base.:(*)(A::UniformScalingMap, x::AbstractVector) =
@@ -30,7 +37,7 @@ if VERSION < v"1.3.0-alpha.115"
 function A_mul_B!(y::AbstractVector, A::UniformScalingMap, x::AbstractVector)
     (length(x) == length(y) == A.M || throw(DimensionMismatch("A_mul_B!")))
     if iszero(A.λ)
-        return fill!(y, 0)
+        return fill!(y, zero(eltype(y)))
     elseif isone(A.λ)
         return copyto!(y, x)
     else
@@ -40,25 +47,31 @@ function A_mul_B!(y::AbstractVector, A::UniformScalingMap, x::AbstractVector)
     end
 end
 else # 5-arg mul! exists and order of arguments is corrected
-function A_mul_B!(y::AbstractVector, A::UniformScalingMap, x::AbstractVector)
-    (length(x) == length(y) == A.M || throw(DimensionMismatch("A_mul_B!")))
-    λ = A.λ
-    if iszero(λ)
-        return fill!(y, 0)
-    elseif isone(λ)
-        return copyto!(y, x)
-    else
-        return y .= λ .* x
-    end
-end
+
+A_mul_B!(y::AbstractVector, J::UniformScalingMap, x::AbstractVector) = mul!(y, J, x)
+
 end # VERSION
 
-function LinearAlgebra.mul!(y::AbstractVector, J::UniformScalingMap, x::AbstractVector, α::Number=true, β::Number=false)
+@inline function LinearAlgebra.mul!(y::AbstractVector, J::UniformScalingMap, x::AbstractVector, α::Number=true, β::Number=false)
     @boundscheck (length(x) == length(y) == J.M || throw(DimensionMismatch("mul!")))
+    _scaling!(y, J, x, α, β)
+    return y
+end
+
+@inline function LinearAlgebra.mul!(Y::AbstractMatrix, J::UniformScalingMap, X::AbstractMatrix, α::Number=true, β::Number=false)
+    @boundscheck size(X) == size(Y) || throw(DimensionMismatch("mul!"))
+    @boundscheck size(X,1) == J.M || throw(DimensionMismatch("mul!"))
+    _scaling!(Y, J, X, α, β)
+    return Y
+end
+
+function _scaling!(y, J::UniformScalingMap, x, α::Number=true, β::Number=false)
     λ = J.λ
-    @inbounds if isone(α)
+    if isone(α)
         if iszero(β)
-            A_mul_B!(y, J, x)
+            iszero(λ) && return fill!(y, zero(eltype(y)))
+            isone(λ) && return copyto!(y, x)
+            y .= λ .* x
             return y
         elseif isone(β)
             iszero(λ) && return y

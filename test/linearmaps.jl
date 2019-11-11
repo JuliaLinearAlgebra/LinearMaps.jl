@@ -19,21 +19,6 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays, BenchmarkTools
         @test ndims(M) == 2
         @test_throws ErrorException size(M, 3)
         @test length(M) == length(A)
-        # matrix generation/conversion
-        @test Matrix(M) == A
-        @test Array(M) == A
-        @test convert(Matrix, M) == A
-        @test convert(Array, M) == A
-        @test Matrix(M') == A'
-        @test Matrix(transpose(M)) == copy(transpose(A))
-        # sparse matrix generation/conversion
-        @test sparse(M) == sparse(Array(M))
-        @test convert(SparseMatrixCSC, M) == sparse(Array(M))
-
-        B = copy(A)
-        B[rand(1:length(A), 30)] .= 0
-        MS = LinearMap(B)
-        @test sparse(MS) == sparse(Array(MS)) == sparse(B)
     end
 
     Av = A * v

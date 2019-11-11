@@ -7,6 +7,13 @@
 
 A Julia package for defining and working with linear maps, also known as linear transformations or linear operators acting on vectors. The only requirement for a LinearMap is that it can act on a vector (by multiplication) efficiently.
 
+## What's new in v2.6
+*   New feature: "lazy" Kronecker product, Kronecker sums, and powers thereof
+    for `LinearMap`s. `AbstractMatrix` objects are promoted to `LinearMap`s if
+    one of the first 8 Kronecker factors is a `LinearMap` object.
+*   Compatibility with the generic multiply-and-add interface (a.k.a. 5-arg
+    `mul!`) introduced in julia v1.3
+
 ## What's new in v2.5.0
 *   New feature: concatenation of `LinearMap`s objects with `UniformScaling`s,
     consistent with (h-, v-, and hc-)concatenation of matrices. Note, matrices
