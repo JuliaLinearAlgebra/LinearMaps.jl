@@ -15,6 +15,8 @@ end
 
 abstract type LinearMap{T} end
 
+const MapOrMatrix{T} = Union{LinearMap{T},AbstractMatrix{T}}
+
 Base.eltype(::LinearMap{T}) where {T} = T
 
 Base.isreal(A::LinearMap) = eltype(A) <: Real
@@ -129,14 +131,14 @@ For functions `f`, there is one more keyword argument
     The default value is guessed by looking at the number of arguments of the first occurence
     of `f` in the method table.
 """
-LinearMap(A::Union{AbstractMatrix, LinearMap}; kwargs...) = WrappedMap(A; kwargs...)
+LinearMap(A::MapOrMatrix; kwargs...) = WrappedMap(A; kwargs...)
 LinearMap(J::UniformScaling, M::Int) = UniformScalingMap(J.λ, M)
 LinearMap(f, M::Int; kwargs...) = LinearMap{Float64}(f, M; kwargs...)
 LinearMap(f, M::Int, N::Int; kwargs...) = LinearMap{Float64}(f, M, N; kwargs...)
 LinearMap(f, fc, M::Int; kwargs...) = LinearMap{Float64}(f, fc, M; kwargs...)
 LinearMap(f, fc, M::Int, N::Int; kwargs...) = LinearMap{Float64}(f, fc, M, N; kwargs...)
 
-LinearMap{T}(A::Union{AbstractMatrix, LinearMap}; kwargs...) where {T} = WrappedMap{T}(A; kwargs...)
+LinearMap{T}(A::MapOrMatrix; kwargs...) where {T} = WrappedMap{T}(A; kwargs...)
 LinearMap{T}(f, args...; kwargs...) where {T} = FunctionMap{T}(f, args...; kwargs...)
 
 end # module
