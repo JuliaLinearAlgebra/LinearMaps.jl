@@ -68,7 +68,10 @@ convert_to_lmaps(A) = (convert_to_lmaps_(A),)
 @inline convert_to_lmaps(A, B, Cs...) =
     (convert_to_lmaps_(A), convert_to_lmaps_(B), convert_to_lmaps(Cs...)...)
 
-Base.:(*)(A::LinearMap, x::AbstractVector) = @inbounds mul!(similar(x, promote_type(eltype(A), eltype(x)), size(A, 1)), A, x)
+function Base.:(*)(A::LinearMap, x::AbstractVector)
+    size(A, 2) == length(x) || throw(DimensionMismatch("mul!"))
+    return @inbounds mul!(similar(x, promote_type(eltype(A), eltype(x)), size(A, 1)), A, x)
+end
 function LinearAlgebra.mul!(y::AbstractVector, A::LinearMap, x::AbstractVector, α::Number=true, β::Number=false)
     @boundscheck check_dim_mul(y, A, x)
     if isone(α)
