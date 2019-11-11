@@ -66,9 +66,9 @@ convert_to_lmaps(A) = (convert_to_lmaps_(A),)
 @inline convert_to_lmaps(A, B, Cs...) =
     (convert_to_lmaps_(A), convert_to_lmaps_(B), convert_to_lmaps(Cs...)...)
 
-Base.:(*)(A::LinearMap, x::AbstractVector) = mul!(similar(x, promote_type(eltype(A), eltype(x)), size(A, 1)), A, x)
+Base.:(*)(A::LinearMap, x::AbstractVector) = @inbounds mul!(similar(x, promote_type(eltype(A), eltype(x)), size(A, 1)), A, x)
 function LinearAlgebra.mul!(y::AbstractVector, A::LinearMap, x::AbstractVector, α::Number=true, β::Number=false)
-    length(y) == size(A, 1) || throw(DimensionMismatch("mul!"))
+    @boundscheck check_dim_mul(y, A, x)
     if isone(α)
         iszero(β) && (A_mul_B!(y, A, x); return y)
         isone(β) && (y .+= A * x; return y)
@@ -92,8 +92,8 @@ function LinearAlgebra.mul!(y::AbstractVector, A::LinearMap, x::AbstractVector, 
     end
 end
 # the following is of interest in, e.g., subspace-iteration methods
-function LinearAlgebra.mul!(Y::AbstractMatrix, A::LinearMap, X::AbstractMatrix, α::Number=true, β::Number=false)
-    (size(Y, 1) == size(A, 1) && size(X, 1) == size(A, 2) && size(Y, 2) == size(X, 2)) || throw(DimensionMismatch("mul!"))
+Base.@propagate_inbounds function LinearAlgebra.mul!(Y::AbstractMatrix, A::LinearMap, X::AbstractMatrix, α::Number=true, β::Number=false)
+    @boundscheck check_dim_mul(Y, A, X)
     @inbounds @views for i = 1:size(X, 2)
         mul!(Y[:, i], A, X[:, i], α, β)
     end
