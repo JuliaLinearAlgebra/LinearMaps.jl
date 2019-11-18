@@ -109,10 +109,6 @@ Base.@propagate_inbounds function LinearAlgebra.mul!(Y::AbstractMatrix, A::Linea
     return Y
 end
 
-# A_mul_B!(y::AbstractVector, A::AbstractMatrix, x::AbstractVector)  = mul!(y, A, x)
-# At_mul_B!(y::AbstractVector, A::AbstractMatrix, x::AbstractVector) = mul!(y, transpose(A), x)
-# Ac_mul_B!(y::AbstractVector, A::AbstractMatrix, x::AbstractVector) = mul!(y, adjoint(A), x)
-
 include("transpose.jl") # transposing linear maps
 include("wrappedmap.jl") # wrap a matrix of linear map in a new type, thereby allowing to alter its properties
 include("uniformscalingmap.jl") # the uniform scaling map, to be able to make linear combinations of LinearMap objects and multiples of I

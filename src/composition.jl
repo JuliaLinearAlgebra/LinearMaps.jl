@@ -120,7 +120,8 @@ LinearAlgebra.adjoint(A::CompositeMap{T}) where {T}   = CompositeMap{T}(map(adjo
 Base.:(==)(A::CompositeMap, B::CompositeMap) = (eltype(A) == eltype(B) && A.maps == B.maps)
 
 # multiplication with vectors
-Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, A::CompositeMap, x::AbstractVector, α::Number=true, β::Number=false)
+Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, A::CompositeMap, x::AbstractVector,
+                    α::Number=true, β::Number=false)
     # no size checking, will be done by individual maps
     N = length(A.maps)
     if N==1
@@ -149,11 +150,3 @@ Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, A::Compo
     end
     return y
 end
-
-Base.@propagate_inbounds LinearAlgebra.mul!(y::AbstractVector, A::TransposeMap{<:Any,<:CompositeMap}, x::AbstractVector,
-                    α::Number=true, β::Number=false) =
-    mul!(y, transpose(A.lmap), x, α, β)
-
-Base.@propagate_inbounds LinearAlgebra.mul!(y::AbstractVector, A::AdjointMap{<:Any,<:CompositeMap}, x::AbstractVector,
-                    α::Number=true, β::Number=false) =
-    mul!(y, adjoint(A.lmap), x, α, β)

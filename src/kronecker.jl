@@ -261,6 +261,20 @@ LinearAlgebra.transpose(A::KroneckerSumMap{T}) where {T} = KroneckerSumMap{T}(ma
 
 Base.:(==)(A::KroneckerSumMap, B::KroneckerSumMap) = (eltype(A) == eltype(B) && A.maps == B.maps)
 
+if VERSION ≥ v"1.3.0-alpha.115"
+Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, L::KroneckerSumMap, x::AbstractVector,
+                    α::Number=true, β::Number=false)
+    @boundscheck check_dim_mul(y, L, x)
+    A, B = L.maps
+    ma, na = size(A)
+    mb, nb = size(B)
+    X = reshape(x, (nb, na))
+    Y = reshape(y, (nb, na))
+    mul!(Y, X, convert(AbstractMatrix, transpose(A)), true, β)
+    mul!(Y, B, X, α, true)
+    return y
+end
+else
 Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, L::KroneckerSumMap, x::AbstractVector)
     @boundscheck check_dim_mul(y, L, x)
     A, B = L.maps
@@ -272,9 +286,4 @@ Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, L::Krone
     mul!(Y, B, X, true, true)
     return y
 end
-
-Base.@propagate_inbounds LinearAlgebra.mul!(y::AbstractVector, A::TransposeMap{<:Any,<:KroneckerSumMap}, x::AbstractVector) =
-    mul!(y, transpose(A), x)
-
-Base.@propagate_inbounds LinearAlgebra.mul!(y::AbstractVector, A::AdjointMap{<:Any,<:KroneckerSumMap}, x::AbstractVector) =
-    mul!(y, adjoint(A), x)
+end # VERSION
