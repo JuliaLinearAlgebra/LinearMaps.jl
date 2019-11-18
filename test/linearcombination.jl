@@ -44,17 +44,35 @@ using Test, LinearMaps, LinearAlgebra, BenchmarkTools
         b = @benchmarkable mul!($w, $LC, $v)
         @test run(b, samples=3).allocs == 0
         for α in (false, true, rand(ComplexF64)), β in (false, true, rand(ComplexF64))
-            if testallocs
-                b = @benchmarkable mul!($w, $LC, $v, $α, $β)
-                @test run(b, samples=3).allocs == 0
-                b = @benchmarkable mul!($w, $(I + LC), $v, $α, $β)
-                @test run(b, samples=3).allocs == 0
-                b = @benchmarkable mul!($w, $(LC + I), $v, $α, $β)
-                @test run(b, samples=3).allocs == 0
+            for λ in (true, rand(ComplexF64)), sz in (10, (10, 10))
+                v = rand(ComplexF64, sz)
+                w = similar(v)
+                if testallocs
+                    blmap = @benchmarkable mul!($w, $LC, $v, $α, $β)
+                    bmat = @benchmarkable begin
+                        mul!($w, $A, $v, $α, $β)
+                        mul!($w, $B, $v, $α, true)
+                    end
+                    @test run(blmap, samples=3).allocs <= run(bmat, samples=3).allocs
+                    if VERSION >= v"1.4.0-DEV.400"
+                        @test_broken run(blmap, samples=3).allocs == 0
+                    end
+                    blmap = @benchmarkable mul!($w, $(LC + λ*I), $v, $α, $β)
+                    bmat = @benchmarkable begin
+                        mul!($w, $A, $v, $α, $β)
+                        mul!($w, $B, $v, $α, true)
+                        mul!($w, $(λ*I), $v, $α, true)
+                    end
+                    @show α, β, λ, sz
+                    @test run(blmap, samples=3).allocs <= run(bmat, samples=3).allocs
+                    if VERSION >= v"1.4.0-DEV.400"
+                        @test_broken run(blmap, samples=3).allocs == 0
+                    end
+                end
+                y = rand(ComplexF64, sz)
+                @test mul!(copy(y), LC, v, α, β) ≈ (A + B)*v*α + y*β
+                @test mul!(copy(y), LC+λ*I, v, α, β) ≈ (A + B + λ*I)*v*α + y*β
             end
-            y = rand(ComplexF64, size(v))
-            @test mul!(copy(y), LC, v, α, β) ≈ Matrix(LC)*v*α + y*β
-            @test mul!(copy(y), LC+I, v, α, β) ≈ Matrix(LC + I)*v*α + y*β
         end
     end
     # @test_throws ErrorException LinearMaps.LinearCombination{ComplexF64}((M, N), (1, 2, 3))

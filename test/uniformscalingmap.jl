@@ -25,7 +25,7 @@ using Test, LinearMaps, LinearAlgebra, BenchmarkTools
     @test (3 * I - 2 * M') * v == -2 * A'v + 3v
     @test transpose(LinearMap(2 * M' + 3 * I)) * v ≈ transpose(2 * A' + 3 * I) * v
     @test LinearMap(2 * M' + 0I)' * v ≈ (2 * A')' * v
-    for λ in (0, 1, rand()), α in (0, 1, rand()), β in (0, 1, rand())
+    for λ in (0, 1, rand()), α in (0, 1, rand()), β in (0, 1, rand()), sz in (10, (10,5))
         Λ = @inferred LinearMap(λ*I, 10)
         x = rand(10)
         y = rand(10)
