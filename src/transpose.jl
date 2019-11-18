@@ -32,18 +32,22 @@ Base.:(==)(A::LinearMap, B::TransposeMap)    = issymmetric(A) && B.lmap == A
 Base.:(==)(A::LinearMap, B::AdjointMap)      = ishermitian(A) && B.lmap == A
 
 # multiplication with vector
-A_mul_B!(y::AbstractVector, A::TransposeMap, x::AbstractVector) =
-    issymmetric(A.lmap) ? A_mul_B!(y, A.lmap, x) : At_mul_B!(y, A.lmap, x)
+Base.@propagate_inbounds LinearAlgebra.mul!(y::AbstractVector, A::TransposeMap, x::AbstractVector,
+                    α::Number=true, β::Number=false) =
+    issymmetric(A.lmap) ? mul!(y, A.lmap, x, α, β) : error("transpose not defined for $(typeof(A.lmap))")#At_mul_B!(y, A.lmap, x)
 
-At_mul_B!(y::AbstractVector, A::TransposeMap, x::AbstractVector) = A_mul_B!(y, A.lmap, x)
+# At_mul_B!(y::AbstractVector, A::TransposeMap, x::AbstractVector) = A_mul_B!(y, A.lmap, x)
+#
+Base.@propagate_inbounds LinearAlgebra.mul!(y::AbstractVector, A::AdjointMap{<:Any,<:TransposeMap}, x::AbstractVector,
+                    α::Number=true, β::Number=false) =
+    isreal(A.lmap) ? mul!(y, A.lmap.lmap, x, α, β) : (mul!(y, A.lmap.lmap, conj(x), conj(α), conj(β)); conj!(y))
 
-Ac_mul_B!(y::AbstractVector, A::TransposeMap, x::AbstractVector) =
-    isreal(A.lmap) ? A_mul_B!(y, A.lmap, x) : (A_mul_B!(y, A.lmap, conj(x)); conj!(y))
+Base.@propagate_inbounds LinearAlgebra.mul!(y::AbstractVector, A::AdjointMap, x::AbstractVector,
+                    α::Number=true, β::Number=false) =
+    ishermitian(A.lmap) ? mul!(y, A.lmap, x) : error("adjoint not defined")#Ac_mul_B!(y, A.lmap, x)
 
-A_mul_B!(y::AbstractVector, A::AdjointMap, x::AbstractVector) =
-    ishermitian(A.lmap) ? A_mul_B!(y, A.lmap, x) : Ac_mul_B!(y, A.lmap, x)
-
-At_mul_B!(y::AbstractVector, A::AdjointMap, x::AbstractVector) =
-    isreal(A.lmap) ? A_mul_B!(y, A.lmap, x) : (A_mul_B!(y, A.lmap, conj(x)); conj!(y))
-
-Ac_mul_B!(y::AbstractVector, A::AdjointMap, x::AbstractVector) = A_mul_B!(y, A.lmap, x)
+Base.@propagate_inbounds LinearAlgebra.mul!(y::AbstractVector, A::TransposeMap{<:Any,<:AdjointMap}, x::AbstractVector,
+                    α::Number=true, β::Number=false) =
+    isreal(A.lmap) ? mul!(y, A.lmap.lmap, x, α, β) : (mul!(y, A.lmap.lmap, conj(x), conj(α), conj(β)); conj!(y))
+#
+# Ac_mul_B!(y::AbstractVector, A::AdjointMap, x::AbstractVector) = A_mul_B!(y, A.lmap, x)

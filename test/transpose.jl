@@ -66,6 +66,7 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
     x = rand(ComplexF64, 10)
     for transform1 in (adjoint, transpose), transform2 in (adjoint, transpose)
         @test transform2(LinearMap(transform1(CS))) * x ≈ transform2(transform1(M))*x
+        @test transform2(transform1(CS)) * x ≈ transform2(transform1(M))*x
     end
 
     id = @inferred LinearMap(identity, identity, 10; issymmetric=true, ishermitian=true, isposdef=true)

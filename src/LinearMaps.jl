@@ -75,7 +75,7 @@ end
 function LinearAlgebra.mul!(y::AbstractVector, A::LinearMap, x::AbstractVector, α::Number=true, β::Number=false)
     @boundscheck check_dim_mul(y, A, x)
     if isone(α)
-        iszero(β) && (A_mul_B!(y, A, x); return y)
+        iszero(β) && (mul!(y, A, x); return y)
         isone(β) && (y .+= A * x; return y)
         # β != 0, 1
         rmul!(y, β)
@@ -88,7 +88,7 @@ function LinearAlgebra.mul!(y::AbstractVector, A::LinearMap, x::AbstractVector, 
         rmul!(y, β)
         return y
     else # α != 0, 1
-        iszero(β) && (A_mul_B!(y, A, x); rmul!(y, α); return y)
+        iszero(β) && (mul!(y, A, x); rmul!(y, α); return y)
         isone(β) && (y .+= rmul!(A * x, α); return y)
         # β != 0, 1
         rmul!(y, β)
@@ -109,13 +109,13 @@ Base.@propagate_inbounds function LinearAlgebra.mul!(Y::AbstractMatrix, A::Linea
     return Y
 end
 
-A_mul_B!(y::AbstractVector, A::AbstractMatrix, x::AbstractVector)  = mul!(y, A, x)
-At_mul_B!(y::AbstractVector, A::AbstractMatrix, x::AbstractVector) = mul!(y, transpose(A), x)
-Ac_mul_B!(y::AbstractVector, A::AbstractMatrix, x::AbstractVector) = mul!(y, adjoint(A), x)
+# A_mul_B!(y::AbstractVector, A::AbstractMatrix, x::AbstractVector)  = mul!(y, A, x)
+# At_mul_B!(y::AbstractVector, A::AbstractMatrix, x::AbstractVector) = mul!(y, transpose(A), x)
+# Ac_mul_B!(y::AbstractVector, A::AbstractMatrix, x::AbstractVector) = mul!(y, adjoint(A), x)
 
+include("transpose.jl") # transposing linear maps
 include("wrappedmap.jl") # wrap a matrix of linear map in a new type, thereby allowing to alter its properties
 include("uniformscalingmap.jl") # the uniform scaling map, to be able to make linear combinations of LinearMap objects and multiples of I
-include("transpose.jl") # transposing linear maps
 include("linearcombination.jl") # defining linear combinations of linear maps
 include("composition.jl") # composition of linear maps
 include("functionmap.jl") # using a function as linear map

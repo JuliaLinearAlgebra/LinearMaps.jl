@@ -120,14 +120,14 @@ LinearAlgebra.adjoint(A::CompositeMap{T}) where {T}   = CompositeMap{T}(map(adjo
 Base.:(==)(A::CompositeMap, B::CompositeMap) = (eltype(A) == eltype(B) && A.maps == B.maps)
 
 # multiplication with vectors
-function A_mul_B!(y::AbstractVector, A::CompositeMap, x::AbstractVector)
+Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, A::CompositeMap, x::AbstractVector, α::Number=true, β::Number=false)
     # no size checking, will be done by individual maps
     N = length(A.maps)
     if N==1
-        A_mul_B!(y, A.maps[1], x)
+        mul!(y, A.maps[1], x, α, β)
     else
         dest = similar(y, size(A.maps[1], 1))
-        A_mul_B!(dest, A.maps[1], x)
+        mul!(dest, A.maps[1], x, α, false)
         source = dest
         if N>2
             dest = similar(y, size(A.maps[2], 1))
@@ -142,14 +142,18 @@ function A_mul_B!(y::AbstractVector, A::CompositeMap, x::AbstractVector)
                     rethrow(err)
                 end
             end
-            A_mul_B!(dest, A.maps[n], source)
+            mul!(dest, A.maps[n], source, true, false)
             dest, source = source, dest # alternate dest and source
         end
-        A_mul_B!(y, A.maps[N], source)
+        mul!(y, A.maps[N], source, true, β)
     end
     return y
 end
 
-At_mul_B!(y::AbstractVector, A::CompositeMap, x::AbstractVector) = A_mul_B!(y, transpose(A), x)
+Base.@propagate_inbounds LinearAlgebra.mul!(y::AbstractVector, A::TransposeMap{<:Any,<:CompositeMap}, x::AbstractVector,
+                    α::Number=true, β::Number=false) =
+    mul!(y, transpose(A.lmap), x, α, β)
 
-Ac_mul_B!(y::AbstractVector, A::CompositeMap, x::AbstractVector) = A_mul_B!(y, adjoint(A), x)
+Base.@propagate_inbounds LinearAlgebra.mul!(y::AbstractVector, A::AdjointMap{<:Any,<:CompositeMap}, x::AbstractVector,
+                    α::Number=true, β::Number=false) =
+    mul!(y, adjoint(A.lmap), x, α, β)

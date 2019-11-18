@@ -53,6 +53,24 @@ using Test, LinearMaps, LinearAlgebra
     mul!(w, L, v)
     @test w ≈ LF * v
 
+    # test new type
+    F = SimpleFunctionMap(cumsum, 10)
+    FC = SimpleComplexFunctionMap(cumsum, 10)
+    @test @inferred ndims(F) == 2
+    @test @inferred size(F, 1) == 10
+    @test @inferred length(F) == 100
+    @test @inferred !issymmetric(F)
+    @test @inferred !ishermitian(F)
+    @test @inferred !ishermitian(FC)
+    @test @inferred !isposdef(F)
+    w = similar(v)
+    mul!(w, F, v)
+    @test w == F * v
+    @test_throws ErrorException F' * v
+    @test_throws ErrorException transpose(F) * v
+    @test_throws ErrorException mul!(w, adjoint(F), v)
+    @test_throws ErrorException mul!(w, transpose(F), v)
+
     # test composition of several maps with shared data #31
     global sizes = ( (5, 2), (3, 3), (3, 2), (2, 2), (9, 2), (7, 1) )
     N = length(sizes) - 1

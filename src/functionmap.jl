@@ -107,15 +107,20 @@ function Base.:(*)(A::TransposeMap{<:Any,<:FunctionMap}, x::AbstractVector)
     end
 end
 
-function A_mul_B!(y::AbstractVector, A::FunctionMap, x::AbstractVector)
-    (length(x) == A.N && length(y) == A.M) || throw(DimensionMismatch("A_mul_B!"))
+Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, A::FunctionMap, x::AbstractVector,
+                    α::Number=true, β::Number=false)
+    (isone(α) && iszero(β)) || error("5-arg mul! for FunctionMaps not yet implemented")
+    @boundscheck check_dim_mul(y, A, x)
     ismutating(A) ? A.f(y, x) : copyto!(y, A.f(x))
     return y
 end
 
-function At_mul_B!(y::AbstractVector, A::FunctionMap, x::AbstractVector)
-    (issymmetric(A) || (isreal(A) && ishermitian(A))) && return A_mul_B!(y, A, x)
-    (length(x) == A.M && length(y) == A.N) || throw(DimensionMismatch("At_mul_B!"))
+Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, transA::TransposeMap{<:Any,<:FunctionMap}, x::AbstractVector,
+                    α::Number=true, β::Number=false)
+    (isone(α) && iszero(β)) || error("5-arg mul! for FunctionMaps not yet implemented")
+    A = transA.lmap
+    issymmetric(A) && return mul!(y, A, x)
+    @boundscheck check_dim_mul(y, transA, x)
     if A.fc !== nothing
         if !isreal(A)
             x = conj(x)
@@ -135,9 +140,12 @@ function At_mul_B!(y::AbstractVector, A::FunctionMap, x::AbstractVector)
     end
 end
 
-function Ac_mul_B!(y::AbstractVector, A::FunctionMap, x::AbstractVector)
-    ishermitian(A) && return A_mul_B!(y, A, x)
-    (length(x) == A.M && length(y) == A.N) || throw(DimensionMismatch("Ac_mul_B!"))
+Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, adjA::AdjointMap{<:Any,<:FunctionMap}, x::AbstractVector,
+                    α::Number=true, β::Number=false)
+    (isone(α) && iszero(β)) || error("5-arg mul! for FunctionMaps not yet implemented")
+    A = adjA.lmap
+    ishermitian(A) && return mul!(y, A, x)
+    @boundscheck check_dim_mul(y, adjA, x)
     if A.fc !== nothing
         ismutating(A) ? A.fc(y, x) : copyto!(y, A.fc(x))
         return y
