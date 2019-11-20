@@ -5,6 +5,8 @@ const matrixstyle = VERSION ≥ v"1.3.0-alpha.115" ? FiveArg() : ThreeArg()
 
 const testallocs = true
 
+const testallocs = false
+
 include("linearmaps.jl")
 
 include("transpose.jl")

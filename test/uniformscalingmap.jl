@@ -27,8 +27,8 @@ using Test, LinearMaps, LinearAlgebra, BenchmarkTools
     @test LinearMap(2 * M' + 0I)' * v ≈ (2 * A')' * v
     for λ in (0, 1, rand()), α in (0, 1, rand()), β in (0, 1, rand()), sz in (10, (10,5))
         Λ = @inferred LinearMap(λ*I, 10)
-        x = rand(10)
-        y = rand(10)
+        x = rand(Float64, sz)
+        y = rand(Float64, sz)
         if testallocs
             b = @benchmarkable mul!($y, $Λ, $x, $α, $β)
             @test run(b, samples=3).allocs == 0

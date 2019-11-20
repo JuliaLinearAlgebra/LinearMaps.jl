@@ -53,9 +53,13 @@ using Test, LinearMaps, LinearAlgebra, BenchmarkTools
                         mul!($w, $A, $v, $α, $β)
                         mul!($w, $B, $v, $α, true)
                     end
-                    @test run(blmap, samples=3).allocs <= run(bmat, samples=3).allocs
-                    if VERSION >= v"1.4.0-DEV.400"
-                        @test_broken run(blmap, samples=3).allocs == 0
+                    lallocs = run(blmap, samples=3).allocs
+                    mallocs = run(bmat, samples=3).allocs
+                    @test lallocs <= mallocs
+                    if length(sz) == 2 && VERSION <= v"1.4.0-DEV.400"
+                        @test_broken lallocs == 0
+                    else
+                        @test lallocs == 0
                     end
                     blmap = @benchmarkable mul!($w, $(LC + λ*I), $v, $α, $β)
                     bmat = @benchmarkable begin
@@ -63,10 +67,13 @@ using Test, LinearMaps, LinearAlgebra, BenchmarkTools
                         mul!($w, $B, $v, $α, true)
                         mul!($w, $(λ*I), $v, $α, true)
                     end
-                    @show α, β, λ, sz
-                    @test run(blmap, samples=3).allocs <= run(bmat, samples=3).allocs
-                    if VERSION >= v"1.4.0-DEV.400"
-                        @test_broken run(blmap, samples=3).allocs == 0
+                    lallocs = run(blmap, samples=3).allocs
+                    mallocs = run(bmat, samples=3).allocs
+                    @test lallocs <= mallocs
+                    if length(sz) == 2 && VERSION <= v"1.4.0-DEV.400"
+                        @test_broken lallocs == 0
+                    elseif length(sz) == 1
+                        @test lallocs == 0
                     end
                 end
                 y = rand(ComplexF64, sz)
