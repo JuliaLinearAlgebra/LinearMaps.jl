@@ -19,6 +19,8 @@ end
 
 const MatrixMap{T} = WrappedMap{T,<:AbstractMatrix}
 
+mulstyle(A::WrappedMap) = mulstyle(A.lmap)
+
 LinearAlgebra.transpose(A::MatrixMap{T}) where {T} =
     WrappedMap{T}(transpose(A.lmap); issymmetric=A._issymmetric, ishermitian=A._ishermitian, isposdef=A._isposdef)
 LinearAlgebra.adjoint(A::MatrixMap{T}) where {T} =

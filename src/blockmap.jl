@@ -14,6 +14,8 @@ end
 
 BlockMap{T}(maps::As, rows::S) where {T,As<:Tuple{Vararg{LinearMap}},S} = BlockMap{T,As,S}(maps, rows)
 
+mulstyle(A::BlockMap) = mulstyle(A.maps...)
+
 function check_dim(A::LinearMap, dim, n)
     n == size(A, dim) || throw(DimensionMismatch("Expected $n, got $(size(A, dim))"))
     return nothing

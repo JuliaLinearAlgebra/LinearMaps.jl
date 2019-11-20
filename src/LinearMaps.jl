@@ -19,6 +19,23 @@ const MapOrMatrix{T} = Union{LinearMap{T},AbstractMatrix{T}}
 
 Base.eltype(::LinearMap{T}) where {T} = T
 
+abstract type MulStyle end
+
+struct FiveArg <: MulStyle end
+struct ThreeArg <: MulStyle end
+
+mulstyle(::Type{FiveArg}, ::Type{FiveArg}) = FiveArg
+mulstyle(::Type{ThreeArg}, ::Type{FiveArg}) = ThreeArg
+mulstyle(::Type{FiveArg}, ::Type{ThreeArg}) = ThreeArg
+mulstyle(::Type{ThreeArg}, ::Type{ThreeArg}) = ThreeArg
+mulstyle(::LinearMap) = ThreeArg # default
+if VERSION ≥ v"1.3.0-alpha.115"
+    mulstyle(::AbstractMatrix) = FiveArg
+else
+    mulstyle(::AbstractMatrix) = ThreeArg
+end
+mulstyle(A::LinearMap, As::LinearMap...) = mulstyle(mulstyle(A), mulstyle(As...))
+
 Base.isreal(A::LinearMap) = eltype(A) <: Real
 LinearAlgebra.issymmetric(::LinearMap) = false # default assumptions
 LinearAlgebra.ishermitian(A::LinearMap{<:Real}) = issymmetric(A)
