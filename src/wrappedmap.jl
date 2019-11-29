@@ -30,30 +30,13 @@ Base.:(==)(A::MatrixMap, B::MatrixMap) =
     (eltype(A)==eltype(B) && A.lmap==B.lmap && A._issymmetric==B._issymmetric &&
      A._ishermitian==B._ishermitian && A._isposdef==B._isposdef)
 
-if VERSION ≥ v"1.3.0-alpha.115"
-
-Base.@propagate_inbounds LinearAlgebra.mul!(y::AbstractVector, A::WrappedMap, x::AbstractVector, α::Number=true, β::Number=false) =
-    mul!(y, A.lmap, x, α, β)
-Base.@propagate_inbounds LinearAlgebra.mul!(Y::AbstractMatrix, A::WrappedMap, X::AbstractMatrix, α::Number=true, β::Number=false) =
-    mul!(Y, A.lmap, X, α, β)
-
-LinearAlgebra.mul!(Y::AbstractMatrix, A::MatrixMap, X::AbstractMatrix, α::Number=true, β::Number=false) =
-    mul!(Y, A.lmap, X, α, β)
-
-else
-
-LinearAlgebra.mul!(Y::AbstractMatrix, A::MatrixMap, X::AbstractMatrix) =
-    mul!(Y, A.lmap, X)
-
-end # VERSION
-
 # properties
 Base.size(A::WrappedMap) = size(A.lmap)
 LinearAlgebra.issymmetric(A::WrappedMap) = A._issymmetric
 LinearAlgebra.ishermitian(A::WrappedMap) = A._ishermitian
 LinearAlgebra.isposdef(A::WrappedMap) = A._isposdef
 
-# multiplication with vector
+# multiplication with vectors & matrices
 A_mul_B!(y::AbstractVector, A::WrappedMap, x::AbstractVector) = A_mul_B!(y, A.lmap, x)
 Base.:(*)(A::WrappedMap, x::AbstractVector) = *(A.lmap, x)
 
@@ -62,6 +45,23 @@ At_mul_B!(y::AbstractVector, A::WrappedMap, x::AbstractVector) =
 
 Ac_mul_B!(y::AbstractVector, A::WrappedMap, x::AbstractVector) =
     ishermitian(A) ? A_mul_B!(y, A.lmap, x) : Ac_mul_B!(y, A.lmap, x)
+
+if VERSION ≥ v"1.3.0-alpha.115"
+    for Atype in (AbstractVector, AbstractMatrix)
+        @eval Base.@propagate_inbounds LinearAlgebra.mul!(y::$Atype, A::WrappedMap, x::$Atype,
+                        α::Number=true, β::Number=false) =
+            mul!(y, A.lmap, x, α, β)
+    end
+else
+# This is somewhat suboptimal, because the absence of 5-arg mul! for MatrixMaps
+# doesn't allow to define a 5-arg mul! for WrappedMaps which do have a 5-arg mul!
+# I'd assume, however, that 5-arg mul! becomes standard in Julia v≥1.3 anyway
+# the idea is to let the fallback handle 5-arg calls
+    for Atype in (AbstractVector, AbstractMatrix)
+        @eval Base.@propagate_inbounds LinearAlgebra.mul!(Y::$Atype, A::WrappedMap, X::$Atype) =
+            mul!(Y, A.lmap, X)
+    end
+end # VERSION
 
 # combine LinearMap and Matrix objects: linear combinations and map composition
 Base.:(+)(A₁::LinearMap, A₂::AbstractMatrix) = +(A₁, WrappedMap(A₂))
