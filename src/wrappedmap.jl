@@ -30,15 +30,15 @@ Base.:(==)(A::MatrixMap, B::MatrixMap) =
     (eltype(A)==eltype(B) && A.lmap==B.lmap && A._issymmetric==B._issymmetric &&
      A._ishermitian==B._ishermitian && A._isposdef==B._isposdef)
 
-if VERSION ≥ v"1.3.0-alpha.115"
-    # multiplication with vector/matrix
-    for Atype in (AbstractVector, AbstractMatrix)
+# multiplication with vector/matrix
+for Atype in (AbstractVector, AbstractMatrix)
+    if VERSION ≥ v"1.3.0-alpha.115"
         @eval Base.@propagate_inbounds LinearAlgebra.mul!(y::$Atype, A::WrappedMap, x::$Atype,
-                            α::Number=true, β::Number=false) =
+                                α::Number, β::Number=false) =
             mul!(y, A.lmap, x, α, β)
 
         @eval Base.@propagate_inbounds function LinearAlgebra.mul!(y::$Atype, transA::TransposeMap{<:Any,<:WrappedMap}, x::$Atype,
-                                                    α::Number=true, β::Number=false)
+                                                    α::Number, β::Number=false)
             if (issymmetric(transA) || (isreal(transA) && ishermitian(transA)))
                 mul!(y, transA.lmap, x, α, β)
             else
@@ -48,7 +48,7 @@ if VERSION ≥ v"1.3.0-alpha.115"
         end
 
         @eval Base.@propagate_inbounds function LinearAlgebra.mul!(y::$Atype, adjA::AdjointMap{<:Any,<:WrappedMap}, x::$Atype,
-                                                    α::Number=true, β::Number=false)
+                                α::Number, β::Number=false)
             if ishermitian(adjA)
                 mul!(y, adjA.lmap, x, α, β)
             else
@@ -56,32 +56,30 @@ if VERSION ≥ v"1.3.0-alpha.115"
             end
             return y
         end
-    end
-else # generic 5-arg mul! for matrices is not available => can't provide 5-arg mul!'s here
-    # multiplication with vector/matrix
-    for Atype in (AbstractVector, AbstractMatrix)
-        @eval Base.@propagate_inbounds LinearAlgebra.mul!(y::$Atype, A::WrappedMap, x::$Atype) =
+    end # VERSION
+
+    # we need to be able to propagate 3-arg calls without appending 2 args
+    @eval Base.@propagate_inbounds LinearAlgebra.mul!(y::$Atype, A::WrappedMap, x::$Atype) =
+        mul!(y, A.lmap, x)
+
+    @eval Base.@propagate_inbounds function LinearAlgebra.mul!(y::$Atype, A::TransposeMap{<:Any,<:WrappedMap}, x::$Atype)
+        if (issymmetric(A) || (isreal(A) && ishermitian(A)))
             mul!(y, A.lmap, x)
-
-        @eval Base.@propagate_inbounds function LinearAlgebra.mul!(y::$Atype, A::TransposeMap{<:Any,<:WrappedMap}, x::$Atype)
-            if (issymmetric(A) || (isreal(A) && ishermitian(A)))
-                mul!(y, A.lmap, x)
-            else
-                mul!(y, transpose(A.lmap.lmap), x)
-            end
-            return y
+        else
+            mul!(y, transpose(A.lmap.lmap), x)
         end
-
-        @eval Base.@propagate_inbounds function LinearAlgebra.mul!(y::$Atype, A::AdjointMap{<:Any,<:WrappedMap}, x::$Atype)
-            if ishermitian(A)
-                mul!(y, A.lmap, x)
-            else
-                mul!(y, adjoint(A.lmap.lmap), x)
-            end
-            return y
-        end
+        return y
     end
-end # VERSION
+
+    @eval Base.@propagate_inbounds function LinearAlgebra.mul!(y::$Atype, A::AdjointMap{<:Any,<:WrappedMap}, x::$Atype)
+        if ishermitian(A)
+            mul!(y, A.lmap, x)
+        else
+            mul!(y, adjoint(A.lmap.lmap), x)
+        end
+        return y
+    end
+end
 
 # properties
 Base.size(A::WrappedMap) = size(A.lmap)

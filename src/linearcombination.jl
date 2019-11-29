@@ -75,8 +75,19 @@ for Atype in (AbstractVector, AbstractMatrix)
             rmul!(y, β)
             return y
         else
-            mul!(y, first(A.maps), x, α, β)
-            return _mul!(MulStyle(A), y, A, x, α)
+            A1 = first(A.maps)
+            if MulStyle(A1) === ThreeArg() && !iszero(β)
+                # if we need an intermediate vector, allocate here and reuse in
+                # LinearCombination multiplication
+                z = similar(y)
+                muladd!(y, A1, x, α, β, z)
+                __mul!(y, Base.tail(A.maps), x, α, z)
+            else
+                # this is allocation-free
+                _muladd!(MulStyle(A1), y, A1, x, α, β)
+                # let _mul! decide whether an intermediate vector needs to be allocated
+                _mul!(MulStyle(A), y, A, x, α)
+            end
         end
         return y
     end
@@ -92,22 +103,4 @@ end
 @inline __mul!(y, As::Tuple{Vararg{LinearMap}}, x, α, z) =
     __mul!(__mul!(y, first(As), x, α, z), Base.tail(As), x, α, z)
 @inline __mul!(y, A::Tuple{LinearMap}, x, α, z) = __mul!(y, first(A), x, α, z)
-@inline __mul!(y, A::LinearMap, x, α, z) = muladd!(MulStyle(A), y, A, x, α, z)
-
-@inline muladd!(::FiveArg, y, A, x, α, _) = mul!(y, A, x, α, true)
-@inline function muladd!(::ThreeArg, y, A, x, α, z)
-    mul!(z, A, x)
-    if isone(α)
-        y .+= z
-    else
-        y .+= z .* α
-    end
-end
-
-A_mul_B!(y::AbstractVector, A::LinearCombination, x::AbstractVector) = mul!(y, A, x)
-
-Base.@propagate_inbounds LinearAlgebra.mul!(y::AbstractVector, A::TransposeMap{<:Any,<:LinearCombination}, x::AbstractVector,
-                α::Number=true, β::Number=false) = mul!(y, transpose(A), x, α, β)
-
-Base.@propagate_inbounds LinearAlgebra.mul!(y::AbstractVector, A::AdjointMap{<:Any,<:LinearCombination}, x::AbstractVector,
-                α::Number=true, β::Number=false) = mul!(y, adjoint(A), x, α, β)
+@inline __mul!(y, A::LinearMap, x, α, z) = _muladd!(MulStyle(A), y, A, x, α, true, z)

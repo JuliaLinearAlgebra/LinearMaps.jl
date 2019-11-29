@@ -16,6 +16,8 @@ struct CompositeMap{T, As<:Tuple{Vararg{LinearMap}}} <: LinearMap{T}
 end
 CompositeMap{T}(maps::As) where {T, As<:Tuple{Vararg{LinearMap}}} = CompositeMap{T, As}(maps)
 
+MulStyle(::CompositeMap) = FiveArg()
+
 # basic methods
 Base.size(A::CompositeMap) = (size(A.maps[end], 1), size(A.maps[1], 2))
 Base.isreal(A::CompositeMap) = all(isreal, A.maps) # sufficient but not necessary
@@ -124,14 +126,17 @@ Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, A::Compo
                     α::Number=true, β::Number=false)
     # no size checking, will be done by individual maps
     N = length(A.maps)
+    A1 = first(A.maps)
     if N==1
-        mul!(y, A.maps[1], x, α, β)
+        mul!(y, A1, x, α, β)
     else
         dest = similar(y, size(A.maps[1], 1))
-        mul!(dest, A.maps[1], x, α, false)
+        _muladd!(MulStyle(A1), dest, A1, x, α, false)
         source = dest
-        if N>2
-            dest = similar(y, size(A.maps[2], 1))
+        if N>2 || (MulStyle(A.maps[2]) === ThreeArg() && !iszero(β))
+            # we need a second intermediate vector if there are more than two maps
+            # or if the second out of two is a ThreeArg and we need to do muladd
+            dest = Array{T}(undef, size(A.maps[2], 1))
         end
         for n in 2:N-1
             try
@@ -146,7 +151,19 @@ Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, A::Compo
             mul!(dest, A.maps[n], source)
             dest, source = source, dest # alternate dest and source
         end
-        mul!(y, A.maps[N], source, true, β)
+        Alast = last(A.maps)
+        if (MulStyle(Alast) === ThreeArg() && !iszero(β))
+            try
+                resize!(dest, size(Alast, 1))
+            catch err
+                if err == ErrorException("cannot resize array with shared data")
+                    dest = Array{T}(undef, size(Alast, 1))
+                else
+                    rethrow(err)
+                end
+            end
+        end
+        _muladd!(MulStyle(Alast), y, Alast, source, true, β, dest)
     end
     return y
 end

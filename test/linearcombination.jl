@@ -57,7 +57,7 @@ using Test, LinearMaps, LinearAlgebra, BenchmarkTools
                     mallocs = run(bmat, samples=3).allocs
                     @test lallocs <= mallocs
                     if length(sz) == 2 && VERSION <= v"1.4.0-DEV.400"
-                        @test_broken lallocs == 0
+                        @test lallocs == 0
                     else
                         @test lallocs == 0
                     end

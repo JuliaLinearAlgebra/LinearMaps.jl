@@ -72,33 +72,15 @@ function Base.:(*)(A::LinearMap, x::AbstractVector)
     size(A, 2) == length(x) || throw(DimensionMismatch("mul!"))
     return @inbounds mul!(similar(x, promote_type(eltype(A), eltype(x)), size(A, 1)), A, x)
 end
-function LinearAlgebra.mul!(y::AbstractVector, A::LinearMap, x::AbstractVector, α::Number=true, β::Number=false)
+Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, A::LinearMap, x::AbstractVector,
+                    α::Number=true, β::Number=false)
     @boundscheck check_dim_mul(y, A, x)
-    if isone(α)
-        iszero(β) && (mul!(y, A, x); return y)
-        isone(β) && (y .+= A * x; return y)
-        # β != 0, 1
-        rmul!(y, β)
-        y .+= A * x
-        return y
-    elseif iszero(α)
-        iszero(β) && (fill!(y, zero(eltype(y))); return y)
-        isone(β) && return y
-        # β != 0, 1
-        rmul!(y, β)
-        return y
-    else # α != 0, 1
-        iszero(β) && (mul!(y, A, x); rmul!(y, α); return y)
-        isone(β) && (y .+= rmul!(A * x, α); return y)
-        # β != 0, 1
-        rmul!(y, β)
-        y .+= rmul!(A * x, α)
-        return y
-    end
+    _muladd!(MulStyle(A), y, A, x, α, β)
 end
 # the following is of interest in, e.g., subspace-iteration methods
-Base.@propagate_inbounds function LinearAlgebra.mul!(Y::AbstractMatrix, A::LinearMap, X::AbstractMatrix, α::Number=true, β::Number=false)
-    @boundscheck check_dim_mul(Y, A, X)
+function LinearAlgebra.mul!(Y::AbstractMatrix, A::LinearMap, X::AbstractMatrix, α::Number=true, β::Number=false)
+    (size(Y, 1) == size(A, 1) && size(X, 1) == size(A, 2) && size(Y, 2) == size(X, 2)) || throw(DimensionMismatch("mul!"))
+    # TODO: reuse intermediate z if necessary
     @inbounds @views for i = 1:size(X, 2)
         mul!(Y[:, i], A, X[:, i], α, β)
     end
@@ -107,6 +89,44 @@ Base.@propagate_inbounds function LinearAlgebra.mul!(Y::AbstractMatrix, A::Linea
     #     mul!(Yi, A, Xi, α, β)
     # end
     return Y
+end
+
+# multiplication helper functions
+@inline _muladd!(::FiveArg, y, A::LinearMap, x, α, β) = mul!(y, A, x, α, β)
+@inline _muladd!(::ThreeArg, y, A::LinearMap, x, α, β) =
+    iszero(β) ? muladd!(y, A, x, α, β, nothing) : muladd!(y, A, x, α, β, similar(y))
+@inline _muladd!(::FiveArg, y, A::LinearMap, x, α, β, _) = mul!(y, A, x, α, β)
+@inline _muladd!(::ThreeArg, y, A::LinearMap, x, α, β, z) = muladd!(y, A, x, α, β, z)
+@inline function muladd!(y, A::LinearMap, x, α, β, z)
+    if iszero(α)
+        iszero(β) && (fill!(y, zero(eltype(y))); return y)
+        isone(β) && return y
+        # β != 0, 1
+        rmul!(y, β)
+        return y
+    else
+        if iszero(β)
+            mul!(y, A, x)
+            !isone(α) && rmul!(y, α)
+            return y
+        else
+            mul!(z, A, x)
+            if isone(α)
+                if isone(β)
+                    y .+= z
+                else
+                    y .= y .* β .+ z
+                end
+            else
+                if isone(β)
+                    y .+= z .* α
+                else
+                    y .= y .* β .+ z .* α
+                end
+            end
+            return y
+        end
+    end
 end
 
 include("transpose.jl") # transposing linear maps

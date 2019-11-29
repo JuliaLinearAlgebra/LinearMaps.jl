@@ -173,12 +173,6 @@ Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, L::Compo
     end
 end
 
-Base.@propagate_inbounds LinearAlgebra.mul!(y::AbstractVector, A::TransposeMap{<:Any,<:KroneckerMap}, x::AbstractVector) =
-    mul!(y, transpose(A), x)
-
-Base.@propagate_inbounds LinearAlgebra.mul!(y::AbstractVector, A::AdjointMap{<:Any,<:KroneckerMap}, x::AbstractVector) =
-    mul!(y, adjoint(A), x)
-
 ###############
 # KroneckerSumMap
 ###############
@@ -248,6 +242,8 @@ where `A` can be a square `AbstractMatrix` or a `LinearMap`.
 ⊕(a, b, c...) = kronsum(a, b, c...)
 
 Base.:(^)(A::MapOrMatrix, ::KronSumPower{p}) where {p} = kronsum(ntuple(n -> convert_to_lmaps_(A), Val(p))...)
+
+MulStyle(A::KronSumPower) = MulStyle(Matrix{Float64}(undef, 0, 0), A.maps...)
 
 Base.size(A::KroneckerSumMap, i) = prod(size.(A.maps, i))
 Base.size(A::KroneckerSumMap) = (size(A, 1), size(A, 2))

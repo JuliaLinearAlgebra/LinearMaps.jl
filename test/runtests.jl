@@ -3,9 +3,7 @@ import LinearMaps: FiveArg, ThreeArg
 
 const matrixstyle = VERSION ≥ v"1.3.0-alpha.115" ? FiveArg() : ThreeArg()
 
-const testallocs = true
-
-const testallocs = false
+const testallocs = VERSION ≥ v"1.4.0-"
 
 include("linearmaps.jl")
 

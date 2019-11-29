@@ -107,17 +107,13 @@ function Base.:(*)(A::TransposeMap{<:Any,<:FunctionMap}, x::AbstractVector)
     end
 end
 
-Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, A::FunctionMap, x::AbstractVector,
-                    α::Number=true, β::Number=false)
-    (isone(α) && iszero(β)) || error("5-arg mul! for FunctionMaps not yet implemented")
+Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, A::FunctionMap, x::AbstractVector)
     @boundscheck check_dim_mul(y, A, x)
     ismutating(A) ? A.f(y, x) : copyto!(y, A.f(x))
     return y
 end
 
-Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, transA::TransposeMap{<:Any,<:FunctionMap}, x::AbstractVector,
-                    α::Number=true, β::Number=false)
-    (isone(α) && iszero(β)) || error("5-arg mul! for FunctionMaps not yet implemented")
+Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, transA::TransposeMap{<:Any,<:FunctionMap}, x::AbstractVector)
     A = transA.lmap
     issymmetric(A) && return mul!(y, A, x)
     @boundscheck check_dim_mul(y, transA, x)
@@ -140,9 +136,7 @@ Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, transA::
     end
 end
 
-Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, adjA::AdjointMap{<:Any,<:FunctionMap}, x::AbstractVector,
-                    α::Number=true, β::Number=false)
-    (isone(α) && iszero(β)) || error("5-arg mul! for FunctionMaps not yet implemented")
+Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, adjA::AdjointMap{<:Any,<:FunctionMap}, x::AbstractVector)
     A = adjA.lmap
     ishermitian(A) && return mul!(y, A, x)
     @boundscheck check_dim_mul(y, adjA, x)

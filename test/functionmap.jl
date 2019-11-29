@@ -73,6 +73,8 @@ using Test, LinearMaps, LinearAlgebra
     v = randn(10)
     @test @inferred (2 * L)' * v ≈ 2 * v
     @test @inferred transpose(2 * L) * v ≈ 2 * v
+    @test @inferred (L*2)' * v ≈ 2 * v
+    @test @inferred transpose(L*2) * v ≈ 2 * v
     L = @inferred LinearMap{ComplexF64}(x -> x, x -> x, 10)
     v = rand(ComplexF64, 10)
     w = similar(v)
