@@ -9,6 +9,7 @@ using Test, LinearMaps, LinearAlgebra
         LB = LinearMap(B)
         LK = @inferred kron(LA, LB)
         @test @inferred size(LK) == size(K)
+        @test LinearMaps.MulStyle(LK) === LinearMaps.ThreeArg()
         for i in (1, 2)
             @test @inferred size(LK, i) == size(K, i)
         end
@@ -31,6 +32,11 @@ using Test, LinearMaps, LinearAlgebra
         @test @inferred kron(LA, LB)' == @inferred kron(LA', LB')
         @test (@inferred kron(LA, B)) == (@inferred kron(LA, LB)) == (@inferred kron(A, LB))
         @test @inferred ishermitian(kron(LA'LA, LB'LB))
+        A = rand(2, 5); B = rand(4, 2)
+        K = @inferred kron(A, LinearMap(B))
+        @test Matrix(K) ≈ kron(A, B)
+        K = @inferred kron(LinearMap(B), A)
+        @test Matrix(K) ≈ kron(B, A)
         A = rand(3, 3); B = rand(2, 2); LA = LinearMap(A); LB = LinearMap(B)
         @test @inferred issymmetric(kron(LA'LA, LB'LB))
         @test @inferred ishermitian(kron(LA'LA, LB'LB))
@@ -59,7 +65,7 @@ using Test, LinearMaps, LinearAlgebra
                 @test Matrix(kronsum(transform(LA), transform(LB))) ≈ transform(KSmat)
                 @test Matrix(transform(LinearMap(kronsum(LA, LB)))) ≈ Matrix(transform(KS)) ≈ transform(KSmat)
             end
-            @inferred kronsum(A, A, LB)
+            @test @inferred(kronsum(A, A, LB)) == @inferred(⊕(A, A, B))
             @test Matrix(@inferred LA^⊕(3)) == Matrix(@inferred A^⊕(3)) ≈ Matrix(kronsum(LA, A, A))
             @test @inferred(kronsum(LA, LA, LB)) == @inferred(kronsum(LA, kronsum(LA, LB))) == @inferred(kronsum(A, A, B))
             @test Matrix(@inferred kronsum(A, B, A, B, A, B)) ≈ Matrix(@inferred kronsum(LA, LB, LA, LB, LA, LB))

@@ -13,6 +13,8 @@ end
 
 LinearCombination{T}(maps::As) where {T, As} = LinearCombination{T, As}(maps)
 
+MulStyle(A::LinearCombination) = MulStyle(A.maps...)
+
 # basic methods
 Base.size(A::LinearCombination) = size(A.maps[1])
 LinearAlgebra.issymmetric(A::LinearCombination) = all(issymmetric, A.maps) # sufficient but not necessary
@@ -61,84 +63,50 @@ Base.:(==)(A::LinearCombination, B::LinearCombination) = (eltype(A) == eltype(B)
 LinearAlgebra.transpose(A::LinearCombination) = LinearCombination{eltype(A)}(map(transpose, A.maps))
 LinearAlgebra.adjoint(A::LinearCombination)   = LinearCombination{eltype(A)}(map(adjoint, A.maps))
 
-# multiplication with vectors
-if VERSION < v"1.3.0-alpha.115"
-
-function A_mul_B!(y::AbstractVector, A::LinearCombination, x::AbstractVector)
-    # no size checking, will be done by individual maps
-    A_mul_B!(y, A.maps[1], x)
-    l = length(A.maps)
-    if l>1
-        z = similar(y)
-        for n in 2:l
-            A_mul_B!(z, A.maps[n], x)
-            y .+= z
-        end
-    end
-    return y
-end
-
-else # 5-arg mul! is available for matrices
-
-# map types that have an allocation-free 5-arg mul! implementation
-const FreeMap = Union{MatrixMap,UniformScalingMap}
-
-function A_mul_B!(y::AbstractVector, A::LinearCombination{T,As}, x::AbstractVector) where {T, As<:Tuple{Vararg{FreeMap}}}
-    # no size checking, will be done by individual maps
-    A_mul_B!(y, A.maps[1], x)
-    for n in 2:length(A.maps)
-        mul!(y, A.maps[n], x, true, true)
-    end
-    return y
-end
-function A_mul_B!(y::AbstractVector, A::LinearCombination, x::AbstractVector)
-    # no size checking, will be done by individual maps
-    A_mul_B!(y, A.maps[1], x)
-    l = length(A.maps)
-    if l>1
-        z = similar(y)
-        for n in 2:l
-            An = A.maps[n]
-            if An isa FreeMap
-                mul!(y, An, x, true, true)
-            else
-                A_mul_B!(z, A.maps[n], x)
-                y .+= z
-            end
-        end
-    end
-    return y
-end
-
-function LinearAlgebra.mul!(y::AbstractVector, A::LinearCombination{T,As}, x::AbstractVector, α::Number=true, β::Number=false) where {T, As<:Tuple{Vararg{FreeMap}}}
-    length(y) == size(A, 1) || throw(DimensionMismatch("mul!"))
-    if isone(α)
-        iszero(β) && (A_mul_B!(y, A, x); return y)
-        !isone(β) && rmul!(y, β)
-    elseif iszero(α)
-        iszero(β) && (fill!(y, zero(eltype(y))); return y)
-        isone(β) && return y
-        # β != 0, 1
-        rmul!(y, β)
-        return y
-    else # α != 0, 1
-        if iszero(β)
-            A_mul_B!(y, A, x)
-            rmul!(y, α)
-            return y
-        elseif !isone(β)
+# multiplication with vectors & matrices
+for Atype in (AbstractVector, AbstractMatrix)
+    @eval Base.@propagate_inbounds function LinearAlgebra.mul!(y::$Atype, A::LinearCombination, x::$Atype,
+                             α::Number=true, β::Number=false)
+        @boundscheck check_dim_mul(y, A, x)
+        if iszero(α) # trivial cases
+            iszero(β) && (fill!(y, zero(eltype(y))); return y)
+            isone(β) && return y
+            # β != 0, 1
             rmul!(y, β)
-        end # β-cases
-    end # α-cases
+            return y
+        else
+            mul!(y, first(A.maps), x, α, β)
+            return _mul!(MulStyle(A), y, A, x, α, β)
+        end
+    end
+end
 
-    for An in A.maps
-        mul!(y, An, x, α, true)
+@inline _mul!(::FiveArg, y, A::LinearCombination, x, α::Number, β::Number) =
+    __mul!(y, Base.tail(A.maps), x, α, nothing)
+@inline function _mul!(::ThreeArg, y, A::LinearCombination, x, α::Number, β::Number)
+    z = similar(y)
+    __mul!(y, Base.tail(A.maps), x, α, z)
+end
+
+@inline __mul!(y, As::Tuple{Vararg{LinearMap}}, x, α, z) =
+    __mul!(__mul!(y, first(As), x, α, z), Base.tail(As), x, α, z)
+@inline __mul!(y, A::Tuple{LinearMap}, x, α, z) = __mul!(y, first(A), x, α, z)
+@inline __mul!(y, A::LinearMap, x, α, z) = muladd!(MulStyle(A), y, A, x, α, z)
+
+@inline muladd!(::FiveArg, y, A, x, α, _) = mul!(y, A, x, α, true)
+@inline function muladd!(::ThreeArg, y, A, x, α, z)
+    # TODO: replace by mul!(z, A, x)
+    A_mul_B!(z, A, x)
+    if isone(α)
+        y .+= z
+    else
+        y .+= z .* α
     end
     return y
 end
 
-end # VERSION
+A_mul_B!(y::AbstractVector, A::LinearCombination, x::AbstractVector) = mul!(y, A, x)
 
-At_mul_B!(y::AbstractVector, A::LinearCombination, x::AbstractVector) = A_mul_B!(y, transpose(A), x)
+At_mul_B!(y::AbstractVector, A::LinearCombination, x::AbstractVector) = mul!(y, transpose(A), x)
 
-Ac_mul_B!(y::AbstractVector, A::LinearCombination, x::AbstractVector) = A_mul_B!(y, adjoint(A), x)
+Ac_mul_B!(y::AbstractVector, A::LinearCombination, x::AbstractVector) = mul!(y, adjoint(A), x)

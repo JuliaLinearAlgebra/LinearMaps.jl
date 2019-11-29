@@ -11,6 +11,8 @@ UniformScalingMap(λ::Number, M::Int, N::Int) =
 UniformScalingMap(λ::T, sz::Dims{2}) where {T} =
     (sz[1] == sz[2] ? UniformScalingMap(λ, sz[1]) : error("UniformScalingMap needs to be square"))
 
+MulStyle(::UniformScalingMap) = FiveArg()
+
 # properties
 Base.size(A::UniformScalingMap) = (A.M, A.M)
 Base.isreal(A::UniformScalingMap) = isreal(A.λ)
@@ -91,11 +93,22 @@ function _scaling!(y, J::UniformScalingMap, x, α::Number=true, β::Number=false
         rmul!(y, β)
         return y
     else # α != 0, 1
-        iszero(β) && (y .= λ .* x .* α; return y)
-        isone(β) && (y .+= λ .* x .* α; return y)
-        # β != 0, 1
-        y .= y .* β .+ λ .* x .* α
-        return y
+        if iszero(β)
+            iszero(λ) && return fill!(y, zero(eltype(y)))
+            isone(λ) && return y .= x .* α
+            y .= λ .* x .* α
+            return y
+        elseif isone(β)
+            iszero(λ) && return y
+            isone(λ) && return y .+= x .* α
+            y .+= λ .* x .* α
+            return y
+        else # β != 0, 1
+            iszero(λ) && (rmul!(y, β); return y)
+            isone(λ) && (y .= y .* β .+ x .* α; return y)
+            y .= y .* β .+ λ .* x .* α
+            return y
+        end
     end
 end
 

@@ -53,6 +53,7 @@ using Test, LinearMaps, LinearAlgebra
     CS = @inferred LinearMap{ComplexF64}(cumsum, x -> reverse(cumsum(reverse(x))), 10; ismutating=false)
     for transform in (adjoint, transpose)
         @test transform(transform(CS)) == CS
+        @test LinearMaps.MulStyle(transform(CS)) === LinearMaps.MulStyle(CS)
     end
     @test transpose(CS) != adjoint(CS)
     @test adjoint(CS) != transpose(CS)
