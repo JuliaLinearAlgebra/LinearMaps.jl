@@ -1,20 +1,20 @@
-struct LinearCombination{T, MS<:MulStyle, As<:Tuple{Vararg{LinearMap}}} <: LinearMap{T}
+struct LinearCombination{T, As<:Tuple{Vararg{LinearMap}}} <: LinearMap{T}
     maps::As
-    function LinearCombination{T, MS, As}(maps::As) where {T, MS<:MulStyle, As}
+    function LinearCombination{T, As}(maps::As) where {T, As}
         N = length(maps)
         sz = size(maps[1])
         for Ai in maps
             size(Ai) == sz || throw(DimensionMismatch("LinearCombination"))
             promote_type(T, eltype(Ai)) == T || throw(InexactError())
         end
-        MS === FiveArg && mulstyle(maps...) === ThreeArg && throw("wrong mulstyle in constructor")
-        new{T, MS, As}(maps)
+        new{T, As}(maps)
     end
 end
 
-LinearCombination{T,MS}(maps::As) where {T, MS<:MulStyle, As} = LinearCombination{T, mulstyle(maps...), As}(maps)
+LinearCombination{T}(maps::As) where {T, As} =
+    LinearCombination{T, As}(maps)
 
-mulstyle(::LinearCombination{T,MS}) where {T, MS<:MulStyle} = MS
+MulStyle(A::LinearCombination) = MulStyle(A.maps...)
 
 # basic methods
 Base.size(A::LinearCombination) = size(A.maps[1])
@@ -42,18 +42,18 @@ julia> LinearMap(ones(Int, 3, 3)) + CS + I + rand(3, 3);
 function Base.:(+)(A₁::LinearMap, A₂::LinearMap)
     size(A₁) == size(A₂) || throw(DimensionMismatch("+"))
     T = promote_type(eltype(A₁), eltype(A₂))
-    return LinearCombination{T, mulstyle(A₁, A₂)}(tuple(A₁, A₂))
+    return LinearCombination{T}(tuple(A₁, A₂))
 end
 function Base.:(+)(A₁::LinearMap, A₂::LinearCombination)
     size(A₁) == size(A₂) || throw(DimensionMismatch("+"))
     T = promote_type(eltype(A₁), eltype(A₂))
-    return LinearCombination{T, mulstyle(A₁, A₂)}(tuple(A₁, A₂.maps...))
+    return LinearCombination{T}(tuple(A₁, A₂.maps...))
 end
 Base.:(+)(A₁::LinearCombination, A₂::LinearMap) = +(A₂, A₁)
 function Base.:(+)(A₁::LinearCombination, A₂::LinearCombination)
     size(A₁) == size(A₂) || throw(DimensionMismatch("+"))
     T = promote_type(eltype(A₁), eltype(A₂))
-    return LinearCombination{T, mulstyle(A₁, A₂)}(tuple(A₁.maps..., A₂.maps...))
+    return LinearCombination{T}(tuple(A₁.maps..., A₂.maps...))
 end
 Base.:(-)(A₁::LinearMap, A₂::LinearMap) = +(A₁, -A₂)
 
@@ -61,59 +61,51 @@ Base.:(-)(A₁::LinearMap, A₂::LinearMap) = +(A₁, -A₂)
 Base.:(==)(A::LinearCombination, B::LinearCombination) = (eltype(A) == eltype(B) && A.maps == B.maps)
 
 # special transposition behavior
-LinearAlgebra.transpose(A::LinearCombination) = LinearCombination{eltype(A), mulstyle(A)}(map(transpose, A.maps))
-LinearAlgebra.adjoint(A::LinearCombination)   = LinearCombination{eltype(A), mulstyle(A)}(map(adjoint, A.maps))
+LinearAlgebra.transpose(A::LinearCombination) =
+    LinearCombination{eltype(A)}(map(transpose, A.maps))
+LinearAlgebra.adjoint(A::LinearCombination)   =
+    LinearCombination{eltype(A)}(map(adjoint, A.maps))
 
-# multiplication with vectors
+# multiplication with vectors & matrices
 for Atype in (AbstractVector, AbstractMatrix)
     @eval Base.@propagate_inbounds function LinearAlgebra.mul!(y::$Atype, A::LinearCombination, x::$Atype,
                              α::Number=true, β::Number=false)
         @boundscheck check_dim_mul(y, A, x)
-        return _lincombmul!(y, A, x, α, β)
-    end
-end
-
-@inline function _lincombmul!(y, A::LinearCombination{<:Any,FiveArg}, x, α::Number, β::Number)
-    if iszero(α) # trivial cases
-        iszero(β) && (fill!(y, zero(eltype(y))); return y)
-        isone(β) && return y
-        # β != 0, 1
-        rmul!(y, β)
-        return y
-    else
-        mul!(y, first(A.maps), x, α, β)
-        @inbounds for An in Base.tail(A.maps)
-            mul!(y, An, x, α, true)
+        if iszero(α) # trivial cases
+            iszero(β) && (fill!(y, zero(eltype(y))); return y)
+            isone(β) && return y
+            # β != 0, 1
+            rmul!(y, β)
+            return y
+        else
+            mul!(y, first(A.maps), x, α, β)
+            return _mul!(MulStyle(A), y, A, x, α, β)
         end
-        return y
     end
 end
 
-@inline function _lincombmul!(y, A::LinearCombination{<:Any,ThreeArg}, x, α::Number, β::Number)
-    if iszero(α)
-        iszero(β) && (fill!(y, zero(eltype(y))); return y)
-        isone(β) && return y
-        # β != 0, 1
-        rmul!(y, β)
-        return y
-    else
-        mul!(y, first(A.maps), x, α, β)
-        l = length(A.maps)
-        if l>1
-            z = similar(y)
-            @inbounds for n in 2:l
-                An = A.maps[n]
-                muladd!(mulstyle(An), y, An, x, α, z)
-            end
-        end
-        return y
-    end
+@inline _mul!(::FiveArg, y, A::LinearCombination, x, α::Number, β::Number) =
+    __mul!(y, Base.tail(A.maps), x, α, nothing)
+@inline function _mul!(::ThreeArg, y, A::LinearCombination, x, α::Number, β::Number)
+    z = similar(y)
+    __mul!(y, Base.tail(A.maps), x, α, z)
 end
 
-@inline muladd!(::Type{FiveArg}, y, A, x, α, _) = mul!(y, A, x, α, true)
-@inline function muladd!(::Type{ThreeArg}, y, A, x, α, z)
+@inline __mul!(y, As::Tuple{Vararg{LinearMap}}, x, α, z) =
+    __mul!(__mul!(y, first(As), x, α, z), Base.tail(As), x, α, z)
+@inline __mul!(y, A::Tuple{LinearMap}, x, α, z) = __mul!(y, first(A), x, α, z)
+@inline __mul!(y, A::LinearMap, x, α, z) = muladd!(MulStyle(A), y, A, x, α, z)
+
+@inline muladd!(::FiveArg, y, A, x, α, _) = mul!(y, A, x, α, true)
+@inline function muladd!(::ThreeArg, y, A, x, α, z)
+    # TODO: replace by mul!(z, A, x)
     A_mul_B!(z, A, x)
-    y .+= isone(α) ? z : z .* α
+    if isone(α)
+        y .+= z
+    else
+        y .+= z .* α
+    end
+    return y
 end
 
 A_mul_B!(y::AbstractVector, A::LinearCombination, x::AbstractVector) = mul!(y, A, x)

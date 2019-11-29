@@ -5,7 +5,7 @@ struct AdjointMap{T, A<:LinearMap{T}} <: LinearMap{T}
     lmap::A
 end
 
-mulstyle(A::Union{TransposeMap,AdjointMap}) = mulstyle(A.lmap)
+MulStyle(A::Union{TransposeMap,AdjointMap}) = MulStyle(A.lmap)
 
 # transposition behavior of LinearMap objects
 LinearAlgebra.transpose(A::TransposeMap) = A.lmap

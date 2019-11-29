@@ -11,7 +11,7 @@ UniformScalingMap(λ::Number, M::Int, N::Int) =
 UniformScalingMap(λ::T, sz::Dims{2}) where {T} =
     (sz[1] == sz[2] ? UniformScalingMap(λ, sz[1]) : error("UniformScalingMap needs to be square"))
 
-mulstyle(::UniformScalingMap) = FiveArg
+MulStyle(::UniformScalingMap) = FiveArg()
 
 # properties
 Base.size(A::UniformScalingMap) = (A.M, A.M)

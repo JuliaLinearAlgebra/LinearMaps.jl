@@ -6,7 +6,7 @@ using Test, LinearMaps, LinearAlgebra
             A11 = rand(elty, 10, 10)
             A12 = rand(elty, 10, n2)
             L = @inferred hcat(LinearMap(A11), LinearMap(A12))
-            @test @inferred(LinearMaps.mulstyle(L)) == matrixstyle
+            @test @inferred(LinearMaps.MulStyle(L)) === matrixstyle
             @test L isa LinearMaps.BlockMap{elty}
             A = [A11 A12]
             x = rand(10+n2)
@@ -37,7 +37,7 @@ using Test, LinearMaps, LinearAlgebra
             A21 = rand(elty, 20, 10)
             L = @inferred vcat(LinearMap(A11), LinearMap(A21))
             @test L isa LinearMaps.BlockMap{elty}
-            @test @inferred(LinearMaps.mulstyle(L)) == matrixstyle
+            @test @inferred(LinearMaps.MulStyle(L)) === matrixstyle
             A = [A11; A21]
             x = rand(10)
             @test size(L) == size(A)
@@ -64,7 +64,7 @@ using Test, LinearMaps, LinearAlgebra
             A = [A11 A12; A21 A22]
             @inferred hvcat((2,2), LinearMap(A11), LinearMap(A12), LinearMap(A21), LinearMap(A22))
             L = [LinearMap(A11) LinearMap(A12); LinearMap(A21) LinearMap(A22)]
-            @test @inferred(LinearMaps.mulstyle(L)) == matrixstyle
+            @test @inferred(LinearMaps.MulStyle(L)) === matrixstyle
             @test @inferred !issymmetric(L)
             @test @inferred !ishermitian(L)
             x = rand(30)
@@ -111,7 +111,7 @@ using Test, LinearMaps, LinearAlgebra
             A12 = rand(elty, 10, 10)
             A = [I A12; transform(A12) I]
             L = [I LinearMap(A12); transform(LinearMap(A12)) I]
-            @test @inferred(LinearMaps.mulstyle(L)) == matrixstyle
+            @test @inferred(LinearMaps.MulStyle(L)) === matrixstyle
             if elty <: Complex
                 if transform == transpose
                     @test @inferred issymmetric(L)

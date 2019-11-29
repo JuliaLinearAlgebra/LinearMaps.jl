@@ -21,12 +21,12 @@ using Test, LinearMaps, LinearAlgebra, BenchmarkTools
     B = rand(ComplexF64, size(A)...)
     M = @inferred LinearMap(A)
     N = @inferred LinearMap(B)
-    @test @inferred(LinearMaps.mulstyle(M)) == matrixstyle
-    @test @inferred(LinearMaps.mulstyle(N)) == matrixstyle
+    @test @inferred(LinearMaps.MulStyle(M)) === matrixstyle
+    @test @inferred(LinearMaps.MulStyle(N)) === matrixstyle
     LC = @inferred M + N
-    @test @inferred(LinearMaps.mulstyle(LC)) == matrixstyle
-    @test @inferred(LinearMaps.mulstyle(LC + I)) == matrixstyle
-    @test @inferred(LinearMaps.mulstyle(LC + 2.0*I)) == matrixstyle
+    @test @inferred(LinearMaps.MulStyle(LC)) === matrixstyle
+    @test @inferred(LinearMaps.MulStyle(LC + I)) === matrixstyle
+    @test @inferred(LinearMaps.MulStyle(LC + 2.0*I)) === matrixstyle
     v = rand(ComplexF64, 10)
     w = similar(v)
     b = @benchmarkable mul!($w, $M, $v)

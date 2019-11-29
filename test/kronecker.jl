@@ -9,7 +9,7 @@ using Test, LinearMaps, LinearAlgebra
         LB = LinearMap(B)
         LK = @inferred kron(LA, LB)
         @test @inferred size(LK) == size(K)
-        @test LinearMaps.mulstyle(LK) == LinearMaps.ThreeArg
+        @test LinearMaps.MulStyle(LK) === LinearMaps.ThreeArg()
         for i in (1, 2)
             @test @inferred size(LK, i) == size(K, i)
         end

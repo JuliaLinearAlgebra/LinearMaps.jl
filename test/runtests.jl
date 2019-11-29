@@ -1,9 +1,9 @@
 using Test, LinearMaps
 import LinearMaps: FiveArg, ThreeArg
 
-const matrixstyle = VERSION ≥ v"1.3.0-alpha.115" ? FiveArg : ThreeArg
+const matrixstyle = VERSION ≥ v"1.3.0-alpha.115" ? FiveArg() : ThreeArg()
 
-const testallocs = false
+const testallocs = true
 
 include("linearmaps.jl")
 

@@ -24,17 +24,17 @@ abstract type MulStyle end
 struct FiveArg <: MulStyle end
 struct ThreeArg <: MulStyle end
 
-mulstyle(::Type{FiveArg}, ::Type{FiveArg}) = FiveArg
-mulstyle(::Type{ThreeArg}, ::Type{FiveArg}) = ThreeArg
-mulstyle(::Type{FiveArg}, ::Type{ThreeArg}) = ThreeArg
-mulstyle(::Type{ThreeArg}, ::Type{ThreeArg}) = ThreeArg
-mulstyle(::LinearMap) = ThreeArg # default
-if VERSION ≥ v"1.3.0-alpha.115"
-    mulstyle(::AbstractMatrix) = FiveArg
+MulStyle(::FiveArg, ::FiveArg) = FiveArg()
+MulStyle(::ThreeArg, ::FiveArg) = ThreeArg()
+MulStyle(::FiveArg, ::ThreeArg) = ThreeArg()
+MulStyle(::ThreeArg, ::ThreeArg) = ThreeArg()
+MulStyle(::LinearMap) = ThreeArg() # default
+@static if VERSION ≥ v"1.3.0-alpha.115"
+    MulStyle(::AbstractMatrix) = FiveArg()
 else
-    mulstyle(::AbstractMatrix) = ThreeArg
+    MulStyle(::AbstractMatrix) = ThreeArg()
 end
-mulstyle(A::LinearMap, As::LinearMap...) = mulstyle(mulstyle(A), mulstyle(As...))
+MulStyle(A::LinearMap, As::LinearMap...) = MulStyle(MulStyle(A), MulStyle(As...))
 
 Base.isreal(A::LinearMap) = eltype(A) <: Real
 LinearAlgebra.issymmetric(::LinearMap) = false # default assumptions
