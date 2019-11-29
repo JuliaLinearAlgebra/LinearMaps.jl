@@ -3,16 +3,15 @@ struct LinearCombination{T, As<:Tuple{Vararg{LinearMap}}} <: LinearMap{T}
     function LinearCombination{T, As}(maps::As) where {T, As}
         N = length(maps)
         sz = size(maps[1])
-        for Ai in maps
-            size(Ai) == sz || throw(DimensionMismatch("LinearCombination"))
-            promote_type(T, eltype(Ai)) == T || throw(InexactError())
+        for n in 1:N
+            size(maps[n]) == sz || throw(DimensionMismatch("LinearCombination"))
+            promote_type(T, eltype(maps[n])) == T || throw(InexactError())
         end
         new{T, As}(maps)
     end
 end
 
-LinearCombination{T}(maps::As) where {T, As} =
-    LinearCombination{T, As}(maps)
+LinearCombination{T}(maps::As) where {T, As} = LinearCombination{T, As}(maps)
 
 MulStyle(A::LinearCombination) = MulStyle(A.maps...)
 
@@ -61,10 +60,8 @@ Base.:(-)(A₁::LinearMap, A₂::LinearMap) = +(A₁, -A₂)
 Base.:(==)(A::LinearCombination, B::LinearCombination) = (eltype(A) == eltype(B) && A.maps == B.maps)
 
 # special transposition behavior
-LinearAlgebra.transpose(A::LinearCombination) =
-    LinearCombination{eltype(A)}(map(transpose, A.maps))
-LinearAlgebra.adjoint(A::LinearCombination)   =
-    LinearCombination{eltype(A)}(map(adjoint, A.maps))
+LinearAlgebra.transpose(A::LinearCombination) = LinearCombination{eltype(A)}(map(transpose, A.maps))
+LinearAlgebra.adjoint(A::LinearCombination)   = LinearCombination{eltype(A)}(map(adjoint, A.maps))
 
 # multiplication with vectors & matrices
 for Atype in (AbstractVector, AbstractMatrix)
