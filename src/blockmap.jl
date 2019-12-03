@@ -1,14 +1,14 @@
-struct BlockMap{T,As<:Tuple{Vararg{LinearMap}},Rs<:Tuple{Vararg{Int}}} <: LinearMap{T}
+struct BlockMap{T,As<:Tuple{Vararg{LinearMap}},Rs<:Tuple{Vararg{Int}},Rranges<:Tuple{Vararg{UnitRange{Int}}},Cranges<:Tuple{Vararg{UnitRange{Int}}}} <: LinearMap{T}
     maps::As
     rows::Rs
-    rowranges::Vector{UnitRange{Int}}
-    colranges::Vector{UnitRange{Int}}
+    rowranges::Rranges
+    colranges::Cranges
     function BlockMap{T,R,S}(maps::R, rows::S) where {T, R<:Tuple{Vararg{LinearMap}}, S<:Tuple{Vararg{Int}}}
         for A in maps
             promote_type(T, eltype(A)) == T || throw(InexactError())
         end
         rowranges, colranges = rowcolranges(maps, rows)
-        return new{T,R,S}(maps, rows, rowranges, colranges)
+        return new{T,R,S,typeof(rowranges),typeof(colranges)}(maps, rows, rowranges, colranges)
     end
 end
 
@@ -28,28 +28,28 @@ Determines the range of rows for each block row and the range of columns for eac
 map in `maps`, according to its position in a virtual matrix representation of the
 block linear map obtained from `hvcat(rows, maps...)`.
 """
-function rowcolranges(maps, rows)::Tuple{Vector{UnitRange{Int}},Vector{UnitRange{Int}}}
-    rowranges = Vector{UnitRange{Int}}(undef, length(rows))
-    colranges = Vector{UnitRange{Int}}(undef, length(maps))
+function rowcolranges(maps, rows)
+    rowranges = ()
+    colranges = ()
     mapind = 0
     rowstart = 1
-    for rowind in 1:length(rows)
-        xinds = vcat(1, map(a -> size(a, 2), maps[mapind+1:mapind+rows[rowind]])...)
+    for row in rows
+        xinds = vcat(1, map(a -> size(a, 2), maps[mapind+1:mapind+row])...)
         cumsum!(xinds, xinds)
         mapind += 1
         rowend = rowstart + size(maps[mapind], 1) - 1
-        rowranges[rowind] = rowstart:rowend
-        colranges[mapind] = xinds[1]:xinds[2]-1
-        for colind in 2:rows[rowind]
+        rowranges = (rowranges..., rowstart:rowend)
+        colranges = (colranges..., xinds[1]:xinds[2]-1)
+        for colind in 2:row
             mapind +=1
-            colranges[mapind] = xinds[colind]:xinds[colind+1]-1
+            colranges = (colranges..., xinds[colind]:xinds[colind+1]-1)
         end
         rowstart = rowend + 1
     end
-    return rowranges, colranges
+    return rowranges::NTuple{length(rows), UnitRange{Int}}, colranges::NTuple{length(maps), UnitRange{Int}}
 end
 
-Base.size(A::BlockMap) = (last(A.rowranges[end]), last(A.colranges[end]))
+Base.size(A::BlockMap) = (last(last(A.rowranges)), last(last(A.colranges)))
 
 ############
 # concatenation
@@ -305,11 +305,11 @@ LinearAlgebra.adjoint(A::BlockMap)  = AdjointMap(A)
 @inline function _blockmul!(y, A::BlockMap, x, α, β)
     maps, rows, yinds, xinds = A.maps, A.rows, A.rowranges, A.colranges
     mapind = 0
-    @views @inbounds for rowind in 1:length(rows)
-        yrow = selectdim(y, 1, yinds[rowind])
+    @views @inbounds for (row, yi) in zip(rows, yinds)
+        yrow = selectdim(y, 1, yi)
         mapind += 1
         mul!(yrow, maps[mapind], selectdim(x, 1, xinds[mapind]), α, β)
-        for colind in 2:rows[rowind]
+        for colind in 2:row
             mapind +=1
             mul!(yrow, maps[mapind], selectdim(x, 1, xinds[mapind]), α, true)
         end
@@ -399,10 +399,10 @@ end
 # BlockDiagonalMap
 ############
 
-struct BlockDiagonalMap{T,As<:Tuple{Vararg{LinearMap}}} <: LinearMap{T}
+struct BlockDiagonalMap{T,As<:Tuple{Vararg{LinearMap}},Ranges<:Tuple{Vararg{UnitRange{Int}}}} <: LinearMap{T}
     maps::As
-    rowranges::Vector{UnitRange{Int}}
-    colranges::Vector{UnitRange{Int}}
+    rowranges::Ranges
+    colranges::Ranges
     function BlockDiagonalMap{T,As}(maps::As) where {T, As<:Tuple{Vararg{LinearMap}}}
         for A in maps
             promote_type(T, eltype(A)) == T || throw(InexactError())
@@ -410,12 +410,12 @@ struct BlockDiagonalMap{T,As<:Tuple{Vararg{LinearMap}}} <: LinearMap{T}
         # row ranges
         inds = vcat(1, size.(maps, 1)...)
         cumsum!(inds, inds)
-        rowranges = map(i -> inds[i]:inds[i+1]-1, 1:length(maps))
+        rowranges = ntuple(i -> inds[i]:inds[i+1]-1, Val(length(maps)))
         # column ranges
         inds[2:end] .= size.(maps, 2)
         cumsum!(inds, inds)
-        colranges = map(i -> inds[i]:inds[i+1]-1, 1:length(maps))
-        return new{T,As}(maps, rowranges, colranges)
+        colranges = ntuple(i -> inds[i]:inds[i+1]-1, Val(length(maps)))
+        return new{T,As,typeof(rowranges)}(maps, rowranges, colranges)
     end
 end
 
@@ -477,7 +477,7 @@ end
 @inline function _blockscaling!(y, A::BlockDiagonalMap, x, α, β)
     maps, yinds, xinds = A.maps, A.rowranges, A.colranges
     # TODO: think about multi-threading here
-    @views @inbounds for i in 1:length(maps)
+    @views @inbounds for i in eachindex(yinds, maps, xinds)
         mul!(selectdim(y, 1, yinds[i]), maps[i], selectdim(x, 1, xinds[i]), α, β)
     end
     return y
