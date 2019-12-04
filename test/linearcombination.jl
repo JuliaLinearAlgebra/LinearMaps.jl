@@ -2,7 +2,7 @@ using Test, LinearMaps, LinearAlgebra, BenchmarkTools
 
 @testset "linear combinations" begin
     CS! = LinearMap{ComplexF64}(cumsum!,
-                                (y, x) -> (copyto!(y, x); reverse!(y); cumsum!(y, y)), 10;
+                                (y, x) -> (copyto!(y, x); reverse!(y); cumsum!(y, y); reverse!(y)), 10;
                                 ismutating=true)
     v = rand(ComplexF64, 10)
     u = similar(v)
@@ -14,7 +14,9 @@ using Test, LinearMaps, LinearAlgebra, BenchmarkTools
     b = @benchmarkable mul!($u, $L, $v)
     @test run(b, samples=5).allocs <= 1
     for α in (false, true, rand(ComplexF64)), β in (false, true, rand(ComplexF64))
-        @test mul!(copy(u), L, v, α, β) ≈ Matrix(L)*v*α + u*β
+        for transform in (identity, adjoint, transpose)
+            @test mul!(copy(u), transform(L), v, α, β) ≈ transform(Matrix(L))*v*α + u*β
+        end
     end
     V = rand(ComplexF64, 10, 3)
     U = similar(V)
@@ -56,11 +58,8 @@ using Test, LinearMaps, LinearAlgebra, BenchmarkTools
                     lallocs = run(blmap, samples=3).allocs
                     mallocs = run(bmat, samples=3).allocs
                     @test lallocs <= mallocs
-                    if length(sz) == 2 && VERSION <= v"1.4.0-DEV.400"
-                        @test lallocs == 0
-                    else
-                        @test lallocs == 0
-                    end
+                    @test lallocs == 0
+                    
                     blmap = @benchmarkable mul!($w, $(LC + λ*I), $v, $α, $β)
                     bmat = @benchmarkable begin
                         mul!($w, $A, $v, $α, $β)
@@ -70,11 +69,7 @@ using Test, LinearMaps, LinearAlgebra, BenchmarkTools
                     lallocs = run(blmap, samples=3).allocs
                     mallocs = run(bmat, samples=3).allocs
                     @test lallocs <= mallocs
-                    if length(sz) == 2 && VERSION <= v"1.4.0-DEV.400"
-                        @test_broken lallocs == 0
-                    elseif length(sz) == 1
-                        @test lallocs == 0
-                    end
+                    @test lallocs == 0
                 end
                 y = rand(ComplexF64, sz)
                 @test mul!(copy(y), LC, v, α, β) ≈ (A + B)*v*α + y*β

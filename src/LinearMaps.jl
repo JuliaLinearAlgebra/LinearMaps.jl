@@ -92,12 +92,20 @@ function LinearAlgebra.mul!(Y::AbstractMatrix, A::LinearMap, X::AbstractMatrix, 
 end
 
 # multiplication helper functions
-@inline _muladd!(::FiveArg, y, A::LinearMap, x, α, β) = mul!(y, A, x, α, β)
-@inline _muladd!(::ThreeArg, y, A::LinearMap, x, α, β) =
+@inline _muladd!(::FiveArg, y, A::MapOrMatrix, x, α, β) = mul!(y, A, x, α, β)
+@inline _muladd!(::ThreeArg, y, A::MapOrMatrix, x, α, β) =
     iszero(β) ? muladd!(y, A, x, α, β, nothing) : muladd!(y, A, x, α, β, similar(y))
-@inline _muladd!(::FiveArg, y, A::LinearMap, x, α, β, _) = mul!(y, A, x, α, β)
-@inline _muladd!(::ThreeArg, y, A::LinearMap, x, α, β, z) = muladd!(y, A, x, α, β, z)
-@inline function muladd!(y, A::LinearMap, x, α, β, z)
+@inline _muladd!(::FiveArg, y, A::MapOrMatrix, x, α, β, _) = mul!(y, A, x, α, β)
+@inline _muladd!(::ThreeArg, y, A::MapOrMatrix, x, α, β, z) = muladd!(y, A, x, α, β, z)
+
+"""
+    muladd!(y, A, x, α, β, z)
+
+Compute 5-arg multiplication for `LinearMap`s that do not have a 5-arg `mul!`,
+but only a 3-arg `mul!`. For storing the intermediate `A*x*α`, a vector (or
+matrix, as appropriate) `z` is (already) provided.
+"""
+@inline function muladd!(y, A::MapOrMatrix, x, α, β, z)
     if iszero(α)
         iszero(β) && (fill!(y, zero(eltype(y))); return y)
         isone(β) && return y

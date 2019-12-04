@@ -257,7 +257,6 @@ LinearAlgebra.transpose(A::KroneckerSumMap{T}) where {T} = KroneckerSumMap{T}(ma
 
 Base.:(==)(A::KroneckerSumMap, B::KroneckerSumMap) = (eltype(A) == eltype(B) && A.maps == B.maps)
 
-if VERSION ≥ v"1.3.0-alpha.115"
 Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, L::KroneckerSumMap, x::AbstractVector,
                     α::Number=true, β::Number=false)
     @boundscheck check_dim_mul(y, L, x)
@@ -266,20 +265,22 @@ Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, L::Krone
     mb, nb = size(B)
     X = reshape(x, (nb, na))
     Y = reshape(y, (nb, na))
-    mul!(Y, X, convert(AbstractMatrix, transpose(A)), true, β)
-    mul!(Y, B, X, α, true)
+    _muladd!(MulStyle(X), Y, X, convert(AbstractMatrix, transpose(A)), true, β)
+    _muladd!(MulStyle(B), Y, B, X, α, true)
     return y
 end
-else
-Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, L::KroneckerSumMap, x::AbstractVector)
+
+Base.@propagate_inbounds function muladd!(y::AbstractVector, L::KroneckerSumMap, x::AbstractVector,
+                    α, β, z::AbstractVector)
     @boundscheck check_dim_mul(y, L, x)
+    @boundscheck size(y) == size(z)
     A, B = L.maps
     ma, na = size(A)
     mb, nb = size(B)
     X = reshape(x, (nb, na))
     Y = reshape(y, (nb, na))
-    mul!(Y, X, convert(AbstractMatrix, transpose(A)))
-    mul!(Y, B, X, true, true)
+    Z = reshape(z, (nb, na))
+    _muladd!(MulStyle(X), Y, X, convert(AbstractMatrix, transpose(A)), true, β, Z)
+    _muladd!(MulStyle(B), Y, B, X, α, true, Z)
     return y
 end
-end # VERSION

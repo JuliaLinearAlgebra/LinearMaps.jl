@@ -82,9 +82,9 @@ for Atype in (AbstractVector, AbstractMatrix)
                 z = similar(y)
                 muladd!(y, A1, x, α, β, z)
                 __mul!(y, Base.tail(A.maps), x, α, z)
-            else
+            else # MulStyle(A1) === FiveArg()
                 # this is allocation-free
-                _muladd!(MulStyle(A1), y, A1, x, α, β)
+                mul!(y, A1, x, α, β)
                 # let _mul! decide whether an intermediate vector needs to be allocated
                 _mul!(MulStyle(A), y, A, x, α)
             end

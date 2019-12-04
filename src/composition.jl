@@ -16,6 +16,7 @@ struct CompositeMap{T, As<:Tuple{Vararg{LinearMap}}} <: LinearMap{T}
 end
 CompositeMap{T}(maps::As) where {T, As<:Tuple{Vararg{LinearMap}}} = CompositeMap{T, As}(maps)
 
+# treat CompositeMaps as FiveArg's because the 5-arg mul! is optimized
 MulStyle(::CompositeMap) = FiveArg()
 
 # basic methods

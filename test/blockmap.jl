@@ -1,4 +1,4 @@
-using Test, LinearMaps, LinearAlgebra, SparseArrays
+using Test, LinearMaps, LinearAlgebra, SparseArrays, BenchmarkTools
 
 @testset "block maps" begin
     @testset "hcat" begin
@@ -200,6 +200,30 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
             Y = randn(elty, size(Md, 1), 10)
             for α in (0, 1, rand(elty)), β in (0, 1, rand(elty))
                 @test mul!(copy(Y), Bd, X, α, β) ≈ Y*β .+ Md*X*α
+            end
+        end
+    end
+
+    @testset "function block map" begin
+        CS! = LinearMap{ComplexF64}(cumsum!,
+                                    (y, x) -> (copyto!(y, x); reverse!(y); cumsum!(y, y); reverse!(y)), 10;
+                                    ismutating=true)
+        A = rand(ComplexF64, 10, 10)
+        B = rand(10, 10)
+        L = [CS! LinearMap(A); LinearMap(B) CS!]
+        M = [Matrix(CS!) A; B Matrix(CS!)]
+        u = rand(ComplexF64, 20)
+        v = rand(ComplexF64, 20)
+        for α in (false, true, rand(ComplexF64)), β in (false, true, rand(ComplexF64))
+            for transform in (identity, adjoint)
+                @test mul!(copy(v), transform(L), u, α, β) ≈ transform(M)*u*α + v*β
+                @test mul!(copy(v), transform(LinearMap(L)), u, α, β) ≈ transform(M)*u*α + v*β
+                @test mul!(copy(v), LinearMap(transform(L)), u, α, β) ≈ transform(M)*u*α + v*β
+                # bmap = @benchmarkable mul!($(copy(v)), $(transform(L)), $u, $α, $β)
+                # bmat = @benchmarkable mul!($(copy(v)), $(transform(Lmat)), $u, $α, $β)
+                # @show run(bmap, samples=3).allocs
+                # @show run(bmat, samples=3).allocs
+                # @test run(blm, samples=3).allocs <= 1
             end
         end
     end
