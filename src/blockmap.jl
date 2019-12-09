@@ -319,18 +319,19 @@ end
 
 @inline function _transblockmul!(y, A::BlockMap, x, α, β, transform)
     maps, rows, xinds, yinds = A.maps, A.rows, A.rowranges, A.colranges
-    mapind = 0
-    # first block row (rowind = 1) of A, meaning first block column of A', fill all of y
     @views @inbounds begin
-        xcol = selectdim(x, 1, xinds[1])
-        for colind in 1:rows[1]
-            mapind +=1
-            mul!(selectdim(y, 1, yinds[mapind]), transform(maps[mapind]), xcol, α, β)
+        # first block row (rowind = 1) of A, meaning first block column of A', fill all of y
+        xcol = selectdim(x, 1, first(xinds))
+        for rowind in 1:first(rows)
+            mul!(selectdim(y, 1, yinds[rowind]), transform(maps[rowind]), xcol, α, β)
         end
-        # subsequent block rows of A, add results to corresponding parts of y
+        mapind = first(rows)
+        # subsequent block rows of A (block columns of A'),
+        # add results to corresponding parts of y
+        # TODO: think about multithreading
         for rowind in 2:length(rows)
             xcol = selectdim(x, 1, xinds[rowind])
-            for colind in 1:rows[rowind]
+            for _ in 1:rows[rowind]
                 mapind +=1
                 mul!(selectdim(y, 1, yinds[mapind]), transform(maps[mapind]), xcol, α, true)
             end
