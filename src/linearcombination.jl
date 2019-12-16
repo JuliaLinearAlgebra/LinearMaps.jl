@@ -76,14 +76,14 @@ for Atype in (AbstractVector, AbstractMatrix)
             return y
         else
             mul!(y, first(A.maps), x, α, β)
-            return _mul!(MulStyle(A), y, A, x, α, β)
+            return _mul!(MulStyle(A), y, A, x, α)
         end
     end
 end
 
-@inline _mul!(::FiveArg, y, A::LinearCombination, x, α::Number, β::Number) =
+@inline _mul!(::FiveArg, y, A::LinearCombination, x, α::Number) =
     __mul!(y, Base.tail(A.maps), x, α, nothing)
-@inline function _mul!(::ThreeArg, y, A::LinearCombination, x, α::Number, β::Number)
+@inline function _mul!(::ThreeArg, y, A::LinearCombination, x, α::Number)
     z = similar(y)
     __mul!(y, Base.tail(A.maps), x, α, z)
 end
