@@ -16,6 +16,10 @@ using Test, LinearMaps, LinearAlgebra, BenchmarkTools
     for α in (false, true, rand(ComplexF64)), β in (false, true, rand(ComplexF64))
         @test mul!(copy(u), L, v, α, β) ≈ Matrix(L)*v*α + u*β
     end
+    V = rand(ComplexF64, 10, 3)
+    U = similar(V)
+    @test mul!(U, L, V) ≈ n*cumsum(V, dims=1)
+    @test mul!(U, LinearMap(L), V) ≈ n*cumsum(V, dims=1)
 
     A = 2 * rand(ComplexF64, (10, 10)) .- 1
     B = rand(ComplexF64, size(A)...)

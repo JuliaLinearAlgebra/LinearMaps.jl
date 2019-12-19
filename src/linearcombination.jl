@@ -95,8 +95,7 @@ end
 
 @inline muladd!(::FiveArg, y, A, x, α, _) = mul!(y, A, x, α, true)
 @inline function muladd!(::ThreeArg, y, A, x, α, z)
-    # TODO: replace by mul!(z, A, x)
-    A_mul_B!(z, A, x)
+    mul!(z, A, x)
     if isone(α)
         y .+= z
     else
