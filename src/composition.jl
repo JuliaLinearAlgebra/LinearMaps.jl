@@ -126,19 +126,18 @@ function A_mul_B!(y::AbstractVector, A::CompositeMap, x::AbstractVector)
     if N==1
         A_mul_B!(y, A.maps[1], x)
     else
-        T = eltype(y)
-        dest = Array{T}(undef, size(A.maps[1], 1))
+        dest = similar(y, size(A.maps[1], 1))
         A_mul_B!(dest, A.maps[1], x)
         source = dest
         if N>2
-            dest = Array{T}(undef, size(A.maps[2], 1))
+            dest = similar(y, size(A.maps[2], 1))
         end
         for n in 2:N-1
             try
                 resize!(dest, size(A.maps[n], 1))
             catch err
                 if err == ErrorException("cannot resize array with shared data")
-                    dest = Array{T}(undef, size(A.maps[n], 1))
+                    dest = similar(y, size(A.maps[n], 1))
                 else
                     rethrow(err)
                 end

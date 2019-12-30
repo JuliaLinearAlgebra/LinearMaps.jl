@@ -105,9 +105,8 @@ Base.:(==)(A::KroneckerMap, B::KroneckerMap) = (eltype(A) == eltype(B) && A.maps
     na, ma = size(At)
     mb, nb = size(B)
     v = zeros(T, ma)
-    Ty = eltype(y)
-    temp1 = Array{Ty}(undef, na)
-    temp2 = Array{Ty}(undef, nb)
+    temp1 = similar(y, na)
+    temp2 = similar(y, nb)
     @views @inbounds for i in 1:ma
         v[i] = one(T)
         A_mul_B!(temp1, At, v)
