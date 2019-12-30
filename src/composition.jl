@@ -126,12 +126,11 @@ function A_mul_B!(y::AbstractVector, A::CompositeMap, x::AbstractVector)
     if N==1
         A_mul_B!(y, A.maps[1], x)
     else
-        T = eltype(y)
-        dest = similar(y, T, size(A.maps[1], 1))
+        dest = similar(y, size(A.maps[1], 1))
         A_mul_B!(dest, A.maps[1], x)
         source = dest
         if N>2
-            dest = similar(y, T, size(A.maps[2], 1))
+            dest = similar(y, size(A.maps[2], 1))
         end
         for n in 2:N-1
             try
