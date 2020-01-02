@@ -309,7 +309,7 @@ LinearAlgebra.adjoint(A::BlockMap)  = AdjointMap(A)
         yrow = selectdim(y, 1, yi)
         mapind += 1
         mul!(yrow, maps[mapind], selectdim(x, 1, xinds[mapind]), α, β)
-        for colind in 2:row
+        for _ in 2:row
             mapind +=1
             mul!(yrow, maps[mapind], selectdim(x, 1, xinds[mapind]), α, true)
         end
@@ -329,9 +329,9 @@ end
         # subsequent block rows of A (block columns of A'),
         # add results to corresponding parts of y
         # TODO: think about multithreading
-        for rowind in 2:length(rows)
-            xcol = selectdim(x, 1, xinds[rowind])
-            for _ in 1:rows[rowind]
+        for (row, xi) in zip(Base.tail(rows), Base.tail(xinds))
+            xcol = selectdim(x, 1, xi)
+            for _ in 1:row
                 mapind +=1
                 mul!(selectdim(y, 1, yinds[mapind]), transform(maps[mapind]), xcol, α, true)
             end
