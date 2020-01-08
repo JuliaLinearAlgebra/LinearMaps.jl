@@ -287,6 +287,7 @@ The `LinearMap` object combines well with methods of the following packages:
 using LinearMaps
 import Arpack, IterativeSolvers, TSVD
 
+# Example 1, 1-dimensional Laplacian with periodic boundary conditions
 function leftdiff!(y::AbstractVector, x::AbstractVector) # left difference assuming periodic boundary conditions
     N = length(x)
     length(y) == N || throw(DimensionMismatch())
@@ -313,4 +314,22 @@ Arpack.svds(D; nsv=3)
 Σ, L = IterativeSolvers.svdl(D; nsv=3)
 
 TSVD.tsvd(D, 3)
+
+# Example 2, 1-dimensional Laplacian
+A = LinearMap(100; issymmetric=true, ismutating=true) do C, B
+    C[1] = -2B[1] + B[2]
+    for i in 2:length(B)-1
+        C[i] = B[i-1] - 2B[i] + B[i+1]
+    end
+    C[end] = B[end-1] - 2B[end]
+    return C
+end
+
+Arpack.eigs(-A; nev=3, which=:SR)
+
+# Example 3, 2-dimensional Laplacian
+Δ = kronsum(A, A)
+
+Arpack.eigs(Δ; nev=3, which=:LR)
+eigsolve(x -> Δ*x, size(Δ, 1), 3, :LR)
 ```
