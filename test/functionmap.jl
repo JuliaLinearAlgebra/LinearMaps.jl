@@ -75,4 +75,13 @@ using Test, LinearMaps, LinearAlgebra
     v = rand(ComplexF64, 10)
     @test @inferred (2 * L)' * v ≈ 2 * v
     @test @inferred transpose(2 * L) * v ≈ 2 * v
+
+    L = LinearMap{ComplexF64}(identity, 10; issymmetric=true)
+    @test L * v == v
+    @test adjoint(L) * v == v
+    @test transpose(L) * v == v
+    L = LinearMap{ComplexF64}(identity, 10; ishermitian=true)
+    @test L * v == v
+    @test adjoint(L) * v == v
+    @test transpose(L) * v == v
 end

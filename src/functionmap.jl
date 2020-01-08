@@ -56,7 +56,7 @@ function A_mul_B!(y::AbstractVector, A::FunctionMap, x::AbstractVector)
 end
 
 function At_mul_B!(y::AbstractVector, A::FunctionMap, x::AbstractVector)
-    issymmetric(A) && return A_mul_B!(y, A, x)
+    (issymmetric(A) || (isreal(A) && ishermitian(A))) && return A_mul_B!(y, A, x)
     (length(x) == A.M && length(y) == A.N) || throw(DimensionMismatch("At_mul_B!"))
     if A.fc !== nothing
         if !isreal(A)
@@ -67,16 +67,26 @@ function At_mul_B!(y::AbstractVector, A::FunctionMap, x::AbstractVector)
             conj!(y)
         end
         return y
+    elseif ishermitian(A) # but !isreal(A)
+        x = conj(x)
+        A_mul_B!(y, A, x)
+        conj!(y)
+        return y
     else
         error("transpose not implemented for $A")
     end
 end
 
 function Ac_mul_B!(y::AbstractVector, A::FunctionMap, x::AbstractVector)
-    ishermitian(A) && return A_mul_B!(y, A, x)
+    (ishermitian(A) || (isreal(A) && issymmetric(A))) && return A_mul_B!(y, A, x)
     (length(x) == A.M && length(y) == A.N) || throw(DimensionMismatch("Ac_mul_B!"))
     if A.fc !== nothing
         ismutating(A) ? A.fc(y, x) : copyto!(y, A.fc(x))
+        return y
+    elseif issymmetric(A) # but !isreal(A)
+        x = conj(x)
+        A_mul_B!(y, A, x)
+        conj!(y)
         return y
     else
         error("adjoint not implemented for $A")
