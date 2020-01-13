@@ -285,7 +285,7 @@ The `LinearMap` object combines well with methods of the following packages:
 
 ```
 using LinearMaps
-import Arpack, IterativeSolvers, TSVD
+import Arpack, IterativeSolvers, KrylovKit, TSVD
 
 # Example 1, 1-dimensional Laplacian with periodic boundary conditions
 function leftdiff!(y::AbstractVector, x::AbstractVector) # left difference assuming periodic boundary conditions
@@ -331,5 +331,5 @@ Arpack.eigs(-A; nev=3, which=:SR)
 Δ = kronsum(A, A)
 
 Arpack.eigs(Δ; nev=3, which=:LR)
-eigsolve(x -> Δ*x, size(Δ, 1), 3, :LR)
+KrylovKit.eigsolve(x -> Δ*x, size(Δ, 1), 3, :LR)
 ```
