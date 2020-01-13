@@ -48,15 +48,17 @@ Base.length(A::LinearMap) = size(A)[1] * size(A)[2]
 
 # check dimension consistency for y = A*x and Y = A*X
 function check_dim_mul(y::AbstractVector, A::LinearMap, x::AbstractVector)
-     m, n = size(A)
-     (m == length(y) && n == length(x)) || throw(DimensionMismatch("mul!"))
-     return nothing
- end
- function check_dim_mul(Y::AbstractMatrix, A::LinearMap, X::AbstractMatrix)
-     m, n = size(A)
-     (m == size(Y, 1) && n == size(X, 1) && size(Y, 2) == size(X, 2)) || throw(DimensionMismatch("mul!"))
-     return nothing
- end
+    # @info "checked vector dimensions" # uncomment for testing
+    m, n = size(A)
+    (m == length(y) && n == length(x)) || throw(DimensionMismatch("mul!"))
+    return nothing
+end
+function check_dim_mul(Y::AbstractMatrix, A::LinearMap, X::AbstractMatrix)
+    # @info "checked matrix dimensions" # uncomment for testing
+    m, n = size(A)
+    (m == size(Y, 1) && n == size(X, 1) && size(Y, 2) == size(X, 2)) || throw(DimensionMismatch("mul!"))
+    return nothing
+end
 
 # conversion of AbstractMatrix to LinearMap
 convert_to_lmaps_(A::AbstractMatrix) = LinearMap(A)
@@ -66,9 +68,12 @@ convert_to_lmaps(A) = (convert_to_lmaps_(A),)
 @inline convert_to_lmaps(A, B, Cs...) =
     (convert_to_lmaps_(A), convert_to_lmaps_(B), convert_to_lmaps(Cs...)...)
 
-Base.:(*)(A::LinearMap, x::AbstractVector) = mul!(similar(x, promote_type(eltype(A), eltype(x)), size(A, 1)), A, x)
+function Base.:(*)(A::LinearMap, x::AbstractVector)
+    size(A, 2) == length(x) || throw(DimensionMismatch("mul!"))
+    return @inbounds mul!(similar(x, promote_type(eltype(A), eltype(x)), size(A, 1)), A, x)
+end
 function LinearAlgebra.mul!(y::AbstractVector, A::LinearMap, x::AbstractVector, α::Number=true, β::Number=false)
-    length(y) == size(A, 1) || throw(DimensionMismatch("mul!"))
+    @boundscheck check_dim_mul(y, A, x)
     if isone(α)
         iszero(β) && (A_mul_B!(y, A, x); return y)
         isone(β) && (y .+= A * x; return y)
@@ -92,8 +97,8 @@ function LinearAlgebra.mul!(y::AbstractVector, A::LinearMap, x::AbstractVector, 
     end
 end
 # the following is of interest in, e.g., subspace-iteration methods
-function LinearAlgebra.mul!(Y::AbstractMatrix, A::LinearMap, X::AbstractMatrix, α::Number=true, β::Number=false)
-    (size(Y, 1) == size(A, 1) && size(X, 1) == size(A, 2) && size(Y, 2) == size(X, 2)) || throw(DimensionMismatch("mul!"))
+Base.@propagate_inbounds function LinearAlgebra.mul!(Y::AbstractMatrix, A::LinearMap, X::AbstractMatrix, α::Number=true, β::Number=false)
+    @boundscheck check_dim_mul(Y, A, X)
     @inbounds @views for i = 1:size(X, 2)
         mul!(Y[:, i], A, X[:, i], α, β)
     end

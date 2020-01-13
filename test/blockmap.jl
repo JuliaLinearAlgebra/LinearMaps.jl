@@ -1,4 +1,4 @@
-using Test, LinearMaps, LinearAlgebra
+using Test, LinearMaps, LinearAlgebra, SparseArrays
 
 @testset "block maps" begin
     @testset "hcat" begin
@@ -79,6 +79,15 @@ using Test, LinearMaps, LinearAlgebra
             @test size(L) == (30, 30)
             @test Matrix(L) ≈ A
             @test L * x ≈ A * x
+            y = randn(elty, size(L, 1))
+            for α in (0, 1, rand(elty)), β in (0, 1, rand(elty))
+                @test mul!(copy(y), L, x, α, β) ≈ y*β .+ A*x*α
+            end
+            X = rand(elty, 30, 10)
+            Y = randn(elty, size(L, 1), 10)
+            for α in (0, 1, rand(elty)), β in (0, 1, rand(elty))
+                @test mul!(copy(Y), L, X, α, β) ≈ Y*β .+ A*X*α
+            end
             A = rand(elty, 10,10); LA = LinearMap(A)
             B = rand(elty, 20,30); LB = LinearMap(B)
             @test [LA LA LA; LB] isa LinearMaps.BlockMap{elty}
@@ -140,7 +149,50 @@ using Test, LinearMaps, LinearAlgebra
             Lt = @inferred transform(L)
             @test Lt isa LinearMaps.LinearMap{elty}
             @test Lt * x ≈ transform(A) * x
-            @test Matrix(Lt) ≈ Matrix(transform(A))
+            @test Matrix(Lt) ≈ Matrix(transform(LinearMap(L))) ≈ Matrix(transform(A))
+            @test Matrix(transform(LinearMap(L))+transform(LinearMap(L))) ≈ 2Matrix(transform(A))
+            X = rand(elty, size(L, 1), 10)
+            Y = randn(elty, size(L, 2), 10)
+            for α in (0, 1, rand(elty)), β in (0, 1, rand(elty))
+                @test mul!(copy(Y), Lt, X, α, β) ≈ Y*β .+ transform(A)*X*α
+            end
+        end
+    end
+
+    @testset "block diagonal maps" begin
+        for elty in (Float64, ComplexF64)
+            m = 5; n = 6
+            M1 = 10*(1:m) .+ (1:(n+1))'; L1 = LinearMap(M1)
+            M2 = randn(elty, m, n+2); L2 = LinearMap(M2)
+            M3 = randn(elty, m, n+3); L3 = LinearMap(M3)
+
+            # Md = diag(M1, M2, M3, M2, M1) # unsupported so use sparse:
+            Md = Matrix(blockdiag(sparse.((M1, M2, M3, M2, M1))...))
+            x = randn(elty, size(Md, 2))
+            Bd = @inferred blockdiag(L1, L2, L3, L2, L1)
+            @test Matrix(@inferred blockdiag(L1)) == M1
+            @test Matrix(@inferred blockdiag(L1, L2)) == blockdiag(sparse.((M1, M2))...)
+            Bd2 = @inferred cat(L1, L2, L3, L2, L1; dims=(1,2))
+            @test_throws ArgumentError cat(L1, L2, L3, L2, L1; dims=(2,2))
+            @test Bd == Bd2
+            @test Bd == blockdiag(L1, M2, M3, M2, M1)
+            @test size(Bd) == (25, 39)
+            @test !issymmetric(Bd)
+            @test !ishermitian(Bd)
+            @test @inferred Bd * x ≈ Md * x
+            for transform in (identity, adjoint, transpose)
+                @test Matrix(@inferred transform(Bd)) == transform(Md)
+                @test Matrix(@inferred transform(LinearMap(Bd))) == transform(Md)
+            end
+            y = randn(elty, size(Md, 1))
+            for α in (0, 1, rand(elty)), β in (0, 1, rand(elty))
+                @test mul!(copy(y), Bd, x, α, β) ≈ y*β .+ Md*x*α
+            end
+            X = randn(elty, size(Md, 2), 10)
+            Y = randn(elty, size(Md, 1), 10)
+            for α in (0, 1, rand(elty)), β in (0, 1, rand(elty))
+                @test mul!(copy(Y), Bd, X, α, β) ≈ Y*β .+ Md*X*α
+            end
         end
     end
 end
