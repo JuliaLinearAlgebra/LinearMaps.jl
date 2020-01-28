@@ -48,6 +48,64 @@ function Base.:(*)(A::FunctionMap, x::AbstractVector)
     end
     return y
 end
+function Base.:(*)(A::AdjointMap{<:Any,<:FunctionMap}, x::AbstractVector)
+    Afun = A.lmap
+    ishermitian(Afun) && return Afun*x
+    length(x) == size(A, 2) || throw(DimensionMismatch())
+    if Afun.fc !== nothing
+        if _ismutating(Afun.fc)
+            y = similar(x, promote_type(eltype(A), eltype(x)), size(A, 1))
+            Afun.fc(y, x)
+        else
+            y = Afun.fc(x)
+        end
+        return y
+    elseif issymmetric(Afun) # but !isreal(A), Afun.f can be used
+        x = conj(x)
+        if ismutating(Afun)
+            y = similar(x, promote_type(eltype(A), eltype(x)), size(A, 1))
+            Afun.f(y, x)
+        else
+            y = Afun.f(x)
+        end
+        conj!(y)
+        return y
+    else
+        error("adjoint not implemented for $A")
+    end
+end
+function Base.:(*)(A::TransposeMap{<:Any,<:FunctionMap}, x::AbstractVector)
+    Afun = A.lmap
+    (issymmetric(Afun) || (isreal(A) && ishermitian(Afun))) && return Afun*x
+    length(x) == size(A, 2) || throw(DimensionMismatch())
+    if Afun.fc !== nothing
+        if !isreal(A)
+            x = conj(x)
+        end
+        if _ismutating(Afun.fc)
+            y = similar(x, promote_type(eltype(A), eltype(x)), size(A, 1))
+            Afun.fc(y, x)
+        else
+            y = Afun.fc(x)
+        end
+        if !isreal(A)
+            conj!(y)
+        end
+        return y
+    elseif ishermitian(Afun) # but !isreal(A), Afun.f can be used
+        x = conj(x)
+        if ismutating(Afun)
+            y = similar(x, promote_type(eltype(A), eltype(x)), size(A, 1))
+            Afun.f(y, x)
+        else
+            y = Afun.f(x)
+        end
+        conj!(y)
+        return y
+    else
+        error("transpose not implemented for $A")
+    end
+end
 
 function A_mul_B!(y::AbstractVector, A::FunctionMap, x::AbstractVector)
     (length(x) == A.N && length(y) == A.M) || throw(DimensionMismatch("A_mul_B!"))
@@ -78,7 +136,7 @@ function At_mul_B!(y::AbstractVector, A::FunctionMap, x::AbstractVector)
 end
 
 function Ac_mul_B!(y::AbstractVector, A::FunctionMap, x::AbstractVector)
-    (ishermitian(A) || (isreal(A) && issymmetric(A))) && return A_mul_B!(y, A, x)
+    ishermitian(A) && return A_mul_B!(y, A, x)
     (length(x) == A.M && length(y) == A.N) || throw(DimensionMismatch("Ac_mul_B!"))
     if A.fc !== nothing
         ismutating(A) ? A.fc(y, x) : copyto!(y, A.fc(x))
