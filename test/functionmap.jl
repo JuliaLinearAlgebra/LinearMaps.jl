@@ -56,6 +56,8 @@ using Test, LinearMaps, LinearAlgebra
     @test @inferred mul!(similar(v), CS!, v) == cv
     @test_throws ErrorException CS!'v
     @test_throws ErrorException adjoint(CS!) * v
+    @test_throws ErrorException mul!(similar(v), CS!', v)
+    @test_throws ErrorException mul!(similar(v), transpose(CS!), v)
     CS! = LinearMap{ComplexF64}(cumsum!, (y, x) -> (copyto!(y, x); reverse!(y); cumsum!(y, y)), 10; ismutating=true)
     @inferred adjoint(CS!)
     @test @inferred LinearMaps.ismutating(CS!)
