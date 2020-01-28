@@ -82,6 +82,10 @@ using Test, LinearMaps, LinearAlgebra
     @test L * v == A * v == mul!(w, L, v)
     L = LinearMap{ComplexF64}((y, x) -> mul!(y, A, x), 10)
     @test L * v == A * v == mul!(w, L, v)
+    L = LinearMap{ComplexF64}((y, x) -> mul!(y, A, x), (y, x) -> mul!(y, A', x), 10)
+    @test L * v == A * v == mul!(w, L, v)
+    @test adjoint(L) * v ≈ A'v ≈ mul!(w, L', v)
+    @test transpose(L) * v ≈ transpose(A)*v ≈ mul!(w, transpose(L), v)
 
     A = Symmetric(rand(ComplexF64, 10, 10))
     L = LinearMap{ComplexF64}(x -> A*x, 10; issymmetric=true)

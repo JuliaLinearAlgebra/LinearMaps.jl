@@ -53,7 +53,7 @@ function Base.:(*)(A::AdjointMap{<:Any,<:FunctionMap}, x::AbstractVector)
     ishermitian(Afun) && return Afun*x
     length(x) == size(A, 2) || throw(DimensionMismatch())
     if Afun.fc !== nothing
-        if _ismutating(Afun.fc)
+        if ismutating(Afun)
             y = similar(x, promote_type(eltype(A), eltype(x)), size(A, 1))
             Afun.fc(y, x)
         else
@@ -82,7 +82,7 @@ function Base.:(*)(A::TransposeMap{<:Any,<:FunctionMap}, x::AbstractVector)
         if !isreal(A)
             x = conj(x)
         end
-        if _ismutating(Afun.fc)
+        if ismutating(Afun)
             y = similar(x, promote_type(eltype(A), eltype(x)), size(A, 1))
             Afun.fc(y, x)
         else
