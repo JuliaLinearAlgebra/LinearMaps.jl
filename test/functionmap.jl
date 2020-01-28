@@ -56,6 +56,8 @@ using Test, LinearMaps, LinearAlgebra
     @test @inferred mul!(similar(v), CS!, v) == cv
     @test_throws ErrorException CS!'v
     @test_throws ErrorException adjoint(CS!) * v
+    @test_throws ErrorException mul!(similar(v), CS!', v)
+    @test_throws ErrorException mul!(similar(v), transpose(CS!), v)
     CS! = LinearMap{ComplexF64}(cumsum!, (y, x) -> (copyto!(y, x); reverse!(y); cumsum!(y, y)), 10; ismutating=true)
     @inferred adjoint(CS!)
     @test @inferred LinearMaps.ismutating(CS!)
@@ -73,15 +75,37 @@ using Test, LinearMaps, LinearAlgebra
     @test @inferred transpose(2 * L) * v ≈ 2 * v
     L = @inferred LinearMap{ComplexF64}(x -> x, x -> x, 10)
     v = rand(ComplexF64, 10)
+    w = similar(v)
     @test @inferred (2 * L)' * v ≈ 2 * v
     @test @inferred transpose(2 * L) * v ≈ 2 * v
 
-    L = LinearMap{ComplexF64}(identity, 10; issymmetric=true)
-    @test L * v == v
-    @test adjoint(L) * v == v
-    @test transpose(L) * v == v
-    L = LinearMap{ComplexF64}(identity, 10; ishermitian=true)
-    @test L * v == v
-    @test adjoint(L) * v == v
-    @test transpose(L) * v == v
+    A = rand(ComplexF64, 10, 10)
+    L = LinearMap{ComplexF64}(x -> A*x, 10)
+    @test L * v == A * v == mul!(w, L, v)
+    L = LinearMap{ComplexF64}((y, x) -> mul!(y, A, x), 10)
+    @test L * v == A * v == mul!(w, L, v)
+    L = LinearMap{ComplexF64}((y, x) -> mul!(y, A, x), (y, x) -> mul!(y, A', x), 10)
+    @test L * v == A * v == mul!(w, L, v)
+    @test adjoint(L) * v ≈ A'v ≈ mul!(w, L', v)
+    @test transpose(L) * v ≈ transpose(A)*v ≈ mul!(w, transpose(L), v)
+
+    A = Symmetric(rand(ComplexF64, 10, 10))
+    L = LinearMap{ComplexF64}(x -> A*x, 10; issymmetric=true)
+    @test L * v == A * v == mul!(w, L, v)
+    @test adjoint(L) * v ≈ A'v ≈ mul!(w, L', v)
+    @test transpose(L) * v ≈ transpose(A)*v ≈ mul!(w, transpose(L), v)
+    L = LinearMap{ComplexF64}((y, x) -> mul!(y, A, x), 10; issymmetric=true)
+    @test L * v == A * v == mul!(w, L, v)
+    @test adjoint(L) * v ≈ A'v ≈ mul!(w, L', v)
+    @test transpose(L) * v ≈ transpose(A)*v ≈ mul!(w, transpose(L), v)
+
+    A = Hermitian(rand(ComplexF64, 10, 10))
+    L = LinearMap{ComplexF64}(x -> A*x, 10; ishermitian=true)
+    @test L * v == A * v == mul!(w, L, v)
+    @test adjoint(L) * v ≈ A'v ≈ mul!(w, L', v)
+    @test transpose(L) * v ≈ transpose(A)*v ≈ mul!(w, transpose(L), v)
+    L = LinearMap{ComplexF64}((y, x) -> mul!(y, A, x), 10; ishermitian=true)
+    @test L * v == A * v == mul!(w, L, v)
+    @test adjoint(L) * v ≈ A'v ≈ mul!(w, L', v)
+    @test transpose(L) * v ≈ transpose(A)*v ≈ mul!(w, transpose(L), v)
 end
