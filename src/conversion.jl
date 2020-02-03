@@ -44,7 +44,7 @@ function Base.convert(::Type{Matrix}, Aλ::CompositeMap{<:Any,<:Tuple{UniformSca
     return A.lmap*J.λ
 end
 
-Base.Matrix(A::BlockMap) = hvcat(A.rows, convert.(AbstractMatrix, A.maps)...)
+Base.Matrix(A::BlockMap) = materialize!(Matrix{eltype(A)}(undef, size(A)), A)
 
 # sparse: create sparse matrix representation of LinearMap
 function SparseArrays.sparse(A::LinearMap{T}) where {T}
@@ -73,4 +73,4 @@ end
 
 Base.convert(::Type{SparseMatrixCSC}, A::LinearMap) = sparse(A)
 Base.convert(::Type{SparseMatrixCSC}, A::WrappedMap) = convert(SparseMatrixCSC, A.lmap)
-Base.convert(::Type{SparseMatrixCSC}, A::BlockMap) = hvcat(A.rows, convert.(SparseMatrixCSC, A.maps)...)
+Base.convert(::Type{SparseMatrixCSC}, A::BlockMap) = materialize!(spzeros(eltype(A), size(A)...), A)

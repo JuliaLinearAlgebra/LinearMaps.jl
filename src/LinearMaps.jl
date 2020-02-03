@@ -5,6 +5,7 @@ export ⊗, kronsum, ⊕
 
 using LinearAlgebra
 using SparseArrays
+import Base.Broadcast: materialize!
 
 if VERSION < v"1.2-"
     import Base: has_offset_axes
