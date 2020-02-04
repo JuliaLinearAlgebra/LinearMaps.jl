@@ -1,4 +1,4 @@
-struct BlockMap{T,As<:Tuple{Vararg{LinearMap}},Rs<:Tuple{Vararg{Int}},Rranges<:Tuple{Vararg{UnitRange{Int}}},Cranges<:Tuple{Vararg{UnitRange{Int}}}} <: LinearMap{T}
+struct BlockMap{T,As,Rs<:Tuple{Vararg{Int}},Rranges<:Tuple{Vararg{UnitRange{Int}}},Cranges<:Tuple{Vararg{UnitRange{Int}}}} <: LinearMap{T}
     maps::As
     rows::Rs
     rowranges::Rranges
@@ -39,6 +39,9 @@ function BlockMap{T}(M::Int, N::Int, (m,n), maps, is, js) where T
     sum(m) == M && sum(n) == N ||
         throw(DimensionMismatch("Cumulative block dimensions $(sum(m))×$(sum(n)) do not agree with overall size $(M)×$(N)"))
 
+    length(maps) == length(is) == length(js) ||
+        throw(ArgumentError("Must provide block coordinates for $(length(maps)) blocks"))
+
     allunique(zip(is, js)) ||
         throw(ArgumentError("Not all block indices unique"))
 
@@ -49,9 +52,6 @@ function BlockMap{T}(M::Int, N::Int, (m,n), maps, is, js) where T
         size(A) == (m[i],n[j]) ||
             throw(DimensionMismatch("Block of size $(size(A)) does not match size at $((i,j)): $((m[i],n[j]))"))
     end
-
-    # It would be nice to do just maps = map(LinearMap, maps)
-    maps = (map(A -> A isa LinearMap ? A : LinearMap(A), maps)...,)
 
     rows = zeros(Int, length(m))
     colranges = ()
@@ -70,6 +70,8 @@ function BlockMap{T}(M::Int, N::Int, (m,n), maps, is, js) where T
         i += mm
         rowranges = (rowranges...,iprev:i-1)
     end
+
+    maps = map(convert_to_lmaps_, maps)
 
     BlockMap{T}(maps, rows, rowranges, colranges, M, N)
 end
