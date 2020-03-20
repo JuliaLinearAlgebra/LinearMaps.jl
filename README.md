@@ -247,7 +247,7 @@ constructor described above.
     `AbstractMatrix` will automatically be converted to a `WrappedMap` when it is
     combined with other `AbstractLinearMap` objects via linear combination or
     composition (multiplication). Note that `WrappedMap(mat1)*WrappedMap(mat2)`
-    will never evaluate `mat1*mat2`, since this is more costly then evaluating
+    will never evaluate `mat1*mat2`, since this is more costly than evaluating
     `mat1*(mat2*x)` and the latter is the only operation that needs to be performed
     by `LinearMap` objects anyway. While the cost of matrix addition is comparable
     to matrix vector multiplication, this too is not performed explicitly since
