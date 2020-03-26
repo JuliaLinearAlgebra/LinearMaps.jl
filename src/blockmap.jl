@@ -1,18 +1,90 @@
-struct BlockMap{T,As<:Tuple{Vararg{LinearMap}},Rs<:Tuple{Vararg{Int}},Rranges<:Tuple{Vararg{UnitRange{Int}}},Cranges<:Tuple{Vararg{UnitRange{Int}}}} <: LinearMap{T}
+struct BlockMap{T,As,Rs<:Tuple{Vararg{Int}},Rranges<:Tuple{Vararg{UnitRange{Int}}},Cranges<:Tuple{Vararg{UnitRange{Int}}}} <: LinearMap{T}
     maps::As
     rows::Rs
     rowranges::Rranges
     colranges::Cranges
+    # Store BlockMap size explicitly, to allow south-east corner to be
+    # empty.
+    M::Int
+    N::Int
+
     function BlockMap{T,R,S}(maps::R, rows::S) where {T, R<:Tuple{Vararg{LinearMap}}, S<:Tuple{Vararg{Int}}}
         for A in maps
             promote_type(T, eltype(A)) == T || throw(InexactError())
         end
         rowranges, colranges = rowcolranges(maps, rows)
-        return new{T,R,S,typeof(rowranges),typeof(colranges)}(maps, rows, rowranges, colranges)
+        M,N = last(last(rowranges)), last(last(colranges))
+        return new{T,R,S,typeof(rowranges),typeof(colranges)}(maps, rows, rowranges, colranges, M, N)
     end
+
+    BlockMap{T}(maps::As, rows::Rs, rowranges::Rranges, colranges::Cranges,
+                M::Integer, N::Integer) where {T,As,Rs,Rranges,Cranges} =
+        new{T,As,Rs,Rranges,Cranges}(maps, rows, rowranges, colranges, M, N)
 end
 
 BlockMap{T}(maps::As, rows::S) where {T,As<:Tuple{Vararg{LinearMap}},S} = BlockMap{T,As,S}(maps, rows)
+
+"""
+    BlockMap{T}(M, N, (m, n), maps, is, js)
+
+Constructor for a `BlockMap` of `eltype(T)` for the case when all rows
+have the same column dimensions; these are specified using the vectors
+`m` and `n`. Only those blocks `maps` that are actually occupied need
+to be specified, their coordinates are given by the vectors `is` and `js`.
+"""
+function BlockMap{T}(M::Int, N::Int, (m,n), maps, is, js) where T
+    all(m .> 0) && all(n .> 0) ||
+        throw(ArgumentError("Block sizes must be positive integers"))
+
+    sum(m) == M && sum(n) == N ||
+        throw(DimensionMismatch("Cumulative block dimensions $(sum(m))×$(sum(n)) do not agree with overall size $(M)×$(N)"))
+
+    length(maps) == length(is) == length(js) ||
+        throw(ArgumentError("Must provide block coordinates for $(length(maps)) blocks"))
+
+    allunique(zip(is, js)) ||
+        throw(ArgumentError("Not all block indices unique"))
+
+    for (A,i,j) in zip(maps,is,js)
+        promote_type(T, eltype(A)) == T || throw(InexactError())
+        0 < i ≤ length(m) || throw(ArgumentError("Invalid block row $(i) ∉ 1:$(length(m))"))
+        0 < j ≤ length(n) || throw(ArgumentError("Invalid block column $(j) ∉ 1:$(length(n))"))
+        size(A) == (m[i],n[j]) ||
+            throw(DimensionMismatch("Block of size $(size(A)) does not match size at $((i,j)): $((m[i],n[j]))"))
+    end
+
+    rows = zeros(Int, length(m))
+    colranges = ()
+    colstarts = 1 .+ vcat(0,cumsum(n))
+    for p = sortperm(collect(zip(is,js)))
+        A,i,j = maps[p],is[p],js[p]
+        rows[i] += 1
+        colranges = (colranges..., colstarts[j]:colstarts[j+1]-1)
+    end
+    rows = (rows...,)
+
+    rowranges = ()
+    i = 1
+    for (mm,r) in zip(m,rows)
+        iprev = i
+        i += mm
+        rowranges = (rowranges...,iprev:i-1)
+    end
+
+    maps = map(convert_to_lmaps_, maps)
+
+    BlockMap{T}(maps, rows, rowranges, colranges, M, N)
+end
+
+function Base.show(io::IO, B::BlockMap{T}) where T
+    nrows = length(B.rows)
+    # One block in one row may actually span multiple block columns
+    # for other rows, but it's nice to get a sense of the structure
+    # anyway.
+    ncols = maximum(B.rows)
+    M,N = size(B)
+    write(io, "$(nrows)×$(ncols)-blocked $(M)×$(N) BlockMap{$T}")
+end
 
 MulStyle(A::BlockMap) = MulStyle(A.maps...)
 
@@ -49,7 +121,7 @@ function rowcolranges(maps, rows)
     return rowranges::NTuple{length(rows), UnitRange{Int}}, colranges::NTuple{length(maps), UnitRange{Int}}
 end
 
-Base.size(A::BlockMap) = (last(last(A.rowranges)), last(last(A.colranges)))
+Base.size(A::BlockMap) = (A.M, A.N)
 
 ############
 # concatenation
@@ -306,6 +378,7 @@ LinearAlgebra.adjoint(A::BlockMap)  = AdjointMap(A)
     maps, rows, yinds, xinds = A.maps, A.rows, A.rowranges, A.colranges
     mapind = 0
     @views @inbounds for (row, yi) in zip(rows, yinds)
+        iszero(row) && continue
         yrow = selectdim(y, 1, yi)
         mapind += 1
         mul!(yrow, maps[mapind], selectdim(x, 1, xinds[mapind]), α, β)
@@ -375,6 +448,29 @@ for Atype in (AbstractVector, AbstractMatrix)
             return _transblockmul!(y, wrapA.lmap, x, α, β, $transform)
         end
     end
+end
+
+############
+# materialization into matrices
+############
+
+function materialize!(M::MT, A::BlockMap) where {MT<:AbstractArray}
+    axes(M) == axes(A) ||
+        throw(DimensionMismatch("Cannot materialize BlockMap of size $(size(A)) into matrix of size $(size(M))"))
+
+    M .= false
+
+    maps, rows, yinds, xinds = A.maps, A.rows, A.rowranges, A.colranges
+    mapind = 0
+    @views @inbounds for (row, yi) in zip(rows, yinds)
+        Mrow = selectdim(M, 1, yi)
+        for _ in 1:row
+            mapind +=1
+            copyto!(selectdim(Mrow, 2, xinds[mapind]), convert(Matrix, maps[mapind]))
+        end
+    end
+
+    M
 end
 
 ############

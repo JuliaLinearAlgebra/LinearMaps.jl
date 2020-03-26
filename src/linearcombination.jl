@@ -1,4 +1,4 @@
-struct LinearCombination{T, As<:Tuple{Vararg{LinearMap}}} <: LinearMap{T}
+struct LinearCombination{T, As} <: LinearMap{T}
     maps::As
     function LinearCombination{T, As}(maps::As) where {T, As}
         N = length(maps)
@@ -12,6 +12,33 @@ struct LinearCombination{T, As<:Tuple{Vararg{LinearMap}}} <: LinearMap{T}
 end
 
 LinearCombination{T}(maps::As) where {T, As} = LinearCombination{T, As}(maps)
+
+function Base.show(io::IO, A::LinearCombination)
+    write(io, "LinearMaps.LinearCombination(")
+    n = length(A.maps)
+    if get(io, :limit, true) && n > 10
+        s = 1:5
+        e = n-5:n
+        if e[1]-s[end] > 1
+            write(io, "(")
+            for i in s
+                show(io, A.maps[i])
+                write(io, ", ")
+            end
+            write(io, "…")
+            for i in e
+                write(io, ", ")
+                show(io, A.maps[i])
+            end
+            write(io, ")")
+        else
+            show(io, A.maps)
+        end
+    else
+        show(io, A.maps)
+    end
+    write(io, ")")
+end
 
 MulStyle(A::LinearCombination) = MulStyle(A.maps...)
 
@@ -81,6 +108,9 @@ for Atype in (AbstractVector, AbstractMatrix)
     end
 end
 
+# For tuple-like storage of the maps (default), we recurse on the tail
+# of the tuple.
+
 @inline _mul!(::FiveArg, y, A::LinearCombination, x, α::Number) =
     __mul!(y, Base.tail(A.maps), x, α, nothing)
 @inline function _mul!(::ThreeArg, y, A::LinearCombination, x, α::Number)
@@ -92,6 +122,22 @@ end
     __mul!(__mul!(y, first(As), x, α, z), Base.tail(As), x, α, z)
 @inline __mul!(y, A::Tuple{LinearMap}, x, α, z) = __mul!(y, first(A), x, α, z)
 @inline __mul!(y, A::LinearMap, x, α, z) = muladd!(MulStyle(A), y, A, x, α, z)
+
+# For vector-like storage of the maps, we simply loop over the maps.
+
+@inline function _mul!(::FiveArg, y, A::LinearCombination{<:Any,<:AbstractVector}, x, α::Number)
+    for i = 2:length(A.maps)
+        mul!(y, A.maps[i], x, α, true)
+    end
+    y
+end
+@inline function _mul!(mulstyle::ThreeArg, y, A::LinearCombination{<:Any,<:AbstractVector}, x, α::Number)
+    z = similar(y)
+    for i = 2:length(A.maps)
+        muladd!(mulstyle, y, A.maps[i], x, α, z)
+    end
+    y
+end
 
 @inline muladd!(::FiveArg, y, A, x, α, _) = mul!(y, A, x, α, true)
 @inline function muladd!(::ThreeArg, y, A, x, α, z)
