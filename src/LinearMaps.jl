@@ -235,6 +235,7 @@ include("functionmap.jl") # using a function as linear map
 include("blockmap.jl") # block linear maps
 include("kronecker.jl") # Kronecker product of linear maps
 include("conversion.jl") # conversion of linear maps to matrices
+include("show.jl") # show methods for LinearMap objects
 
 """
     LinearMap(A::LinearMap; kwargs...)::WrappedMap
