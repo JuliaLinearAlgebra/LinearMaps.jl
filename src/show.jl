@@ -7,6 +7,7 @@ end
 
 # show
 Base.show(io::IO, A::LinearMap) = (summary(io, A); _show(io, A))
+_show(io::IO, ::LinearMap) = nothing
 function _show(io::IO, A::FunctionMap{T,F,Nothing}) where {T,F}
     print(io, "($(A.f); ismutating=$(A._ismutating), issymmetric=$(A._issymmetric), ishermitian=$(A._ishermitian), isposdef=$(A._isposdef))")
 end
