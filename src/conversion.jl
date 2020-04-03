@@ -47,7 +47,7 @@ Base.convert(::Type{SparseMatrixCSC}, A::LinearMap) = sparse(A)
 
 # UniformScalingMap
 Base.Matrix(J::UniformScalingMap) = Matrix(J.λ*I, size(J))
-Base.convert(::Type{AbstractMatrix}, J::UniformScalingMap) = Diagonal(fill(I.λ, size(J, 1)))
+Base.convert(::Type{AbstractMatrix}, J::UniformScalingMap) = Diagonal(fill(J.λ, size(J, 1)))
 
 # WrappedMap
 Base.Matrix(A::WrappedMap) = Matrix(A.lmap)

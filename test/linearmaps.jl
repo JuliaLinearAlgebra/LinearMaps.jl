@@ -49,3 +49,43 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays, BenchmarkTools
         @test typeof(M * V) <: LinearMap
     end
 end
+
+# new type
+struct SimpleFunctionMap <: LinearMap{Float64}
+    f::Function
+    N::Int
+end
+struct SimpleComplexFunctionMap <: LinearMap{Complex{Float64}}
+    f::Function
+    N::Int
+end
+Base.size(A::Union{SimpleFunctionMap,SimpleComplexFunctionMap}) = (A.N, A.N)
+Base.:(*)(A::Union{SimpleFunctionMap,SimpleComplexFunctionMap}, v::Vector) = A.f(v)
+LinearAlgebra.mul!(y::AbstractVector, A::Union{SimpleFunctionMap,SimpleComplexFunctionMap}, x::AbstractVector) = copyto!(y, *(A, x))
+
+@testset "new LinearMap type" begin
+    F = SimpleFunctionMap(cumsum, 10)
+    FC = SimpleComplexFunctionMap(cumsum, 10)
+    @test @inferred ndims(F) == 2
+    @test @inferred size(F, 1) == 10
+    @test @inferred length(F) == 100
+    @test @inferred !issymmetric(F)
+    @test @inferred !ishermitian(F)
+    @test @inferred !ishermitian(FC)
+    @test @inferred !isposdef(F)
+    v = rand(ComplexF64, 10)
+    w = similar(v)
+    mul!(w, F, v)
+    @test w == F * v
+    @test_throws MethodError F' * v
+    @test_throws MethodError transpose(F) * v
+    @test_throws MethodError mul!(w, adjoint(F), v)
+    @test_throws MethodError mul!(w, transpose(F), v)
+    FM = convert(AbstractMatrix, F)
+    L = LowerTriangular(ones(10, 10))
+    @test FM == L
+    @test F * v ≈ L * v
+    Fs = sparse(F)
+    @test Fs == L
+    @test Fs isa SparseMatrixCSC
+end

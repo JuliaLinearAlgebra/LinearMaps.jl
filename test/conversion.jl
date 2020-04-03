@@ -24,6 +24,12 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
     @test Matrix(transpose(M)) == copy(transpose(A))
     @test convert(AbstractMatrix, M') isa Adjoint
     @test convert(Matrix, M*3I) == A*3
+    @test convert(Matrix, M+M) == A + A
+
+    # UniformScalingMap
+    J = LinearMap(α*I, 10)
+    JM = convert(AbstractMatrix, J)
+    @test JM == Diagonal(fill(α, 10))
 
     # sparse matrix generation/conversion
     @test sparse(M) == sparse(Array(M))

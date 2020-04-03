@@ -25,6 +25,9 @@ using Test, LinearMaps, LinearAlgebra, Quaternions
     @test (α * L')' * v ≈ (α * A')' * v
     @test Array(@inferred adjoint(α * L * β)) ≈ conj(β) * A' * conj(α)
     @test Array(@inferred transpose(α * L * β)) ≈ β * transpose(A) * α
+    J = LinearMap(α, 10)
+    @test (β * J) * x ≈ LinearMap(β*α, 10) * x ≈ β*α*x
+    @test (J * β) * x ≈ LinearMap(α*β, 10) * x ≈ α*β*x
 end
 
 @testset "nonassociative number type" begin

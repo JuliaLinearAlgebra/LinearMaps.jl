@@ -71,7 +71,8 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
             @test L isa LinearMaps.BlockMap{elty}
             @test size(L) == size(A)
             @test L * x ≈ A * x
-            @test Matrix(L) ≈ A
+            @test Matrix(L) == A
+            @test convert(AbstractMatrix, L) == A
             A = [I A12; A21 I]
             @inferred hvcat((2,2), I, LinearMap(A12), LinearMap(A21), I)
             L = @inferred hvcat((2,2), I, LinearMap(A12), LinearMap(A21), I)
@@ -136,13 +137,17 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
             @test L isa LinearMaps.LinearMap{elty}
             @test size(L) == size(A)
             @test L * x ≈ A * x
-            @test Matrix(L) ≈ A
+            @test Matrix(L) == A
+            @test convert(AbstractMatrix, L) == A
+            @test sparse(L) == sparse(A)
             Lt = @inferred transform(L)
             @test Lt isa LinearMaps.LinearMap{elty}
             @test Lt * x ≈ transform(A) * x
+            @test convert(AbstractMatrix, Lt) == transform(A)
+            @test sparse(transform(L)) == transform(A)
             Lt = @inferred transform(LinearMap(L))
             @test Lt * x ≈ transform(A) * x
-            @test Matrix(Lt) ≈ Matrix(transform(A))
+            @test Matrix(Lt) == Matrix(transform(A))
             A21 = rand(elty, 10, 10)
             A = [I A12; A21 I]
             L = [I LinearMap(A12); LinearMap(A21) I]
@@ -170,6 +175,9 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
             Md = Matrix(blockdiag(sparse.((M1, M2, M3, M2, M1))...))
             x = randn(elty, size(Md, 2))
             Bd = @inferred blockdiag(L1, L2, L3, L2, L1)
+            @test Matrix(Bd) == Md
+            @test convert(AbstractMatrix, Bd) isa SparseMatrixCSC
+            @test sparse(Bd) == Md
             @test Matrix(@inferred blockdiag(L1)) == M1
             @test Matrix(@inferred blockdiag(L1, L2)) == blockdiag(sparse.((M1, M2))...)
             Bd2 = @inferred cat(L1, L2, L3, L2, L1; dims=(1,2))

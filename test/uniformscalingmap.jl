@@ -42,6 +42,8 @@ using Test, LinearMaps, LinearAlgebra, BenchmarkTools
         x = rand(10)
         J = @inferred LinearMap(LinearMaps.UniformScalingMap(λ, 10))
         @test transform(J) * x == transform(λ) * x
+        J = @inferred LinearMap(λ*I, 10)
+        @test (λ * J) * x == (J * λ) * x == (λ * λ) * x
     end
     X = rand(10, 10); Y = similar(X)
     @test mul!(Y, Id, X) == X

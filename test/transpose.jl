@@ -1,4 +1,4 @@
-using Test, LinearMaps, LinearAlgebra
+using Test, LinearMaps, LinearAlgebra, SparseArrays
 
 @testset "transpose/adjoint" begin
     A = 2 * rand(ComplexF64, (20, 10)) .- 1
@@ -58,6 +58,11 @@ using Test, LinearMaps, LinearAlgebra
     @test transpose(CS) != adjoint(CS)
     @test adjoint(CS) != transpose(CS)
     M = Matrix(CS)
+    @test M == LowerTriangular(ones(10,10))
+    for transform in (adjoint, transpose)
+        @test convert(AbstractMatrix, transform(CS)) == transform(M)
+        @test sparse(transform(CS)) == transform(M)
+    end
     x = rand(ComplexF64, 10)
     for transform1 in (adjoint, transpose), transform2 in (adjoint, transpose)
         @test transform2(LinearMap(transform1(CS))) * x ≈ transform2(transform1(M))*x
