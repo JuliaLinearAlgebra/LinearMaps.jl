@@ -37,7 +37,7 @@ using Test, LinearMaps, LinearAlgebra, BenchmarkTools
         @inferred mul!(y, Λ, x, α, β)
         @test y ≈ λ * x * α + β * x
     end
-    for elty in (Float64, ComplexF64), transform in (transpose, adjoint)
+    for elty in (Float64, ComplexF64), transform in (identity, transpose, adjoint)
         λ = rand(elty)
         x = rand(10)
         J = @inferred LinearMap(LinearMaps.UniformScalingMap(λ, 10))

@@ -39,8 +39,12 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
         @test @inferred ishermitian(kron(LA'LA, LB'LB))
         A = rand(2, 5); B = rand(4, 2)
         K = @inferred kron(A, LinearMap(B))
+        v = rand(size(K, 2))
+        @test K*v ≈ kron(A, B)*v
         @test Matrix(K) ≈ kron(A, B)
         K = @inferred kron(LinearMap(B), A)
+        v = rand(size(K, 2))
+        @test K*v ≈ kron(A, B)*v
         @test Matrix(K) ≈ kron(B, A)
         A = rand(3, 3); B = rand(2, 2); LA = LinearMap(A); LB = LinearMap(B)
         @test @inferred issymmetric(kron(LA'LA, LB'LB))
