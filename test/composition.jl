@@ -1,18 +1,5 @@
 using Test, LinearMaps, LinearAlgebra
 
-# new type
-struct SimpleFunctionMap <: LinearMap{Float64}
-    f::Function
-    N::Int
-end
-struct SimpleComplexFunctionMap <: LinearMap{Complex{Float64}}
-    f::Function
-    N::Int
-end
-Base.size(A::Union{SimpleFunctionMap,SimpleComplexFunctionMap}) = (A.N, A.N)
-Base.:(*)(A::Union{SimpleFunctionMap,SimpleComplexFunctionMap}, v::Vector) = A.f(v)
-LinearAlgebra.mul!(y::Vector, A::Union{SimpleFunctionMap,SimpleComplexFunctionMap}, x::Vector) = copyto!(y, *(A, x))
-
 @testset "composition" begin
     F = @inferred LinearMap(cumsum, y -> reverse(cumsum(reverse(x))), 10; ismutating=false)
     FC = @inferred LinearMap{ComplexF64}(cumsum, y -> reverse(cumsum(reverse(x))), 10; ismutating=false)
@@ -65,24 +52,6 @@ LinearAlgebra.mul!(y::Vector, A::Union{SimpleFunctionMap,SimpleComplexFunctionMa
     w = similar(v)
     mul!(w, L, v)
     @test w ≈ LF * v
-
-    # test new type
-    F = SimpleFunctionMap(cumsum, 10)
-    FC = SimpleComplexFunctionMap(cumsum, 10)
-    @test @inferred ndims(F) == 2
-    @test @inferred size(F, 1) == 10
-    @test @inferred length(F) == 100
-    @test @inferred !issymmetric(F)
-    @test @inferred !ishermitian(F)
-    @test @inferred !ishermitian(FC)
-    @test @inferred !isposdef(F)
-    w = similar(v)
-    mul!(w, F, v)
-    @test w == F * v
-    @test_throws MethodError F' * v
-    @test_throws MethodError transpose(F) * v
-    @test_throws MethodError mul!(w, adjoint(F), v)
-    @test_throws MethodError mul!(w, transpose(F), v)
 
     # test composition of several maps with shared data #31
     global sizes = ( (5, 2), (3, 3), (3, 2), (2, 2), (9, 2), (7, 1) )
