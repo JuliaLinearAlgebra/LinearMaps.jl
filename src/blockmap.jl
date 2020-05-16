@@ -60,9 +60,15 @@ for k in 1:8 # is 8 sufficient?
     L = :($(Symbol(:A,k))::LinearMap)
     args = ntuple(n->Symbol(:A,n), Val(k))
 
-    @eval Base.hcat($(Is...), $L, As::Union{LinearMap,UniformScaling,AbstractMatrix}...) = _hcat($(args...), As...)
-    @eval Base.vcat($(Is...), $L, As::Union{LinearMap,UniformScaling,AbstractMatrix}...) = _vcat($(args...), As...)
-    @eval Base.hvcat(rows::Tuple{Vararg{Int}}, $(Is...), $L, As::Union{LinearMap,UniformScaling,AbstractMatrix}...) = _hvcat(rows, $(args...), As...)
+    @eval function Base.hcat($(Is...), $L, As::Union{LinearMap,UniformScaling,AbstractMatrix}...)
+        return _hcat((convert_to_lmaps($(args...)))..., convert_to_lmaps(As...)...)
+    end
+    @eval function Base.vcat($(Is...), $L, As::Union{LinearMap,UniformScaling,AbstractMatrix}...)
+        return _vcat((convert_to_lmaps($(args...)))..., convert_to_lmaps(As...)...)
+    end
+    @eval function Base.hvcat(rows::Tuple{Vararg{Int}}, $(Is...), $L, As::Union{LinearMap,UniformScaling,AbstractMatrix}...)
+        return _hvcat(rows, (convert_to_lmaps($(args...)))..., convert_to_lmaps(As...)...)
+    end
 end
 
 ############

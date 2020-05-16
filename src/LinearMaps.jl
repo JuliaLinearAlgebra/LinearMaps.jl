@@ -63,6 +63,7 @@ end
 # conversion of AbstractMatrix to LinearMap
 convert_to_lmaps_(A::AbstractMatrix) = LinearMap(A)
 convert_to_lmaps_(A::LinearMap) = A
+convert_to_lmaps_(A::UniformScaling) = A # this is used only in BlockMaps
 convert_to_lmaps() = ()
 convert_to_lmaps(A) = (convert_to_lmaps_(A),)
 @inline convert_to_lmaps(A, B, Cs...) =
