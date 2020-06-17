@@ -120,7 +120,7 @@ LinearAlgebra.adjoint(A::CompositeMap{T}) where {T}   = CompositeMap{T}(map(adjo
 Base.:(==)(A::CompositeMap, B::CompositeMap) = (eltype(A) == eltype(B) && A.maps == B.maps)
 
 # multiplication with vectors
-function A_mul_B!(y::AbstractVector, A::CompositeMap{T,Tuple{LinearMap}}, x::AbstractVector) where {T}
+function A_mul_B!(y::AbstractVector, A::CompositeMap{T,<:Tuple{LinearMap}}, x::AbstractVector) where {T}
     return A_mul_B!(y, A.maps[1], x)
 end
 function A_mul_B!(y::AbstractVector, A::CompositeMap{T,<:Tuple{LinearMap,LinearMap}}, x::AbstractVector) where {T}
