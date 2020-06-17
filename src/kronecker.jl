@@ -95,8 +95,6 @@ LinearAlgebra.ishermitian(A::KroneckerMap) = all(ishermitian, A.maps)
 LinearAlgebra.adjoint(A::KroneckerMap{T}) where {T} = KroneckerMap{T}(map(adjoint, A.maps))
 LinearAlgebra.transpose(A::KroneckerMap{T}) where {T} = KroneckerMap{T}(map(transpose, A.maps))
 
-Base.:(==)(A::KroneckerMap, B::KroneckerMap) = (eltype(A) == eltype(B) && A.maps == B.maps)
-
 #################
 # multiplication helper functions
 #################
@@ -258,8 +256,6 @@ LinearAlgebra.ishermitian(A::KroneckerSumMap) = all(ishermitian, A.maps)
 
 LinearAlgebra.adjoint(A::KroneckerSumMap{T}) where {T} = KroneckerSumMap{T}(map(adjoint, A.maps))
 LinearAlgebra.transpose(A::KroneckerSumMap{T}) where {T} = KroneckerSumMap{T}(map(transpose, A.maps))
-
-Base.:(==)(A::KroneckerSumMap, B::KroneckerSumMap) = (eltype(A) == eltype(B) && A.maps == B.maps)
 
 Base.@propagate_inbounds function A_mul_B!(y::AbstractVector, L::KroneckerSumMap, x::AbstractVector)
     @boundscheck check_dim_mul(y, L, x)

@@ -288,12 +288,8 @@ function LinearAlgebra.ishermitian(A::BlockMap)
 end
 
 ############
-# comparison of BlockMap objects, sufficient but not necessary
-############
-
-Base.:(==)(A::BlockMap, B::BlockMap) = (eltype(A) == eltype(B) && A.maps == B.maps && A.rows == B.rows)
-
 # special transposition behavior
+############
 
 LinearAlgebra.transpose(A::BlockMap) = TransposeMap(A)
 LinearAlgebra.adjoint(A::BlockMap)  = AdjointMap(A)
@@ -454,8 +450,6 @@ LinearAlgebra.ishermitian(A::BlockDiagonalMap) = all(ishermitian, A.maps)
 
 LinearAlgebra.adjoint(A::BlockDiagonalMap{T}) where {T} = BlockDiagonalMap{T}(map(adjoint, A.maps))
 LinearAlgebra.transpose(A::BlockDiagonalMap{T}) where {T} = BlockDiagonalMap{T}(map(transpose, A.maps))
-
-Base.:(==)(A::BlockDiagonalMap, B::BlockDiagonalMap) = (eltype(A) == eltype(B) && A.maps == B.maps)
 
 Base.@propagate_inbounds A_mul_B!(y::AbstractVector, A::BlockDiagonalMap, x::AbstractVector) =
     mul!(y, A, x, true, false)
