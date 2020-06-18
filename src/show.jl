@@ -44,12 +44,7 @@ function _show(io::IO, A::BlockDiagonalMap)
 end
 function _show(io::IO, J::UniformScalingMap)
     s = "$(J.λ)"
-    if occursin(r"\w+\s*[\+\-]\s*\w+", s)
-        s = " ($s)"
-    else
-        s = " $s"
-    end
-    print(io, "\n$s")
+    print(io, " with scaling factor: $s")
 end
 
 # helper functions
