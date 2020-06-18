@@ -21,6 +21,11 @@ using Test, LinearMaps, LinearAlgebra, BenchmarkTools
     @test mul!(U, L, V) ≈ n*cumsum(V, dims=1)
     @test mul!(U, LinearMap(L), V) ≈ n*cumsum(V, dims=1)
 
+    A = randn(3,3)
+    B = LinearMap(A) + LinearMap(A)'
+    C = LinearMap(copy(A)) + LinearMap(copy(A))'
+    @test B == C
+
     A = 2 * rand(ComplexF64, (10, 10)) .- 1
     B = rand(ComplexF64, size(A)...)
     M = @inferred LinearMap(A)
