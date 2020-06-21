@@ -60,13 +60,13 @@ for k in 1:8 # is 8 sufficient?
     L = :($(Symbol(:A,k))::LinearMap)
     args = ntuple(n->Symbol(:A,n), Val(k))
 
-    @eval function Base.hcat($(Is...), $L, As::Union{LinearMap,UniformScaling,AbstractMatrix}...)
+    @eval function Base.hcat($(Is...), $L, As::Union{LinearMap,UniformScaling,AbstractMatrix}...)::BlockMap
         return _hcat((convert_to_lmaps($(args...)))..., convert_to_lmaps(As...)...)
     end
-    @eval function Base.vcat($(Is...), $L, As::Union{LinearMap,UniformScaling,AbstractMatrix}...)
+    @eval function Base.vcat($(Is...), $L, As::Union{LinearMap,UniformScaling,AbstractMatrix}...)::BlockMap
         return _vcat((convert_to_lmaps($(args...)))..., convert_to_lmaps(As...)...)
     end
-    @eval function Base.hvcat(rows::Tuple{Vararg{Int}}, $(Is...), $L, As::Union{LinearMap,UniformScaling,AbstractMatrix}...)
+    @eval function Base.hvcat(rows::Tuple{Vararg{Int}}, $(Is...), $L, As::Union{LinearMap,UniformScaling,AbstractMatrix}...)::BlockMap
         return _hvcat(rows, (convert_to_lmaps($(args...)))..., convert_to_lmaps(As...)...)
     end
 end
@@ -75,7 +75,7 @@ end
 # hcat
 ############
 """
-    hcat(As::Union{LinearMap,UniformScaling}...)
+    hcat(As::Union{LinearMap,UniformScaling,AbstractMatrix}...)
 
 Construct a `BlockMap <: LinearMap` object, a (lazy) representation of the
 horizontal concatenation of the arguments. `UniformScaling` objects are promoted
@@ -97,7 +97,7 @@ julia> L * ones(Int, 6)
 """
 Base.hcat
 
-function _hcat(As::Union{LinearMap,UniformScaling}...)
+function _hcat(As::Union{LinearMap,UniformScaling}...)::BlockMap
     T = promote_type(map(eltype, As)...)
     nbc = length(As)
 
@@ -117,7 +117,7 @@ end
 # vcat
 ############
 """
-    vcat(As::Union{LinearMap,UniformScaling}...)
+    vcat(As::Union{LinearMap,UniformScaling,AbstractMatrix}...)
 
 Construct a `BlockMap <: LinearMap` object, a (lazy) representation of the
 vertical concatenation of the arguments. `UniformScaling` objects are promoted
@@ -142,7 +142,7 @@ julia> L * ones(Int, 3)
 """
 Base.vcat
 
-function _vcat(As::Union{LinearMap,UniformScaling,AbstractMatrix}...)
+function _vcat(As::Union{LinearMap,UniformScaling}...)::BlockMap
     T = promote_type(map(eltype, As)...)
     nbr = length(As)
 
@@ -163,7 +163,7 @@ end
 # hvcat
 ############
 """
-    hvcat(rows::Tuple{Vararg{Int}}, As::Union{LinearMap,UniformScaling}...)
+    hvcat(rows::Tuple{Vararg{Int}}, As::Union{LinearMap,UniformScaling,AbstractMatrix}...)
 
 Construct a `BlockMap <: LinearMap` object, a (lazy) representation of the
 horizontal-vertical concatenation of the arguments. The first argument specifies
@@ -192,7 +192,7 @@ julia> L * ones(Int, 6)
 """
 Base.hvcat
 
-function _hvcat(rows::Tuple{Vararg{Int}}, As::Union{LinearMap,UniformScaling,AbstractMatrix}...)
+function _hvcat(rows::Tuple{Vararg{Int}}, As::Union{LinearMap,UniformScaling}...)::BlockMap
     nr = length(rows)
     T = promote_type(map(eltype, As)...)
     sum(rows) == length(As) || throw(ArgumentError("mismatch between row sizes and number of arguments"))
