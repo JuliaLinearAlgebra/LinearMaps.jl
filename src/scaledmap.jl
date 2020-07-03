@@ -39,7 +39,7 @@ Base.isreal(A::ScaledMap) = isreal(A.scale) && isreal(A.map)
 LinearAlgebra.issymmetric(A::ScaledMap) = isreal(A.scale) && issymmetric(A.map)
 LinearAlgebra.ishermitian(A::ScaledMap) = ishermitian(A.map)
 LinearAlgebra.isposdef(A::ScaledMap) =
-    isposdef(A.map) && isreal(A.scale) && A.scale > 0
+    isposdef(A.map) && isreal(A.scale) && real(A.scale) > 0
 
 Base.transpose(A::ScaledMap) = ScaledMap(A.scale, transpose(A.map))
 Base.adjoint(A::ScaledMap) = ScaledMap(conj(A.scale), adjoint(A.map))
