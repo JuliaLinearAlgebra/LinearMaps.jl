@@ -23,9 +23,12 @@ using Test, LinearMaps, LinearAlgebra
     @test @inferred transpose(B) == α * transpose(A)
 
     @test B == A * α
+    @test B ≈ B
     @test B * x == α * (A * x)
     @test @inferred Matrix(B) == α * Matrix(A)
     @test @inferred Matrix(B') == Matrix(B)'
+
+    show(isinteractive() ? stdout : devnull, B)
 
     @test A / (1/α) == B
     @test -A == (-1) * A
@@ -58,6 +61,9 @@ using Test, LinearMaps, LinearAlgebra
     BC = B * C
     @test BC isa LinearMaps.ScaledMap
     @test Matrix(BC) ≈ α*β*Matrix(A)*Matrix(A)
+
+    @test Matrix(α * BC) ≈ α * Matrix(BC)
+    @test Matrix(BC * β) ≈ β * Matrix(BC)
 
     # in-place
     y1 = β * (A * xc)
