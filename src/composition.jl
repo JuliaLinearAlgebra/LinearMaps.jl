@@ -21,7 +21,6 @@ Base.size(A::CompositeMap) = (size(A.maps[end], 1), size(A.maps[1], 2))
 Base.isreal(A::CompositeMap) = all(isreal, A.maps) # sufficient but not necessary
 
 # the following rules are sufficient but not necessary
-const RealOrComplex = Union{Real,Complex}
 for (f, _f, g) in ((:issymmetric, :_issymmetric, :transpose),
                     (:ishermitian, :_ishermitian, :adjoint),
                     (:isposdef, :_isposdef, :adjoint))
