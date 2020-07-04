@@ -75,6 +75,12 @@ using Test, LinearMaps, LinearAlgebra
     mul!(x2, C', y1)
     @test x2 == x1
 
+    # check scale*conj(scale)
+    A = LinearMap{Float32}(rand(9,2)) # rank=2 w.p.1
+    B = β * A
+    C = B' * B
+    @test @inferred isposdef(C)
+
     # allocation (WIP)
 #=
     function cumsum_adj!(x, y, work)
