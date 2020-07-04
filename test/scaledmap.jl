@@ -10,7 +10,7 @@ using Test, LinearMaps, LinearAlgebra
     A = LinearMap(cumsum, reverse ∘ cumsum ∘ reverse, N)
 
     # real case
-    α = 10
+    α = π
     B = α*A
     x = rand(N)
 
@@ -35,7 +35,7 @@ using Test, LinearMaps, LinearAlgebra
     @test (α*I) * A == B
 
     # complex case
-    β = 10im
+    β = π + 2π*im
     C = β * A
     T = ComplexF32
     xc = rand(T, N)
@@ -57,7 +57,7 @@ using Test, LinearMaps, LinearAlgebra
     # composition
     BC = B * C
     @test BC isa LinearMaps.ScaledMap
-    @test Matrix(BC) == α*β*Matrix(A)*Matrix(A)
+    @test Matrix(BC) ≈ α*β*Matrix(A)*Matrix(A)
 
     # in-place
     y1 = β * (A * xc)
