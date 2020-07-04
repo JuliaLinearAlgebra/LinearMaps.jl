@@ -16,6 +16,9 @@ end
 abstract type LinearMap{T} end
 
 const MapOrMatrix{T} = Union{LinearMap{T},AbstractMatrix{T}}
+const RealOrComplex = Union{Real,Complex}
+const LinearMapRC = LinearMap{<:RealOrComplex}
+
 
 Base.eltype(::LinearMap{T}) where {T} = T
 
@@ -122,6 +125,7 @@ include("functionmap.jl") # using a function as linear map
 include("blockmap.jl") # block linear maps
 include("kronecker.jl") # Kronecker product of linear maps
 include("conversion.jl") # conversion of linear maps to matrices
+const CompositeMapRC = CompositeMap{<:RealOrComplex}
 include("scaledmap.jl") # multiply by a (real or complex) scalar
 
 """
