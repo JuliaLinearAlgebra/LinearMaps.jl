@@ -11,6 +11,8 @@ UniformScalingMap(λ::Number, M::Int, N::Int) =
 UniformScalingMap(λ::T, sz::Dims{2}) where {T} =
     (sz[1] == sz[2] ? UniformScalingMap(λ, sz[1]) : error("UniformScalingMap needs to be square"))
 
+const UniformScalingMapRC = UniformScalingMap{T} where {T <: RealOrComplex}
+
 MulStyle(::UniformScalingMap) = FiveArg()
 
 # properties
@@ -30,6 +32,10 @@ LinearAlgebra.adjoint(A::UniformScalingMap)   = UniformScalingMap(conj(A.λ), si
 # multiplication with scalar
 Base.:(*)(α::Number, J::UniformScalingMap) = UniformScalingMap(α * J.λ, size(J))
 Base.:(*)(J::UniformScalingMap, α::Number) = UniformScalingMap(J.λ * α, size(J))
+Base.:(*)(α::RealOrComplex, J::UniformScalingMapRC) =
+    UniformScalingMap(α * J.λ, size(J))
+Base.:(*)(J::UniformScalingMapRC, α::RealOrComplex) =
+    UniformScalingMap(J.λ * α, size(J))
 
 # multiplication with vector
 Base.:(*)(A::UniformScalingMap, x::AbstractVector) =
