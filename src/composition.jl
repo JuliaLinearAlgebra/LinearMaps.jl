@@ -124,19 +124,19 @@ function A_mul_B!(y::AbstractVector, A::CompositeMap{T,<:Tuple{LinearMap}}, x::A
     return A_mul_B!(y, A.maps[1], x)
 end
 function A_mul_B!(y::AbstractVector, A::CompositeMap{T,<:Tuple{LinearMap,LinearMap}}, x::AbstractVector) where {T}
-    compositemul!(y, A, x, similar(y, size(A.maps[1], 1)))
+    _compositemul!(y, A, x, similar(y, size(A.maps[1], 1)))
 end
 function A_mul_B!(y::AbstractVector, A::CompositeMap{T,<:Tuple{Vararg{LinearMap}}}, x::AbstractVector) where {T}
-    compositemul!(y, A, x, similar(y, size(A.maps[1], 1)), similar(y, size(A.maps[2], 1)))
+    _compositemul!(y, A, x, similar(y, size(A.maps[1], 1)), similar(y, size(A.maps[2], 1)))
 end
 
-function compositemul!(y::AbstractVector, A::CompositeMap{T,<:Tuple{LinearMap,LinearMap}}, x::AbstractVector, z::AbstractVector) where {T}
+function _compositemul!(y::AbstractVector, A::CompositeMap{T,<:Tuple{LinearMap,LinearMap}}, x::AbstractVector, z::AbstractVector) where {T}
     # no size checking, will be done by individual maps
     A_mul_B!(z, A.maps[1], x)
     A_mul_B!(y, A.maps[2], z)
     return y
 end
-function compositemul!(y::AbstractVector, A::CompositeMap{T,<:Tuple{Vararg{LinearMap}}}, x::AbstractVector, source::AbstractVector, dest::AbstractVector) where {T}
+function _compositemul!(y::AbstractVector, A::CompositeMap{T,<:Tuple{Vararg{LinearMap}}}, x::AbstractVector, source::AbstractVector, dest::AbstractVector) where {T}
     # no size checking, will be done by individual maps
     N = length(A.maps)
     A_mul_B!(source, A.maps[1], x)
