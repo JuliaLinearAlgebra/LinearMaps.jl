@@ -3,11 +3,13 @@ using Test, LinearMaps, LinearAlgebra
 @testset "composition" begin
     F = @inferred LinearMap(cumsum, y -> reverse(cumsum(reverse(x))), 10; ismutating=false)
     FC = @inferred LinearMap{ComplexF64}(cumsum, y -> reverse(cumsum(reverse(x))), 10; ismutating=false)
+    FCM = LinearMaps.CompositeMap{ComplexF64}((FC,))
     A = 2 * rand(ComplexF64, (10, 10)) .- 1
     B = rand(size(A)...)
     M = @inferred 1 * LinearMap(A)
     N = @inferred LinearMap(B)
     v = rand(ComplexF64, 10)
+    @test FCM * v == F * v
     @test @inferred (F * F) * v == @inferred F * (F * v)
     @test @inferred (F * A) * v == @inferred F * (A * v)
     @test @inferred (A * F) * v == @inferred A * (F * v)

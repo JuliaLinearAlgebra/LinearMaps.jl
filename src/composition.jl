@@ -116,37 +116,44 @@ Base.:(*)(A₁::UniformScaling, A₂::LinearMap) = A₁.λ * A₂
 LinearAlgebra.transpose(A::CompositeMap{T}) where {T} = CompositeMap{T}(map(transpose, reverse(A.maps)))
 LinearAlgebra.adjoint(A::CompositeMap{T}) where {T}   = CompositeMap{T}(map(adjoint, reverse(A.maps)))
 
-# comparison of LinearCombination objects
+# comparison of CompositeMap objects
 Base.:(==)(A::CompositeMap, B::CompositeMap) = (eltype(A) == eltype(B) && A.maps == B.maps)
 
 # multiplication with vectors
-function A_mul_B!(y::AbstractVector, A::CompositeMap, x::AbstractVector)
+function A_mul_B!(y::AbstractVector, A::CompositeMap{T,<:Tuple{LinearMap}}, x::AbstractVector) where {T}
+    return A_mul_B!(y, A.maps[1], x)
+end
+function A_mul_B!(y::AbstractVector, A::CompositeMap{T,<:Tuple{LinearMap,LinearMap}}, x::AbstractVector) where {T}
+    _compositemul!(y, A, x, similar(y, size(A.maps[1], 1)))
+end
+function A_mul_B!(y::AbstractVector, A::CompositeMap{T,<:Tuple{Vararg{LinearMap}}}, x::AbstractVector) where {T}
+    _compositemul!(y, A, x, similar(y, size(A.maps[1], 1)), similar(y, size(A.maps[2], 1)))
+end
+
+function _compositemul!(y::AbstractVector, A::CompositeMap{T,<:Tuple{LinearMap,LinearMap}}, x::AbstractVector, z::AbstractVector) where {T}
+    # no size checking, will be done by individual maps
+    A_mul_B!(z, A.maps[1], x)
+    A_mul_B!(y, A.maps[2], z)
+    return y
+end
+function _compositemul!(y::AbstractVector, A::CompositeMap{T,<:Tuple{Vararg{LinearMap}}}, x::AbstractVector, source::AbstractVector, dest::AbstractVector) where {T}
     # no size checking, will be done by individual maps
     N = length(A.maps)
-    if N==1
-        A_mul_B!(y, A.maps[1], x)
-    else
-        dest = similar(y, size(A.maps[1], 1))
-        A_mul_B!(dest, A.maps[1], x)
-        source = dest
-        if N>2
-            dest = similar(y, size(A.maps[2], 1))
-        end
-        for n in 2:N-1
-            try
-                resize!(dest, size(A.maps[n], 1))
-            catch err
-                if err == ErrorException("cannot resize array with shared data")
-                    dest = similar(y, size(A.maps[n], 1))
-                else
-                    rethrow(err)
-                end
+    A_mul_B!(source, A.maps[1], x)
+    for n in 2:N-1
+        try
+            resize!(dest, size(A.maps[n], 1))
+        catch err
+            if err == ErrorException("cannot resize array with shared data")
+                dest = similar(y, size(A.maps[n], 1))
+            else
+                rethrow(err)
             end
-            A_mul_B!(dest, A.maps[n], source)
-            dest, source = source, dest # alternate dest and source
         end
-        A_mul_B!(y, A.maps[N], source)
+        A_mul_B!(dest, A.maps[n], source)
+        dest, source = source, dest # alternate dest and source
     end
+    A_mul_B!(y, A.maps[N], source)
     return y
 end
 
