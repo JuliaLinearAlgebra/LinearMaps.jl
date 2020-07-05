@@ -11,7 +11,7 @@ using Test, LinearMaps, LinearAlgebra, BenchmarkTools
     n = 10
     L = sum(fill(CS!, n))
     @test mul!(u, L, v) ≈ n * cumsum(v)
-    b = @benchmarkable mul!($u, $L, $v)
+    b = @benchmarkable mul!($u, $L, $v, 2, 2)
     @test run(b, samples=5).allocs <= 1
     for α in (false, true, rand(ComplexF64)), β in (false, true, rand(ComplexF64))
         @test mul!(copy(u), L, v, α, β) ≈ Matrix(L)*v*α + u*β
