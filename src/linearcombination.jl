@@ -75,8 +75,21 @@ for Atype in (AbstractVector, AbstractMatrix)
             rmul!(y, β)
             return y
         else
-            mul!(y, first(A.maps), x, α, β)
-            return _mul!(MulStyle(A), y, A, x, α)
+            A1 = first(A.maps)
+            if MulStyle(A1) === ThreeArg() && !iszero(β)
+                # if we need an intermediate vector, allocate here and reuse in
+                # LinearCombination multiplication
+                !isone(β) && rmul!(y, β)
+                z = similar(y)
+                muladd!(ThreeArg(), y, A1, x, α, z)
+                __mul!(y, Base.tail(A.maps), x, α, z)
+            else # MulStyle(A1) === FiveArg() || β == 0
+                # this is allocation-free
+                mul!(y, A1, x, α, β)
+                # let _mul! decide whether an intermediate vector needs to be allocated
+                _mul!(MulStyle(A), y, A, x, α)
+            end
+            return y
         end
     end
 end
