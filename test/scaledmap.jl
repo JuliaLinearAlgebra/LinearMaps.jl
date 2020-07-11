@@ -3,6 +3,7 @@ using Test, LinearMaps, LinearAlgebra
 @testset "scaledmap" begin
     N = 7
     A = LinearMap(cumsum, reverse ∘ cumsum ∘ reverse, N)
+    AM = Matrix(A)
 
     # real case
     α = float(π)
@@ -29,7 +30,7 @@ using Test, LinearMaps, LinearAlgebra
     # complex case
     β = π + 2π*im
     C = β * A
-    T = ComplexF32
+    T = ComplexF64
     xc = rand(T, N)
 
     @test @inferred !isreal(C)
@@ -38,6 +39,9 @@ using Test, LinearMaps, LinearAlgebra
     @test @inferred !isposdef(C)
     @test @inferred transpose(C) == β * transpose(A)
     @test @inferred adjoint(C) == conj(β) * adjoint(A)
+    for transform in (identity, transpose, adjoint)
+        @test transform(C) * xc ≈ transform(β * AM) * xc
+    end
 
     @test C == A * β
     @test convert(Array{T}, C * xc) ≈ β * (A * xc)
@@ -55,18 +59,11 @@ using Test, LinearMaps, LinearAlgebra
     # in-place
     y1 = β * (A * xc)
     y2 = similar(y1)
-    mul!(y2, C, xc)
-    @test y2 == y1
+    @test mul!(y2, C, xc) == y1
 
-    y1 = β * (A * xc)
-    y2 = similar(y1)
-    mul!(y2, C, xc)
-    @test y2 == y1
-
-    x1 = conj(β) * A'*y1
+    x1 = conj(β) * (A'*y1)
     x2 = similar(x1)
-    mul!(x2, C', y1)
-    @test x2 == x1
+    @test mul!(x2, C', y1) == x1
 
     # check scale*conj(scale)
     A = LinearMap{Float32}(rand(N,2)) # rank=2 w.p.1

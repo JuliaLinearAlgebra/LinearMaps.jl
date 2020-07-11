@@ -21,6 +21,10 @@ using Test, LinearMaps, LinearAlgebra, Quaternions
     @test L' * x ≈ A' * x
     @test α * (L * x) ≈ α * (A * x)
     @test α * L * x ≈ α * A * x
+    @test 3L * x ≈ 3A * x
+    @test 3L' * x ≈ 3A' * x
+    @test α * (3L * x) ≈ α * (3A * x)
+    @test α * 3L * x ≈ α * 3A * x
     @test (α * L') * x ≈ (α * A') * x
     @test (α * L')' * x ≈ (α * A')' * x
     @test (α * L')' * v ≈ (α * A')' * v
