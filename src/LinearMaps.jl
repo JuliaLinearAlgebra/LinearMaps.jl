@@ -17,8 +17,6 @@ abstract type LinearMap{T} end
 
 const MapOrMatrix{T} = Union{LinearMap{T},AbstractMatrix{T}}
 const RealOrComplex = Union{Real,Complex}
-const LinearMapRC = LinearMap{<:RealOrComplex}
-
 
 Base.eltype(::LinearMap{T}) where {T} = T
 
@@ -120,13 +118,12 @@ include("wrappedmap.jl") # wrap a matrix of linear map in a new type, thereby al
 include("uniformscalingmap.jl") # the uniform scaling map, to be able to make linear combinations of LinearMap objects and multiples of I
 include("transpose.jl") # transposing linear maps
 include("linearcombination.jl") # defining linear combinations of linear maps
+include("scaledmap.jl") # multiply by a (real or complex) scalar
 include("composition.jl") # composition of linear maps
 include("functionmap.jl") # using a function as linear map
 include("blockmap.jl") # block linear maps
 include("kronecker.jl") # Kronecker product of linear maps
 include("conversion.jl") # conversion of linear maps to matrices
-const CompositeMapRC = CompositeMap{<:RealOrComplex}
-include("scaledmap.jl") # multiply by a (real or complex) scalar
 
 """
     LinearMap(A; kwargs...)

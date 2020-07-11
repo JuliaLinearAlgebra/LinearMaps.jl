@@ -1,4 +1,4 @@
-using Test, LinearMaps, LinearAlgebra
+using Test, LinearMaps, LinearAlgebra, BenchmarkTools
 
 @testset "function maps" begin
     N = 100
@@ -58,7 +58,7 @@ using Test, LinearMaps, LinearAlgebra
     @test_throws ErrorException adjoint(CS!) * v
     @test_throws ErrorException mul!(similar(v), CS!', v)
     @test_throws ErrorException mul!(similar(v), transpose(CS!), v)
-    CS! = LinearMap{ComplexF64}(cumsum!, (y, x) -> (copyto!(y, x); reverse!(y); cumsum!(y, y)), 10; ismutating=true)
+    CS! = LinearMap{ComplexF64}(cumsum!, (y, x) -> (copyto!(y, x); reverse!(y); cumsum!(y, y); reverse!(y)), 10; ismutating=true)
     @inferred adjoint(CS!)
     @test @inferred LinearMaps.ismutating(CS!)
     @test @inferred CS! * v == cv
@@ -67,6 +67,11 @@ using Test, LinearMaps, LinearAlgebra
     @test @inferred CS' * v == reverse!(cumsum(reverse(v)))
     @test @inferred mul!(similar(v), transpose(CS), v) == reverse!(cumsum(reverse(v)))
     @test @inferred mul!(similar(v), adjoint(CS), v) == reverse!(cumsum(reverse(v)))
+    u = similar(v)
+    b = @benchmarkable mul!($u, $(3*CS!), $v)
+    @test run(b, samples=3).allocs == 0
+    b = @benchmarkable mul!($u, $(3*CS!'), $v)
+    @test run(b, samples=3).allocs == 0
 
     # Test fallback methods:
     L = @inferred LinearMap(x -> x, x -> x, 10)

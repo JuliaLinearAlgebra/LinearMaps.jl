@@ -1,105 +1,80 @@
-#=
-scaledmap.jl
-Efficiently handle "scale * A" when the scale factor is Real or Complex.
-In principle, the map A itself could be any type,
-but for simplicity this code focuses "solely" on Real or Complex LinearMaps.
-=#
-
-using LinearAlgebra: UniformScaling
-import LinearAlgebra: issymmetric, ishermitian, isposdef
-
-#=
-todo: i would prefer to let "scale" be a different type than the map.
-e.g., if A is ComplexF32, allow scale to be Real so that multiplying
-by scale would require only a real multiply.  but i could not figure
-out how to get @inferred to pass when i had scale::S
-=#
-
-"""
-    ScaledMap{T, A<:LinearMapRC} <: LinearMap{T}
-"""
-struct ScaledMap{T, A<:LinearMapRC} <: LinearMap{T}
-    scale::T
-    map::A
-    function ScaledMap{T, A}(scale::S, map::A) where {T, S <: RealOrComplex, A <: LinearMapRC}
-        promote_type(S, eltype(map)) == T || throw(InexactError())
-        new{T, A}(scale, map)
+struct ScaledMap{T, S<:RealOrComplex, A<:LinearMap} <: LinearMap{T}
+    λ::S
+    lmap::A
+    function ScaledMap{T,S,A}(λ::S, lmap::A) where {T, S <: RealOrComplex, A <: LinearMap}
+        Base.promote_op(*, S, eltype(lmap)) == T || throw(InexactError())
+        new{T,S,A}(λ, lmap)
     end
 end
 
 # constructor
-ScaledMap(scale::S, map::A) where {S <: RealOrComplex, A <: LinearMapRC} =
-    ScaledMap{promote_type(S,eltype(map)), A}(scale, map)
+ScaledMap{T}(λ::S, lmap::A) where {T,S<:RealOrComplex,A<:LinearMap} =
+    ScaledMap{Base.promote_op(*, S, eltype(lmap)),S,A}(λ, lmap)
 
 # show
 function Base.show(io::IO, A::ScaledMap{T}) where {T}
-    println(io, "LinearMaps.ScaledMap{$T}, scale = $(A.scale)")
-    show(io, A.map)
+    println(io, "LinearMaps.ScaledMap{$T}, scale = $(A.λ)")
+    show(io, A.lmap)
 end
 
 # basic methods
-Base.size(A::ScaledMap) = size(A.map)
-Base.isreal(A::ScaledMap) = isreal(A.scale) && isreal(A.map)
-LinearAlgebra.issymmetric(A::ScaledMap) = isreal(A.scale) && issymmetric(A.map)
-LinearAlgebra.ishermitian(A::ScaledMap) = ishermitian(A.map)
+Base.size(A::ScaledMap) = size(A.lmap)
+Base.isreal(A::ScaledMap) = isreal(A.λ) && isreal(A.lmap)
+LinearAlgebra.issymmetric(A::ScaledMap) = issymmetric(A.lmap)
+LinearAlgebra.ishermitian(A::ScaledMap) = ishermitian(A.lmap)
 
-# subtle issue here that if map is Complex, then so is scale
-LinearAlgebra.isposdef(A::ScaledMap) =
-    isposdef(A.map) && isreal(A.scale) && real(A.scale) > 0
+LinearAlgebra.isposdef(A::ScaledMap) = isposdef(A.λ) && isposdef(A.lmap)
 
-Base.transpose(A::ScaledMap) = ScaledMap(A.scale, transpose(A.map))
-Base.adjoint(A::ScaledMap) = ScaledMap(conj(A.scale), adjoint(A.map))
+Base.transpose(A::ScaledMap) = A.λ * transpose(A.lmap)
+Base.adjoint(A::ScaledMap) = conj(A.λ) * adjoint(A.lmap)
 
 # comparison (sufficient, not necessary)
 Base.:(==)(A::ScaledMap, B::ScaledMap) =
-    (eltype(A) == eltype(B) && A.map == B.map) && A.scale == B.scale
+    (eltype(A) == eltype(B) && A.lmap == B.lmap) && A.λ == B.λ
 
 # approximate comparison (because == for real scalars is dubious)
-Base.:(≈)(A::ScaledMap, B::ScaledMap) =
-    (eltype(A) == eltype(B) && A.map == B.map) && A.scale ≈ B.scale
+# Base.:(≈)(A::ScaledMap, B::ScaledMap) =
+#     (eltype(A) == eltype(B) && A.lmap == B.lmap) && A.λ ≈ B.λ
 
 # x * conj(x) is real in math, but not perfectly so in computation,
 # but we want it to be real here (when possible) for isposdef()
 # and so that α*conj(α)*A is has a real scale when A is Real
-@inline _scalar_product(a, b) = isreal(a*b) ? real(a*b) : a*b
+# @inline _scalar_product(a, b) = isreal(a*b) ? real(a*b) : a*b
 
 # scalar multiplication and division
-Base.:(*)(α::RealOrComplex, A::ScaledMap) =
-    ScaledMap(_scalar_product(α, A.scale), A.map)
-Base.:(*)(α::RealOrComplex, A::LinearMapRC) = ScaledMap(α, A)
-Base.:(*)(A::LinearMapRC, α::RealOrComplex) = α * A
-Base.:(*)(A::ScaledMap, α::RealOrComplex) = α * A
+function Base.:(*)(α::RealOrComplex, A::LinearMap)
+    T = Base.promote_op(*, typeof(α), eltype(A))
+    return ScaledMap{T}(α, A)
+end
+function Base.:(*)(A::LinearMap, α::RealOrComplex)
+    T = Base.promote_op(*, typeof(α), eltype(A))
+    return ScaledMap{T}(α, A)
+end
 
-Base.:(*)(α::RealOrComplex, A::CompositeMapRC) = ScaledMap(α, A)
-Base.:(*)(A::CompositeMapRC, α::RealOrComplex) = ScaledMap(α, A)
-
-Base.:(\)(α::RealOrComplex, A::LinearMapRC) = inv(α) * A
-Base.:(/)(A::LinearMapRC, α::RealOrComplex) = inv(α) * A
-Base.:(-)(A::LinearMapRC) = -1 * A # possibly redundant with compositemap.jl
-
-# I
-Base.:(*)(A::LinearMapRC, B::UniformScaling{<:RealOrComplex}) = B.λ * A
-Base.:(*)(A::UniformScaling{<:RealOrComplex}, B::LinearMapRC) = A.λ * B
-
+Base.:(*)(α::Number, A::ScaledMap) = (α * A.λ) * A.lmap
+Base.:(*)(A::ScaledMap, α::Number) = (A.λ * α) * A.lmap
+Base.:(*)(A::UniformScaling, B::LinearMap) = A.λ * B
+Base.:(*)(A::LinearMap, B::UniformScaling) = A * B.λ
+# needed for disambiguation
+Base.:(*)(α::RealOrComplex, A::ScaledMap) = (α * A.λ) * A.lmap
+Base.:(*)(A::ScaledMap, α::RealOrComplex) = (A.λ * α) * A.lmap
+Base.:(-)(A::LinearMap) = -1 * A
 
 # composition (not essential, but might save multiple scaling operations)
-Base.:(*)(A::ScaledMap, B::ScaledMap) =
-     ScaledMap(_scalar_product(A.scale, B.scale), A.map * B.map)
-
-# composition: keep "scale" as the outer-most type
-# this helps with cases like "transpose(F) * 3 * F"
-Base.:(*)(A::ScaledMap, B::LinearMapRC) = ScaledMap(A.scale, A.map * B)
-Base.:(*)(A::LinearMapRC, B::ScaledMap) = ScaledMap(B.scale, A * B.map)
+Base.:(*)(A::ScaledMap, B::ScaledMap) = (A.λ * B.λ) * (A.lmap * B.lmap)
+Base.:(*)(A::ScaledMap, B::LinearMap) = A.λ * (A.lmap * B)
+Base.:(*)(A::LinearMap, B::ScaledMap) = (A * B.lmap) * B.λ
 
 # multiplication with vectors
 function A_mul_B!(y::AbstractVector, A::ScaledMap, x::AbstractVector)
     # no size checking, will be done by map
-    A_mul_B!(y, A.map, x)
-    y .*= A.scale # todo: any more efficient way using 4-arg mul! ?
+    mul!(y, A.lmap, x, A.λ, false)
 end
 
-# todo: 5-arg mul! ?
+function LinearAlgebra.mul!(y::AbstractVector, A::ScaledMap, x::AbstractVector, α::Number, β::Number)
+    # no size checking, will be done by map
+    mul!(y, A.lmap, x, A.λ * α, β)
+end
 
-# todo: these next two seem unnecessary
-#At_mul_B!(y::AbstractVector, A::ScaledMap, x::AbstractVector) = A_mul_B!(y, transpose(A), x)
-#Ac_mul_B!(y::AbstractVector, A::ScaledMap, x::AbstractVector) = A_mul_B!(y, adjoint(A), x)
+At_mul_B!(y::AbstractVector, A::ScaledMap, x::AbstractVector) = A_mul_B!(y, transpose(A), x)
+Ac_mul_B!(y::AbstractVector, A::ScaledMap, x::AbstractVector) = A_mul_B!(y, adjoint(A), x)

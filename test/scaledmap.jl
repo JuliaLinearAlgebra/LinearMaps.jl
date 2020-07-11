@@ -1,8 +1,3 @@
-#=
-scaledmap.jl
-Tests for ScaledMap objects
-=#
-
 using Test, LinearMaps, LinearAlgebra
 
 @testset "scaledmap" begin
@@ -10,11 +5,10 @@ using Test, LinearMaps, LinearAlgebra
     A = LinearMap(cumsum, reverse ∘ cumsum ∘ reverse, N)
 
     # real case
-    α = π
+    α = float(π)
     B = α*A
     x = rand(N)
 
-    @test B isa LinearMaps.ScaledMap
     @test @inferred size(B) == size(A)
     @test @inferred isreal(B)
     @test @inferred issymmetric(B) == issymmetric(A)
@@ -23,16 +17,11 @@ using Test, LinearMaps, LinearAlgebra
     @test @inferred transpose(B) == α * transpose(A)
 
     @test B == A * α
-    @test B ≈ B
     @test B * x == α * (A * x)
     @test @inferred Matrix(B) == α * Matrix(A)
     @test @inferred Matrix(B') == Matrix(B)'
 
-    show(isinteractive() ? stdout : devnull, B)
-
-    @test A / (1/α) == B
     @test -A == (-1) * A
-    @test -A isa LinearMaps.ScaledMap
 
     @test A * (α*I) == B
     @test (α*I) * A == B
@@ -43,7 +32,6 @@ using Test, LinearMaps, LinearAlgebra
     T = ComplexF32
     xc = rand(T, N)
 
-    @test C isa LinearMaps.ScaledMap
     @test @inferred !isreal(C)
     @test @inferred !issymmetric(C)
     @test @inferred ishermitian(C) == ishermitian(A)
@@ -59,7 +47,6 @@ using Test, LinearMaps, LinearAlgebra
 
     # composition
     BC = B * C
-    @test BC isa LinearMaps.ScaledMap
     @test Matrix(BC) ≈ α*β*Matrix(A)*Matrix(A)
 
     @test Matrix(α * BC) ≈ α * Matrix(BC)
@@ -82,45 +69,8 @@ using Test, LinearMaps, LinearAlgebra
     @test x2 == x1
 
     # check scale*conj(scale)
-    A = LinearMap{Float32}(rand(9,2)) # rank=2 w.p.1
+    A = LinearMap{Float32}(rand(N,2)) # rank=2 w.p.1
     B = β * A
     C = B' * B
     @test @inferred isposdef(C)
-
-    # allocation (WIP)
-#=
-    function cumsum_adj!(x, y, work)
-        return reverse!(cumsum!(x, reverse!(copyto!(work,y))))
-    end
-    function cumsum_adj_make(x)
-        work = similar(x)
-        return (x,y) -> cumsum_adj!(x, y, work)
-    end
-    adj! = cumsum_adj_make(xc)
-    Ai = LinearMap(cumsum!, adj!, N)
-    @test Matrix(Ai) == Matrix(A)
-
-    function alloc_test_forw!(y, A, x)
-        mul!(y, A, x)
-    end
-    function alloc_test_back(x, A, y)
-        mul!(x, A', y)
-    end
-#   @show (@allocated alloc_test_forw!(y1, A, xc))
-#   @show (@allocated alloc_test_forw!(y1, Ai, xc)) # why nonzero?
-
-    using BenchmarkTools
-#   @btime mul!($y1, $A, $xc)
-#   @btime mul!($y1, $Ai, $xc) # 0
-
-#   @allocated mul!($y1, $A, $x)
-#   @allocated mul!($y1, $Ai, $x)
-
-#   @btime mul!($x1, $A', $y1)
-#   @btime mul!($x1, $Ai', $y1) # ~0
-
-    @btime mul!($y1, $C, $xc)
-    C = β * Ai
-    @btime mul!($y1, $C, $xc)
-=#
 end
