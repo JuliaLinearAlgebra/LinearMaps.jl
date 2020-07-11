@@ -32,15 +32,6 @@ Base.adjoint(A::ScaledMap) = conj(A.λ) * adjoint(A.lmap)
 Base.:(==)(A::ScaledMap, B::ScaledMap) =
     (eltype(A) == eltype(B) && A.lmap == B.lmap) && A.λ == B.λ
 
-# approximate comparison (because == for real scalars is dubious)
-# Base.:(≈)(A::ScaledMap, B::ScaledMap) =
-#     (eltype(A) == eltype(B) && A.lmap == B.lmap) && A.λ ≈ B.λ
-
-# x * conj(x) is real in math, but not perfectly so in computation,
-# but we want it to be real here (when possible) for isposdef()
-# and so that α*conj(α)*A is has a real scale when A is Real
-# @inline _scalar_product(a, b) = isreal(a*b) ? real(a*b) : a*b
-
 # scalar multiplication and division
 function Base.:(*)(α::RealOrComplex, A::LinearMap)
     T = Base.promote_op(*, typeof(α), eltype(A))
@@ -52,7 +43,7 @@ function Base.:(*)(A::LinearMap, α::RealOrComplex)
 end
 
 Base.:(*)(α::Number, A::ScaledMap) = (α * A.λ) * A.lmap
-Base.:(*)(A::ScaledMap, α::Number) = (A.λ * α) * A.lmap
+Base.:(*)(A::ScaledMap, α::Number) = A.lmap * (A.λ * α)
 Base.:(*)(A::UniformScaling, B::LinearMap) = A.λ * B
 Base.:(*)(A::LinearMap, B::UniformScaling) = A * B.λ
 # needed for disambiguation
