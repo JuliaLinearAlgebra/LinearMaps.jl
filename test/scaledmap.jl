@@ -51,6 +51,8 @@ using Test, LinearMaps, LinearAlgebra
 
     # composition
     BC = B * C
+    @test BC isa LinearMaps.ScaledMap
+    @test BC.λ == α*β
     @test Matrix(BC) ≈ α*β*Matrix(A)*Matrix(A)
 
     @test Matrix(α * BC) ≈ α * Matrix(BC)

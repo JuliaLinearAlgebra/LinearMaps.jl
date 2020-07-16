@@ -1,8 +1,9 @@
 using Test, LinearMaps, LinearAlgebra
 
 @testset "composition" begin
-    F = @inferred LinearMap(cumsum, y -> reverse(cumsum(reverse(x))), 10; ismutating=false)
-    FC = @inferred LinearMap{ComplexF64}(cumsum, y -> reverse(cumsum(reverse(x))), 10; ismutating=false)
+    F = @inferred LinearMap(cumsum, y -> reverse(cumsum(reverse(y))), 10; ismutating=false)
+    FC = @inferred LinearMap{ComplexF64}(cumsum, y -> reverse(cumsum(reverse(y))), 10; ismutating=false)
+    L = LowerTriangular(ones(10,10))
     A = 2 * rand(ComplexF64, (10, 10)) .- 1
     B = rand(size(A)...)
     M = @inferred 1 * LinearMap(A)
@@ -12,7 +13,11 @@ using Test, LinearMaps, LinearAlgebra
     @test @inferred (F * A) * v == @inferred F * (A * v)
     @test @inferred (A * F) * v == @inferred A * (F * v)
     @test @inferred A * (F * F) * v == @inferred A * (F * (F * v))
-    @test @inferred (F * F) * (F * F) * v == @inferred F * (F * (F * (F * v)))
+    F2 = F*F
+    FC2 = FC*FC
+    F4 = FC2 * F2
+    @test length(F4.maps) == 4
+    @test @inferred F4 * v == @inferred F * (F * (F * (F * v)))
     @test @inferred Matrix(M * transpose(M)) ≈ A * transpose(A)
     @test @inferred !isposdef(M * transpose(M))
     @test @inferred isposdef(M * M')

@@ -28,15 +28,17 @@ for (f, _f, g) in ((:issymmetric, :_issymmetric, :transpose),
         LinearAlgebra.$f(A::CompositeMap) = $_f(A.maps)
         $_f(maps::Tuple{}) = true
         $_f(maps::Tuple{<:LinearMap}) = $f(maps[1])
-        function $_f(maps::Tuple{Vararg{<:LinearMap}}) # length(maps) >= 2
-            if maps[1] isa UniformScalingMap{<:RealOrComplex}
-                return $f(maps[1]) && $_f(Base.tail(maps))
-            elseif maps[end] isa UniformScalingMap{<:RealOrComplex}
-                return $f(maps[end]) && $_f(Base.front(maps))
-            else
-                return maps[end] == $g(maps[1]) && $_f(Base.front(Base.tail(maps)))
-            end
-        end
+        $_f(maps::Tuple{Vararg{<:LinearMap}}) = maps[end] == $g(maps[1]) && $_f(Base.front(Base.tail(maps)))
+        # since the introduction of ScaledMap, the following cases cannot occur
+        # function $_f(maps::Tuple{Vararg{<:LinearMap}}) # length(maps) >= 2
+            # if maps[1] isa UniformScalingMap{<:RealOrComplex}
+            #     return $f(maps[1]) && $_f(Base.tail(maps))
+            # elseif maps[end] isa UniformScalingMap{<:RealOrComplex}
+            #     return $f(maps[end]) && $_f(Base.front(maps))
+            # else
+                # return maps[end] == $g(maps[1]) && $_f(Base.front(Base.tail(maps)))
+            # end
+        # end
     end
 end
 
