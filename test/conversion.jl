@@ -42,8 +42,14 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays, Quaternions
     # CompositeMap of MatrixMap and UniformScalingMap
     q = Quaternion(rand(4)...)
     A = Quaternion.(rand(3,3), rand(3,3), rand(3,3), rand(3,3))
-    @test convert(Matrix, LinearMap(A)*q) ≈ A*q
-    @test convert(Matrix, q*LinearMap(A)) ≈ q*A
+    for mat in (Matrix, SparseMatrixCSC)
+        Aqmat = convert(mat, LinearMap(A)*q)
+        @test Aqmat ≈ A*q
+        @test Aqmat isa mat
+        qAmat = convert(mat, q*LinearMap(A))
+        @test qAmat ≈ q*A
+        @test qAmat isa mat
+    end
 
     # sparse matrix generation/conversion
     @test sparse(M) == sparse(Array(M))

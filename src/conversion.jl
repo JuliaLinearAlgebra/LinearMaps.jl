@@ -45,6 +45,10 @@ Base.convert(::Type{SparseMatrixCSC}, A::LinearMap) = sparse(A)
 
 # special cases
 
+# ScaledMap
+Base.Matrix(A::ScaledMap{<:Any,<:Any,<:MatrixMap}) = convert(Matrix, A.λ*A.lmap.lmap)
+SparseArrays.sparse(A::ScaledMap{<:Any,<:Any,<:MatrixMap}) = convert(SparseMatrixCSC, A.λ*A.lmap.lmap)
+
 # UniformScalingMap
 Base.Matrix(J::UniformScalingMap) = Matrix(J.λ*I, size(J))
 Base.convert(::Type{AbstractMatrix}, J::UniformScalingMap) = Diagonal(fill(J.λ, size(J, 1)))
@@ -94,10 +98,6 @@ function SparseArrays.sparse(Aλ::CompositeMap{<:Any,<:Tuple{UniformScalingMap,M
     J, A = Aλ.maps
     return convert(SparseMatrixCSC, A.lmap*J.λ)
 end
-
-# ScalingMap
-Base.Matrix(A::ScaledMap{<:MatrixMap}) = convert(Matrix, A.λ*A.lmap.lmap)
-SparseArrays.sparse(A::ScaledMap{<:MatrixMap}) = convert(SparseMatrixCSC, A.λ*A.lmap.lmap)
 
 # BlockMap & BlockDiagonalMap
 Base.Matrix(A::BlockMap) = hvcat(A.rows, convert.(Matrix, A.maps)...)
