@@ -1,4 +1,4 @@
-using Test, LinearMaps, LinearAlgebra, SparseArrays
+using Test, LinearMaps, LinearAlgebra, SparseArrays, Quaternions
 
 @testset "conversion" begin
     A = 2 * rand(ComplexF64, (20, 10)) .- 1
@@ -30,6 +30,20 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
     J = LinearMap(α*I, 10)
     JM = convert(AbstractMatrix, J)
     @test JM == Diagonal(fill(α, 10))
+
+    # ScaledMap
+    q = rand(ComplexF64)
+    A = rand(ComplexF64, 3, 3)
+    @test convert(Matrix, q*LinearMap(A)) ≈ q*A
+    qAs = convert(SparseMatrixCSC, q*LinearMap(A))
+    @test qAs ≈ q*A
+    @test qAs isa SparseMatrixCSC
+
+    # CompositeMap of MatrixMap and UniformScalingMap
+    q = Quaternion(rand(4)...)
+    A = Quaternion.(rand(3,3), rand(3,3), rand(3,3), rand(3,3))
+    @test convert(Matrix, LinearMap(A)*q) ≈ A*q
+    @test convert(Matrix, q*LinearMap(A)) ≈ q*A
 
     # sparse matrix generation/conversion
     @test sparse(M) == sparse(Array(M))
