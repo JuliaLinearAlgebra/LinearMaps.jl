@@ -165,17 +165,3 @@ function _compositemul!(y::AbstractVector, A::CompositeMap{T,<:Tuple{Vararg{Line
     mul!(y, A.maps[N], source)
     return y
 end
-
-# rewrapping
-Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, A::TransposeMap{<:Any,<:CompositeMap}, x::AbstractVector)
-    mul!(y, transpose(A.lmap), x)
-end
-Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, A::AdjointMap{<:Any,<:CompositeMap}, x::AbstractVector)
-    mul!(y, adjoint(A.lmap), x)
-end
-Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, A::TransposeMap{<:Any,<:CompositeMap}, x::AbstractVector, α::Number, β::Number)
-    mul!(y, transpose(A.lmap), x, α, β)
-end
-Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, A::AdjointMap{<:Any,<:CompositeMap}, x::AbstractVector, α::Number, β::Number)
-    mul!(y, adjoint(A.lmap), x, α, β)
-end

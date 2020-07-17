@@ -37,41 +37,35 @@ LinearAlgebra.ishermitian(A::WrappedMap) = A._ishermitian
 LinearAlgebra.isposdef(A::WrappedMap) = A._isposdef
 
 # multiplication with vectors & matrices
-Base.@propagate_inbounds LinearAlgebra.mul!(y::AbstractVector, A::WrappedMap, x::AbstractVector) = mul!(y, A.lmap, x)
 Base.:(*)(A::WrappedMap, x::AbstractVector) = *(A.lmap, x)
 
-Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, At::TransposeMap{<:Any,<:WrappedMap}, x::AbstractVector)
-    A = At.lmap
-    (issymmetric(A) || (isreal(A) && ishermitian(A))) ? mul!(y, A.lmap, x) : mul!(y, transpose(A.lmap), x)
-end
-Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, At::TransposeMap{<:Any,<:WrappedMap}, x::AbstractVector, α::Number, β::Number)
-    A = At.lmap
-    (issymmetric(A) || (isreal(A) && ishermitian(A))) ? mul!(y, A.lmap, x, α, β) : mul!(y, transpose(A.lmap), x, α, β)
-end
-
-Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, Ac::AdjointMap{<:Any,<:WrappedMap}, x::AbstractVector)
-    A = Ac.lmap
-    ishermitian(A) ? mul!(y, A.lmap, x) : mul!(y, adjoint(A.lmap), x)
-end
-Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, Ac::AdjointMap{<:Any,<:WrappedMap}, x::AbstractVector, α::Number, β::Number)
-    A = Ac.lmap
-    ishermitian(A) ? mul!(y, A.lmap, x, α, β) : mul!(y, adjoint(A.lmap), x, α, β)
+for Atype in (AbstractVector, AbstractMatrix)
+    @eval Base.@propagate_inbounds function LinearAlgebra.mul!(Y::$Atype, A::WrappedMap, X::$Atype)
+        return mul!(Y, A.lmap, X)
+    end
+    @eval Base.@propagate_inbounds function LinearAlgebra.mul!(y::$Atype, At::TransposeMap{<:Any,<:WrappedMap}, x::$Atype)
+        A = At.lmap
+        (issymmetric(A) || (isreal(A) && ishermitian(A))) ? mul!(y, A.lmap, x) : mul!(y, transpose(A.lmap), x)
+    end
+    @eval Base.@propagate_inbounds function LinearAlgebra.mul!(y::$Atype, Ac::AdjointMap{<:Any,<:WrappedMap}, x::$Atype)
+        A = Ac.lmap
+        ishermitian(A) ? mul!(y, A.lmap, x) : mul!(y, adjoint(A.lmap), x)
+    end
 end
 
 if VERSION ≥ v"1.3.0-alpha.115"
     for Atype in (AbstractVector, AbstractMatrix)
-        @eval Base.@propagate_inbounds LinearAlgebra.mul!(y::$Atype, A::WrappedMap, x::$Atype,
-                        α::Number, β::Number) =
-            mul!(y, A.lmap, x, α, β)
-    end
-else
-# This is somewhat suboptimal, because the absence of 5-arg mul! for MatrixMaps
-# doesn't allow to define a 5-arg mul! for WrappedMaps which do have a 5-arg mul!
-# I'd assume, however, that 5-arg mul! becomes standard in Julia v≥1.3 anyway
-# the idea is to let the fallback handle 5-arg calls
-    for Atype in (AbstractVector, AbstractMatrix)
-        @eval Base.@propagate_inbounds LinearAlgebra.mul!(Y::$Atype, A::WrappedMap, X::$Atype) =
-            mul!(Y, A.lmap, X)
+        @eval Base.@propagate_inbounds function LinearAlgebra.mul!(y::$Atype, A::WrappedMap, x::$Atype, α::Number, β::Number)
+            return mul!(y, A.lmap, x, α, β)
+        end
+        @eval Base.@propagate_inbounds function LinearAlgebra.mul!(y::$Atype, At::TransposeMap{<:Any,<:WrappedMap}, x::$Atype, α::Number, β::Number)
+            A = At.lmap
+            (issymmetric(A) || (isreal(A) && ishermitian(A))) ? mul!(y, A.lmap, x, α, β) : mul!(y, transpose(A.lmap), x, α, β)
+        end
+        @eval Base.@propagate_inbounds function LinearAlgebra.mul!(y::$Atype, Ac::AdjointMap{<:Any,<:WrappedMap}, x::$Atype, α::Number, β::Number)
+            A = Ac.lmap
+            ishermitian(A) ? mul!(y, A.lmap, x, α, β) : mul!(y, adjoint(A.lmap), x, α, β)
+        end
     end
 end # VERSION
 

@@ -481,6 +481,11 @@ LinearAlgebra.transpose(A::BlockDiagonalMap{T}) where {T} = BlockDiagonalMap{T}(
 Base.:(==)(A::BlockDiagonalMap, B::BlockDiagonalMap) = (eltype(A) == eltype(B) && A.maps == B.maps)
 
 for Atype in (AbstractVector, AbstractMatrix)
+    @eval Base.@propagate_inbounds function LinearAlgebra.mul!(y::$Atype, A::BlockDiagonalMap, x::$Atype)
+        require_one_based_indexing(y, x)
+        @boundscheck check_dim_mul(y, A, x)
+        return _blockscaling!(y, A, x, true, false)
+    end
     @eval Base.@propagate_inbounds function LinearAlgebra.mul!(y::$Atype, A::BlockDiagonalMap, x::$Atype,
                         α::Number, β::Number)
         require_one_based_indexing(y, x)
@@ -496,17 +501,4 @@ end
         mul!(selectdim(y, 1, yinds[i]), maps[i], selectdim(x, 1, xinds[i]), α, β)
     end
     return y
-end
-
-Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, A::TransposeMap{<:Any,<:BlockDiagonalMap}, x::AbstractVector)
-    mul!(y, transpose(A.lmap), x)
-end
-Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, A::AdjointMap{<:Any,<:BlockDiagonalMap}, x::AbstractVector)
-    mul!(y, adjoint(A.lmap), x)
-end
-Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, A::TransposeMap{<:Any,<:BlockDiagonalMap}, x::AbstractVector, α::Number, β::Number)
-    mul!(y, transpose(A.lmap), x, α, β)
-end
-Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, A::AdjointMap{<:Any,<:BlockDiagonalMap}, x::AbstractVector, α::Number, β::Number)
-    mul!(y, adjoint(A.lmap), x, α, β)
 end
