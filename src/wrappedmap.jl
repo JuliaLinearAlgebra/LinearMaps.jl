@@ -37,14 +37,26 @@ LinearAlgebra.ishermitian(A::WrappedMap) = A._ishermitian
 LinearAlgebra.isposdef(A::WrappedMap) = A._isposdef
 
 # multiplication with vectors & matrices
-A_mul_B!(y::AbstractVector, A::WrappedMap, x::AbstractVector) = A_mul_B!(y, A.lmap, x)
+Base.@propagate_inbounds LinearAlgebra.mul!(y::AbstractVector, A::WrappedMap, x::AbstractVector) = mul!(y, A.lmap, x)
 Base.:(*)(A::WrappedMap, x::AbstractVector) = *(A.lmap, x)
 
-At_mul_B!(y::AbstractVector, A::WrappedMap, x::AbstractVector) =
-    (issymmetric(A) || (isreal(A) && ishermitian(A))) ? A_mul_B!(y, A.lmap, x) : At_mul_B!(y, A.lmap, x)
+Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, At::TransposeMap{<:Any,<:WrappedMap}, x::AbstractVector)
+    A = At.lmap
+    (issymmetric(A) || (isreal(A) && ishermitian(A))) ? mul!(y, A.lmap, x) : mul!(y, transpose(A.lmap), x)
+end
+Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, At::TransposeMap{<:Any,<:WrappedMap}, x::AbstractVector, α::Number, β::Number)
+    A = At.lmap
+    (issymmetric(A) || (isreal(A) && ishermitian(A))) ? mul!(y, A.lmap, x, α, β) : mul!(y, transpose(A.lmap), x, α, β)
+end
 
-Ac_mul_B!(y::AbstractVector, A::WrappedMap, x::AbstractVector) =
-    ishermitian(A) ? A_mul_B!(y, A.lmap, x) : Ac_mul_B!(y, A.lmap, x)
+Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, Ac::AdjointMap{<:Any,<:WrappedMap}, x::AbstractVector)
+    A = Ac.lmap
+    ishermitian(A) ? mul!(y, A.lmap, x) : mul!(y, adjoint(A.lmap), x)
+end
+Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, Ac::AdjointMap{<:Any,<:WrappedMap}, x::AbstractVector, α::Number, β::Number)
+    A = Ac.lmap
+    ishermitian(A) ? mul!(y, A.lmap, x, α, β) : mul!(y, adjoint(A.lmap), x, α, β)
+end
 
 if VERSION ≥ v"1.3.0-alpha.115"
     for Atype in (AbstractVector, AbstractMatrix)

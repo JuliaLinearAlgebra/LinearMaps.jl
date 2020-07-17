@@ -85,10 +85,10 @@ LinearAlgebra.mul!(y::AbstractVector, A::Union{SimpleFunctionMap,SimpleComplexFu
     w = similar(v)
     mul!(w, F, v)
     @test w == F * v
-    @test_throws MethodError F' * v
-    @test_throws MethodError transpose(F) * v
-    @test_throws MethodError mul!(w, adjoint(F), v)
-    @test_throws MethodError mul!(w, transpose(F), v)
+    @test_throws ErrorException F' * v
+    @test_throws ErrorException transpose(F) * v
+    @test_throws ErrorException mul!(w, adjoint(F), v)
+    @test_throws ErrorException mul!(w, transpose(F), v)
     FM = convert(AbstractMatrix, F)
     L = LowerTriangular(ones(10, 10))
     @test FM == L

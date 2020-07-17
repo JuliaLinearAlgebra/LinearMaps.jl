@@ -117,8 +117,15 @@ end
     return y
 end
 
-A_mul_B!(y::AbstractVector, A::LinearCombination, x::AbstractVector) = mul!(y, A, x, true, false)
-
-At_mul_B!(y::AbstractVector, A::LinearCombination, x::AbstractVector) = mul!(y, transpose(A), x, true, false)
-
-Ac_mul_B!(y::AbstractVector, A::LinearCombination, x::AbstractVector) = mul!(y, adjoint(A), x, true, false)
+Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, A::TransposeMap{<:Any,<:LinearCombination}, x::AbstractVector)
+    mul!(y, transpose(A.lmap), x)
+end
+Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, A::AdjointMap{<:Any,<:LinearCombination}, x::AbstractVector)
+    mul!(y, adjoint(A.lmap), x)
+end
+Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, A::TransposeMap{<:Any,<:LinearCombination}, x::AbstractVector, α::Number, β::Number)
+    mul!(y, transpose(A.lmap), x, α, β)
+end
+Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, A::AdjointMap{<:Any,<:LinearCombination}, x::AbstractVector, α::Number, β::Number)
+    mul!(y, adjoint(A.lmap), x, α, β)
+end

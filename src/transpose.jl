@@ -32,18 +32,69 @@ Base.:(==)(A::LinearMap, B::TransposeMap)    = issymmetric(A) && B.lmap == A
 Base.:(==)(A::LinearMap, B::AdjointMap)      = ishermitian(A) && B.lmap == A
 
 # multiplication with vector
-A_mul_B!(y::AbstractVector, A::TransposeMap, x::AbstractVector) =
-    issymmetric(A.lmap) ? A_mul_B!(y, A.lmap, x) : At_mul_B!(y, A.lmap, x)
+Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, A::TransposeMap, x::AbstractVector)
+    issymmetric(A.lmap) ? mul!(y, A.lmap, x) : error("transpose not implemented for $A")
+end
+Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, A::TransposeMap, x::AbstractVector, α::Number, β::Number)
+    issymmetric(A.lmap) ? mul!(y, A.lmap, x, α, β) : error("transpose not implemented for $A")
+end
 
-At_mul_B!(y::AbstractVector, A::TransposeMap, x::AbstractVector) = A_mul_B!(y, A.lmap, x)
+Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, A::TransposeMap{<:Any,<:TransposeMap}, x::AbstractVector)
+    mul!(y, A.lmap.lmap, x)
+end
+Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, A::TransposeMap{<:Any,<:TransposeMap}, x::AbstractVector, α::Number, β::Number)
+    mul!(y, A.lmap.lmap, x, α, β)
+end
 
-Ac_mul_B!(y::AbstractVector, A::TransposeMap, x::AbstractVector) =
-    isreal(A.lmap) ? A_mul_B!(y, A.lmap, x) : (A_mul_B!(y, A.lmap, conj(x)); conj!(y))
+Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, Ac::AdjointMap{<:Any,<:TransposeMap}, x::AbstractVector)
+    A = Ac.lmap
+    return _conjmul!(y, A.lmap, x)
+end
+Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, Ac::AdjointMap{<:Any,<:TransposeMap}, x::AbstractVector, α::Number, β::Number)
+    A = Ac.lmap
+    return _conjmul!(y, A.lmap, x, α, β)
+end
 
-A_mul_B!(y::AbstractVector, A::AdjointMap, x::AbstractVector) =
-    ishermitian(A.lmap) ? A_mul_B!(y, A.lmap, x) : Ac_mul_B!(y, A.lmap, x)
+Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, A::AdjointMap, x::AbstractVector)
+    ishermitian(A.lmap) ? mul!(y, A.lmap, x) : error("adjoint not implemented for $A")
+end
+Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, A::AdjointMap, x::AbstractVector, α::Number, β::Number)
+    ishermitian(A.lmap) ? mul!(y, A.lmap, x, α, β) : error("adjoint not implemented for $A")
+end
 
-At_mul_B!(y::AbstractVector, A::AdjointMap, x::AbstractVector) =
-    isreal(A.lmap) ? A_mul_B!(y, A.lmap, x) : (A_mul_B!(y, A.lmap, conj(x)); conj!(y))
+Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, At::TransposeMap{<:Any,<:AdjointMap}, x::AbstractVector)
+    A = At.lmap
+    isreal(A.lmap) ? mul!(y, A.lmap, x) : (mul!(y, A.lmap, conj(x)); conj!(y))
+end
+Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, At::TransposeMap{<:Any,<:AdjointMap}, x::AbstractVector, α::Number, β::Number)
+    A = At.lmap
+    return _conjmul!(y, A.lmap, x, α, β)
+end
 
-Ac_mul_B!(y::AbstractVector, A::AdjointMap, x::AbstractVector) = A_mul_B!(y, A.lmap, x)
+Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, A::AdjointMap{<:Any,<:AdjointMap}, x::AbstractVector)
+    mul!(y, A.lmap.lmap, x)
+end
+Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, A::AdjointMap{<:Any,<:AdjointMap}, x::AbstractVector, α::Number, β::Number)
+    mul!(y, A.lmap.lmap, x, α, β)
+end
+
+# multiplication helper function
+function _conjmul!(y, A, x)
+    if isreal(A)
+        return mul!(y, A, x)
+    else
+        mul!(y, A, conj(x))
+        return conj!(y)
+    end
+end
+function _conjmul!(y, A, x, α, β)
+    if isreal(A)
+        mul!(y, A, x, α, β)
+    else
+        xca = rmul!(conj(x), α)
+        z = A*xca
+        rmul!(y, β)
+        y .+= conj!(z)
+        return y
+    end
+end
