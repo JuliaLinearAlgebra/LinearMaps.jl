@@ -43,7 +43,7 @@ Base.:(*)(A::UniformScalingMap, x::AbstractVector) =
 # multiplication with vector/matrix
 for Atype in (AbstractVector, AbstractMatrix)
     @eval Base.@propagate_inbounds function LinearAlgebra.mul!(y::$Atype, J::UniformScalingMap, x::$Atype,
-                α::Number=true, β::Number=false)
+                α::Number, β::Number)
         @boundscheck check_dim_mul(y, J, x)
         _scaling!(y, J.λ, x, α, β)
         return y
@@ -88,10 +88,9 @@ function _scaling!(y, λ::Number, x, α::Number, β::Number)
     end # α-cases
 end # function _scaling!
 
-A_mul_B!(y::AbstractVector, A::UniformScalingMap, x::AbstractVector) = mul!(y, A, x)
+A_mul_B!(y::AbstractVector, A::UniformScalingMap, x::AbstractVector) = mul!(y, A, x, true, false)
 At_mul_B!(y::AbstractVector, A::UniformScalingMap, x::AbstractVector) = A_mul_B!(y, transpose(A), x)
 Ac_mul_B!(y::AbstractVector, A::UniformScalingMap, x::AbstractVector) = A_mul_B!(y, adjoint(A), x)
-
 
 # combine LinearMap and UniformScaling objects in linear combinations
 Base.:(+)(A₁::LinearMap, A₂::UniformScaling) = A₁ + UniformScalingMap(A₂.λ, size(A₁, 1))

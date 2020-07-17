@@ -49,7 +49,7 @@ Ac_mul_B!(y::AbstractVector, A::WrappedMap, x::AbstractVector) =
 if VERSION ≥ v"1.3.0-alpha.115"
     for Atype in (AbstractVector, AbstractMatrix)
         @eval Base.@propagate_inbounds LinearAlgebra.mul!(y::$Atype, A::WrappedMap, x::$Atype,
-                        α::Number=true, β::Number=false) =
+                        α::Number, β::Number) =
             mul!(y, A.lmap, x, α, β)
     end
 else

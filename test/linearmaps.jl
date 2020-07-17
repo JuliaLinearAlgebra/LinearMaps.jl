@@ -40,7 +40,6 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays, BenchmarkTools
         @test @inferred mul!(copy(w), M, v, 1, β) ≈ Av + β * w
         @test @inferred mul!(copy(w), M, v, α, 1) ≈ α * Av + w
         @test @inferred mul!(copy(w), M, v, α, β) ≈ α * Av + β * w
-        @test @inferred mul!(copy(w), M, v, α)    ≈ α * Av
 
         # test mat-mat-mul!
         @test @inferred mul!(copy(W), M, V, α, β) ≈ α * AV + β * W

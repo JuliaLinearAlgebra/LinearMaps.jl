@@ -345,23 +345,23 @@ end
 ############
 
 Base.@propagate_inbounds A_mul_B!(y::AbstractVector, A::BlockMap, x::AbstractVector) =
-    mul!(y, A, x)
+    mul!(y, A, x, true, false)
 
 Base.@propagate_inbounds A_mul_B!(y::AbstractVector, A::TransposeMap{<:Any,<:BlockMap}, x::AbstractVector) =
-    mul!(y, A, x)
+    mul!(y, A, x, true, false)
 
 Base.@propagate_inbounds At_mul_B!(y::AbstractVector, A::BlockMap, x::AbstractVector) =
-    mul!(y, transpose(A), x)
+    mul!(y, transpose(A), x, true, false)
 
 Base.@propagate_inbounds A_mul_B!(y::AbstractVector, A::AdjointMap{<:Any,<:BlockMap}, x::AbstractVector) =
-    mul!(y, A, x)
+    mul!(y, A, x, true, false)
 
 Base.@propagate_inbounds Ac_mul_B!(y::AbstractVector, A::BlockMap, x::AbstractVector) =
-    mul!(y, adjoint(A), x)
+    mul!(y, adjoint(A), x, true, false)
 
 for Atype in (AbstractVector, AbstractMatrix)
     @eval Base.@propagate_inbounds function LinearAlgebra.mul!(y::$Atype, A::BlockMap, x::$Atype,
-                        α::Number=true, β::Number=false)
+                        α::Number, β::Number)
         require_one_based_indexing(y, x)
         @boundscheck check_dim_mul(y, A, x)
         return _blockmul!(y, A, x, α, β)
@@ -369,7 +369,7 @@ for Atype in (AbstractVector, AbstractMatrix)
 
     for (maptype, transform) in ((:(TransposeMap{<:Any,<:BlockMap}), :transpose), (:(AdjointMap{<:Any,<:BlockMap}), :adjoint))
         @eval Base.@propagate_inbounds function LinearAlgebra.mul!(y::$Atype, wrapA::$maptype, x::$Atype,
-                        α::Number=true, β::Number=false)
+                        α::Number, β::Number)
             require_one_based_indexing(y, x)
             @boundscheck check_dim_mul(y, wrapA, x)
             return _transblockmul!(y, wrapA.lmap, x, α, β, $transform)
@@ -468,7 +468,7 @@ Base.@propagate_inbounds Ac_mul_B!(y::AbstractVector, A::BlockDiagonalMap, x::Ab
 
 for Atype in (AbstractVector, AbstractMatrix)
     @eval Base.@propagate_inbounds function LinearAlgebra.mul!(y::$Atype, A::BlockDiagonalMap, x::$Atype,
-                        α::Number=true, β::Number=false)
+                        α::Number, β::Number)
         require_one_based_indexing(y, x)
         @boundscheck check_dim_mul(y, A, x)
         return _blockscaling!(y, A, x, α, β)
