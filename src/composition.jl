@@ -21,7 +21,6 @@ Base.size(A::CompositeMap) = (size(A.maps[end], 1), size(A.maps[1], 2))
 Base.isreal(A::CompositeMap) = all(isreal, A.maps) # sufficient but not necessary
 
 # the following rules are sufficient but not necessary
-const RealOrComplex = Union{Real,Complex}
 for (f, _f, g) in ((:issymmetric, :_issymmetric, :transpose),
                     (:ishermitian, :_ishermitian, :adjoint),
                     (:isposdef, :_isposdef, :adjoint))
@@ -29,19 +28,21 @@ for (f, _f, g) in ((:issymmetric, :_issymmetric, :transpose),
         LinearAlgebra.$f(A::CompositeMap) = $_f(A.maps)
         $_f(maps::Tuple{}) = true
         $_f(maps::Tuple{<:LinearMap}) = $f(maps[1])
-        function $_f(maps::Tuple{Vararg{<:LinearMap}}) # length(maps) >= 2
-            if maps[1] isa UniformScalingMap{<:RealOrComplex}
-                return $f(maps[1]) && $_f(Base.tail(maps))
-            elseif maps[end] isa UniformScalingMap{<:RealOrComplex}
-                return $f(maps[end]) && $_f(Base.front(maps))
-            else
-                return maps[end] == $g(maps[1]) && $_f(Base.front(Base.tail(maps)))
-            end
-        end
+        $_f(maps::Tuple{Vararg{<:LinearMap}}) = maps[end] == $g(maps[1]) && $_f(Base.front(Base.tail(maps)))
+        # since the introduction of ScaledMap, the following cases cannot occur
+        # function $_f(maps::Tuple{Vararg{<:LinearMap}}) # length(maps) >= 2
+            # if maps[1] isa UniformScalingMap{<:RealOrComplex}
+            #     return $f(maps[1]) && $_f(Base.tail(maps))
+            # elseif maps[end] isa UniformScalingMap{<:RealOrComplex}
+            #     return $f(maps[end]) && $_f(Base.front(maps))
+            # else
+                # return maps[end] == $g(maps[1]) && $_f(Base.front(Base.tail(maps)))
+            # end
+        # end
     end
 end
 
-# scalar multiplication and division
+# scalar multiplication and division (non-commutative case)
 function Base.:(*)(α::Number, A::LinearMap)
     T = promote_type(typeof(α), eltype(A))
     return CompositeMap{T}(tuple(A, UniformScalingMap(α, size(A, 1))))
@@ -54,6 +55,11 @@ function Base.:(*)(α::Number, A::CompositeMap)
     else
         return CompositeMap{T}(tuple(A.maps..., UniformScalingMap(α, size(A, 1))))
     end
+end
+# needed for disambiguation
+function Base.:(*)(α::RealOrComplex, A::CompositeMap)
+    T = Base.promote_op(*, typeof(α), eltype(A))
+    return ScaledMap{T}(α, A)
 end
 function Base.:(*)(A::LinearMap, α::Number)
     T = promote_type(typeof(α), eltype(A))
@@ -68,13 +74,18 @@ function Base.:(*)(A::CompositeMap, α::Number)
         return CompositeMap{T}(tuple(UniformScalingMap(α, size(A, 2)), A.maps...))
     end
 end
+# needed for disambiguation
+function Base.:(*)(A::CompositeMap, α::RealOrComplex)
+    T = Base.promote_op(*, typeof(α), eltype(A))
+    return ScaledMap{T}(α, A)
+end
+
 Base.:(\)(α::Number, A::LinearMap) = inv(α) * A
 Base.:(/)(A::LinearMap, α::Number) = A * inv(α)
-Base.:(-)(A::LinearMap) = -1 * A
 
 # composition of linear maps
 """
-    A::LinearMap * B::LinearMap
+    *(A::LinearMap, B::LinearMap)
 
 Construct a `CompositeMap <: LinearMap`, a (lazy) representation of the product
 of the two operators. Products of `LinearMap`/`CompositeMap` objects and
@@ -109,8 +120,6 @@ function Base.:(*)(A₁::CompositeMap, A₂::CompositeMap)
     T = promote_type(eltype(A₁), eltype(A₂))
     return CompositeMap{T}(tuple(A₂.maps..., A₁.maps...))
 end
-Base.:(*)(A₁::LinearMap, A₂::UniformScaling) = A₁ * A₂.λ
-Base.:(*)(A₁::UniformScaling, A₂::LinearMap) = A₁.λ * A₂
 
 # special transposition behavior
 LinearAlgebra.transpose(A::CompositeMap{T}) where {T} = CompositeMap{T}(map(transpose, reverse(A.maps)))

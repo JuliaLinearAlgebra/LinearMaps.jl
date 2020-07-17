@@ -11,9 +11,11 @@ include("transpose.jl")
 
 include("functionmap.jl")
 
-include("linearcombination.jl")
+include("scaledmap.jl")
 
 include("composition.jl")
+
+include("linearcombination.jl")
 
 include("wrappedmap.jl")
 

@@ -28,8 +28,13 @@ LinearAlgebra.transpose(A::UniformScalingMap) = A
 LinearAlgebra.adjoint(A::UniformScalingMap)   = UniformScalingMap(conj(A.λ), size(A))
 
 # multiplication with scalar
+Base.:(*)(A::UniformScaling, B::LinearMap) = A.λ * B
+Base.:(*)(A::LinearMap, B::UniformScaling) = A * B.λ
 Base.:(*)(α::Number, J::UniformScalingMap) = UniformScalingMap(α * J.λ, size(J))
 Base.:(*)(J::UniformScalingMap, α::Number) = UniformScalingMap(J.λ * α, size(J))
+# needed for disambiguation
+Base.:(*)(α::RealOrComplex, J::UniformScalingMap) = UniformScalingMap(α * J.λ, size(J))
+Base.:(*)(J::UniformScalingMap, α::RealOrComplex) = UniformScalingMap(J.λ * α, size(J))
 
 # multiplication with vector
 Base.:(*)(A::UniformScalingMap, x::AbstractVector) =

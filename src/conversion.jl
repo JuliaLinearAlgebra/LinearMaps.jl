@@ -45,6 +45,10 @@ Base.convert(::Type{SparseMatrixCSC}, A::LinearMap) = sparse(A)
 
 # special cases
 
+# ScaledMap
+Base.Matrix(A::ScaledMap{<:Any,<:Any,<:MatrixMap}) = convert(Matrix, A.λ*A.lmap.lmap)
+SparseArrays.sparse(A::ScaledMap{<:Any,<:Any,<:MatrixMap}) = convert(SparseMatrixCSC, A.λ*A.lmap.lmap)
+
 # UniformScalingMap
 Base.Matrix(J::UniformScalingMap) = Matrix(J.λ*I, size(J))
 Base.convert(::Type{AbstractMatrix}, J::UniformScalingMap) = Diagonal(fill(J.λ, size(J, 1)))
@@ -77,14 +81,22 @@ for (TT, T) in ((Type{Matrix}, Matrix), (Type{SparseMatrixCSC}, SparseMatrixCSC)
         B, A = AB.maps
         return convert($T, A.lmap*B.lmap)
     end
-    @eval function Base.convert(::$TT, λA::CompositeMap{<:Any,<:Tuple{MatrixMap,UniformScalingMap}})
-        A, J = λA.maps
-        return convert($T, J.λ*A.lmap)
-    end
-    @eval function Base.convert(::$TT, Aλ::CompositeMap{<:Any,<:Tuple{UniformScalingMap,MatrixMap}})
-        J, A = Aλ.maps
-        return convert($T, A.lmap*J.λ)
-    end
+end
+function Base.Matrix(λA::CompositeMap{<:Any,<:Tuple{MatrixMap,UniformScalingMap}})
+    A, J = λA.maps
+    return convert(Matrix, J.λ*A.lmap)
+end
+function SparseArrays.sparse(λA::CompositeMap{<:Any,<:Tuple{MatrixMap,UniformScalingMap}})
+    A, J = λA.maps
+    return convert(SparseMatrixCSC, J.λ*A.lmap)
+end
+function Base.Matrix(Aλ::CompositeMap{<:Any,<:Tuple{UniformScalingMap,MatrixMap}})
+    J, A = Aλ.maps
+    return convert(Matrix, A.lmap*J.λ)
+end
+function SparseArrays.sparse(Aλ::CompositeMap{<:Any,<:Tuple{UniformScalingMap,MatrixMap}})
+    J, A = Aλ.maps
+    return convert(SparseMatrixCSC, A.lmap*J.λ)
 end
 
 # BlockMap & BlockDiagonalMap

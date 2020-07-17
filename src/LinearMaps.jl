@@ -16,6 +16,7 @@ end
 abstract type LinearMap{T} end
 
 const MapOrMatrix{T} = Union{LinearMap{T},AbstractMatrix{T}}
+const RealOrComplex = Union{Real,Complex}
 
 Base.eltype(::LinearMap{T}) where {T} = T
 
@@ -117,6 +118,7 @@ include("wrappedmap.jl") # wrap a matrix of linear map in a new type, thereby al
 include("uniformscalingmap.jl") # the uniform scaling map, to be able to make linear combinations of LinearMap objects and multiples of I
 include("transpose.jl") # transposing linear maps
 include("linearcombination.jl") # defining linear combinations of linear maps
+include("scaledmap.jl") # multiply by a (real or complex) scalar
 include("composition.jl") # composition of linear maps
 include("functionmap.jl") # using a function as linear map
 include("blockmap.jl") # block linear maps
@@ -132,10 +134,10 @@ Construct a linear map object, either from an existing `LinearMap` or `AbstractM
 with the purpose of redefining its properties via the keyword arguments `kwargs`;
 a `UniformScaling` object `J` with specified (square) dimension `M`; or
 from a function or callable object `f`. In the latter case, one also needs to specify
-the size of the equivalent matrix representation `(M, N)`, i.e. for functions `f` acting
+the size of the equivalent matrix representation `(M, N)`, i.e., for functions `f` acting
 on length `N` vectors and producing length `M` vectors (with default value `N=M`). Preferably,
 also the `eltype` `T` of the corresponding matrix representation needs to be specified, i.e.
-whether the action of `f` on a vector will be similar to e.g. multiplying by numbers of type `T`.
+whether the action of `f` on a vector will be similar to, e.g., multiplying by numbers of type `T`.
 If not specified, the devault value `T=Float64` will be assumed. Optionally, a corresponding
 function `fc` can be specified that implements the transpose/adjoint of `f`.
 
@@ -150,7 +152,7 @@ For functions `f`, there is one more keyword argument
 *   ismutating::Bool : flags whether the function acts as a mutating matrix multiplication
     `f(y,x)` where the result vector `y` is the first argument (in case of `true`),
     or as a normal matrix multiplication that is called as `y=f(x)` (in case of `false`).
-    The default value is guessed by looking at the number of arguments of the first occurence
+    The default value is guessed by looking at the number of arguments of the first occurrence
     of `f` in the method table.
 """
 LinearMap(A::MapOrMatrix; kwargs...) = WrappedMap(A; kwargs...)

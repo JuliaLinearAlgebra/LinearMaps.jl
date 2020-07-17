@@ -1,11 +1,14 @@
 using Test, LinearMaps, LinearAlgebra
 
 @testset "composition" begin
-    F = @inferred LinearMap(cumsum, y -> reverse(cumsum(reverse(x))), 10; ismutating=false)
-    FC = @inferred LinearMap{ComplexF64}(cumsum, y -> reverse(cumsum(reverse(x))), 10; ismutating=false)
+    F = @inferred LinearMap(cumsum, reverse ∘ cumsum ∘ reverse, 10; ismutating=false)
+    FC = @inferred LinearMap{ComplexF64}(cumsum, reverse ∘ cumsum ∘ reverse, 10; ismutating=false)
     FCM = LinearMaps.CompositeMap{ComplexF64}((FC,))
+    L = LowerTriangular(ones(10,10))
     A = 2 * rand(ComplexF64, (10, 10)) .- 1
     B = rand(size(A)...)
+    H = LinearMap(Hermitian(A'A))
+    S = LinearMap(Symmetric(real(A)'real(A)))
     M = @inferred 1 * LinearMap(A)
     N = @inferred LinearMap(B)
     v = rand(ComplexF64, 10)
@@ -14,7 +17,11 @@ using Test, LinearMaps, LinearAlgebra
     @test @inferred (F * A) * v == @inferred F * (A * v)
     @test @inferred (A * F) * v == @inferred A * (F * v)
     @test @inferred A * (F * F) * v == @inferred A * (F * (F * v))
-    @test @inferred (F * F) * (F * F) * v == @inferred F * (F * (F * (F * v)))
+    F2 = F*F
+    FC2 = FC*FC
+    F4 = FC2 * F2
+    @test length(F4.maps) == 4
+    @test @inferred F4 * v == @inferred F * (F * (F * (F * v)))
     @test @inferred Matrix(M * transpose(M)) ≈ A * transpose(A)
     @test @inferred !isposdef(M * transpose(M))
     @test @inferred isposdef(M * M')
@@ -23,9 +30,12 @@ using Test, LinearMaps, LinearAlgebra
     @test @inferred !issymmetric(M' * M)
     @test @inferred ishermitian(M' * M)
     @test @inferred issymmetric(F'F)
+    @test @inferred issymmetric(F'*S*F)
     @test @inferred ishermitian(F'F)
+    @test @inferred ishermitian(F'*H*F)
     @test @inferred !issymmetric(FC'FC)
     @test @inferred ishermitian(FC'FC)
+    @test @inferred ishermitian(FC'*H*FC)
     @test @inferred isposdef(transpose(F) * F * 3)
     @test @inferred isposdef(transpose(F) * 3 * F)
     @test @inferred !isposdef(-5*transpose(F) * F)
