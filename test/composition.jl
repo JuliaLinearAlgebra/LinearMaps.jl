@@ -1,8 +1,8 @@
 using Test, LinearMaps, LinearAlgebra
 
 @testset "composition" begin
-    F = @inferred LinearMap(cumsum, y -> reverse(cumsum(reverse(y))), 10; ismutating=false)
-    FC = @inferred LinearMap{ComplexF64}(cumsum, y -> reverse(cumsum(reverse(y))), 10; ismutating=false)
+    F = @inferred LinearMap(cumsum, reverse ∘ cumsum ∘ reverse, 10; ismutating=false)
+    FC = @inferred LinearMap{ComplexF64}(cumsum, reverse ∘ cumsum ∘ reverse, 10; ismutating=false)
     FCM = LinearMaps.CompositeMap{ComplexF64}((FC,))
     L = LowerTriangular(ones(10,10))
     A = 2 * rand(ComplexF64, (10, 10)) .- 1

@@ -22,7 +22,6 @@ Base.size(A::ScaledMap) = size(A.lmap)
 Base.isreal(A::ScaledMap) = isreal(A.λ) && isreal(A.lmap)
 LinearAlgebra.issymmetric(A::ScaledMap) = issymmetric(A.lmap)
 LinearAlgebra.ishermitian(A::ScaledMap) = ishermitian(A.lmap)
-
 LinearAlgebra.isposdef(A::ScaledMap) = isposdef(A.λ) && isposdef(A.lmap)
 
 Base.transpose(A::ScaledMap) = A.λ * transpose(A.lmap)
@@ -44,8 +43,6 @@ end
 
 Base.:(*)(α::Number, A::ScaledMap) = (α * A.λ) * A.lmap
 Base.:(*)(A::ScaledMap, α::Number) = A.lmap * (A.λ * α)
-Base.:(*)(A::UniformScaling, B::LinearMap) = A.λ * B
-Base.:(*)(A::LinearMap, B::UniformScaling) = A * B.λ
 # needed for disambiguation
 Base.:(*)(α::RealOrComplex, A::ScaledMap) = (α * A.λ) * A.lmap
 Base.:(*)(A::ScaledMap, α::RealOrComplex) = (A.λ * α) * A.lmap

@@ -34,9 +34,14 @@ using Test, LinearMaps, LinearAlgebra, Quaternions
     @test (β * J) * x ≈ LinearMap(β*α, 10) * x ≈ β*α*x
     @test (J * β) * x ≈ LinearMap(α*β, 10) * x ≈ α*β*x
     M = β.λ * (γ * L * L)
+    @test M == β * (γ * L * L)
+    @test length(M.maps) == 3
+    @test M.maps[end].λ == β.λ * γ
+    @test γ * (β * L * L) == γ * (β.λ * L * L) == α * (β.λ * L * L) == α * (β * L * L)
     @test length(M.maps) == 3
     @test M.maps[end].λ == β.λ * γ
     M = (L * L * γ) * β.λ
+    @test M == (L * L * γ) * β == (L * L * α) * β == (L * L * α) * β.λ
     @test length(M.maps) == 3
     @test M.maps[1].λ == γ*β.λ
 

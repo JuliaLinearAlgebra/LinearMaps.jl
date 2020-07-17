@@ -1,4 +1,4 @@
-using Test, LinearMaps, LinearAlgebra
+using Test, LinearMaps, LinearAlgebra, BenchmarkTools
 
 @testset "scaledmap" begin
     N = 7
@@ -7,7 +7,7 @@ using Test, LinearMaps, LinearAlgebra
 
     # real case
     α = float(π)
-    B = α*A
+    B = α * A
     x = rand(N)
 
     @test @inferred size(B) == size(A)
@@ -24,11 +24,11 @@ using Test, LinearMaps, LinearAlgebra
 
     @test -A == (-1) * A
 
-    @test A * (α*I) == B
-    @test (α*I) * A == B
+    @test A * (α * I) == B
+    @test (α * I) * A == B
 
     # complex case
-    β = π + 2π*im
+    β = π + 2π * im
     C = β * A
     T = ComplexF64
     xc = rand(T, N)
@@ -50,10 +50,16 @@ using Test, LinearMaps, LinearAlgebra
     @test @inferred Matrix(C') == Matrix(C)'
 
     # composition
+    BA = B*A
+    @test BA isa LinearMaps.ScaledMap
+    @test BA.λ == B.λ
+    AB = A*B
+    @test AB isa LinearMaps.ScaledMap
+    @test AB.λ == B.λ
     BC = B * C
     @test BC isa LinearMaps.ScaledMap
-    @test BC.λ == α*β
-    @test Matrix(BC) ≈ α*β*Matrix(A)*Matrix(A)
+    @test BC.λ == α * β
+    @test Matrix(BC) ≈ α * β * Matrix(A) * Matrix(A)
 
     @test Matrix(α * BC) ≈ α * Matrix(BC)
     @test Matrix(BC * β) ≈ β * Matrix(BC)
@@ -63,13 +69,28 @@ using Test, LinearMaps, LinearAlgebra
     y2 = similar(y1)
     @test mul!(y2, C, xc) == y1
 
-    x1 = conj(β) * (A'*y1)
+    x1 = conj(β) * (A' * y1)
     x2 = similar(x1)
     @test mul!(x2, C', y1) == x1
 
     # check scale*conj(scale)
-    A = LinearMap{Float32}(rand(N,2)) # rank=2 w.p.1
+    A = LinearMap{Float32}(rand(N, 2)) # rank=2 w.p.1
     B = β * A
     C = B' * B
     @test @inferred isposdef(C)
+
+    N = 2^8
+    A0 = LinearMap{T}(cumsum, reverse ∘ cumsum ∘ reverse, N) # out-of-place
+    forw! = cumsum!
+    back! = (x, y) -> reverse!(cumsum!(x, reverse!(copyto!(x, y))))
+    A1 = LinearMap{T}(forw!, back!, N) # in-place
+    λ = 4.2
+    B0 = λ * A0
+    B1 = λ * A1
+    for (A, alloc) in ((A0, 1), (A1, 0), (B0, 1), (B1, 0), (A0', 3), (A1', 0), (B0', 3), (B1', 0))
+        x = rand(N)
+        y = similar(x)
+        b = @benchmarkable mul!($y, $A, $x)
+        @test run(b, samples = 3).allocs <= alloc
+    end
 end
