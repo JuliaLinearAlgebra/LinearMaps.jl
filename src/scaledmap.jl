@@ -54,15 +54,25 @@ Base.:(*)(A::ScaledMap, B::LinearMap) = A.λ * (A.lmap * B)
 Base.:(*)(A::LinearMap, B::ScaledMap) = (A * B.lmap) * B.λ
 
 # multiplication with vectors
-function A_mul_B!(y::AbstractVector, A::ScaledMap, x::AbstractVector)
+Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, A::ScaledMap, x::AbstractVector)
     # no size checking, will be done by map
     mul!(y, A.lmap, x, A.λ, false)
 end
-
-function LinearAlgebra.mul!(y::AbstractVector, A::ScaledMap, x::AbstractVector, α::Number, β::Number)
+Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, A::ScaledMap, x::AbstractVector, α::Number, β::Number)
     # no size checking, will be done by map
     mul!(y, A.lmap, x, A.λ * α, β)
 end
 
-At_mul_B!(y::AbstractVector, A::ScaledMap, x::AbstractVector) = A_mul_B!(y, transpose(A), x)
-Ac_mul_B!(y::AbstractVector, A::ScaledMap, x::AbstractVector) = A_mul_B!(y, adjoint(A), x)
+Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, A::TransposeMap{<:Any,<:ScaledMap}, x::AbstractVector)
+    mul!(y, transpose(A.lmap), x)
+end
+Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, A::TransposeMap{<:Any,<:ScaledMap}, x::AbstractVector, α::Number, β::Number)
+    mul!(y, transpose(A.lmap), x, α, β)
+end
+
+Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, A::AdjointMap{<:Any,<:ScaledMap}, x::AbstractVector)
+    mul!(y, adjoint(A.lmap), x)
+end
+Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, A::AdjointMap{<:Any,<:ScaledMap}, x::AbstractVector, α::Number, β::Number)
+    mul!(y, adjoint(A.lmap), x, α, β)
+end
