@@ -131,23 +131,6 @@ include("blockmap.jl") # block linear maps
 include("kronecker.jl") # Kronecker product of linear maps
 include("conversion.jl") # conversion of linear maps to matrices
 
-AdjTransInvariantMapTypes = Union{BlockMap,BlockDiagonalMap,CompositeMap,LinearCombination,ScaledMap,UniformScalingMap}
-for Atype in (AbstractVector, AbstractMatrix)
-    @eval Base.@propagate_inbounds function LinearAlgebra.mul!(y::$Atype, A::TransposeMap{<:Any,<:AdjTransInvariantMapTypes}, x::$Atype)
-        mul!(y, transpose(A.lmap), x)
-    end
-    @eval Base.@propagate_inbounds function LinearAlgebra.mul!(y::$Atype, A::TransposeMap{<:Any,<:AdjTransInvariantMapTypes}, x::$Atype, α::Number, β::Number)
-        mul!(y, transpose(A.lmap), x, α, β)
-    end
-
-    @eval Base.@propagate_inbounds function LinearAlgebra.mul!(y::$Atype, A::AdjointMap{<:Any,<:AdjTransInvariantMapTypes}, x::$Atype)
-        mul!(y, adjoint(A.lmap), x)
-    end
-    @eval Base.@propagate_inbounds function LinearAlgebra.mul!(y::$Atype, A::AdjointMap{<:Any,<:AdjTransInvariantMapTypes}, x::$Atype, α::Number, β::Number)
-        mul!(y, adjoint(A.lmap), x, α, β)
-    end
-end
-
 """
     LinearMap(A; kwargs...)
     LinearMap(J, M::Int)

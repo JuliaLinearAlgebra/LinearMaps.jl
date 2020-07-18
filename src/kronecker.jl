@@ -173,19 +173,6 @@ Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, L::Compo
     end
 end
 
-Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, A::TransposeMap{<:Any,<:KroneckerMap}, x::AbstractVector)
-    mul!(y, transpose(A.lmap), x)
-end
-Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, A::AdjointMap{<:Any,<:KroneckerMap}, x::AbstractVector)
-    mul!(y, adjoint(A.lmap), x)
-end
-Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, A::TransposeMap{<:Any,<:KroneckerMap}, x::AbstractVector, α::Number, β::Number)
-    mul!(y, transpose(A.lmap), x, α, β)
-end
-Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, A::AdjointMap{<:Any,<:KroneckerMap}, x::AbstractVector, α::Number, β::Number)
-    mul!(y, adjoint(A.lmap), x, α, β)
-end
-
 ###############
 # KroneckerSumMap
 ###############
@@ -278,17 +265,4 @@ Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, L::Krone
     mul!(Y, X, convert(AbstractMatrix, transpose(A)))
     mul!(Y, B, X, true, true)
     return y
-end
-
-Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, A::TransposeMap{<:Any,<:KroneckerSumMap}, x::AbstractVector)
-    mul!(y, transpose(A.lmap), x)
-end
-Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, A::AdjointMap{<:Any,<:KroneckerSumMap}, x::AbstractVector)
-    mul!(y, adjoint(A.lmap), x)
-end
-Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, A::TransposeMap{<:Any,<:KroneckerSumMap}, x::AbstractVector, α::Number, β::Number)
-    mul!(y, transpose(A.lmap), x, α, β)
-end
-Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, A::AdjointMap{<:Any,<:KroneckerSumMap}, x::AbstractVector, α::Number, β::Number)
-    mul!(y, adjoint(A.lmap), x, α, β)
 end
