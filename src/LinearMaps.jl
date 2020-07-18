@@ -77,8 +77,11 @@ end
 #     @boundscheck check_dim_mul(y, A, x)
 #     return @inbounds A_mul_B!(y, A, x)
 # end
-function LinearAlgebra.mul!(y::AbstractVector, A::LinearMap, x::AbstractVector, α::Number, β::Number)
+Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, A::LinearMap, x::AbstractVector, α::Number, β::Number)
     @boundscheck check_dim_mul(y, A, x)
+    return @inbounds _generic_mapvec_mul!(y, A, x, α, β)
+end
+Base.@propagate_inbounds function _generic_mapvec_mul!(y, A::LinearMap, x::AbstractVector, α::Number, β::Number)
     if isone(α)
         iszero(β) && (mul!(y, A, x); return y)
         isone(β) && (y .+= A * x; return y)
@@ -94,13 +97,16 @@ function LinearAlgebra.mul!(y::AbstractVector, A::LinearMap, x::AbstractVector, 
         return y
     else # α != 0, 1
         iszero(β) && (mul!(y, A, x); rmul!(y, α); return y)
-        isone(β) && (y .+= rmul!(A * x, α); return y)
-        # β != 0, 1
-        rmul!(y, β)
-        y .+= rmul!(A * x, α)
+        z = A * x
+        if isone(β)
+            y .+= z .* α
+        else
+            y .= y .* β .+ z .* α
+        end
         return y
     end
 end
+
 # the following is of interest in, e.g., subspace-iteration methods
 Base.@propagate_inbounds function LinearAlgebra.mul!(Y::AbstractMatrix, A::LinearMap, X::AbstractMatrix, α::Number=true, β::Number=false)
     @boundscheck check_dim_mul(Y, A, X)

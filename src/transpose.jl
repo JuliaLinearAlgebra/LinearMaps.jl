@@ -37,14 +37,7 @@ for Atype in (AbstractVector, AbstractMatrix)
         issymmetric(A.lmap) ? mul!(y, A.lmap, x) : error("transpose not implemented for $A")
     end
     @eval Base.@propagate_inbounds function LinearAlgebra.mul!(y::$Atype, A::TransposeMap, x::$Atype, α::Number, β::Number)
-        issymmetric(A.lmap) ? mul!(y, A.lmap, x, α, β) : error("transpose not implemented for $A")
-    end
-
-    @eval Base.@propagate_inbounds function LinearAlgebra.mul!(y::$Atype, A::TransposeMap{<:Any,<:TransposeMap}, x::$Atype)
-        mul!(y, A.lmap.lmap, x)
-    end
-    @eval Base.@propagate_inbounds function LinearAlgebra.mul!(y::$Atype, A::TransposeMap{<:Any,<:TransposeMap}, x::$Atype, α::Number, β::Number)
-        mul!(y, A.lmap.lmap, x, α, β)
+        issymmetric(A.lmap) ? mul!(y, A.lmap, x, α, β) : _generic_mapvec_mul!(y, A, x, α, β)
     end
 
     @eval Base.@propagate_inbounds function LinearAlgebra.mul!(y::$Atype, Ac::AdjointMap{<:Any,<:TransposeMap}, x::$Atype)
@@ -60,7 +53,7 @@ for Atype in (AbstractVector, AbstractMatrix)
         ishermitian(A.lmap) ? mul!(y, A.lmap, x) : error("adjoint not implemented for $A")
     end
     @eval Base.@propagate_inbounds function LinearAlgebra.mul!(y::$Atype, A::AdjointMap, x::$Atype, α::Number, β::Number)
-        ishermitian(A.lmap) ? mul!(y, A.lmap, x, α, β) : error("adjoint not implemented for $A")
+        ishermitian(A.lmap) ? mul!(y, A.lmap, x, α, β) : _generic_mapvec_mul!(y, A, x, α, β)
     end
 
     @eval Base.@propagate_inbounds function LinearAlgebra.mul!(y::$Atype, At::TransposeMap{<:Any,<:AdjointMap}, x::$Atype)
@@ -70,13 +63,6 @@ for Atype in (AbstractVector, AbstractMatrix)
     @eval Base.@propagate_inbounds function LinearAlgebra.mul!(y::$Atype, At::TransposeMap{<:Any,<:AdjointMap}, x::$Atype, α::Number, β::Number)
         A = At.lmap
         return _conjmul!(y, A.lmap, x, α, β)
-    end
-
-    @eval Base.@propagate_inbounds function LinearAlgebra.mul!(y::$Atype, A::AdjointMap{<:Any,<:AdjointMap}, x::$Atype)
-        mul!(y, A.lmap.lmap, x)
-    end
-    @eval Base.@propagate_inbounds function LinearAlgebra.mul!(y::$Atype, A::AdjointMap{<:Any,<:AdjointMap}, x::$Atype, α::Number, β::Number)
-        mul!(y, A.lmap.lmap, x, α, β)
     end
 end
 
@@ -91,7 +77,7 @@ function _conjmul!(y, A, x)
 end
 function _conjmul!(y, A, x, α, β)
     if isreal(A)
-        mul!(y, A, x, α, β)
+        return mul!(y, A, x, α, β)
     else
         xca = rmul!(conj(x), α)
         z = A*xca

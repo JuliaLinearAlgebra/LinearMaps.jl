@@ -135,57 +135,9 @@ Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, At::Tran
         error("transpose not implemented for $A")
     end
 end
-Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, At::TransposeMap{<:Any,<:FunctionMap}, x::AbstractVector, α::Number, β::Number)
-    A = At.lmap
-    (issymmetric(A) || (isreal(A) && ishermitian(A))) && return mul!(y, A, x, α, β)
-    (length(x) == A.M && length(y) == A.N) || throw(DimensionMismatch("mul!"))
-    if A.fc !== nothing
-        if !isreal(A)
-            x = conj(x)
-        end
-        if iszero(β)
-            ismutating(A) ? A.fc(y, x) : copyto!(y, A.fc(x))
-            if !isreal(A)
-                conj!(y)
-            end
-            return isone(α) ? y : rmul!(y, α)
-        else
-            if ismutating(A)
-                z = similar(y)
-                A.fc(z, x)
-            else
-                z = A.fc(x)
-            end
-            if !isreal(A)
-                conj!(z)
-            end
-            !isone(α) && rmul!(z, α)
-            !isone(β) && rmul!(y, β)
-            y .+= z
-            return y
-        end
-    elseif ishermitian(A) # but !isreal(A)
-        x = conj(x)
-        if iszero(β)
-            mul!(y, A, x)
-            conj!(y)
-            return isone(α) ? y : rmul!(y, α)
-        else
-            z = A*u
-            if !isreal(A)
-                conj!(z)
-            end
-            !isone(β) && rmul!(y, β)
-            if isone(α)
-                y .+= z
-            else
-                y .+= z.*α
-            end
-            return y
-        end
-    else
-        error("transpose not implemented for $A")
-    end
+Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, A::TransposeMap{<:Any,<:FunctionMap}, x::AbstractVector, α::Number, β::Number)
+    @boundscheck check_dim_mul(y, A, x)
+    return @inbounds _generic_mapvec_mul!(y, A, x, α, β)
 end
 
 Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, Ac::AdjointMap{<:Any,<:FunctionMap}, x::AbstractVector)
@@ -204,49 +156,7 @@ Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, Ac::Adjo
         error("adjoint not implemented for $A")
     end
 end
-Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, Ac::AdjointMap{<:Any,<:FunctionMap}, x::AbstractVector, α::Number, β::Number)
-    A = Ac.lmap
-    ishermitian(A) && return mul!(y, A, x, α, β)
-    (length(x) == A.M && length(y) == A.N) || throw(DimensionMismatch("mul!"))
-    if A.fc !== nothing
-        if iszero(β)
-            ismutating(A) ? A.fc(y, x) : copyto!(y, A.fc(x))
-            return isone(α) ? y : rmul!(y, α)
-        else
-            if ismutating(A)
-                z = similar(y)
-                A.fc(z, x)
-            else
-                z = A.fc(x)
-            end
-            !isone(β) && rmul!(y, β)
-            if isone(α)
-                y .+= z
-            else
-                y .+= z.*α
-            end
-            return y
-        end
-    elseif issymmetric(A) # but !isreal(A)
-        if iszero(β)
-            mul!(y, A, x)
-            if isone(α)
-                conj!(y)
-            else
-                y .= conj.(y.*conj(α))
-            end
-            return y
-        else
-            z = A*x
-            !isone(β) && rmul!(y, β)
-            if isone(α)
-                y .+= z
-            else
-                y .+= z.*α
-            end
-            return y
-        end
-    else
-        error("adjoint not implemented for $A")
-    end
+Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, A::AdjointMap{<:Any,<:FunctionMap}, x::AbstractVector, α::Number, β::Number)
+    @boundscheck check_dim_mul(y, A, x)
+    return @inbounds _generic_mapvec_mul!(y, A, x, α, β)
 end
