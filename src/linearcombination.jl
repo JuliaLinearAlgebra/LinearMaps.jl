@@ -75,11 +75,9 @@ for Atype in (AbstractVector, AbstractMatrix)
                              α::Number, β::Number)
         @boundscheck check_dim_mul(y, A, x)
         if iszero(α) # trivial cases
-            iszero(β) && (fill!(y, zero(eltype(y))); return y)
+            iszero(β) && return fill!(y, zero(eltype(y)))
             isone(β) && return y
-            # β != 0, 1
-            rmul!(y, β)
-            return y
+            return rmul!(y, β)
         else
             A1 = first(A.maps)
             if MulStyle(A1) === ThreeArg() && !iszero(β)
