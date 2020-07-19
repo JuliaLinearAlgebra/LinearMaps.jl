@@ -81,7 +81,7 @@ Base.@propagate_inbounds function LinearAlgebra.mul!(y::AbstractVector, A::Linea
     @boundscheck check_dim_mul(y, A, x)
     return @inbounds _generic_mapvec_mul!(y, A, x, α, β)
 end
-Base.@propagate_inbounds function _generic_mapvec_mul!(y, A::LinearMap, x::AbstractVector, α::Number, β::Number)
+Base.@propagate_inbounds function _generic_mapvec_mul!(y::AbstractVector, A::LinearMap, x::AbstractVector, α::Number, β::Number)
     if isone(α)
         iszero(β) && (mul!(y, A, x); return y)
         isone(β) && (y .+= A * x; return y)
