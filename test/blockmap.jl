@@ -206,18 +206,16 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
 
     @testset "function block map" begin
         N = 100
-        CS! = LinearMap{ComplexF64}(cumsum!,
-                                    (y, x) -> (copyto!(y, x); reverse!(cumsum!(y, reverse!(y)))), N;
-                                    ismutating=true)
-        A = rand(ComplexF64, N, N)
-        B = rand(N, N)
-        L = [CS! LinearMap(A) CS!; LinearMap(B) CS! CS!; CS! CS! CS!]
-        M = [LowerTriangular(ones(N,N)) A LowerTriangular(ones(N,N))
-             B LowerTriangular(ones(N,N)) LowerTriangular(ones(N,N))
-             LowerTriangular(ones(N,N)) LowerTriangular(ones(N,N)) LowerTriangular(ones(N,N))]
-        u = rand(ComplexF64, 3N)
-        v = rand(ComplexF64, 3N)
-        for α in (false, true, rand(ComplexF64)), β in (false, true, rand(ComplexF64))
+        T = ComplexF64
+        CS! = LinearMap{T}(cumsum!,
+            (y, x) -> (copyto!(y, x); reverse!(cumsum!(y, reverse!(y)))), N;
+            ismutating=true)
+        L = [CS! CS! CS!; CS! CS! CS!; CS! CS! CS!]
+        LT = LowerTriangular(ones(T, N, N))
+        M = [LT LT LT; LT LT LT; LT LT LT]
+        u = rand(T, 3N)
+        v = rand(T, 3N)
+        for α in (false, true, rand(T)), β in (false, true, rand(T))
             for transform in (identity, adjoint)
                 # @show α, β, transform
                 @test mul!(copy(v), transform(L), u, α, β) ≈ transform(M)*u*α + v*β
