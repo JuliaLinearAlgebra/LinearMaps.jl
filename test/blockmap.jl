@@ -203,4 +203,29 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
             end
         end
     end
+
+    @testset "function block map" begin
+        N = 100
+        CS! = LinearMap{ComplexF64}(cumsum!,
+                                    (y, x) -> (copyto!(y, x); reverse!(cumsum!(y, reverse!(y)))), N;
+                                    ismutating=true)
+        A = rand(ComplexF64, N, N)
+        B = rand(N, N)
+        L = [CS! LinearMap(A) CS!; LinearMap(B) CS! CS!; CS! CS! CS!]
+        M = [LowerTriangular(ones(N,N)) A LowerTriangular(ones(N,N))
+             B LowerTriangular(ones(N,N)) LowerTriangular(ones(N,N))
+             LowerTriangular(ones(N,N)) LowerTriangular(ones(N,N)) LowerTriangular(ones(N,N))]
+        u = rand(ComplexF64, 3N)
+        v = rand(ComplexF64, 3N)
+        for α in (false, true, rand(ComplexF64)), β in (false, true, rand(ComplexF64))
+            for transform in (identity, adjoint)
+                # @show α, β, transform
+                @test mul!(copy(v), transform(L), u, α, β) ≈ transform(M)*u*α + v*β
+                @test mul!(copy(v), transform(LinearMap(L)), u, α, β) ≈ transform(M)*u*α + v*β
+                @test mul!(copy(v), LinearMap(transform(L)), u, α, β) ≈ transform(M)*u*α + v*β
+                bmap = @benchmarkable mul!($(copy(v)), $(transform(L)), $u, $α, $β)
+                transform != adjoint && @test run(bmap, samples=3).memory <= 1.4sizeof(u)
+            end
+        end
+    end
 end
