@@ -1,4 +1,4 @@
-using Test, LinearMaps, LinearAlgebra, SparseArrays
+using Test, LinearMaps, LinearAlgebra, SparseArrays, BenchmarkTools
 
 @testset "block maps" begin
     @testset "hcat" begin
