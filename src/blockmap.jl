@@ -399,7 +399,7 @@ for Atype in (AbstractVector, AbstractMatrix)
         @eval Base.@propagate_inbounds function LinearAlgebra.mul!(y::$Atype, wrapA::$maptype, x::$Atype)
             require_one_based_indexing(y, x)
             @boundscheck check_dim_mul(y, wrapA, x)
-            return @inbounds _transblockmul!(y, wrapA.lmap, x, α, β, $transform)
+            return @inbounds _transblockmul!(y, wrapA.lmap, x, true, false, $transform)
         end
         @eval Base.@propagate_inbounds function LinearAlgebra.mul!(y::$Atype, wrapA::$maptype, x::$Atype,
                         α::Number, β::Number)
