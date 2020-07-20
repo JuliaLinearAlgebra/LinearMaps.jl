@@ -383,16 +383,26 @@ end
 ############
 
 for Atype in (AbstractVector, AbstractMatrix)
+    @eval Base.@propagate_inbounds function LinearAlgebra.mul!(y::$Atype, A::BlockMap, x::$Atype)
+        require_one_based_indexing(y, x)
+        @boundscheck check_dim_mul(y, A, x)
+        return @inbounds _blockmul!(y, A, x, true, false)
+    end
     @eval Base.@propagate_inbounds function LinearAlgebra.mul!(y::$Atype, A::BlockMap, x::$Atype,
-                        α::Number=true, β::Number=false)
+                        α::Number, β::Number)
         require_one_based_indexing(y, x)
         @boundscheck check_dim_mul(y, A, x)
         return @inbounds _blockmul!(y, A, x, α, β)
     end
 
     for (maptype, transform) in ((:(TransposeMap{<:Any,<:BlockMap}), :transpose), (:(AdjointMap{<:Any,<:BlockMap}), :adjoint))
+        @eval Base.@propagate_inbounds function LinearAlgebra.mul!(y::$Atype, wrapA::$maptype, x::$Atype)
+            require_one_based_indexing(y, x)
+            @boundscheck check_dim_mul(y, wrapA, x)
+            return @inbounds _transblockmul!(y, wrapA.lmap, x, α, β, $transform)
+        end
         @eval Base.@propagate_inbounds function LinearAlgebra.mul!(y::$Atype, wrapA::$maptype, x::$Atype,
-                        α::Number=true, β::Number=false)
+                        α::Number, β::Number)
             require_one_based_indexing(y, x)
             @boundscheck check_dim_mul(y, wrapA, x)
             return @inbounds _transblockmul!(y, wrapA.lmap, x, α, β, $transform)
