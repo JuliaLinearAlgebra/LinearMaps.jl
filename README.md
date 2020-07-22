@@ -10,7 +10,7 @@ a LinearMap is that it can act on a vector (by multiplication) efficiently.
 
 ## What's new in v2.7
 *   Potential reduction of memory allocations in multiplication of
-    `LinearCombination`s, `BlockMap`s, and (real/complex) scaled `LinearMap`s.
+    `LinearCombination`s, `BlockMap`s, and real- or complex-scaled `LinearMap`s.
     For the latter, a new internal type `ScaledMap` has been introduced.
 *   Multiplication code for `CompositeMap`s has been refactored to facilitate to
     provide memory for storage of intermediate results by directly calling helper
