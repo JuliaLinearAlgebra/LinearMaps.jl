@@ -303,9 +303,21 @@ LinearAlgebra.adjoint(A::BlockMap)  = AdjointMap(A)
 ############
 
 @inline function _blockmul!(y, A::BlockMap, x, α, β)
+    if iszero(α)
+        iszero(β) && return fill!(y, zero(eltype(y)))
+        isone(β) && return y
+        return rmul!(y, β)
+    end
+    return __blockmul!(MulStyle(A), y, A, x, α, β)
+end
+
+@inline __blockmul!(::FiveArg, y, A, x, α, β)  = ___blockmul!(y, A, x, α, β, nothing)
+@inline __blockmul!(::ThreeArg, y, A, x, α, β) = ___blockmul!(y, A, x, α, β, similar(y))
+
+function ___blockmul!(y, A, x, α, β, ::Nothing)
     maps, rows, yinds, xinds = A.maps, A.rows, A.rowranges, A.colranges
     mapind = 0
-    @views @inbounds for (row, yi) in zip(rows, yinds)
+    @views for (row, yi) in zip(rows, yinds)
         yrow = selectdim(y, 1, yi)
         mapind += 1
         mul!(yrow, maps[mapind], selectdim(x, 1, xinds[mapind]), α, β)
@@ -316,24 +328,50 @@ LinearAlgebra.adjoint(A::BlockMap)  = AdjointMap(A)
     end
     return y
 end
+function ___blockmul!(y, A, x, α, β, z)
+    maps, rows, yinds, xinds = A.maps, A.rows, A.rowranges, A.colranges
+    mapind = 0
+    @views for (row, yi) in zip(rows, yinds)
+        yrow = selectdim(y, 1, yi)
+        zrow = selectdim(z, 1, yi)
+        mapind += 1
+        if MulStyle(maps[mapind]) === ThreeArg() && !iszero(β)
+            !isone(β) && rmul!(yrow, β)
+            muladd!(ThreeArg(), yrow, maps[mapind], selectdim(x, 1, xinds[mapind]), α, zrow)
+        else
+            mul!(yrow, maps[mapind], selectdim(x, 1, xinds[mapind]), α, β)
+        end
+        for _ in 2:row
+            mapind +=1
+            muladd!(MulStyle(maps[mapind]), yrow, maps[mapind], selectdim(x, 1, xinds[mapind]), α, zrow)
+        end
+    end
+    return y
+end
 
 @inline function _transblockmul!(y, A::BlockMap, x, α, β, transform)
     maps, rows, xinds, yinds = A.maps, A.rows, A.rowranges, A.colranges
-    @views @inbounds begin
-        # first block row (rowind = 1) of A, meaning first block column of A', fill all of y
-        xcol = selectdim(x, 1, first(xinds))
-        for rowind in 1:first(rows)
-            mul!(selectdim(y, 1, yinds[rowind]), transform(maps[rowind]), xcol, α, β)
-        end
-        mapind = first(rows)
-        # subsequent block rows of A (block columns of A'),
-        # add results to corresponding parts of y
-        # TODO: think about multithreading
-        for (row, xi) in zip(Base.tail(rows), Base.tail(xinds))
-            xcol = selectdim(x, 1, xi)
-            for _ in 1:row
-                mapind +=1
-                mul!(selectdim(y, 1, yinds[mapind]), transform(maps[mapind]), xcol, α, true)
+    if iszero(α)
+        iszero(β) && return fill!(y, zero(eltype(y)))
+        isone(β) && return y
+        return rmul!(y, β)
+    else
+        @views begin
+            # first block row (rowind = 1) of A, meaning first block column of A', fill all of y
+            xcol = selectdim(x, 1, first(xinds))
+            for rowind in 1:first(rows)
+                mul!(selectdim(y, 1, yinds[rowind]), transform(maps[rowind]), xcol, α, β)
+            end
+            mapind = first(rows)
+            # subsequent block rows of A (block columns of A'),
+            # add results to corresponding parts of y
+            # TODO: think about multithreading
+            for (row, xi) in zip(Base.tail(rows), Base.tail(xinds))
+                xcol = selectdim(x, 1, xi)
+                for _ in 1:row
+                    mapind +=1
+                    mul!(selectdim(y, 1, yinds[mapind]), transform(maps[mapind]), xcol, α, true)
+                end
             end
         end
     end
@@ -345,34 +383,34 @@ end
 ############
 
 Base.@propagate_inbounds A_mul_B!(y::AbstractVector, A::BlockMap, x::AbstractVector) =
-    mul!(y, A, x)
+    mul!(y, A, x, true, false)
 
 Base.@propagate_inbounds A_mul_B!(y::AbstractVector, A::TransposeMap{<:Any,<:BlockMap}, x::AbstractVector) =
-    mul!(y, A, x)
+    mul!(y, A, x, true, false)
 
 Base.@propagate_inbounds At_mul_B!(y::AbstractVector, A::BlockMap, x::AbstractVector) =
-    mul!(y, transpose(A), x)
+    mul!(y, transpose(A), x, true, false)
 
 Base.@propagate_inbounds A_mul_B!(y::AbstractVector, A::AdjointMap{<:Any,<:BlockMap}, x::AbstractVector) =
-    mul!(y, A, x)
+    mul!(y, A, x, true, false)
 
 Base.@propagate_inbounds Ac_mul_B!(y::AbstractVector, A::BlockMap, x::AbstractVector) =
-    mul!(y, adjoint(A), x)
+    mul!(y, adjoint(A), x, true, false)
 
 for Atype in (AbstractVector, AbstractMatrix)
     @eval Base.@propagate_inbounds function LinearAlgebra.mul!(y::$Atype, A::BlockMap, x::$Atype,
-                        α::Number=true, β::Number=false)
+                        α::Number, β::Number)
         require_one_based_indexing(y, x)
         @boundscheck check_dim_mul(y, A, x)
-        return _blockmul!(y, A, x, α, β)
+        return @inbounds _blockmul!(y, A, x, α, β)
     end
 
     for (maptype, transform) in ((:(TransposeMap{<:Any,<:BlockMap}), :transpose), (:(AdjointMap{<:Any,<:BlockMap}), :adjoint))
         @eval Base.@propagate_inbounds function LinearAlgebra.mul!(y::$Atype, wrapA::$maptype, x::$Atype,
-                        α::Number=true, β::Number=false)
+                        α::Number, β::Number)
             require_one_based_indexing(y, x)
             @boundscheck check_dim_mul(y, wrapA, x)
-            return _transblockmul!(y, wrapA.lmap, x, α, β, $transform)
+            return @inbounds _transblockmul!(y, wrapA.lmap, x, α, β, $transform)
         end
     end
 end
@@ -468,7 +506,7 @@ Base.@propagate_inbounds Ac_mul_B!(y::AbstractVector, A::BlockDiagonalMap, x::Ab
 
 for Atype in (AbstractVector, AbstractMatrix)
     @eval Base.@propagate_inbounds function LinearAlgebra.mul!(y::$Atype, A::BlockDiagonalMap, x::$Atype,
-                        α::Number=true, β::Number=false)
+                        α::Number, β::Number)
         require_one_based_indexing(y, x)
         @boundscheck check_dim_mul(y, A, x)
         return _blockscaling!(y, A, x, α, β)

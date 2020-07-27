@@ -66,7 +66,7 @@ LinearAlgebra.adjoint(A::LinearCombination)   = LinearCombination{eltype(A)}(map
 # multiplication with vectors & matrices
 for Atype in (AbstractVector, AbstractMatrix)
     @eval Base.@propagate_inbounds function LinearAlgebra.mul!(y::$Atype, A::LinearCombination, x::$Atype,
-                             α::Number=true, β::Number=false)
+                             α::Number, β::Number)
         @boundscheck check_dim_mul(y, A, x)
         if iszero(α) # trivial cases
             iszero(β) && (fill!(y, zero(eltype(y))); return y)
@@ -117,8 +117,8 @@ end
     return y
 end
 
-A_mul_B!(y::AbstractVector, A::LinearCombination, x::AbstractVector) = mul!(y, A, x)
+A_mul_B!(y::AbstractVector, A::LinearCombination, x::AbstractVector) = mul!(y, A, x, true, false)
 
-At_mul_B!(y::AbstractVector, A::LinearCombination, x::AbstractVector) = mul!(y, transpose(A), x)
+At_mul_B!(y::AbstractVector, A::LinearCombination, x::AbstractVector) = mul!(y, transpose(A), x, true, false)
 
-Ac_mul_B!(y::AbstractVector, A::LinearCombination, x::AbstractVector) = mul!(y, adjoint(A), x)
+Ac_mul_B!(y::AbstractVector, A::LinearCombination, x::AbstractVector) = mul!(y, adjoint(A), x, true, false)

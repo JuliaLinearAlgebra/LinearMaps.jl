@@ -9,7 +9,12 @@ transformations or linear operators acting on vectors. The only requirement for
 a LinearMap is that it can act on a vector (by multiplication) efficiently.
 
 ## What's new in v2.7
-*   Speed-up of scaled `LinearMap`s by avoiding allocations
+*   Potential reduction of memory allocations in multiplication of
+    `LinearCombination`s, `BlockMap`s, and real- or complex-scaled `LinearMap`s.
+    For the latter, a new internal type `ScaledMap` has been introduced.
+*   Multiplication code for `CompositeMap`s has been refactored to facilitate to
+    provide memory for storage of intermediate results by directly calling helper
+    functions.
 
 ## What's new in v2.6
 *   New feature: "lazy" Kronecker product, Kronecker sums, and powers thereof
@@ -18,25 +23,25 @@ a LinearMap is that it can act on a vector (by multiplication) efficiently.
 *   Compatibility with the generic multiply-and-add interface (a.k.a. 5-arg
     `mul!`) introduced in julia v1.3
 
-## What's new in v2.5.0
+## What's new in v2.5
 *   New feature: concatenation of `LinearMap`s objects with `UniformScaling`s,
     consistent with (h-, v-, and hc-)concatenation of matrices. Note, matrices
     `A` must be wrapped as `LinearMap(A)`, `UniformScaling`s are promoted to
     `LinearMap`s automatically.
 
-## What's new in v2.4.0
+## What's new in v2.4
 *   Support restricted to Julia v1.0+.
 
-## What's new in v2.3.0
+## What's new in v2.3
 *   Fully Julia v0.7/v1.0/v1.1 compatible.
 *   Full support of noncommutative number types such as quaternions.
 
-## What's new in v2.2.0
+## What's new in v2.2
 *   Fully Julia v0.7/v1.0 compatible.
 *   A `convert(SparseMatrixCSC, A::LinearMap)` function, that calls the `sparse`
     matrix generating function.
 
-## What's new in v2.1.0
+## What's new in v2.1
 *   Fully Julia v0.7 compatible; dropped compatibility for previous versions of
     Julia from LinearMaps.jl v2.0.0 on.
 *   A 5-argument version for `mul!(y, A::LinearMap, x, α=1, β=0)`, which
@@ -66,7 +71,7 @@ in Julia versions below 0.7).
 ## Philosophy
 
 Several iterative linear algebra methods such as linear solvers or eigensolvers
-only require an efficient evaluation of the matrix vector product, where the
+only require an efficient evaluation of the matrix-vector product, where the
 concept of a matrix can be formalized / generalized to a linear map (or linear
 operator in the special case of a square matrix).
 
@@ -89,10 +94,11 @@ The LinearMaps package provides the following functionality:
     `isposdef`) of the existing matrix or linear map.
 
 3.  A framework for combining objects of type `LinearMap` and of type
-    `AbstractMatrix` using linear combinations, transposition and composition,
+    `AbstractMatrix` using linear combinations, transposition, composition,
+    concatenation and Kronecker product/sums,
     where the linear map resulting from these operations is never explicitly
-    evaluated but only its matrix vector product is defined (i.e. lazy
-    evaluation). The matrix vector product is written to minimize memory
+    evaluated but only its matrix-vector product is defined (i.e. lazy
+    evaluation). The matrix-vector product is written to minimize memory
     allocation by using a minimal number of temporary vectors. There is full
     support for the in-place version `mul!`, which should be preferred for
     higher efficiency in critical algorithms. In addition, it tries to recognize
@@ -159,7 +165,7 @@ The LinearMaps package provides the following functionality:
         argument corresponding to the input, and `true` if it accepts two vector
         arguments where the first will be mutated so as to contain the result.
         In both cases, the resulting `A::FunctionMap` will support both the
-        mutating and non-mutating matrix vector multiplication. Default value is
+        mutating and non-mutating matrix-vector multiplication. Default value is
         guessed based on the number of arguments for the first method in the
         method list of `f`; it is not possible to use `f` and `fc` where only
         one of the two is mutating and the other is not.
@@ -190,6 +196,12 @@ The LinearMaps package provides the following functionality:
     handle both `A::AbstractMatrix` and `A::LinearMap`, it is recommended to use
     `convert(Matrix, A*X)`.
 
+*   `convert(AbstractMatrix, A::LinearMap)`, `convert(AbstractArray, A::LinearMap)`
+
+    Create an `AbstractMatrix` representation of the `LinearMap`. This falls
+    back to `Matrix(A)`, but avoids explicit construction in case the `LinearMap`
+    object is matrix-based.
+
 *   `SparseArrays.sparse(A::LinearMap)` and `convert(SparseMatrixCSC, A::LinearMap)`
 
     Create a sparse matrix representation of the `LinearMap` object, by
@@ -206,7 +218,7 @@ The LinearMaps package provides the following functionality:
     * `mul!(Y::AbstractMatrix, A::LinearMap, X::AbstractMatrix)`: applies `A` to
       each column of `X` and stores the results in the corresponding columns of
       `Y`;
-    * `mul!(y::AbstractVector, A::LinearMap, x::AbstractVector, α::Number=true, β::Number=false)`:
+    * `mul!(y::AbstractVector, A::LinearMap, x::AbstractVector, α::Number, β::Number)`:
       computes `A * x * α + y * β` and stores the result in `y`. Analogously for `X,Y::AbstractMatrix`.
 
     Applying the adjoint or transpose of `A` (if defined) to `x` works exactly
@@ -240,7 +252,7 @@ constructor described above.
 *   `FunctionMap`
 
     Type for wrapping an arbitrary function that is supposed to implement the
-    matrix vector product as a `LinearMap`.
+    matrix-vector product as a `LinearMap`.
 
 *   `WrappedMap`
 
@@ -252,17 +264,25 @@ constructor described above.
     will never evaluate `mat1*mat2`, since this is more costly than evaluating
     `mat1*(mat2*x)` and the latter is the only operation that needs to be performed
     by `LinearMap` objects anyway. While the cost of matrix addition is comparable
-    to matrix vector multiplication, this too is not performed explicitly since
+    to matrix-vector multiplication, this too is not performed explicitly since
     this would require new storage of the same amount as of the original matrices.
+
+*   `ScaledMap`
+
+    Type for representing a scalar multiple of any `LinearMap` type. A
+    `ScaledMap` will be automatically constructed if real or complex `LinearMap`
+    objects are multiplied by real or complex scalars from the left or from the
+    right.
 
 *   `UniformScalingMap`
 
     Type for representing a scalar multiple of the identity map (a.k.a. uniform
     scaling) of a certain size `M=N`, obtained simply as `UniformScalingMap(λ, M)`.
     The type `T` of the resulting `LinearMap` object is inferred from the type of
-    `λ`. A `UniformScalingMap` of the correct size will be automatically created
-    if `LinearMap` objects are multiplied by scalars from the left or from the right,
-    respecting the order of multiplication.
+    `λ`. A `UniformScalingMap` of the correct size will be automatically
+    constructed if `LinearMap` objects are multiplied by scalars from the left
+    or from the right (respecting the order of multiplication), if either the
+    `eltype` of the `LinearMap` or the scalar are of non-commutative type, .
 
 *   `LinearCombination`, `CompositeMap`, `TransposeMap` and `AdjointMap`
 
