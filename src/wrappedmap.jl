@@ -1,3 +1,5 @@
+import LinearAlgebra: AdjointAbsVec, TransposeAbsVec
+
 struct WrappedMap{T, A<:MapOrMatrix} <: LinearMap{T}
     lmap::A
     _issymmetric::Bool
@@ -71,3 +73,8 @@ Base.:(-)(A₁::AbstractMatrix, A₂::LinearMap) = -(WrappedMap(A₁), A₂)
 
 Base.:(*)(A₁::LinearMap, A₂::AbstractMatrix) = *(A₁, WrappedMap(A₂))
 Base.:(*)(A₁::AbstractMatrix, A₂::LinearMap) = *(WrappedMap(A₁), A₂)
+
+# An AdjointAbsVec isa AbstractMatrix but we handle it like a vector (Issue#99)
+# which is an exception to the left multiplication rule that makes a WrappedMap
+Base.:(*)(y::AdjointAbsVec, A::LinearMap) = adjoint(*(A', y'))
+Base.:(*)(y::TransposeAbsVec, A::LinearMap) = transpose(transpose(A) * transpose(y))
