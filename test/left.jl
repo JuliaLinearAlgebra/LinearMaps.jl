@@ -1,5 +1,5 @@
 using Test, LinearMaps
-#, LinearAlgebra
+using LinearAlgebra: mul!
 
 # y'*L is an exception to the left multiplication rule that makes a WrappedMap
 
