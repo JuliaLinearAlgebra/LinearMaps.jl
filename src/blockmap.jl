@@ -382,19 +382,19 @@ end
 # multiplication with vectors & matrices
 ############
 
-Base.@propagate_inbounds A_mul_B!(y::AbstractVector, A::BlockMap, x::AbstractVector) =
+Base.@propagate_inbounds A_mul_B!(y::VecOut, A::BlockMap, x::AbstractVector) =
     mul!(y, A, x, true, false)
 
-Base.@propagate_inbounds A_mul_B!(y::AbstractVector, A::TransposeMap{<:Any,<:BlockMap}, x::AbstractVector) =
+Base.@propagate_inbounds A_mul_B!(y::VecOut, A::TransposeMap{<:Any,<:BlockMap}, x::AbstractVector) =
     mul!(y, A, x, true, false)
 
-Base.@propagate_inbounds At_mul_B!(y::AbstractVector, A::BlockMap, x::AbstractVector) =
+Base.@propagate_inbounds At_mul_B!(y::VecOut, A::BlockMap, x::AbstractVector) =
     mul!(y, transpose(A), x, true, false)
 
-Base.@propagate_inbounds A_mul_B!(y::AbstractVector, A::AdjointMap{<:Any,<:BlockMap}, x::AbstractVector) =
+Base.@propagate_inbounds A_mul_B!(y::VecOut, A::AdjointMap{<:Any,<:BlockMap}, x::AbstractVector) =
     mul!(y, A, x, true, false)
 
-Base.@propagate_inbounds Ac_mul_B!(y::AbstractVector, A::BlockMap, x::AbstractVector) =
+Base.@propagate_inbounds Ac_mul_B!(y::VecOut, A::BlockMap, x::AbstractVector) =
     mul!(y, adjoint(A), x, true, false)
 
 for Atype in (AbstractVector, AbstractMatrix)
@@ -495,13 +495,13 @@ LinearAlgebra.transpose(A::BlockDiagonalMap{T}) where {T} = BlockDiagonalMap{T}(
 
 Base.:(==)(A::BlockDiagonalMap, B::BlockDiagonalMap) = (eltype(A) == eltype(B) && A.maps == B.maps)
 
-Base.@propagate_inbounds A_mul_B!(y::AbstractVector, A::BlockDiagonalMap, x::AbstractVector) =
+Base.@propagate_inbounds A_mul_B!(y::VecOut, A::BlockDiagonalMap, x::AbstractVector) =
     mul!(y, A, x, true, false)
 
-Base.@propagate_inbounds At_mul_B!(y::AbstractVector, A::BlockDiagonalMap, x::AbstractVector) =
+Base.@propagate_inbounds At_mul_B!(y::VecOut, A::BlockDiagonalMap, x::AbstractVector) =
     mul!(y, transpose(A), x, true, false)
 
-Base.@propagate_inbounds Ac_mul_B!(y::AbstractVector, A::BlockDiagonalMap, x::AbstractVector) =
+Base.@propagate_inbounds Ac_mul_B!(y::VecOut, A::BlockDiagonalMap, x::AbstractVector) =
     mul!(y, adjoint(A), x, true, false)
 
 for Atype in (AbstractVector, AbstractMatrix)

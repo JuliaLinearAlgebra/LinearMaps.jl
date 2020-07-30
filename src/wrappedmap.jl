@@ -1,5 +1,3 @@
-import LinearAlgebra: AdjointAbsVec, TransposeAbsVec
-
 struct WrappedMap{T, A<:MapOrMatrix} <: LinearMap{T}
     lmap::A
     _issymmetric::Bool
@@ -39,13 +37,13 @@ LinearAlgebra.ishermitian(A::WrappedMap) = A._ishermitian
 LinearAlgebra.isposdef(A::WrappedMap) = A._isposdef
 
 # multiplication with vectors & matrices
-A_mul_B!(y::AbstractVector, A::WrappedMap, x::AbstractVector) = A_mul_B!(y, A.lmap, x)
+A_mul_B!(y::VecOut, A::WrappedMap, x::AbstractVector) = A_mul_B!(y, A.lmap, x)
 Base.:(*)(A::WrappedMap, x::AbstractVector) = *(A.lmap, x)
 
-At_mul_B!(y::AbstractVector, A::WrappedMap, x::AbstractVector) =
+At_mul_B!(y::VecOut, A::WrappedMap, x::AbstractVector) =
     (issymmetric(A) || (isreal(A) && ishermitian(A))) ? A_mul_B!(y, A.lmap, x) : At_mul_B!(y, A.lmap, x)
 
-Ac_mul_B!(y::AbstractVector, A::WrappedMap, x::AbstractVector) =
+Ac_mul_B!(y::VecOut, A::WrappedMap, x::AbstractVector) =
     ishermitian(A) ? A_mul_B!(y, A.lmap, x) : Ac_mul_B!(y, A.lmap, x)
 
 if VERSION ≥ v"1.3.0-alpha.115"
@@ -73,8 +71,3 @@ Base.:(-)(A₁::AbstractMatrix, A₂::LinearMap) = -(WrappedMap(A₁), A₂)
 
 Base.:(*)(A₁::LinearMap, A₂::AbstractMatrix) = *(A₁, WrappedMap(A₂))
 Base.:(*)(A₁::AbstractMatrix, A₂::LinearMap) = *(WrappedMap(A₁), A₂)
-
-# An AdjointAbsVec isa AbstractMatrix but we handle it like a vector (Issue#99)
-# which is an exception to the left multiplication rule that makes a WrappedMap
-Base.:(*)(y::AdjointAbsVec, A::LinearMap) = adjoint(*(A', y'))
-Base.:(*)(y::TransposeAbsVec, A::LinearMap) = transpose(transpose(A) * transpose(y))

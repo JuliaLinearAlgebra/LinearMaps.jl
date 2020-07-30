@@ -54,15 +54,15 @@ Base.:(*)(A::ScaledMap, B::LinearMap) = A.λ * (A.lmap * B)
 Base.:(*)(A::LinearMap, B::ScaledMap) = (A * B.lmap) * B.λ
 
 # multiplication with vectors
-function A_mul_B!(y::AbstractVector, A::ScaledMap, x::AbstractVector)
+function A_mul_B!(y::VecOut, A::ScaledMap, x::AbstractVector)
     # no size checking, will be done by map
     mul!(y, A.lmap, x, A.λ, false)
 end
 
-function LinearAlgebra.mul!(y::AbstractVector, A::ScaledMap, x::AbstractVector, α::Number, β::Number)
+function LinearAlgebra.mul!(y::VecOut, A::ScaledMap, x::AbstractVector, α::Number, β::Number)
     # no size checking, will be done by map
     mul!(y, A.lmap, x, A.λ * α, β)
 end
 
-At_mul_B!(y::AbstractVector, A::ScaledMap, x::AbstractVector) = A_mul_B!(y, transpose(A), x)
-Ac_mul_B!(y::AbstractVector, A::ScaledMap, x::AbstractVector) = A_mul_B!(y, adjoint(A), x)
+At_mul_B!(y::VecOut, A::ScaledMap, x::AbstractVector) = A_mul_B!(y, transpose(A), x)
+Ac_mul_B!(y::VecOut, A::ScaledMap, x::AbstractVector) = A_mul_B!(y, adjoint(A), x)

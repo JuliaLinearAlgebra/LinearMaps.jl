@@ -117,8 +117,8 @@ end
     return y
 end
 
-A_mul_B!(y::AbstractVector, A::LinearCombination, x::AbstractVector) = mul!(y, A, x, true, false)
+A_mul_B!(y::VecOut, A::LinearCombination, x::AbstractVector) = mul!(y, A, x, true, false)
 
-At_mul_B!(y::AbstractVector, A::LinearCombination, x::AbstractVector) = mul!(y, transpose(A), x, true, false)
+At_mul_B!(y::VecOut, A::LinearCombination, x::AbstractVector) = mul!(y, transpose(A), x, true, false)
 
-Ac_mul_B!(y::AbstractVector, A::LinearCombination, x::AbstractVector) = mul!(y, adjoint(A), x, true, false)
+Ac_mul_B!(y::VecOut, A::LinearCombination, x::AbstractVector) = mul!(y, adjoint(A), x, true, false)
