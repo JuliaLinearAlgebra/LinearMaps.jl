@@ -3,6 +3,8 @@ using LinearAlgebra: mul!
 
 # y'*L is an exception to the left multiplication rule that makes a WrappedMap
 
+@static if VERSION ≥ v"1.4.0"
+
 function left_tester(L::LinearMap{T}) where {T}
 	M,N = size(L)
     A = Matrix(L)
@@ -56,3 +58,5 @@ todo: fails with stack overflow
 	@test left_tester(2L+3L') # LinearCombination
 =#
 end
+
+end # version
