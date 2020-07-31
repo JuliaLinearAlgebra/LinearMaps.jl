@@ -37,13 +37,13 @@ LinearAlgebra.ishermitian(A::WrappedMap) = A._ishermitian
 LinearAlgebra.isposdef(A::WrappedMap) = A._isposdef
 
 # multiplication with vectors & matrices
-A_mul_B!(y::VecOut, A::WrappedMap, x::AbstractVector) = A_mul_B!(y, A.lmap, x)
+A_mul_B!(y::AbstractVector, A::WrappedMap, x::AbstractVector) = A_mul_B!(y, A.lmap, x)
 Base.:(*)(A::WrappedMap, x::AbstractVector) = *(A.lmap, x)
 
-At_mul_B!(y::VecOut, A::WrappedMap, x::AbstractVector) =
+At_mul_B!(y::AbstractVector, A::WrappedMap, x::AbstractVector) =
     (issymmetric(A) || (isreal(A) && ishermitian(A))) ? A_mul_B!(y, A.lmap, x) : At_mul_B!(y, A.lmap, x)
 
-Ac_mul_B!(y::VecOut, A::WrappedMap, x::AbstractVector) =
+Ac_mul_B!(y::AbstractVector, A::WrappedMap, x::AbstractVector) =
     ishermitian(A) ? A_mul_B!(y, A.lmap, x) : Ac_mul_B!(y, A.lmap, x)
 
 if VERSION ≥ v"1.3.0-alpha.115"

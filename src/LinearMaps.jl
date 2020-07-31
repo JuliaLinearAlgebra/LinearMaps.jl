@@ -18,9 +18,6 @@ abstract type LinearMap{T} end
 const MapOrMatrix{T} = Union{LinearMap{T},AbstractMatrix{T}}
 const RealOrComplex = Union{Real,Complex}
 
-# valid types for left vector multiplication:
-const VecOut = AbstractVecOrMat # todo - temporary
-
 Base.eltype(::LinearMap{T}) where {T} = T
 
 abstract type MulStyle end
@@ -79,11 +76,11 @@ function Base.:(*)(A::LinearMap, x::AbstractVector)
     size(A, 2) == length(x) || throw(DimensionMismatch("mul!"))
     return @inbounds A_mul_B!(similar(x, promote_type(eltype(A), eltype(x)), size(A, 1)), A, x)
 end
-function LinearAlgebra.mul!(y::VecOut, A::LinearMap, x::AbstractVector)
+function LinearAlgebra.mul!(y::AbstractVector, A::LinearMap, x::AbstractVector)
     @boundscheck check_dim_mul(y, A, x)
     return @inbounds A_mul_B!(y, A, x)
 end
-function LinearAlgebra.mul!(y::VecOut, A::LinearMap, x::AbstractVector, α::Number, β::Number)
+function LinearAlgebra.mul!(y::AbstractVector, A::LinearMap, x::AbstractVector, α::Number, β::Number)
     @boundscheck check_dim_mul(y, A, x)
     if isone(α)
         iszero(β) && (A_mul_B!(y, A, x); return y)
@@ -120,9 +117,9 @@ Base.@propagate_inbounds function LinearAlgebra.mul!(Y::AbstractMatrix, A::Linea
     return Y
 end
 
-A_mul_B!(y::VecOut, A::AbstractMatrix, x::AbstractVector)  = mul!(y, A, x)
-At_mul_B!(y::VecOut, A::AbstractMatrix, x::AbstractVector) = mul!(y, transpose(A), x)
-Ac_mul_B!(y::VecOut, A::AbstractMatrix, x::AbstractVector) = mul!(y, adjoint(A), x)
+A_mul_B!(y::AbstractVector, A::AbstractMatrix, x::AbstractVector)  = mul!(y, A, x)
+At_mul_B!(y::AbstractVector, A::AbstractMatrix, x::AbstractVector) = mul!(y, transpose(A), x)
+Ac_mul_B!(y::AbstractVector, A::AbstractMatrix, x::AbstractVector) = mul!(y, adjoint(A), x)
 
 include("left.jl") # left multiplication by a transpose or adjoint vector
 include("wrappedmap.jl") # wrap a matrix of linear map in a new type, thereby allowing to alter its properties

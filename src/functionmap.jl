@@ -107,13 +107,13 @@ function Base.:(*)(A::TransposeMap{<:Any,<:FunctionMap}, x::AbstractVector)
     end
 end
 
-function A_mul_B!(y::VecOut, A::FunctionMap, x::AbstractVector)
+function A_mul_B!(y::AbstractVector, A::FunctionMap, x::AbstractVector)
     (length(x) == A.N && length(y) == A.M) || throw(DimensionMismatch("A_mul_B!"))
     ismutating(A) ? A.f(y, x) : copyto!(y, A.f(x))
     return y
 end
 
-function At_mul_B!(y::VecOut, A::FunctionMap, x::AbstractVector)
+function At_mul_B!(y::AbstractVector, A::FunctionMap, x::AbstractVector)
     (issymmetric(A) || (isreal(A) && ishermitian(A))) && return A_mul_B!(y, A, x)
     (length(x) == A.M && length(y) == A.N) || throw(DimensionMismatch("At_mul_B!"))
     if A.fc !== nothing
@@ -135,7 +135,7 @@ function At_mul_B!(y::VecOut, A::FunctionMap, x::AbstractVector)
     end
 end
 
-function Ac_mul_B!(y::VecOut, A::FunctionMap, x::AbstractVector)
+function Ac_mul_B!(y::AbstractVector, A::FunctionMap, x::AbstractVector)
     ishermitian(A) && return A_mul_B!(y, A, x)
     (length(x) == A.M && length(y) == A.N) || throw(DimensionMismatch("Ac_mul_B!"))
     if A.fc !== nothing
