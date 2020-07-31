@@ -52,12 +52,10 @@ function check_dim_mul(C, A, B)
     # @info "checked vector dimensions" # uncomment for testing
     mA, nA = size(A) # A always has two dimensions
     mB, nB = size(B, 1), size(B, 2)
-    if mB != nA
-        throw(DimensionMismatch("left factor has dimensions ($mA,$nA), right factor has dimensions ($mB,$nB)"))
-    end
-    if size(C, 1) != mA || size(C, 2) != nB
+    (mB == nA) ||
+        throw(DimensionMismatch("left factor has dimensions ($mA,$nA), right factor has dimensions ($mB,$nB)")
+    (size(C, 1) != mA || size(C, 2) != nB) &&
         throw(DimensionMismatch("result has dimensions $(size(C)), needs ($mA,$nB)"))
-    end
     return nothing
 end
 
