@@ -53,7 +53,7 @@ function check_dim_mul(C, A, B)
     mA, nA = size(A) # A always has two dimensions
     mB, nB = size(B, 1), size(B, 2)
     (mB == nA) ||
-        throw(DimensionMismatch("left factor has dimensions ($mA,$nA), right factor has dimensions ($mB,$nB)")
+        throw(DimensionMismatch("left factor has dimensions ($mA,$nA), right factor has dimensions ($mB,$nB)"))
     (size(C, 1) != mA || size(C, 2) != nB) &&
         throw(DimensionMismatch("result has dimensions $(size(C)), needs ($mA,$nB)"))
     return nothing
