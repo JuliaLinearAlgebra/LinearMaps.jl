@@ -45,18 +45,11 @@ end
 	@test left_tester(L'*L) # CompositeMap
 	@test left_tester(2L) # ScaledMap
 	@test left_tester(kron(L,L')) # KroneckerMap
-
-#=
-todo: fails with DimensionMismatch
-	W = LinearMap(randn(T,5,4)) #
-	@test left_tester(W) # WrappedMap
-=#
-
-#=
-todo: fails with stack overflow
-	@test left_tester([L L]) # BlockMap
 	@test left_tester(2L+3L') # LinearCombination
-=#
+	@test left_tester([L L]) # BlockMap
+
+	W = LinearMap(randn(T,5,4))
+	@test left_tester(W) # WrappedMap
 end
 
 end # version

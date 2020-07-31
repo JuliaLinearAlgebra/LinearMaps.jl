@@ -10,6 +10,7 @@
 
 import LinearAlgebra: AdjointAbsVec, TransposeAbsVec
 
+# x = y'*A ⇐⇒ x' = (A'*y)
 Base.:(*)(y::AdjointAbsVec, A::LinearMap) = adjoint(*(A', y'))
 Base.:(*)(y::TransposeAbsVec, A::LinearMap) = transpose(transpose(A) * transpose(y))
 
@@ -17,19 +18,21 @@ Base.:(*)(y::TransposeAbsVec, A::LinearMap) = transpose(transpose(A) * transpose
 LinearAlgebra.mul!(x::AdjointAbsVec, y::AdjointAbsVec, A::LinearMap) =
     mul!(x, y, A, true, false)
 
-# not sure if we need bounds checks and propagate inbounds stuff here
+# todo: not sure if we need bounds checks and propagate inbounds stuff here
 
 # mul!(x, y', A, α, β)
-function LinearAlgebra.mul!(x::AdjointAbsVec, y::AdjointAbsVec, A::LinearMap,
-                            α::Number, β::Number)
+# the key here is that "adjoint" and "transpose" are lazy "views"
+function LinearAlgebra.mul!(x::AdjointAbsVec, y::AdjointAbsVec,
+        A::LinearMap, α::Number, β::Number)
     check_dim_mul(x, y, A)
-    mul!(x, A', y', α, β)
-    return conj!(x)
+    mul!(adjoint(x), A', y', α, β)
+    return adjoint(x)
 end
 
 # mul!(x, transpose(y), A, α, β)
-function LinearAlgebra.mul!(x::TransposeAbsVec, y::TransposeAbsVec, A::LinearMap,
-                            α::Number, β::Number)
+function LinearAlgebra.mul!(x::TransposeAbsVec, y::TransposeAbsVec,
+         A::LinearMap, α::Number, β::Number)
     check_dim_mul(x, y, A)
-    return mul!(x, transpose(A), transpose(y), α, β)
+    mul!(transpose(x), transpose(A), transpose(y), α, β)
+    return transpose(x)
 end

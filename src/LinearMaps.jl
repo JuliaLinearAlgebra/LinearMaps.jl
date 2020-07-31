@@ -4,7 +4,6 @@ export LinearMap
 export ⊗, kronsum, ⊕
 
 using LinearAlgebra
-import LinearAlgebra: AdjointAbsVec, TransposeAbsVec
 using SparseArrays
 
 if VERSION < v"1.2-"
@@ -20,8 +19,7 @@ const MapOrMatrix{T} = Union{LinearMap{T},AbstractMatrix{T}}
 const RealOrComplex = Union{Real,Complex}
 
 # valid types for left vector multiplication:
-const VecIn = Union{AdjointAbsVec, TransposeAbsVec}
-const VecOut = Union{AbstractVector, AdjointAbsVec, TransposeAbsVec}
+const VecOut = AbstractVecOrMat # todo - temporary
 
 Base.eltype(::LinearMap{T}) where {T} = T
 
@@ -52,24 +50,20 @@ Base.ndims(::LinearMap) = 2
 Base.size(A::LinearMap, n) = (n==1 || n==2 ? size(A)[n] : error("LinearMap objects have only 2 dimensions"))
 Base.length(A::LinearMap) = size(A)[1] * size(A)[2]
 
-# check dimension consistency for y = A*x and Y = A*X
-function check_dim_mul(y::VecOut, A::LinearMap, x::AbstractVector)
+# check dimension consistency for right multiply: y = A*x and Y = A*X
+function check_dim_mul(Y::AbstractVecOrMat, A::LinearMap, X::AbstractVecOrMat)
     # @info "checked vector dimensions" # uncomment for testing
     m, n = size(A)
-    (m == length(y) && n == length(x)) || throw(DimensionMismatch("mul!"))
-    return nothing
-end
-function check_dim_mul(Y::AbstractMatrix, A::LinearMap, X::AbstractMatrix)
-    # @info "checked matrix dimensions" # uncomment for testing
-    m, n = size(A)
-    (m == size(Y, 1) && n == size(X, 1) && size(Y, 2) == size(X, 2)) || throw(DimensionMismatch("mul!"))
+    (m == size(Y, 1) && n == size(X, 1) && size(Y, 2) == size(X, 2)) ||
+        throw(DimensionMismatch("mul! $(size(X)) $(size(Y)) $(size(A))"))
     return nothing
 end
 
-# check dimension consistency for left multiplication x = y'*A
-function check_dim_mul(x::V, y::V, A::LinearMap) where {V <: VecIn}
+# check dimension consistency for left multiply: X = Y*A (e.g., Y=y')
+function check_dim_mul(X::AbstractVecOrMat, Y::AbstractVecOrMat, A::LinearMap)
     m, n = size(A)
-    ((1,m) == size(y) && (1,n) == size(x)) || throw(DimensionMismatch("left mul!"))
+    (n == size(X, 2) && m == size(Y, 2) && size(Y, 1) == size(X, 1)) ||
+        throw(DimensionMismatch("left mul!"))
     return nothing
 end
 
