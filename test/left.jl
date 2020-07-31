@@ -3,7 +3,6 @@ using LinearAlgebra: mul!
 
 # y'*L is an exception to the left multiplication rule that makes a WrappedMap
 
-@static if true # VERSION ≥ v"1.4.0"
 
 function left_tester(L::LinearMap{T}) where {T}
     M,N = size(L)
@@ -27,10 +26,12 @@ function left_tester(L::LinearMap{T}) where {T}
 
     b1 = transpose(y) * A
     b2 = similar(b1)
-    mul!(b2, transpose(y), L) # 3-arg
+@static if VERSION ≥ v"1.4.0"
+    mul!(b2, transpose(y), L) # 3-arg # todo: fails in Julia 1.0
     @test b1 ≈ b2
     mul!(b2, transpose(y), L, true, false) # 5-arg
     @test b1 ≈ b2
+end # version
 
     true
 end
@@ -51,5 +52,3 @@ end
     W = LinearMap(randn(T,5,4))
     @test left_tester(W) # WrappedMap
 end
-
-end # version
