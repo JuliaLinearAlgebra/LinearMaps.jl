@@ -5,7 +5,7 @@ using LinearAlgebra: mul!
 
 
 function left_tester(L::LinearMap{T}) where {T}
-    M,N = size(L)
+    M, N = size(L)
     A = Matrix(L)
 
     x = rand(T, N)
@@ -26,12 +26,10 @@ function left_tester(L::LinearMap{T}) where {T}
 
     b1 = transpose(y) * A
     b2 = similar(b1)
-@static if VERSION ≥ v"1.4.0"
-    mul!(b2, transpose(y), L) # 3-arg # todo: fails in Julia 1.0
+    mul!(b2, transpose(y), L) # 3-arg
     @test b1 ≈ b2
     mul!(b2, transpose(y), L, true, false) # 5-arg
     @test b1 ≈ b2
-end # version
 
     true
 end

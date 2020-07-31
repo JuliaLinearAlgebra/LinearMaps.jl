@@ -47,20 +47,17 @@ Base.ndims(::LinearMap) = 2
 Base.size(A::LinearMap, n) = (n==1 || n==2 ? size(A)[n] : error("LinearMap objects have only 2 dimensions"))
 Base.length(A::LinearMap) = size(A)[1] * size(A)[2]
 
-# check dimension consistency for right multiply: y = A*x and Y = A*X
-function check_dim_mul(Y::AbstractVecOrMat, A::LinearMap, X::AbstractVecOrMat)
+# check dimension consistency for multiplication C = A*B
+function check_dim_mul(C, A, B)
     # @info "checked vector dimensions" # uncomment for testing
-    m, n = size(A)
-    (m == size(Y, 1) && n == size(X, 1) && size(Y, 2) == size(X, 2)) ||
-        throw(DimensionMismatch("mul! $(size(X)) $(size(Y)) $(size(A))"))
-    return nothing
-end
-
-# check dimension consistency for left multiply: X = Y*A (e.g., Y=y')
-function check_dim_mul(X::AbstractVecOrMat, Y::AbstractVecOrMat, A::LinearMap)
-    m, n = size(A)
-    (n == size(X, 2) && m == size(Y, 2) && size(Y, 1) == size(X, 1)) ||
-        throw(DimensionMismatch("left mul!"))
+    mA, nA = size(A) # A always has two dimensions
+    mB, nB = size(B, 1), size(B, 2)
+    if mB != nA
+        throw(DimensionMismatch("left factor has dimensions ($mA,$nA), right factor has dimensions ($mB,$nB)"))
+    end
+    if size(C, 1) != mA || size(C, 2) != nB
+        throw(DimensionMismatch("result has dimensions $(size(C)), needs ($mA,$nB)"))
+    end
     return nothing
 end
 

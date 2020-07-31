@@ -15,24 +15,28 @@ Base.:(*)(y::AdjointAbsVec, A::LinearMap) = adjoint(*(A', y'))
 Base.:(*)(y::TransposeAbsVec, A::LinearMap) = transpose(transpose(A) * transpose(y))
 
 # mul!(x, y', A)
-LinearAlgebra.mul!(x::AdjointAbsVec, y::AdjointAbsVec, A::LinearMap) =
-    mul!(x, y, A, true, false)
-
-# todo: not sure if we need bounds checks and propagate inbounds stuff here
-
-# mul!(x, y', A, α, β)
-# the key here is that "adjoint" and "transpose" are lazy "views"
-function LinearAlgebra.mul!(x::AdjointAbsVec, y::AdjointAbsVec,
-        A::LinearMap, α::Number, β::Number)
-    check_dim_mul(x, y, A)
-    mul!(adjoint(x), A', y', α, β)
+Base.@propagate_inbounds function LinearAlgebra.mul!(x::AbstractMatrix, y::AdjointAbsVec, A::LinearMap)
+    @boundscheck check_dim_mul(x, y, A)
+    @inbounds mul!(adjoint(x), A', y')
     return adjoint(x)
 end
 
-# mul!(x, transpose(y), A, α, β)
-function LinearAlgebra.mul!(x::TransposeAbsVec, y::TransposeAbsVec,
+Base.@propagate_inbounds function LinearAlgebra.mul!(x::AbstractMatrix, y::AdjointAbsVec,
+        A::LinearMap, α::Number, β::Number)
+    @boundscheck check_dim_mul(x, y, A)
+    @inbounds mul!(adjoint(x), A', y', α, β)
+    return adjoint(x)
+end
+
+Base.@propagate_inbounds function LinearAlgebra.mul!(x::AbstractMatrix, y::TransposeAbsVec, A::LinearMap)
+    @boundscheck check_dim_mul(x, y, A)
+    @inbounds mul!(transpose(x), transpose(A), transpose(y))
+    return transpose(x)
+end
+
+Base.@propagate_inbounds function LinearAlgebra.mul!(x::AbstractMatrix, y::TransposeAbsVec,
          A::LinearMap, α::Number, β::Number)
-    check_dim_mul(x, y, A)
-    mul!(transpose(x), transpose(A), transpose(y), α, β)
+    @boundscheck check_dim_mul(x, y, A)
+    @inbounds mul!(transpose(x), transpose(A), transpose(y), α, β)
     return transpose(x)
 end
