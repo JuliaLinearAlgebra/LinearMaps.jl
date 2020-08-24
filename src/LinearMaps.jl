@@ -47,17 +47,15 @@ Base.ndims(::LinearMap) = 2
 Base.size(A::LinearMap, n) = (n==1 || n==2 ? size(A)[n] : error("LinearMap objects have only 2 dimensions"))
 Base.length(A::LinearMap) = size(A)[1] * size(A)[2]
 
-# check dimension consistency for y = A*x and Y = A*X
-function check_dim_mul(y::AbstractVector, A::LinearMap, x::AbstractVector)
+# check dimension consistency for multiplication C = A*B
+function check_dim_mul(C, A, B)
     # @info "checked vector dimensions" # uncomment for testing
-    m, n = size(A)
-    (m == length(y) && n == length(x)) || throw(DimensionMismatch("mul!"))
-    return nothing
-end
-function check_dim_mul(Y::AbstractMatrix, A::LinearMap, X::AbstractMatrix)
-    # @info "checked matrix dimensions" # uncomment for testing
-    m, n = size(A)
-    (m == size(Y, 1) && n == size(X, 1) && size(Y, 2) == size(X, 2)) || throw(DimensionMismatch("mul!"))
+    mA, nA = size(A) # A always has two dimensions
+    mB, nB = size(B, 1), size(B, 2)
+    (mB == nA) ||
+        throw(DimensionMismatch("left factor has dimensions ($mA,$nA), right factor has dimensions ($mB,$nB)"))
+    (size(C, 1) != mA || size(C, 2) != nB) &&
+        throw(DimensionMismatch("result has dimensions $(size(C)), needs ($mA,$nB)"))
     return nothing
 end
 
@@ -118,6 +116,7 @@ A_mul_B!(y::AbstractVector, A::AbstractMatrix, x::AbstractVector)  = mul!(y, A, 
 At_mul_B!(y::AbstractVector, A::AbstractMatrix, x::AbstractVector) = mul!(y, transpose(A), x)
 Ac_mul_B!(y::AbstractVector, A::AbstractMatrix, x::AbstractVector) = mul!(y, adjoint(A), x)
 
+include("left.jl") # left multiplication by a transpose or adjoint vector
 include("wrappedmap.jl") # wrap a matrix of linear map in a new type, thereby allowing to alter its properties
 include("uniformscalingmap.jl") # the uniform scaling map, to be able to make linear combinations of LinearMap objects and multiples of I
 include("transpose.jl") # transposing linear maps

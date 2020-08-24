@@ -47,6 +47,15 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays, BenchmarkTools
         @test @inferred mul!(copy(W), M, V) ≈ AV
         @test typeof(M * V) <: LinearMap
     end
+    
+    @testset "dimension checking" begin
+        @test_throws DimensionMismatch M * similar(v, length(v) + 1)
+        @test_throws DimensionMismatch mul!(similar(w, length(w) + 1), M, v)
+        @test_throws DimensionMismatch similar(w, length(w) + 1)' * M
+        @test_throws DimensionMismatch mul!(copy(v)', similar(w, length(w) + 1)', M)
+        @test_throws DimensionMismatch mul!(similar(W, size(W).+(0,1)), M, V)
+        @test_throws DimensionMismatch mul!(copy(W), M, similar(V, size(V).+(0,1)))
+    end
 end
 
 # new type
