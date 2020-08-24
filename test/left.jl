@@ -1,8 +1,4 @@
-using Test, LinearMaps
-using LinearAlgebra: mul!
-
-# y'*L is an exception to the left multiplication rule that makes a WrappedMap
-
+using Test, LinearMaps, LinearAlgebra
 
 function left_tester(L::LinearMap{T}) where {T}
     M, N = size(L)
