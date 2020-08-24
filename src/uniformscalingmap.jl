@@ -41,21 +41,23 @@ Base.:(*)(A::UniformScalingMap, x::AbstractVector) =
     length(x) == A.M ? A.λ * x : throw(DimensionMismatch("*"))
 
 # multiplication with vector/matrix
-for Atype in (AbstractVector, AbstractMatrix)
-    @eval Base.@propagate_inbounds function LinearAlgebra.mul!(y::$Atype, J::UniformScalingMap, x::$Atype)
-        @boundscheck check_dim_mul(y, J, x)
-        _scaling!(y, J.λ, x, true, false)
-        return y
-    end
-    @eval Base.@propagate_inbounds function LinearAlgebra.mul!(y::$Atype, J::UniformScalingMap, x::$Atype,
-                α::Number, β::Number)
-        @boundscheck check_dim_mul(y, J, x)
-        _scaling!(y, J.λ, x, α, β)
-        return y
+for (intype, outtype) in Any[Any[AbstractVector, AbstractVecOrMat], Any[AbstractMatrix, AbstractMatrix]]
+    @eval begin
+        Base.@propagate_inbounds function mul!(y::$outtype, J::UniformScalingMap, x::$intype)
+            @boundscheck check_dim_mul(y, J, x)
+            @inbounds _scaling!(y, J.λ, x, true, false)
+            return y
+        end
+        Base.@propagate_inbounds function mul!(y::$outtype, J::UniformScalingMap, x::$intype,
+                    α::Number, β::Number)
+            @boundscheck check_dim_mul(y, J, x)
+            @inbounds _scaling!(y, J.λ, x, α, β)
+            return y
+        end
     end
 end
 
-function _scaling!(y, λ::Number, x, α::Number, β::Number)
+Base.@propagate_inbounds function _scaling!(y, λ, x, α, β)
     if (iszero(α) || iszero(λ))
         iszero(β) && (fill!(y, zero(eltype(y))); return y)
         isone(β) && return y

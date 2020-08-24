@@ -21,18 +21,14 @@ function left_tester(L::LinearMap{T}) where {T}
     @test mul!(b2, y', L) ≈ mul!(bt, y', L)# ≈ mul!(bm, y', L)# 3-arg
     @test mul!(b2, y', L) === b2
     @test b1 ≈ b2 ≈ bt
-    b3 = copy(b2)
-    mul!(b3, y', L, α, β)
-    @test b3 ≈ b2*β + b1*α
+    @test mul!(copy(b2), y', L, α, β) ≈ b2*β + y'A*α
 
     b1 = transpose(y) * A
     b2 = similar(b1)
     bt = transpose(copy(transpose(b1)))
     @test mul!(b2, transpose(y), L) ≈ mul!(bt, transpose(y), L)
     @test b1 ≈ b2 ≈ bt
-    b3 = copy(b2)
-    mul!(b3, transpose(y), L, α, β)
-    @test b3 ≈ b2*β + b1*α
+    @test mul!(copy(b2), transpose(y), L, α, β) ≈ b2*β + transpose(y)*A*α
 
     Y = rand(T, M, 3)
     X = similar(Y, 3, N)
@@ -54,12 +50,16 @@ end
     L = LinearMap{T}(cumsum, reverse ∘ cumsum ∘ reverse, N)
 
     @test left_tester(L) # FunctionMap
+    @test left_tester(adjoint(L)) # AdjointMap
+    @test left_tester(transpose(L)) # TransposeMap
     @test left_tester(L'*L) # CompositeMap
-    @test left_tester(2L) # ScaledMap
+    @test left_tester(2rand(T)*L) # ScaledMap
     @test left_tester(kron(L, L')) # KroneckerMap
-    @test left_tester(2L + 3L') # LinearCombination
+    @test left_tester(2rand(T)*L + 3rand(T)*L') # LinearCombination
     @test left_tester([L L]) # BlockMap
 
-    W = LinearMap(randn(T,5,4))
-    @test left_tester(W) # WrappedMap
+    W = LinearMap(randn(T,5,4)) # WrappedMap
+    @test left_tester(W)
+    @test left_tester(W')
+    @test left_tester(transpose(W))
 end

@@ -60,9 +60,11 @@ for k in 1:8 # is 8 sufficient?
     L = :($(Symbol(:A,k))::LinearMap)
     args = ntuple(n->Symbol(:A,n), Val(k))
 
-    @eval Base.hcat($(Is...), $L, As::Union{LinearMap,UniformScaling}...) = _hcat($(args...), As...)
-    @eval Base.vcat($(Is...), $L, As::Union{LinearMap,UniformScaling}...) = _vcat($(args...), As...)
-    @eval Base.hvcat(rows::Tuple{Vararg{Int}}, $(Is...), $L, As::Union{LinearMap,UniformScaling}...) = _hvcat(rows, $(args...), As...)
+    @eval begin
+        Base.hcat($(Is...), $L, As::Union{LinearMap,UniformScaling}...) = _hcat($(args...), As...)
+        Base.vcat($(Is...), $L, As::Union{LinearMap,UniformScaling}...) = _vcat($(args...), As...)
+        Base.hvcat(rows::Tuple{Vararg{Int}}, $(Is...), $L, As::Union{LinearMap,UniformScaling}...) = _hvcat(rows, $(args...), As...)
+    end
 end
 
 ############
@@ -302,7 +304,7 @@ LinearAlgebra.adjoint(A::BlockMap)  = AdjointMap(A)
 # multiplication helper functions
 ############
 
-@inline function _blockmul!(y, A::BlockMap, x, α, β)
+Base.@propagate_inbounds function _blockmul!(y, A::BlockMap, x, α, β)
     if iszero(α)
         iszero(β) && return fill!(y, zero(eltype(y)))
         isone(β) && return y
@@ -311,10 +313,10 @@ LinearAlgebra.adjoint(A::BlockMap)  = AdjointMap(A)
     return __blockmul!(MulStyle(A), y, A, x, α, β)
 end
 
-@inline __blockmul!(::FiveArg, y, A, x, α, β)  = ___blockmul!(y, A, x, α, β, nothing)
-@inline __blockmul!(::ThreeArg, y, A, x, α, β) = ___blockmul!(y, A, x, α, β, similar(y))
+Base.@propagate_inbounds __blockmul!(::FiveArg, y, A, x, α, β)  = ___blockmul!(y, A, x, α, β, nothing)
+Base.@propagate_inbounds __blockmul!(::ThreeArg, y, A, x, α, β) = ___blockmul!(y, A, x, α, β, similar(y))
 
-function ___blockmul!(y, A, x, α, β, ::Nothing)
+Base.@propagate_inbounds function ___blockmul!(y, A, x, α, β, ::Nothing)
     maps, rows, yinds, xinds = A.maps, A.rows, A.rowranges, A.colranges
     mapind = 0
     @views for (row, yi) in zip(rows, yinds)
@@ -328,7 +330,7 @@ function ___blockmul!(y, A, x, α, β, ::Nothing)
     end
     return y
 end
-function ___blockmul!(y, A, x, α, β, z)
+Base.@propagate_inbounds function ___blockmul!(y, A, x, α, β, z)
     maps, rows, yinds, xinds = A.maps, A.rows, A.rowranges, A.colranges
     mapind = 0
     @views for (row, yi) in zip(rows, yinds)
@@ -349,7 +351,7 @@ function ___blockmul!(y, A, x, α, β, z)
     return y
 end
 
-@inline function _transblockmul!(y, A::BlockMap, x, α, β, transform)
+Base.@propagate_inbounds function _transblockmul!(y, A::BlockMap, x, α, β, transform)
     maps, rows, xinds, yinds = A.maps, A.rows, A.rowranges, A.colranges
     if iszero(α)
         iszero(β) && return fill!(y, zero(eltype(y)))
@@ -382,52 +384,37 @@ end
 # multiplication with vectors & matrices
 ############
 
-for Atype in (AbstractVector, AbstractMatrix)
-    @eval Base.@propagate_inbounds function LinearAlgebra.mul!(y::$Atype, A::BlockMap, x::$Atype)
-        require_one_based_indexing(y, x)
-        @boundscheck check_dim_mul(y, A, x)
-        return @inbounds _blockmul!(y, A, x, true, false)
-    end
-    @eval Base.@propagate_inbounds function LinearAlgebra.mul!(y::$Atype, A::BlockMap, x::$Atype,
-                        α::Number, β::Number)
-        require_one_based_indexing(y, x)
-        @boundscheck check_dim_mul(y, A, x)
-        return @inbounds _blockmul!(y, A, x, α, β)
+for (intype, outtype) in Any[Any[AbstractVector, AbstractVecOrMat], Any[AbstractMatrix, AbstractMatrix]]
+    @eval begin
+        Base.@propagate_inbounds function mul!(y::$outtype, A::BlockMap, x::$intype)
+            require_one_based_indexing(y, x)
+            @boundscheck check_dim_mul(y, A, x)
+            return @inbounds _blockmul!(y, A, x, true, false)
+        end
+        Base.@propagate_inbounds function mul!(y::$outtype, A::BlockMap, x::$intype,
+                            α::Number, β::Number)
+            require_one_based_indexing(y, x)
+            @boundscheck check_dim_mul(y, A, x)
+            return @inbounds _blockmul!(y, A, x, α, β)
+        end
     end
 
     for (maptype, transform) in ((:(TransposeMap{<:Any,<:BlockMap}), :transpose), (:(AdjointMap{<:Any,<:BlockMap}), :adjoint))
-        @eval Base.@propagate_inbounds function LinearAlgebra.mul!(y::$Atype, wrapA::$maptype, x::$Atype)
-            require_one_based_indexing(y, x)
-            @boundscheck check_dim_mul(y, wrapA, x)
-            return @inbounds _transblockmul!(y, wrapA.lmap, x, true, false, $transform)
-        end
-        @eval Base.@propagate_inbounds function LinearAlgebra.mul!(y::$Atype, wrapA::$maptype, x::$Atype,
-                        α::Number, β::Number)
-            require_one_based_indexing(y, x)
-            @boundscheck check_dim_mul(y, wrapA, x)
-            return @inbounds _transblockmul!(y, wrapA.lmap, x, α, β, $transform)
+        @eval begin
+            Base.@propagate_inbounds function mul!(y::$outtype, wrapA::$maptype, x::$intype)
+                require_one_based_indexing(y, x)
+                @boundscheck check_dim_mul(y, wrapA, x)
+                return @inbounds _transblockmul!(y, wrapA.lmap, x, true, false, $transform)
+            end
+            Base.@propagate_inbounds function mul!(y::$outtype, wrapA::$maptype, x::$intype,
+                            α::Number, β::Number)
+                require_one_based_indexing(y, x)
+                @boundscheck check_dim_mul(y, wrapA, x)
+                return @inbounds _transblockmul!(y, wrapA.lmap, x, α, β, $transform)
+            end
         end
     end
 end
-
-############
-# show methods
-############
-
-# block2string(b, s) = string(join(map(string, b), '×'), "-blocked ", Base.dims2string(s))
-# Base.summary(a::BlockMap) = string(block2string(nblocks(a), size(a)), " ", typeof(a))
-# # _show_typeof(io, a) = show(io, typeof(a))
-# function Base.summary(io::IO, a::AbstractBlockMap)
-#     print(io, block2string(nblocks(a), size(a)))
-#     print(io, ' ')
-#     _show_typeof(io, a)
-# end
-# function _show_typeof(io::IO, a::AbstractBlockMap{T}) where {T}
-#     Base.show_type_name(io, typeof(a).name)
-#     print(io, '{')
-#     show(io, T)
-#     print(io, '}')
-# end
 
 ############
 # BlockDiagonalMap
@@ -467,8 +454,10 @@ for k in 1:8 # is 8 sufficient?
     # yields (:LinearMap(A1), :LinearMap(A2), ..., :LinearMap(A(k-1)))
 
     @eval begin
-        SparseArrays.blockdiag($(Is...), $L, As::Union{LinearMap,AbstractMatrix}...) =
-            BlockDiagonalMap($(mapargs...), $(Symbol(:A,k)), convert_to_lmaps(As...)...)
+        function SparseArrays.blockdiag($(Is...), $L, As::Union{LinearMap,AbstractMatrix}...)
+            return BlockDiagonalMap($(mapargs...), $(Symbol(:A,k)), convert_to_lmaps(As...)...)
+        end
+
         function Base.cat($(Is...), $L, As::Union{LinearMap,AbstractMatrix}...; dims::Dims{2})
             if dims == (1,2)
                 return BlockDiagonalMap($(mapargs...), $(Symbol(:A,k)), convert_to_lmaps(As...)...)
@@ -490,17 +479,19 @@ LinearAlgebra.transpose(A::BlockDiagonalMap{T}) where {T} = BlockDiagonalMap{T}(
 
 Base.:(==)(A::BlockDiagonalMap, B::BlockDiagonalMap) = (eltype(A) == eltype(B) && A.maps == B.maps)
 
-for Atype in (AbstractVector, AbstractMatrix)
-    @eval Base.@propagate_inbounds function LinearAlgebra.mul!(y::$Atype, A::BlockDiagonalMap, x::$Atype)
-        require_one_based_indexing(y, x)
-        @boundscheck check_dim_mul(y, A, x)
-        return _blockscaling!(y, A, x, true, false)
-    end
-    @eval Base.@propagate_inbounds function LinearAlgebra.mul!(y::$Atype, A::BlockDiagonalMap, x::$Atype,
-                        α::Number, β::Number)
-        require_one_based_indexing(y, x)
-        @boundscheck check_dim_mul(y, A, x)
-        return _blockscaling!(y, A, x, α, β)
+for (intype, outtype) in Any[Any[AbstractVector, AbstractVecOrMat], Any[AbstractMatrix, AbstractMatrix]]
+    @eval begin
+        Base.@propagate_inbounds function mul!(y::$outtype, A::BlockDiagonalMap, x::$intype)
+            require_one_based_indexing(y, x)
+            @boundscheck check_dim_mul(y, A, x)
+            return _blockscaling!(y, A, x, true, false)
+        end
+        Base.@propagate_inbounds function mul!(y::$outtype, A::BlockDiagonalMap, x::$intype,
+                            α::Number, β::Number)
+            require_one_based_indexing(y, x)
+            @boundscheck check_dim_mul(y, A, x)
+            return _blockscaling!(y, A, x, α, β)
+        end
     end
 end
 
