@@ -484,21 +484,21 @@ for (intype, outtype) in Any[Any[AbstractVector, AbstractVecOrMat], Any[Abstract
         Base.@propagate_inbounds function mul!(y::$outtype, A::BlockDiagonalMap, x::$intype)
             require_one_based_indexing(y, x)
             @boundscheck check_dim_mul(y, A, x)
-            return _blockscaling!(y, A, x, true, false)
+            return @inbounds _blockscaling!(y, A, x, true, false)
         end
         Base.@propagate_inbounds function mul!(y::$outtype, A::BlockDiagonalMap, x::$intype,
                             α::Number, β::Number)
             require_one_based_indexing(y, x)
             @boundscheck check_dim_mul(y, A, x)
-            return _blockscaling!(y, A, x, α, β)
+            return @inbounds _blockscaling!(y, A, x, α, β)
         end
     end
 end
 
-@inline function _blockscaling!(y, A::BlockDiagonalMap, x, α, β)
+Base.@propagate_inbounds function _blockscaling!(y, A::BlockDiagonalMap, x, α, β)
     maps, yinds, xinds = A.maps, A.rowranges, A.colranges
     # TODO: think about multi-threading here
-    @views @inbounds for i in eachindex(yinds, maps, xinds)
+    @views for i in eachindex(yinds, maps, xinds)
         mul!(selectdim(y, 1, yinds[i]), maps[i], selectdim(x, 1, xinds[i]), α, β)
     end
     return y

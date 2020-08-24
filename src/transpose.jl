@@ -70,34 +70,38 @@ end
 for (intype, outtype) in Any[Any[AbstractVector, AbstractVecOrMat], Any[AbstractMatrix, AbstractMatrix]]
     @eval begin
         Base.@propagate_inbounds function mul!(y::$outtype, Ac::AdjointMap{<:Any,<:TransposeMap}, x::$intype)
+            @boundscheck check_dim_mul(y, Ac, x)
             A = Ac.lmap
-            return _conjmul!(y, A.lmap, x)
+            return @inbounds _conjmul!(y, A.lmap, x)
         end
         Base.@propagate_inbounds function mul!(y::$outtype, Ac::AdjointMap{<:Any,<:TransposeMap}, x::$intype, α::Number, β::Number)
+            @boundscheck check_dim_mul(y, Ac, x)
             A = Ac.lmap
-            return _conjmul!(y, A.lmap, x, α, β)
+            return @inbounds _conjmul!(y, A.lmap, x, α, β)
         end
         Base.@propagate_inbounds function mul!(y::$outtype, At::TransposeMap{<:Any,<:AdjointMap}, x::$intype)
+            @boundscheck check_dim_mul(y, At, x)
             A = At.lmap
-            isreal(A.lmap) ? mul!(y, A.lmap, x) : _conjmul!(y, A.lmap, x)
+            @inbounds isreal(A.lmap) ? mul!(y, A.lmap, x) : _conjmul!(y, A.lmap, x)
         end
         Base.@propagate_inbounds function mul!(y::$outtype, At::TransposeMap{<:Any,<:AdjointMap}, x::$intype, α::Number, β::Number)
+            @boundscheck check_dim_mul(y, At, x)
             A = At.lmap
-            return _conjmul!(y, A.lmap, x, α, β)
+            return @inbounds _conjmul!(y, A.lmap, x, α, β)
         end
     end
 end
 
 # multiplication helper function
-_conjmul!(y, A, x) = (mul!(y, A, conj(x)); conj!(y))
-function _conjmul!(y, A, x::AbstractVector, α, β)
+Base.@propagate_inbounds _conjmul!(y, A, x) = (mul!(y, A, conj(x)); conj!(y))
+Base.@propagate_inbounds function _conjmul!(y, A, x::AbstractVector, α, β)
     xca = rmul!(conj(x), conj(α))
     z = A*xca
     rmul!(y, β)
     y .+= conj.(z)
     return y
 end
-function _conjmul!(y, A, x::AbstractMatrix, α, β)
+Base.@propagate_inbounds function _conjmul!(y, A, x::AbstractMatrix, α, β)
     xca = rmul!(conj(x), conj(α))
     z = similar(y, size(A, 1), size(x, 2))
     mul!(z, A, xca)
