@@ -8,10 +8,6 @@ A Julia package for defining and working with linear maps, also known as linear
 transformations or linear operators acting on vectors. The only requirement for
 a LinearMap is that it can act on a vector (by multiplication) efficiently.
 
-## What's new in v2.8
-*   Left multiplying by a transpose or adjoint vector (e.g., `y'*A`)
-    produces a transpose or adjoint vector output, rather than a `LinearMap`.
-
 ## What's new in v2.7
 *   Potential reduction of memory allocations in multiplication of
     `LinearCombination`s, `BlockMap`s, and real- or complex-scaled `LinearMap`s.
