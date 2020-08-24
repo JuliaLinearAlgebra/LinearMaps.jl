@@ -138,12 +138,12 @@ Base.@propagate_inbounds function mul!(y::AbstractVector, At::TransposeMap{<:Any
         error("transpose not implemented for $A")
     end
 end
-Base.@propagate_inbounds function mul!(y::AbstractVector, A::TransposeMap{<:Any,<:FunctionMap}, x::AbstractVector, α::Number, β::Number)
+Base.@propagate_inbounds function mul!(y::AbstractVecOrMat, A::TransposeMap{<:Any,<:FunctionMap}, x::AbstractVector, α::Number, β::Number)
     @boundscheck check_dim_mul(y, A, x)
     return @inbounds _generic_mapvec_mul!(y, A, x, α, β)
 end
 
-Base.@propagate_inbounds function mul!(y::AbstractVector, Ac::AdjointMap{<:Any,<:FunctionMap}, x::AbstractVector)
+Base.@propagate_inbounds function mul!(y::AbstractVecOrMat, Ac::AdjointMap{<:Any,<:FunctionMap}, x::AbstractVector)
     @boundscheck check_dim_mul(y, Ac, x)
     A = Ac.lmap
     ishermitian(A) && return @inbounds mul!(y, A, x)
@@ -158,7 +158,7 @@ Base.@propagate_inbounds function mul!(y::AbstractVector, Ac::AdjointMap{<:Any,<
         error("adjoint not implemented for $A")
     end
 end
-Base.@propagate_inbounds function mul!(y::AbstractVector, A::AdjointMap{<:Any,<:FunctionMap}, x::AbstractVector, α::Number, β::Number)
+Base.@propagate_inbounds function mul!(y::AbstractVecOrMat, A::AdjointMap{<:Any,<:FunctionMap}, x::AbstractVector, α::Number, β::Number)
     @boundscheck check_dim_mul(y, A, x)
     return @inbounds _generic_mapvec_mul!(y, A, x, α, β)
 end
