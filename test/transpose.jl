@@ -16,8 +16,8 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
     @test @inferred transpose(M) * w == transpose(A) * w
     @test @inferred transpose(LinearMap(transpose(M))) * v == A * v
     @test @inferred LinearMap(M')' * v == A * v
-    @test @inferred transpose(transpose(M)) === M
-    @test (M')' === M
+    @test @inferred(transpose(transpose(M))) === M
+    @test @inferred(adjoint(adjoint(M))) === M
     Mherm = @inferred LinearMap(A'A)
     @test @inferred ishermitian(Mherm)
     @test @inferred !issymmetric(Mherm)
