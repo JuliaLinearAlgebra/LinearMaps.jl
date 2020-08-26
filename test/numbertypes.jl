@@ -24,7 +24,8 @@ using Test, LinearMaps, LinearAlgebra, Quaternions
     @test 3L * x ≈ 3A * x
     @test 3L' * x ≈ 3A' * x
     @test α * (3L * x) ≈ α * (3A * x)
-    @test α * 3L * x ≈ α * 3A * x
+    @test (@inferred α * 3L) * x ≈ α * 3A * x
+    @test (@inferred 3L * α) * x ≈ 3A * α * x
     @test (α * L') * x ≈ (α * A') * x
     @test (α * L')' * x ≈ (α * A')' * x
     @test (α * L')' * v ≈ (α * A')' * v

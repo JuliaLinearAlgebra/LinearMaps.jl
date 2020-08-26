@@ -89,7 +89,7 @@ LinearAlgebra.mul!(y::AbstractVector, A::Union{SimpleFunctionMap,SimpleComplexFu
     @test w == F * v
     @test_throws ErrorException F' * v
     @test_throws ErrorException transpose(F) * v
-    @test_throws ErrorException mul!(w, adjoint(F), v)
+    @test_throws ErrorException mul!(w, adjoint(FC), v)
     @test_throws ErrorException mul!(w, transpose(F), v)
     FM = convert(AbstractMatrix, F)
     L = LowerTriangular(ones(10, 10))
