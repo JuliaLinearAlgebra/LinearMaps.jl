@@ -1,20 +1,5 @@
 # What's new?
 
-### What's new in v3.0
-*   Internally, any dependence on former `A*_mul_B!` methods is abandonned.
-    For custom `LinearMap` subtypes, there are now two options:
-    1.  In case your type is invariant under adjoint/transposition (i.e.,
-        `adjoint(L::MyLinearMap)::MyLinearMap` similar to, for instance,
-        `LinearCombination`s or `CompositeMap`s, `At_mul_B!` and `Ac_mul_B!` do
-        not require any replacement! Rathern, multiplication by `L'` is, in this case,
-        handled by `mul!(y, L::MyLinearMap, x[, α, β])`.
-    2.  Otherwise, you will need to define `mul!` methods with the signature
-        `mul!(y, L::TransposeMap{<:Any,MyLinearMap}, x[, α, β])`.
-*   Left multiplying by a transpose or adjoint vector (e.g., `y'*A`)
-    produces a transpose or adjoint vector output, rather than a composite `LinearMap`.
-*   Introduction of more expressive and visually appealing `show` methods, replacing
-    the fallback to the generic `show`.
-
 ### What's new in v2.7
 *   Potential reduction of memory allocations in multiplication of
     `LinearCombination`s, `BlockMap`s, and real- or complex-scaled `LinearMap`s.
