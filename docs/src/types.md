@@ -50,9 +50,9 @@ constructed if `LinearMap` objects are multiplied by scalars from the left
 or from the right (respecting the order of multiplication), if the scalar `λ`
 is either real or complex.
 
-### `LinearCombination`. `CompositeMap`, `TransposeMap` and `AdjointMap`
+### `LinearCombination`, `CompositeMap`, `TransposeMap` and `AdjointMap`
 
-Used to add/multiply/transpose/adjoint `LinearMap` objects, don't need to be constructed explicitly.
+Used to add/multiply/transpose/adjoint `LinearMap` objects lazily, don't need to be constructed explicitly.
 
 ```@docs
 +(::LinearMap,::LinearMap)
@@ -72,7 +72,7 @@ kronsum
 LinearMaps.:⊕
 ```
 
-## `BlockMap` and `BlockDiagonalMap`
+### `BlockMap` and `BlockDiagonalMap`
 
 Types for representing block (diagonal) maps lazily.
 
@@ -98,28 +98,30 @@ Base.hvcat
 Applying the adjoint or transpose of `A` (if defined) to `x` works exactly
 as in the usual matrix case: `transpose(A) * x` and `mul!(y, A', x)`, for instance.
 
-### `Array(A::LinearMap)`, `Matrix(A::LinearMap)`, `convert(Matrix, A::LinearMap)` and `convert(Array, A::LinearMap)`
+### Conversion methods
 
-Create a dense matrix representation of the `LinearMap` object, by
-multiplying it with the successive basis vectors. This is mostly for testing
-purposes or if you want to have the explicit matrix representation of a
-linear map for which you only have a function definition (e.g. to be able to
-use its `transpose` or `adjoint`). This way, one may conveniently make `A`
-act on the columns of a matrix `X`, instead of interpreting `A * X` as a
-composed linear map: `Matrix(A * X)`. For generic code, that is supposed to
-handle both `A::AbstractMatrix` and `A::LinearMap`, it is recommended to use
-`convert(Matrix, A*X)`.
+*   `Array`, `Matrix` and associated `convert` methods
 
-### `convert(AbstractMatrix, A::LinearMap)`, `convert(AbstractArray, A::LinearMap)`
+    Create a dense matrix representation of the `LinearMap` object, by
+    multiplying it with the successive basis vectors. This is mostly for testing
+    purposes or if you want to have the explicit matrix representation of a
+    linear map for which you only have a function definition (e.g. to be able to
+    use its `transpose` or `adjoint`). This way, one may conveniently make `A`
+    act on the columns of a matrix `X`, instead of interpreting `A * X` as a
+    composed linear map: `Matrix(A * X)`. For generic code, that is supposed to
+    handle both `A::AbstractMatrix` and `A::LinearMap`, it is recommended to use
+    `convert(Matrix, A*X)`.
 
-Create an `AbstractMatrix` representation of the `LinearMap`. This falls
-back to `Matrix(A)`, but avoids explicit construction in case the `LinearMap`
-object is matrix-based.
+*   `convert(Abstract[Matrix/Array], A::LinearMap)`
 
-### `SparseArrays.sparse(A::LinearMap)` and `convert(SparseMatrixCSC, A::LinearMap)`
+    Create an `AbstractMatrix` representation of the `LinearMap`. This falls
+    back to `Matrix(A)`, but avoids explicit construction in case the `LinearMap`
+    object is matrix-based.
 
-Create a sparse matrix representation of the `LinearMap` object, by
-multiplying it with the successive basis vectors. This is mostly for testing
-purposes or if you want to have the explicit sparse matrix representation of
-a linear map for which you only have a function definition (e.g. to be able
-to use its `transpose` or `adjoint`).
+*   `SparseArrays.sparse(A::LinearMap)` and `convert(SparseMatrixCSC, A::LinearMap)`
+
+    Create a sparse matrix representation of the `LinearMap` object, by
+    multiplying it with the successive basis vectors. This is mostly for testing
+    purposes or if you want to have the explicit sparse matrix representation of
+    a linear map for which you only have a function definition (e.g. to be able
+    to use its `transpose` or `adjoint`).
