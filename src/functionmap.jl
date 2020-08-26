@@ -112,10 +112,6 @@ Base.@propagate_inbounds function mul!(y::AbstractVecOrMat, A::FunctionMap, x::A
     @inbounds ismutating(A) ? A.f(y, x) : copyto!(y, A.f(x))
     return y
 end
-Base.@propagate_inbounds function mul!(y::AbstractVecOrMat, A::FunctionMap, x::AbstractVector, α::Number, β::Number)
-    @boundscheck check_dim_mul(y, A, x)
-    return @inbounds _generic_mapvec_mul!(y, A, x, α, β)
-end
 
 Base.@propagate_inbounds function mul!(y::AbstractVecOrMat, At::TransposeMap{<:Any,<:FunctionMap}, x::AbstractVector)
     @boundscheck check_dim_mul(y, At, x)
@@ -138,10 +134,6 @@ Base.@propagate_inbounds function mul!(y::AbstractVecOrMat, At::TransposeMap{<:A
         error("transpose not implemented for $A")
     end
 end
-Base.@propagate_inbounds function mul!(y::AbstractVecOrMat, A::TransposeMap{<:Any,<:FunctionMap}, x::AbstractVector, α::Number, β::Number)
-    @boundscheck check_dim_mul(y, A, x)
-    return @inbounds _generic_mapvec_mul!(y, A, x, α, β)
-end
 
 Base.@propagate_inbounds function mul!(y::AbstractVecOrMat, Ac::AdjointMap{<:Any,<:FunctionMap}, x::AbstractVector)
     @boundscheck check_dim_mul(y, Ac, x)
@@ -157,8 +149,4 @@ Base.@propagate_inbounds function mul!(y::AbstractVecOrMat, Ac::AdjointMap{<:Any
     else
         error("adjoint not implemented for $A")
     end
-end
-Base.@propagate_inbounds function mul!(y::AbstractVecOrMat, A::AdjointMap{<:Any,<:FunctionMap}, x::AbstractVector, α::Number, β::Number)
-    @boundscheck check_dim_mul(y, A, x)
-    return @inbounds _generic_mapvec_mul!(y, A, x, α, β)
 end

@@ -17,8 +17,8 @@ function left_tester(L::LinearMap{T}) where {T}
     b1 = y' * A
     b2 = similar(b1)
     bt = copy(b1')'
-    # bm = Matrix(bt) # TODO: this requires a generalization of the output to AbstractVecOrMat
-    @test mul!(b2, y', L) ≈ mul!(bt, y', L)# ≈ mul!(bm, y', L)# 3-arg
+    bm = Matrix(bt)
+    @test mul!(b2, y', L) ≈ mul!(bt, y', L) ≈ mul!(bm, y', L)
     @test mul!(b2, y', L) === b2
     @test b1 ≈ b2 ≈ bt
     @test mul!(copy(b2), y', L, α, β) ≈ b2*β + y'A*α
@@ -41,7 +41,7 @@ function left_tester(L::LinearMap{T}) where {T}
     @test mul!(X, Y', L) === X
     @test mul!(X, Y', L, α, β) === X
 
-    true
+    return true
 end
 
 @testset "left multiplication" begin

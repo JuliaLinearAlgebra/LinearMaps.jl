@@ -56,6 +56,8 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
 
     CS = @inferred LinearMap{ComplexF64}(cumsum, x -> reverse(cumsum(reverse(x))), 10; ismutating=false)
     for transform in (adjoint, transpose)
+        @test transform(CS) != CS
+        @test CS != transform(CS)
         @test transform(transform(CS)) == CS
         @test LinearMaps.MulStyle(transform(CS)) === LinearMaps.MulStyle(CS)
     end
