@@ -13,13 +13,13 @@ Base.:(*)(y::LinearAlgebra.TransposeAbsVec, A::LinearMap) = transpose(transpose(
 # multiplication with vector/matrix
 for Atype in (LinearAlgebra.AdjointAbsVec, Adjoint{<:Any,<:AbstractMatrix})
     @eval begin
-        Base.@propagate_inbounds function mul!(x::AbstractMatrix, y::$Atype, A::LinearMap)
+        @propagate_inbounds function mul!(x::AbstractMatrix, y::$Atype, A::LinearMap)
             @boundscheck check_dim_mul(x, y, A)
             @inbounds mul!(x', A', y')
             return x
         end
 
-        Base.@propagate_inbounds function mul!(x::AbstractMatrix, y::$Atype, A::LinearMap,
+        @propagate_inbounds function mul!(x::AbstractMatrix, y::$Atype, A::LinearMap,
                 α::Number, β::Number)
             @boundscheck check_dim_mul(x, y, A)
             @inbounds mul!(x', conj(α)*A', y', true, conj(β))
@@ -29,13 +29,13 @@ for Atype in (LinearAlgebra.AdjointAbsVec, Adjoint{<:Any,<:AbstractMatrix})
 end
 for Atype in (LinearAlgebra.TransposeAbsVec, Transpose{<:Any,<:AbstractMatrix})
     @eval begin
-        Base.@propagate_inbounds function mul!(x::AbstractMatrix, y::$Atype, A::LinearMap)
+        @propagate_inbounds function mul!(x::AbstractMatrix, y::$Atype, A::LinearMap)
             @boundscheck check_dim_mul(x, y, A)
             @inbounds mul!(transpose(x), transpose(A), transpose(y))
             return x
         end
 
-        Base.@propagate_inbounds function mul!(x::AbstractMatrix, y::$Atype, A::LinearMap,
+        @propagate_inbounds function mul!(x::AbstractMatrix, y::$Atype, A::LinearMap,
                 α::Number, β::Number)
             @boundscheck check_dim_mul(x, y, A)
             @inbounds mul!(transpose(x), α*transpose(A), transpose(y), true, β)

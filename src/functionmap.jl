@@ -107,13 +107,13 @@ function Base.:(*)(A::TransposeMap{<:Any,<:FunctionMap}, x::AbstractVector)
     end
 end
 
-Base.@propagate_inbounds function mul!(y::AbstractVecOrMat, A::FunctionMap, x::AbstractVector)
+@propagate_inbounds function mul!(y::AbstractVecOrMat, A::FunctionMap, x::AbstractVector)
     @boundscheck check_dim_mul(y, A, x)
     @inbounds ismutating(A) ? A.f(y, x) : copyto!(y, A.f(x))
     return y
 end
 
-Base.@propagate_inbounds function mul!(y::AbstractVecOrMat, At::TransposeMap{<:Any,<:FunctionMap}, x::AbstractVector)
+@propagate_inbounds function mul!(y::AbstractVecOrMat, At::TransposeMap{<:Any,<:FunctionMap}, x::AbstractVector)
     @boundscheck check_dim_mul(y, At, x)
     A = At.lmap
     (issymmetric(A) || (isreal(A) && ishermitian(A))) && return @inbounds mul!(y, A, x)
@@ -135,7 +135,7 @@ Base.@propagate_inbounds function mul!(y::AbstractVecOrMat, At::TransposeMap{<:A
     end
 end
 
-Base.@propagate_inbounds function mul!(y::AbstractVecOrMat, Ac::AdjointMap{<:Any,<:FunctionMap}, x::AbstractVector)
+@propagate_inbounds function mul!(y::AbstractVecOrMat, Ac::AdjointMap{<:Any,<:FunctionMap}, x::AbstractVector)
     @boundscheck check_dim_mul(y, Ac, x)
     A = Ac.lmap
     ishermitian(A) && return @inbounds mul!(y, A, x)

@@ -3,6 +3,7 @@ module LinearMaps
 export LinearMap
 export ⊗, kronsum, ⊕
 
+import Base: @propagate_inbounds
 using LinearAlgebra
 import LinearAlgebra: mul!
 using SparseArrays
@@ -73,12 +74,12 @@ function Base.:(*)(A::LinearMap, x::AbstractVector)
     return @inbounds mul!(similar(x, promote_type(eltype(A), eltype(x)), size(A, 1)), A, x)
 end
 
-Base.@propagate_inbounds function mul!(y::AbstractVecOrMat, A::LinearMap, x::AbstractVector, α::Number, β::Number)
+@propagate_inbounds function mul!(y::AbstractVecOrMat, A::LinearMap, x::AbstractVector, α::Number, β::Number)
     @boundscheck check_dim_mul(y, A, x)
     return @inbounds _generic_mapvec_mul!(y, A, x, α, β)
 end
 
-Base.@propagate_inbounds function _generic_mapvec_mul!(y::AbstractVecOrMat, A::LinearMap, x::AbstractVector, α::Number, β::Number)
+@propagate_inbounds function _generic_mapvec_mul!(y::AbstractVecOrMat, A::LinearMap, x::AbstractVector, α::Number, β::Number)
     if isone(α)
         iszero(β) && (mul!(y, A, x); return y)
         isone(β) && (y .+= A * x; return y)
@@ -105,16 +106,16 @@ Base.@propagate_inbounds function _generic_mapvec_mul!(y::AbstractVecOrMat, A::L
 end
 
 # the following is of interest in, e.g., subspace-iteration methods
-Base.@propagate_inbounds function mul!(Y::AbstractMatrix, A::LinearMap, X::AbstractMatrix)
+@propagate_inbounds function mul!(Y::AbstractMatrix, A::LinearMap, X::AbstractMatrix)
     @boundscheck check_dim_mul(Y, A, X)
     return @inbounds _generic_mapmat_mul!(Y, A, X)
 end
-Base.@propagate_inbounds function mul!(Y::AbstractMatrix, A::LinearMap, X::AbstractMatrix, α::Number, β::Number)
+@propagate_inbounds function mul!(Y::AbstractMatrix, A::LinearMap, X::AbstractMatrix, α::Number, β::Number)
     @boundscheck check_dim_mul(Y, A, X)
     return @inbounds _generic_mapmat_mul!(Y, A, X, α, β)
 end
 
-Base.@propagate_inbounds function _generic_mapmat_mul!(Y, A, X)
+@propagate_inbounds function _generic_mapmat_mul!(Y, A, X)
     @views for i in 1:size(X, 2)
         mul!(Y[:, i], A, X[:, i])
     end
@@ -124,7 +125,7 @@ Base.@propagate_inbounds function _generic_mapmat_mul!(Y, A, X)
     # end
     return Y
 end
-Base.@propagate_inbounds function _generic_mapmat_mul!(Y, A, X, α, β)
+@propagate_inbounds function _generic_mapmat_mul!(Y, A, X, α, β)
     @views for i in 1:size(X, 2)
         mul!(Y[:, i], A, X[:, i], α, β)
     end

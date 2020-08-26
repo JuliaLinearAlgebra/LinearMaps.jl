@@ -66,14 +66,14 @@ LinearAlgebra.adjoint(A::LinearCombination)   = LinearCombination{eltype(A)}(map
 # multiplication with vectors & matrices
 for (intype, outtype) in Any[Any[AbstractVector, AbstractVecOrMat], Any[AbstractMatrix, AbstractMatrix]]
     @eval begin
-        Base.@propagate_inbounds function mul!(y::$outtype, A::LinearCombination, x::$intype)
+        @propagate_inbounds function mul!(y::$outtype, A::LinearCombination, x::$intype)
             @boundscheck check_dim_mul(y, A, x)
             @inbounds mul!(y, first(A.maps), x)
             @inbounds _mul!(MulStyle(A), y, A, x, true)
             return y
         end
 
-        Base.@propagate_inbounds function mul!(y::$outtype, A::LinearCombination, x::$intype,
+        @propagate_inbounds function mul!(y::$outtype, A::LinearCombination, x::$intype,
                                 α::Number, β::Number)
             @boundscheck check_dim_mul(y, A, x)
             @inbounds if iszero(α) # trivial cases
@@ -101,20 +101,20 @@ for (intype, outtype) in Any[Any[AbstractVector, AbstractVecOrMat], Any[Abstract
     end
 end
 
-Base.@propagate_inbounds function _mul!(::FiveArg, y, A::LinearCombination, x, α::Number)
+@propagate_inbounds function _mul!(::FiveArg, y, A::LinearCombination, x, α::Number)
     return __mul!(y, Base.tail(A.maps), x, α, nothing)
 end
-Base.@propagate_inbounds function _mul!(::ThreeArg, y, A::LinearCombination, x, α::Number)
+@propagate_inbounds function _mul!(::ThreeArg, y, A::LinearCombination, x, α::Number)
     return __mul!(y, Base.tail(A.maps), x, α, similar(y))
 end
 
-Base.@propagate_inbounds __mul!(y, As::Tuple{Vararg{LinearMap}}, x, α, z) =
+@propagate_inbounds __mul!(y, As::Tuple{Vararg{LinearMap}}, x, α, z) =
     __mul!(__mul!(y, first(As), x, α, z), Base.tail(As), x, α, z)
-Base.@propagate_inbounds __mul!(y, A::Tuple{LinearMap}, x, α, z) = __mul!(y, first(A), x, α, z)
-Base.@propagate_inbounds __mul!(y, A::LinearMap, x, α, z) = muladd!(MulStyle(A), y, A, x, α, z)
+@propagate_inbounds __mul!(y, A::Tuple{LinearMap}, x, α, z) = __mul!(y, first(A), x, α, z)
+@propagate_inbounds __mul!(y, A::LinearMap, x, α, z) = muladd!(MulStyle(A), y, A, x, α, z)
 
-Base.@propagate_inbounds muladd!(::FiveArg, y, A, x, α, _) = mul!(y, A, x, α, true)
-Base.@propagate_inbounds function muladd!(::ThreeArg, y, A, x, α, z)
+@propagate_inbounds muladd!(::FiveArg, y, A, x, α, _) = mul!(y, A, x, α, true)
+@propagate_inbounds function muladd!(::ThreeArg, y, A, x, α, z)
     mul!(z, A, x)
     if isone(α)
         y .+= z

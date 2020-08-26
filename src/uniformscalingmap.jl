@@ -43,12 +43,12 @@ Base.:(*)(A::UniformScalingMap, x::AbstractVector) =
 # multiplication with vector/matrix
 for (intype, outtype) in Any[Any[AbstractVector, AbstractVecOrMat], Any[AbstractMatrix, AbstractMatrix]]
     @eval begin
-        Base.@propagate_inbounds function mul!(y::$outtype, J::UniformScalingMap, x::$intype)
+        @propagate_inbounds function mul!(y::$outtype, J::UniformScalingMap, x::$intype)
             @boundscheck check_dim_mul(y, J, x)
             @inbounds _scaling!(y, J.λ, x, true, false)
             return y
         end
-        Base.@propagate_inbounds function mul!(y::$outtype, J::UniformScalingMap, x::$intype,
+        @propagate_inbounds function mul!(y::$outtype, J::UniformScalingMap, x::$intype,
                     α::Number, β::Number)
             @boundscheck check_dim_mul(y, J, x)
             @inbounds _scaling!(y, J.λ, x, α, β)
@@ -57,7 +57,7 @@ for (intype, outtype) in Any[Any[AbstractVector, AbstractVecOrMat], Any[Abstract
     end
 end
 
-Base.@propagate_inbounds function _scaling!(y, λ, x, α, β)
+@propagate_inbounds function _scaling!(y, λ, x, α, β)
     if (iszero(α) || iszero(λ))
         iszero(β) && (fill!(y, zero(eltype(y))); return y)
         isone(β) && return y

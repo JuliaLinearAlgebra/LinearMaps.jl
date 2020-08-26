@@ -131,7 +131,7 @@ end
 # multiplication with vectors
 #################
 
-Base.@propagate_inbounds function mul!(y::AbstractVecOrMat, L::KroneckerMap{T,<:NTuple{2,LinearMap}}, x::AbstractVector) where {T}
+@propagate_inbounds function mul!(y::AbstractVecOrMat, L::KroneckerMap{T,<:NTuple{2,LinearMap}}, x::AbstractVector) where {T}
     require_one_based_indexing(y)
     @boundscheck check_dim_mul(y, L, x)
     A, B = L.maps
@@ -139,7 +139,7 @@ Base.@propagate_inbounds function mul!(y::AbstractVecOrMat, L::KroneckerMap{T,<:
     _kronmul!(y, B, X, transpose(A), T)
     return y
 end
-Base.@propagate_inbounds function mul!(y::AbstractVecOrMat, L::KroneckerMap{T}, x::AbstractVector) where {T}
+@propagate_inbounds function mul!(y::AbstractVecOrMat, L::KroneckerMap{T}, x::AbstractVector) where {T}
     require_one_based_indexing(y)
     @boundscheck check_dim_mul(y, L, x)
     A = first(L.maps)
@@ -150,7 +150,7 @@ Base.@propagate_inbounds function mul!(y::AbstractVecOrMat, L::KroneckerMap{T}, 
 end
 # mixed-product rule, prefer the right if possible
 # (A₁ ⊗ A₂ ⊗ ... ⊗ Aᵣ) * (B₁ ⊗ B₂ ⊗ ... ⊗ Bᵣ) = (A₁B₁) ⊗ (A₂B₂) ⊗ ... ⊗ (AᵣBᵣ)
-Base.@propagate_inbounds function mul!(y::AbstractVecOrMat, L::CompositeMap{<:Any,<:Tuple{KroneckerMap,KroneckerMap}}, x::AbstractVector)
+@propagate_inbounds function mul!(y::AbstractVecOrMat, L::CompositeMap{<:Any,<:Tuple{KroneckerMap,KroneckerMap}}, x::AbstractVector)
     require_one_based_indexing(y)
     @boundscheck check_dim_mul(y, L, x)
     B, A = L.maps
@@ -163,7 +163,7 @@ Base.@propagate_inbounds function mul!(y::AbstractVecOrMat, L::CompositeMap{<:An
 end
 # mixed-product rule, prefer the right if possible
 # (A₁ ⊗ B₁)*(A₂⊗B₂)*...*(Aᵣ⊗Bᵣ) = (A₁*A₂*...*Aᵣ) ⊗ (B₁*B₂*...*Bᵣ)
-Base.@propagate_inbounds function mul!(y::AbstractVecOrMat, L::CompositeMap{T,<:Tuple{Vararg{KroneckerMap{<:Any,<:Tuple{LinearMap,LinearMap}}}}}, x::AbstractVector) where {T}
+@propagate_inbounds function mul!(y::AbstractVecOrMat, L::CompositeMap{T,<:Tuple{Vararg{KroneckerMap{<:Any,<:Tuple{LinearMap,LinearMap}}}}}, x::AbstractVector) where {T}
     require_one_based_indexing(y)
     @boundscheck check_dim_mul(y, L, x)
     As = map(AB -> AB.maps[1], L.maps)
@@ -261,7 +261,7 @@ LinearAlgebra.transpose(A::KroneckerSumMap{T}) where {T} = KroneckerSumMap{T}(ma
 
 Base.:(==)(A::KroneckerSumMap, B::KroneckerSumMap) = (eltype(A) == eltype(B) && A.maps == B.maps)
 
-Base.@propagate_inbounds function mul!(y::AbstractVecOrMat, L::KroneckerSumMap, x::AbstractVector)
+@propagate_inbounds function mul!(y::AbstractVecOrMat, L::KroneckerSumMap, x::AbstractVector)
     @boundscheck check_dim_mul(y, L, x)
     A, B = L.maps
     ma, na = size(A)
