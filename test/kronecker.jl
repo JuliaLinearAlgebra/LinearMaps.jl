@@ -67,6 +67,7 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
             LA = LinearMap(A)
             LB = LinearMap(B)
             KS = @inferred kronsum(LA, B)
+            @test_throws ArgumentError kronsum(LA, [B B]) # non-square map
             KSmat = kron(A, Matrix(I, 2, 2)) + kron(Matrix(I, 3, 3), B)
             @test Matrix(KS) ≈ Matrix(kron(A, LinearMap(I, 2)) + kron(LinearMap(I, 3), B))
             @test size(KS) == size(kron(A, Matrix(I, 2, 2)))

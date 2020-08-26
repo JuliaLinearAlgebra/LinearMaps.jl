@@ -24,6 +24,7 @@ using Test, LinearMaps, LinearAlgebra, BenchmarkTools
     A = randn(3,3)
     B = LinearMap(A) + LinearMap(A)'
     C = LinearMap(copy(A)) + LinearMap(copy(A))'
+    @test_throws DimensionMismatch A + CS!
     @test B == C
 
     A = 2 * rand(ComplexF64, (10, 10)) .- 1
