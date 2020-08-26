@@ -1,6 +1,6 @@
 # What's new?
 
-## What's new in v3.0
+### What's new in v3.0
 *   Internally, any dependence on former `A*_mul_B!` methods is abandonned.
     For custom `LinearMap` subtypes, there are now two options:
     1.  In case your type is invariant under adjoint/transposition (i.e.,
@@ -15,7 +15,7 @@
 *   Introduction of more expressive and visually appealing `show` methods, replacing
     the fallback to the generic `show`.
 
-## What's new in v2.7
+### What's new in v2.7
 *   Potential reduction of memory allocations in multiplication of
     `LinearCombination`s, `BlockMap`s, and real- or complex-scaled `LinearMap`s.
     For the latter, a new internal type `ScaledMap` has been introduced.
@@ -23,32 +23,32 @@
     provide memory for storage of intermediate results by directly calling helper
     functions.
 
-## What's new in v2.6
+### What's new in v2.6
 *   New feature: "lazy" Kronecker product, Kronecker sums, and powers thereof
     for `LinearMap`s. `AbstractMatrix` objects are promoted to `LinearMap`s if
     one of the first 8 Kronecker factors is a `LinearMap` object.
 *   Compatibility with the generic multiply-and-add interface (a.k.a. 5-arg
     `mul!`) introduced in julia v1.3
 
-## What's new in v2.5
+### What's new in v2.5
 *   New feature: concatenation of `LinearMap`s objects with `UniformScaling`s,
     consistent with (h-, v-, and hc-)concatenation of matrices. Note, matrices
     `A` must be wrapped as `LinearMap(A)`, `UniformScaling`s are promoted to
     `LinearMap`s automatically.
 
-## What's new in v2.4
+### What's new in v2.4
 *   Support restricted to Julia v1.0+.
 
-## What's new in v2.3
+### What's new in v2.3
 *   Fully Julia v0.7/v1.0/v1.1 compatible.
 *   Full support of noncommutative number types such as quaternions.
 
-## What's new in v2.2
+### What's new in v2.2
 *   Fully Julia v0.7/v1.0 compatible.
 *   A `convert(SparseMatrixCSC, A::LinearMap)` function, that calls the `sparse`
     matrix generating function.
 
-## What's new in v2.1
+### What's new in v2.1
 *   Fully Julia v0.7 compatible; dropped compatibility for previous versions of
     Julia from LinearMaps.jl v2.0.0 on.
 *   A 5-argument version for `mul!(y, A::LinearMap, x, α=1, β=0)`, which

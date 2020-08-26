@@ -85,13 +85,13 @@ Base.:(/)(A::LinearMap, α::Number) = A * inv(α)
 
 # composition of linear maps
 """
-    *(A::LinearMap, B::LinearMap)
+    *(A::LinearMap, B::LinearMap)::CompositeMap
 
-Construct a `CompositeMap <: LinearMap`, a (lazy) representation of the product
-of the two operators. Products of `LinearMap`/`CompositeMap` objects and
-`LinearMap`/`CompositeMap` objects are reduced to a single `CompositeMap`.
-In products of `LinearMap`s and `AbstractMatrix`/`UniformScaling` objects, the
-latter get promoted to `LinearMap`s automatically.
+Construct a (lazy) representation of the product of the two operators.
+Products of `LinearMap`/`CompositeMap` objects and `LinearMap`/`CompositeMap`
+objects are reduced to a single `CompositeMap`. In products of `LinearMap`s and
+`AbstractMatrix`/`UniformScaling` objects, the latter get promoted to `LinearMap`s
+automatically.
 
 # Examples
 ```jldoctest; setup=(using LinearAlgebra, LinearMaps)

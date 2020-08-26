@@ -11,9 +11,26 @@ MulStyle(A::Union{TransposeMap,AdjointMap}) = MulStyle(A.lmap)
 LinearAlgebra.transpose(A::TransposeMap) = A.lmap
 LinearAlgebra.adjoint(A::AdjointMap) = A.lmap
 
+"""
+    transpose(A::LinearMap)
+
+Constructs a lazy representation of the transpose of `A`. This can be either a
+`TransposeMap` wrapper of `A`, or a suitably redefined instance of the same type
+as `A`. For instance, for a linear combination of linear maps ``A + B``, the transpose
+is given by ``A^⊤ + B^⊤``, i.e., another linear combination of linear maps.
+"""
 LinearAlgebra.transpose(A::LinearMap) = TransposeMap(A)
-LinearAlgebra.adjoint(A::LinearMap{<:Real}) = transpose(A)
+
+"""
+    adjoint(A::LinearMap)
+
+Constructs a lazy representation of the adjoint of `A`. This can be either a
+`AdjointMap` wrapper of `A`, or a suitably redefined instance of the same type
+as `A`. For instance, for a linear combination of linear maps ``A + B``, the adjoint
+is given by ``A^* + B^*``, i.e., another linear combination of linear maps.
+"""
 LinearAlgebra.adjoint(A::LinearMap) = AdjointMap(A)
+LinearAlgebra.adjoint(A::LinearMap{<:Real}) = transpose(A)
 
 # properties
 Base.size(A::Union{TransposeMap, AdjointMap}) = reverse(size(A.lmap))

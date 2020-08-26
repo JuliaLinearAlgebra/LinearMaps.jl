@@ -10,9 +10,9 @@ makedocs(
     pages = Any[
         "Home" => "index.md",
         "Version history" => "history.md",
-        "Methods" => "methods.md",
-        "Types" => "types.md",
-        "Custom maps" => "custom.md"
+        "Types and methods" => "types.md",
+        "Custom maps" => "custom.md",
+        "Related packages" => "related.md"
     ]
 )
 
