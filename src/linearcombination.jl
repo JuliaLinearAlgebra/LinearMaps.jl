@@ -101,10 +101,10 @@ for (intype, outtype) in Any[Any[AbstractVector, AbstractVecOrMat], Any[Abstract
     end
 end
 
-@propagate_inbounds function _mul!(::FiveArg, y, A::LinearCombination, x, α::Number)
+@propagate_inbounds function _mul!(::FiveArg, y, A::LinearCombination, x, α)
     return __mul!(y, Base.tail(A.maps), x, α, nothing)
 end
-@propagate_inbounds function _mul!(::ThreeArg, y, A::LinearCombination, x, α::Number)
+@propagate_inbounds function _mul!(::ThreeArg, y, A::LinearCombination, x, α)
     return __mul!(y, Base.tail(A.maps), x, α, similar(y))
 end
 
