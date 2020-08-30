@@ -86,14 +86,12 @@ Base.hvcat
 
 ### Multiplication methods
 
-* `A * x`: applies `A` to `x` and returns the result;
-* `mul!(y::AbstractVector, A::LinearMap, x::AbstractVector)`: applies `A` to
-    `x` and stores the result in `y`;
-* `mul!(Y::AbstractMatrix, A::LinearMap, X::AbstractMatrix)`: applies `A` to
-    each column of `X` and stores the results in the corresponding columns of
-    `Y`;
-* `mul!(y::AbstractVector, A::LinearMap, x::AbstractVector, α::Number, β::Number)`:
-    computes `A * x * α + y * β` and stores the result in `y`. Analogously for `X,Y::AbstractMatrix`.
+```@docs
+*(::LinearMap,::AbstractVector)
+LinearAlgebra.mul!(::AbstractVector,::LinearMap,::AbstractVector)
+LinearAlgebra.mul!(::AbstractVector,::LinearMap,::AbstractVector,::Number,::Number)
+*(::LinearAlgebra.AdjointAbsVec,::LinearMap)
+```
 
 Applying the adjoint or transpose of `A` (if defined) to `x` works exactly
 as in the usual matrix case: `transpose(A) * x` and `mul!(y, A', x)`, for instance.
