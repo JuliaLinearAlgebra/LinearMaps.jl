@@ -26,6 +26,10 @@ there exist further related packages in the Julia ecosystem:
 
 *   [`Kronecker.jl`](https://github.com/MichielStock/Kronecker.jl)
 
-Since these packages provide types that are subtypes of Julia `Base`'s `AbstractArray` type,
+Since these packages provide types that are subtypes of Julia `Base`'s `AbstractMatrix` type,
 objects of those types can be wrapped by a `LinearMap` and freely mixed with, for instance,
-function-based linear maps.
+function-based linear maps. The same applies to custom matrix types as provided, for instance,
+by packages maintained by the [`JuliaArrays`](https://github.com/JuliaArrays) github organization.
+For any `CustomMatrix{T} <: AbstractMatrix{T}` type, you only need to provide a
+`mul!(::AbstractVecOrMat, ::CustomMatrix, ::AbstractVector[, ::Number, ::Number])` method for
+seamless integration with `LinearMaps.jl`.
