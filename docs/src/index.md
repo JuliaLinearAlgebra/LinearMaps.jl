@@ -35,7 +35,7 @@ The `LinearMap` type and corresponding methods combine well with the following p
 * [KrylovKit.jl](https://github.com/Jutho/KrylovKit.jl): Krylov-based algorithms for linear problems, singular value and eigenvalue problems
 * [TSVD.jl](https://github.com/andreasnoack/TSVD.jl): truncated SVD `tsvd`.
 
-```
+```julia
 using LinearMaps
 import Arpack, IterativeSolvers, KrylovKit, TSVD
 
