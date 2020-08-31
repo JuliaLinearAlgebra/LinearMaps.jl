@@ -7,6 +7,7 @@ The following open-source packages provide similar or even extended functionalit
     which seems to have heavily inspired the Julia package
     [`LinearOperators.jl`](https://github.com/JuliaSmoothOptimizers/LinearOperators.jl)
     and the Python package [`PyLops`](https://github.com/equinor/pylops)
+
 *   [`fastmat`: fast linear transforms in Python](https://pypi.org/project/fastmat/)
 
 *   [`FunctionOperators.jl`](https://github.com/hakkelt/FunctionOperators.jl)

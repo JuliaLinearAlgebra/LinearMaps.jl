@@ -15,7 +15,7 @@ in package mode, to be entered by typing `]` in the Julia REPL.
 Let
 
     A = LinearMap(rand(10, 10))
-    B = LinearMap(cumsum, reverse∘cumsum∘reverse, 10)`
+    B = LinearMap(cumsum, reverse∘cumsum∘reverse, 10)
     
 be a matrix- and function-based linear map, respectively. Then the following code just works,
 indistinguishably from the case when `A` and `B` are both `AbstractMatrix`-typed objects.
