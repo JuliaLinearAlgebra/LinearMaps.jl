@@ -197,7 +197,7 @@ include("kronecker.jl") # Kronecker product of linear maps
 include("conversion.jl") # conversion of linear maps to matrices
 
 """
-    LinearMap(A::LinearMap,AbstractMatrix}; kwargs...)::WrappedMap
+    LinearMap(A::LinearMap; kwargs...)::WrappedMap
     LinearMap(A::AbstractMatrix; kwargs...)::WrappedMap
     LinearMap(J::UniformScaling, M::Int)::UniformScalingMap
     LinearMap{T=Float64}(f, [fc,], M::Int, N::Int = M; kwargs...)::FunctionMap

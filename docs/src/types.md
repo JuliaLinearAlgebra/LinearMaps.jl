@@ -4,7 +4,7 @@
 
 None of the types below need to be constructed directly; they arise from
 performing operations between `LinearMap` objects or by calling the `LinearMap`
-constructor described in [Methods](@ref).
+constructor described next.
 
 ### `LinearMap`
 
@@ -80,6 +80,8 @@ Types for representing block (diagonal) maps lazily.
 Base.hcat
 Base.vcat
 Base.hvcat
+Base.cat
+SparseArrays.blockdiag
 ```
 
 ## Methods

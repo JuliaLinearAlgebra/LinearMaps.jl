@@ -14,7 +14,7 @@ LinearAlgebra.adjoint(A::AdjointMap) = A.lmap
 """
     transpose(A::LinearMap)
 
-Constructs a lazy representation of the transpose of `A`. This can be either a
+Construct a lazy representation of the transpose of `A`. This can be either a
 `TransposeMap` wrapper of `A`, or a suitably redefined instance of the same type
 as `A`. For instance, for a linear combination of linear maps ``A + B``, the transpose
 is given by ``A^⊤ + B^⊤``, i.e., another linear combination of linear maps.
@@ -24,7 +24,7 @@ LinearAlgebra.transpose(A::LinearMap) = TransposeMap(A)
 """
     adjoint(A::LinearMap)
 
-Constructs a lazy representation of the adjoint of `A`. This can be either a
+Construct a lazy representation of the adjoint of `A`. This can be either a
 `AdjointMap` wrapper of `A`, or a suitably redefined instance of the same type
 as `A`. For instance, for a linear combination of linear maps ``A + B``, the adjoint
 is given by ``A^* + B^*``, i.e., another linear combination of linear maps.
