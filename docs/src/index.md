@@ -6,7 +6,7 @@
 
 `LinearMaps.jl` is a registered package and can be installed via
 
-    (@v1.x) pkg> add LinearMaps
+    pkg> add LinearMaps
 
 in package mode, to be entered by typing `]` in the Julia REPL.
 
