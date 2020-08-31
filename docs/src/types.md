@@ -87,7 +87,8 @@ Base.hvcat
 ### Multiplication methods
 
 ```@docs
-*(::LinearMap,::AbstractVector)
+Base.:*(::LinearMap,::AbstractVector)
+Base.:*(::LinearMap,::AbstractMatrix)
 LinearAlgebra.mul!(::AbstractVector,::LinearMap,::AbstractVector)
 LinearAlgebra.mul!(::AbstractVector,::LinearMap,::AbstractVector,::Number,::Number)
 *(::LinearAlgebra.AdjointAbsVec,::LinearMap)

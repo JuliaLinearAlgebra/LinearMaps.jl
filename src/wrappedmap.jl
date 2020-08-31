@@ -69,5 +69,23 @@ Base.:(+)(A₁::AbstractMatrix, A₂::LinearMap) = +(WrappedMap(A₁), A₂)
 Base.:(-)(A₁::LinearMap, A₂::AbstractMatrix) = -(A₁, WrappedMap(A₂))
 Base.:(-)(A₁::AbstractMatrix, A₂::LinearMap) = -(WrappedMap(A₁), A₂)
 
+"""
+    *(A::LinearMap, X::AbstractMatrix)
+    *(X::AbstractMatrix, A::LinearMap)
+
+Return the composite `LinearMap` `A*LinearMap(X)` and `LinearMap(X)*A`, respectively,
+interpreting the matrix `X` as a linear operator, rather than a (row) collection of
+column vectors. To compute the action of `A` on each column of `X`, call `Matrix(A*X)`
+or use the in-place multiplication `mul!(Y, A, X[, α, β])` with an appropriately sized,
+preallocated matrix `Y`.
+
+## Examples
+```jldoctest; setup=(using LinearMaps)
+julia> A=LinearMap([1.0 2.0; 3.0 4.0]); X=[1.0 1.0; 1.0 1.0];
+
+julia> A*X isa LinearMaps.CompositeMap
+true
+```
+"""
 Base.:(*)(A₁::LinearMap, A₂::AbstractMatrix) = *(A₁, WrappedMap(A₂))
 Base.:(*)(A₁::AbstractMatrix, A₂::LinearMap) = *(WrappedMap(A₁), A₂)
