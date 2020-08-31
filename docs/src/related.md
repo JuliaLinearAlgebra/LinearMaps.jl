@@ -26,6 +26,8 @@ there exist further related packages in the Julia ecosystem:
 
 *   [`Kronecker.jl`](https://github.com/MichielStock/Kronecker.jl)
 
+*   [`FillArrays.jl`](https://github.com/JuliaArrays/FillArrays.jl)
+
 Since these packages provide types that are subtypes of Julia `Base`'s `AbstractArray` type,
 objects of those types can be wrapped by a `LinearMap` and freely mixed with, for instance,
 function-based linear maps.
