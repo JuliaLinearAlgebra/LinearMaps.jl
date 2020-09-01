@@ -71,12 +71,11 @@ end
 # hcat
 ############
 """
-    hcat(As::Union{LinearMap,UniformScaling}...)
+    hcat(As::Union{LinearMap,UniformScaling}...)::BlockMap
 
-Construct a `BlockMap <: LinearMap` object, a (lazy) representation of the
-horizontal concatenation of the arguments. `UniformScaling` objects are promoted
-to `LinearMap` automatically. To avoid fallback to the generic [`Base.hcat`](@ref),
-there must be a `LinearMap` object among the first 8 arguments.
+Construct a (lazy) representation of the horizontal concatenation of the arguments.
+`UniformScaling` objects are promoted to `LinearMap` automatically. To avoid fallback
+to the generic `Base.hcat`, there must be a `LinearMap` object among the first 8 arguments.
 
 # Examples
 ```jldoctest; setup=(using LinearMaps)
@@ -113,12 +112,11 @@ end
 # vcat
 ############
 """
-    vcat(As::Union{LinearMap,UniformScaling}...)
+    vcat(As::Union{LinearMap,UniformScaling}...)::BlockMap
 
-Construct a `BlockMap <: LinearMap` object, a (lazy) representation of the
-vertical concatenation of the arguments. `UniformScaling` objects are promoted
-to `LinearMap` automatically. To avoid fallback to the generic [`Base.vcat`](@ref),
-there must be a `LinearMap` object among the first 8 arguments.
+Construct a (lazy) representation of the vertical concatenation of the arguments.
+`UniformScaling` objects are promoted to `LinearMap` automatically. To avoid fallback
+to the generic `Base.vcat`, there must be a `LinearMap` object among the first 8 arguments.
 
 # Examples
 ```jldoctest; setup=(using LinearMaps)
@@ -159,13 +157,12 @@ end
 # hvcat
 ############
 """
-    hvcat(rows::Tuple{Vararg{Int}}, As::Union{LinearMap,UniformScaling}...)
+    hvcat(rows::Tuple{Vararg{Int}}, As::Union{LinearMap,UniformScaling}...)::BlockMap
 
-Construct a `BlockMap <: LinearMap` object, a (lazy) representation of the
-horizontal-vertical concatenation of the arguments. The first argument specifies
-the number of arguments to concatenate in each block row. `UniformScaling` objects
-are promoted to `LinearMap` automatically. To avoid fallback to the generic
-[`Base.hvcat`](@ref), there must be a `LinearMap` object among the first 8 arguments.
+Construct a (lazy) representation of the horizontal-vertical concatenation of the arguments.
+The first argument specifies the number of arguments to concatenate in each block row.
+`UniformScaling` objects are promoted to `LinearMap` automatically. To avoid fallback
+to the generic `Base.hvcat`, there must be a `LinearMap` object among the first 8 arguments.
 
 # Examples
 ```jldoctest; setup=(using LinearMaps)
@@ -465,6 +462,26 @@ for k in 1:8 # is 8 sufficient?
         end
     end
 end
+
+import SparseArrays: blockdiag
+"""
+    blockdiag(As::Union{LinearMap,AbstractMatrix}...)::BlockDiagonalMap
+
+Construct a (lazy) representation of the diagonal concatenation of the arguments.
+To avoid fallback to the generic `SparseArrays.blockdiag`, there must be a `LinearMap`
+object among the first 8 arguments.    
+"""
+function blockdiag end
+
+import Base: cat
+"""
+    cat(As::Union{LinearMap,AbstractMatrix}...; dims=(1,2))::BlockDiagonalMap
+
+Construct a (lazy) representation of the diagonal concatenation of the arguments.
+To avoid fallback to the generic `Base.cat`, there must be a `LinearMap`
+object among the first 8 arguments.
+"""
+function cat end
 
 Base.size(A::BlockDiagonalMap) = (last(A.rowranges[end]), last(A.colranges[end]))
 

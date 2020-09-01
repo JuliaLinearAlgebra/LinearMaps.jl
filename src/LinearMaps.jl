@@ -68,18 +68,62 @@ convert_to_lmaps(A) = (convert_to_lmaps_(A),)
 @inline convert_to_lmaps(A, B, Cs...) =
     (convert_to_lmaps_(A), convert_to_lmaps_(B), convert_to_lmaps(Cs...)...)
 
+"""
+    *(A::LinearMap, x::AbstractVector)::AbstractVector
+
+Compute the action of the linear map `A` on the vector `x`.
+
+## Examples
+```jldoctest; setup=(using LinearAlgebra, LinearMaps)
+julia> A=LinearMap([1.0 2.0; 3.0 4.0]); x=[1.0, 1.0];
+
+julia> A*x
+2-element Array{Float64,1}:
+ 3.0
+ 7.0
+```
+"""
 function Base.:(*)(A::LinearMap, x::AbstractVector)
     size(A, 2) == length(x) || throw(DimensionMismatch("linear map has dimensions ($mA,$nA), " *
         "vector has length $mB"))
     return mul!(similar(x, promote_type(eltype(A), eltype(x)), size(A, 1)), A, x)
 end
 
+"""
+    mul!(C, A::LinearMap, B, α, β) -> C
+
+Combined inplace multiply-add ``A B α + C β``. The result is stored in `C` by overwriting it.
+Note that `C` must not be aliased with either `A` or `B`.
+
+## Examples
+```jldoctest; setup=(using LinearAlgebra, LinearMaps)
+julia> A=LinearMap([1.0 2.0; 3.0 4.0]); B=[1.0, 1.0]; C=[1.0, 3.0];
+  
+julia> mul!(C, A, B, 100.0, 10.0) === C
+true
+  
+julia> C
+2-element Array{Float64,1}:
+ 310.0
+ 730.0
+
+julia> A=LinearMap([1.0 2.0; 3.0 4.0]); B=[1.0 1.0; 1.0 1.0]; C=[1.0 2.0; 3.0 4.0];
+  
+julia> mul!(C, A, B, 100.0, 10.0) === C
+true
+  
+julia> C
+2×2 Array{Float64,2}:
+ 310.0  320.0
+ 730.0  740.0
+```
+"""
 function mul!(y::AbstractVecOrMat, A::LinearMap, x::AbstractVector, α::Number, β::Number)
     check_dim_mul(y, A, x)
     return _generic_mapvec_mul!(y, A, x, α, β)
 end
 
-function _generic_mapvec_mul!(y::AbstractVecOrMat, A::LinearMap, x::AbstractVector, α::Number, β::Number)
+function _generic_mapvec_mul!(y, A, x, α, β)
     if isone(α)
         iszero(β) && (mul!(y, A, x); return y)
         isone(β) && (y .+= A * x; return y)
@@ -106,6 +150,29 @@ function _generic_mapvec_mul!(y::AbstractVecOrMat, A::LinearMap, x::AbstractVect
 end
 
 # the following is of interest in, e.g., subspace-iteration methods
+"""
+    mul!(Y, A::LinearMap, B) -> Y
+
+Calculates the action of the linear map `A` on the vector or matrix `B` and stores the result in `Y`,
+overwriting the existing value of `Y`. Note that `Y` must not be aliased with either `A` or `B`.
+
+## Examples
+```jldoctest; setup=(using LinearAlgebra, LinearMaps)
+julia> A=LinearMap([1.0 2.0; 3.0 4.0]); B=[1.0, 1.0]; Y = similar(B); mul!(Y, A, B);
+
+julia> Y
+2-element Array{Float64,1}:
+ 3.0
+ 7.0
+
+julia> A=LinearMap([1.0 2.0; 3.0 4.0]); B=[1.0 1.0; 1.0 1.0]; Y = similar(B); mul!(Y, A, B);
+
+julia> Y
+2×2 Array{Float64,2}:
+ 3.0  3.0
+ 7.0  7.0
+```
+"""
 function mul!(Y::AbstractMatrix, A::LinearMap, X::AbstractMatrix)
     check_dim_mul(Y, A, X)
     return _generic_mapmat_mul!(Y, A, X)
@@ -149,9 +216,10 @@ include("kronecker.jl") # Kronecker product of linear maps
 include("conversion.jl") # conversion of linear maps to matrices
 
 """
-    LinearMap(A; kwargs...)
-    LinearMap(J, M::Int)
-    LinearMap{T=Float64}(f, [fc,], M::Int, N::Int = M; kwargs...)
+    LinearMap(A::LinearMap; kwargs...)::WrappedMap
+    LinearMap(A::AbstractMatrix; kwargs...)::WrappedMap
+    LinearMap(J::UniformScaling, M::Int)::UniformScalingMap
+    LinearMap{T=Float64}(f, [fc,], M::Int, N::Int = M; kwargs...)::FunctionMap
 
 Construct a linear map object, either from an existing `LinearMap` or `AbstractMatrix` `A`,
 with the purpose of redefining its properties via the keyword arguments `kwargs`;
@@ -162,17 +230,17 @@ on length `N` vectors and producing length `M` vectors (with default value `N=M`
 also the `eltype` `T` of the corresponding matrix representation needs to be specified, i.e.
 whether the action of `f` on a vector will be similar to, e.g., multiplying by numbers of type `T`.
 If not specified, the devault value `T=Float64` will be assumed. Optionally, a corresponding
-function `fc` can be specified that implements the transpose/adjoint of `f`.
+function `fc` can be specified that implements the adjoint (=transpose in the real case) of `f`.
 
-The keyword arguments and their default values for functions `f` are
-*   issymmetric::Bool = false : whether `A` or `f` acts as a symmetric matrix
-*   ishermitian::Bool = issymmetric & T<:Real : whether `A` or `f` acts as a Hermitian matrix
-*   isposdef::Bool = false : whether `A` or `f` acts as a positive definite matrix.
+The keyword arguments and their default values for the function-based constructor are:
+*   `issymmetric::Bool = false` : whether `A` or `f` acts as a symmetric matrix
+*   `ishermitian::Bool = issymmetric & T<:Real` : whether `A` or `f` acts as a Hermitian matrix
+*   `isposdef::Bool = false` : whether `A` or `f` acts as a positive definite matrix.
 For existing linear maps or matrices `A`, the default values will be taken by calling
 `issymmetric`, `ishermitian` and `isposdef` on the existing object `A`.
 
-For functions `f`, there is one more keyword argument
-*   ismutating::Bool : flags whether the function acts as a mutating matrix multiplication
+For the function-based constructor, there is one more keyword argument:
+*   `ismutating::Bool` : flags whether the function acts as a mutating matrix multiplication
     `f(y,x)` where the result vector `y` is the first argument (in case of `true`),
     or as a normal matrix multiplication that is called as `y=f(x)` (in case of `false`).
     The default value is guessed by looking at the number of arguments of the first occurrence

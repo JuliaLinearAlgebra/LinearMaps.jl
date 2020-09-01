@@ -11,12 +11,11 @@ end
 KroneckerMap{T}(maps::As) where {T, As<:Tuple{Vararg{LinearMap}}} = KroneckerMap{T, As}(maps)
 
 """
-    kron(A::LinearMap, B::LinearMap)
-    kron(A, B, Cs...)
+    kron(A::LinearMap, B::LinearMap)::KroneckerMap
+    kron(A, B, Cs...)::KroneckerMap
 
-Construct a `KroneckerMap <: LinearMap` object, a (lazy) representation of the
-Kronecker product of two `LinearMap`s. One of the two factors can be an `AbstractMatrix`,
-which is then promoted to a `LinearMap` automatically.
+Construct a (lazy) representation of the Kronecker product `A⊗B`. One of the two factors
+can be an `AbstractMatrix`, which is then promoted to a `LinearMap` automatically.
 
 To avoid fallback to the generic [`Base.kron`](@ref) in the multi-map case,
 there must be a `LinearMap` object among the first 8 arguments in usage like
@@ -196,14 +195,13 @@ end
 KroneckerSumMap{T}(maps::As) where {T, As<:Tuple{LinearMap,LinearMap}} = KroneckerSumMap{T, As}(maps)
 
 """
-    kronsum(A, B)
-    kronsum(A, B, Cs...)
+    kronsum(A, B)::KroneckerSumMap
+    kronsum(A, B, Cs...)::KroneckerSumMap
 
-Construct a `KroneckerSumMap <: LinearMap` object, a (lazy) representation of the
-Kronecker sum `A⊕B = A ⊗ Ib + Ia ⊗ B` of two square linear maps of type
-`LinearMap` or `AbstractMatrix`. Here, `Ia` and `Ib` are identity operators of
-the size of `A` and `B`, respectively. Arguments of type `AbstractMatrix` are
-automatically promoted to `LinearMap`s.
+Construct a (lazy) representation of the Kronecker sum `A⊕B = A ⊗ Ib + Ia ⊗ B`
+of two square linear maps of type `LinearMap` or `AbstractMatrix`. Here, `Ia`
+and `Ib` are identity operators of the size of `A` and `B`, respectively.
+Arguments of type `AbstractMatrix` are automatically promoted to `LinearMap`.
 
 For convenience, one can also use `A ⊕ B` or `⊕(A, B, Cs...)` (typed as
 `\\oplus+TAB`) to construct the `KroneckerSumMap`.

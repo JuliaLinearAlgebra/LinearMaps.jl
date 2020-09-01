@@ -23,10 +23,10 @@ LinearAlgebra.isposdef(A::LinearCombination) = all(isposdef, A.maps) # sufficien
 
 # adding linear maps
 """
-    +(A::LinearMap, B::LinearMap)
+    +(A::LinearMap, B::LinearMap)::LinearCombination
 
-Construct a `LinearCombination <: LinearMap`, a (lazy) representation of the sum
-of the two operators. Sums of `LinearMap`/`LinearCombination` objects and
+Construct a (lazy) representation of the sum/linear combination of the two operators.
+Sums of `LinearMap`/`LinearCombination` objects and
 `LinearMap`/`LinearCombination` objects are reduced to a single `LinearCombination`.
 In sums of `LinearMap`s and `AbstractMatrix`/`UniformScaling` objects, the latter
 get promoted to `LinearMap`s automatically.
