@@ -67,7 +67,7 @@ convert_to_lmaps(A) = (convert_to_lmaps_(A),)
 @inline convert_to_lmaps(A, B, Cs...) =
     (convert_to_lmaps_(A), convert_to_lmaps_(B), convert_to_lmaps(Cs...)...)
 
-(L::LinearMap)(x::AbstractVector) = L*x
+(L::T where {T <: LinearMap})(x::AbstractVector) = L*x
 
 """
     *(A::LinearMap, x::AbstractVector)
