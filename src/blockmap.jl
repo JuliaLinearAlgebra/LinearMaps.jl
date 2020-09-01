@@ -491,14 +491,6 @@ object among the first 8 arguments.
 """
 function blockdiag end
 
-"""
-    cat(As::Union{LinearMap,AbstractMatrix}...; dims=(1,2))::BlockDiagonalMap
-
-Construct a (lazy) representation of the diagonal concatenation of the arguments.
-To avoid fallback to the generic `Base.cat`, there must be a `LinearMap`
-object among the first 8 arguments.
-"""
-
 import Base: cat
 """
     cat(As::Union{LinearMap,AbstractMatrix}...; dims=(1,2))::BlockDiagonalMap
