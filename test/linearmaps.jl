@@ -25,8 +25,8 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays, BenchmarkTools
     AV = A * V
 
     @testset "mul! and *" begin
-        @test M(v) == M * v == Av
-        @test N(v) == N * v == Av
+        @test M * v == Av
+        @test N * v == Av
         @test @inferred mul!(copy(w), M, v) == mul!(copy(w), A, v)
         b = @benchmarkable mul!($w, $M, $v)
         @test run(b, samples=3).allocs == 0
