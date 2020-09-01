@@ -41,23 +41,23 @@ Base.:(*)(A::UniformScalingMap, x::AbstractVector) =
     length(x) == A.M ? A.λ * x : throw(DimensionMismatch("*"))
 
 # multiplication with vector/matrix
-for (intype, outtype) in Any[Any[AbstractVector, AbstractVecOrMat], Any[AbstractMatrix, AbstractMatrix]]
+for (intype, outtype) in ((AbstractVector, AbstractVecOrMat), (AbstractMatrix, AbstractMatrix))
     @eval begin
-        @propagate_inbounds function mul!(y::$outtype, J::UniformScalingMap, x::$intype)
-            @boundscheck check_dim_mul(y, J, x)
-            @inbounds _scaling!(y, J.λ, x, true, false)
+        function mul!(y::$outtype, J::UniformScalingMap, x::$intype)
+            check_dim_mul(y, J, x)
+            _scaling!(y, J.λ, x, true, false)
             return y
         end
-        @propagate_inbounds function mul!(y::$outtype, J::UniformScalingMap, x::$intype,
+        function mul!(y::$outtype, J::UniformScalingMap, x::$intype,
                     α::Number, β::Number)
-            @boundscheck check_dim_mul(y, J, x)
-            @inbounds _scaling!(y, J.λ, x, α, β)
+            check_dim_mul(y, J, x)
+            _scaling!(y, J.λ, x, α, β)
             return y
         end
     end
 end
 
-@propagate_inbounds function _scaling!(y, λ, x, α, β)
+function _scaling!(y, λ, x, α, β)
     if (iszero(α) || iszero(λ))
         iszero(β) && (fill!(y, zero(eltype(y))); return y)
         isone(β) && return y

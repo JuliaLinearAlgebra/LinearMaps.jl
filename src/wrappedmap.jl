@@ -39,41 +39,35 @@ LinearAlgebra.isposdef(A::WrappedMap) = A._isposdef
 # multiplication with vectors & matrices
 Base.:(*)(A::WrappedMap, x::AbstractVector) = *(A.lmap, x)
 
-for (intype, outtype) in Any[Any[AbstractVector, AbstractVecOrMat], Any[AbstractMatrix, AbstractMatrix]]
+for (intype, outtype) in ((AbstractVector, AbstractVecOrMat), (AbstractMatrix, AbstractMatrix))
     @eval begin
-        @propagate_inbounds function mul!(y::$outtype, A::WrappedMap, x::$intype)
-            @boundscheck check_dim_mul(y, A, x)
-            return @inbounds mul!(y, A.lmap, x)
+        function mul!(y::$outtype, A::WrappedMap, x::$intype)
+            return mul!(y, A.lmap, x)
         end
-        @propagate_inbounds function mul!(y::$outtype, At::TransposeMap{<:Any,<:WrappedMap}, x::$intype)
-            @boundscheck check_dim_mul(y, At, x)
+        function mul!(y::$outtype, At::TransposeMap{<:Any,<:WrappedMap}, x::$intype)
             A = At.lmap
-            return @inbounds (issymmetric(A) || (isreal(A) && ishermitian(A))) ? mul!(y, A.lmap, x) : mul!(y, transpose(A.lmap), x)
+            return (issymmetric(A) || (isreal(A) && ishermitian(A))) ? mul!(y, A.lmap, x) : mul!(y, transpose(A.lmap), x)
         end
-        @propagate_inbounds function mul!(y::$outtype, Ac::AdjointMap{<:Any,<:WrappedMap}, x::$intype)
-            @boundscheck check_dim_mul(y, Ac, x)
+        function mul!(y::$outtype, Ac::AdjointMap{<:Any,<:WrappedMap}, x::$intype)
             A = Ac.lmap
-            return @inbounds ishermitian(A) ? mul!(y, A.lmap, x) : mul!(y, adjoint(A.lmap), x)
+            return ishermitian(A) ? mul!(y, A.lmap, x) : mul!(y, adjoint(A.lmap), x)
         end
     end
 end
 
 if VERSION ≥ v"1.3.0-alpha.115"
-    for (intype, outtype) in Any[Any[AbstractVector, AbstractVecOrMat], Any[AbstractMatrix, AbstractMatrix]]
+    for (intype, outtype) in ((AbstractVector, AbstractVecOrMat), (AbstractMatrix, AbstractMatrix))
         @eval begin
-            @propagate_inbounds function mul!(y::$outtype, A::WrappedMap, x::$intype, α::Number, β::Number)
-                @boundscheck check_dim_mul(y, A, x)
-                return @inbounds mul!(y, A.lmap, x, α, β)
+            function mul!(y::$outtype, A::WrappedMap, x::$intype, α::Number, β::Number)
+                return mul!(y, A.lmap, x, α, β)
             end
-            @propagate_inbounds function mul!(y::$outtype, At::TransposeMap{<:Any,<:WrappedMap}, x::$intype, α::Number, β::Number)
-                @boundscheck check_dim_mul(y, At, x)
+            function mul!(y::$outtype, At::TransposeMap{<:Any,<:WrappedMap}, x::$intype, α::Number, β::Number)
                 A = At.lmap
-                return @inbounds (issymmetric(A) || (isreal(A) && ishermitian(A))) ? mul!(y, A.lmap, x, α, β) : mul!(y, transpose(A.lmap), x, α, β)
+                return (issymmetric(A) || (isreal(A) && ishermitian(A))) ? mul!(y, A.lmap, x, α, β) : mul!(y, transpose(A.lmap), x, α, β)
             end
-            @propagate_inbounds function mul!(y::$outtype, Ac::AdjointMap{<:Any,<:WrappedMap}, x::$intype, α::Number, β::Number)
-                @boundscheck check_dim_mul(y, Ac, x)
+            function mul!(y::$outtype, Ac::AdjointMap{<:Any,<:WrappedMap}, x::$intype, α::Number, β::Number)
                 A = Ac.lmap
-                return @inbounds ishermitian(A) ? mul!(y, A.lmap, x, α, β) : mul!(y, adjoint(A.lmap), x, α, β)
+                return ishermitian(A) ? mul!(y, A.lmap, x, α, β) : mul!(y, adjoint(A.lmap), x, α, β)
             end
         end
     end

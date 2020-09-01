@@ -120,9 +120,9 @@ end
     na, ma = size(At)
     mb, nb = size(B)
     if nb*ma < mb*na
-        @inbounds mul!(reshape(y, (mb, ma)), B, convert(Matrix, X*At))
+        mul!(reshape(y, (mb, ma)), B, convert(Matrix, X*At))
     else
-        @inbounds mul!(reshape(y, (mb, ma)), convert(Matrix, B*X), At isa MatrixMap ? At.lmap : At.λ)
+        mul!(reshape(y, (mb, ma)), convert(Matrix, B*X), At isa MatrixMap ? At.lmap : At.λ)
     end
     return y
 end
@@ -131,17 +131,17 @@ end
 # multiplication with vectors
 #################
 
-@propagate_inbounds function mul!(y::AbstractVecOrMat, L::KroneckerMap{T,<:NTuple{2,LinearMap}}, x::AbstractVector) where {T}
+function mul!(y::AbstractVecOrMat, L::KroneckerMap{T,<:NTuple{2,LinearMap}}, x::AbstractVector) where {T}
     require_one_based_indexing(y)
-    @boundscheck check_dim_mul(y, L, x)
+    check_dim_mul(y, L, x)
     A, B = L.maps
     X = LinearMap(reshape(x, (size(B, 2), size(A, 2))); issymmetric=false, ishermitian=false, isposdef=false)
     _kronmul!(y, B, X, transpose(A), T)
     return y
 end
-@propagate_inbounds function mul!(y::AbstractVecOrMat, L::KroneckerMap{T}, x::AbstractVector) where {T}
+function mul!(y::AbstractVecOrMat, L::KroneckerMap{T}, x::AbstractVector) where {T}
     require_one_based_indexing(y)
-    @boundscheck check_dim_mul(y, L, x)
+    check_dim_mul(y, L, x)
     A = first(L.maps)
     B = kron(Base.tail(L.maps)...)
     X = LinearMap(reshape(x, (size(B, 2), size(A, 2))); issymmetric=false, ishermitian=false, isposdef=false)
@@ -150,11 +150,11 @@ end
 end
 # mixed-product rule, prefer the right if possible
 # (A₁ ⊗ A₂ ⊗ ... ⊗ Aᵣ) * (B₁ ⊗ B₂ ⊗ ... ⊗ Bᵣ) = (A₁B₁) ⊗ (A₂B₂) ⊗ ... ⊗ (AᵣBᵣ)
-@propagate_inbounds function mul!(y::AbstractVecOrMat, L::CompositeMap{<:Any,<:Tuple{KroneckerMap,KroneckerMap}}, x::AbstractVector)
+function mul!(y::AbstractVecOrMat, L::CompositeMap{<:Any,<:Tuple{KroneckerMap,KroneckerMap}}, x::AbstractVector)
     require_one_based_indexing(y)
-    @boundscheck check_dim_mul(y, L, x)
+    check_dim_mul(y, L, x)
     B, A = L.maps
-    @inbounds if length(A.maps) == length(B.maps) && all(M -> check_dim_mul(M[1], M[2]), zip(A.maps, B.maps))
+    if length(A.maps) == length(B.maps) && all(M -> check_dim_mul(M[1], M[2]), zip(A.maps, B.maps))
         mul!(y, kron(map(*, A.maps, B.maps)...), x)
     else
         mul!(y, LinearMap(A)*B, x)
@@ -163,15 +163,15 @@ end
 end
 # mixed-product rule, prefer the right if possible
 # (A₁ ⊗ B₁)*(A₂⊗B₂)*...*(Aᵣ⊗Bᵣ) = (A₁*A₂*...*Aᵣ) ⊗ (B₁*B₂*...*Bᵣ)
-@propagate_inbounds function mul!(y::AbstractVecOrMat, L::CompositeMap{T,<:Tuple{Vararg{KroneckerMap{<:Any,<:Tuple{LinearMap,LinearMap}}}}}, x::AbstractVector) where {T}
+function mul!(y::AbstractVecOrMat, L::CompositeMap{T,<:Tuple{Vararg{KroneckerMap{<:Any,<:Tuple{LinearMap,LinearMap}}}}}, x::AbstractVector) where {T}
     require_one_based_indexing(y)
-    @boundscheck check_dim_mul(y, L, x)
+    check_dim_mul(y, L, x)
     As = map(AB -> AB.maps[1], L.maps)
     Bs = map(AB -> AB.maps[2], L.maps)
     As1, As2 = Base.front(As), Base.tail(As)
     Bs1, Bs2 = Base.front(Bs), Base.tail(Bs)
     apply = all(A -> check_dim_mul(A...), zip(As1, As2)) && all(A -> check_dim_mul(A...), zip(Bs1, Bs2))
-    @inbounds if apply
+    if apply
         mul!(y, kron(prod(As), prod(Bs)), x)
     else
         mul!(y, CompositeMap{T}(map(LinearMap, L.maps)), x)
@@ -261,14 +261,14 @@ LinearAlgebra.transpose(A::KroneckerSumMap{T}) where {T} = KroneckerSumMap{T}(ma
 
 Base.:(==)(A::KroneckerSumMap, B::KroneckerSumMap) = (eltype(A) == eltype(B) && A.maps == B.maps)
 
-@propagate_inbounds function mul!(y::AbstractVecOrMat, L::KroneckerSumMap, x::AbstractVector)
-    @boundscheck check_dim_mul(y, L, x)
+function mul!(y::AbstractVecOrMat, L::KroneckerSumMap, x::AbstractVector)
+    check_dim_mul(y, L, x)
     A, B = L.maps
     ma, na = size(A)
     mb, nb = size(B)
     X = reshape(x, (nb, na))
     Y = reshape(y, (nb, na))
-    @inbounds mul!(Y, X, convert(AbstractMatrix, transpose(A)))
-    @inbounds mul!(Y, B, X, true, true)
+    mul!(Y, X, convert(AbstractMatrix, transpose(A)))
+    mul!(Y, B, X, true, true)
     return y
 end

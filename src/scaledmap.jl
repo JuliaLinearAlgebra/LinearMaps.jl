@@ -54,15 +54,15 @@ Base.:(*)(A::ScaledMap, B::LinearMap) = A.λ * (A.lmap * B)
 Base.:(*)(A::LinearMap, B::ScaledMap) = (A * B.lmap) * B.λ
 
 # multiplication with vectors/matrices
-for (intype, outtype) in Any[Any[AbstractVector, AbstractVecOrMat], Any[AbstractMatrix, AbstractMatrix]]
+for (intype, outtype) in ((AbstractVector, AbstractVecOrMat), (AbstractMatrix, AbstractMatrix))
     @eval begin
-        @propagate_inbounds function mul!(y::$outtype, A::ScaledMap, x::$intype)
-            @boundscheck check_dim_mul(y, A, x)
-            return @inbounds mul!(y, A.lmap, x, A.λ, false)
+        function mul!(y::$outtype, A::ScaledMap, x::$intype)
+            check_dim_mul(y, A, x)
+            return mul!(y, A.lmap, x, A.λ, false)
         end
-        @propagate_inbounds function mul!(y::$outtype, A::ScaledMap, x::$intype, α::Number, β::Number)
-            @boundscheck check_dim_mul(y, A, x)
-            return @inbounds mul!(y, A.lmap, x, A.λ * α, β)
+        function mul!(y::$outtype, A::ScaledMap, x::$intype, α::Number, β::Number)
+            check_dim_mul(y, A, x)
+            return mul!(y, A.lmap, x, A.λ * α, β)
         end
     end
 end

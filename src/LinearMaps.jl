@@ -3,7 +3,6 @@ module LinearMaps
 export LinearMap
 export ⊗, kronsum, ⊕
 
-import Base: @propagate_inbounds
 using LinearAlgebra
 import LinearAlgebra: mul!
 using SparseArrays
@@ -70,22 +69,23 @@ convert_to_lmaps(A) = (convert_to_lmaps_(A),)
     (convert_to_lmaps_(A), convert_to_lmaps_(B), convert_to_lmaps(Cs...)...)
 
 function Base.:(*)(A::LinearMap, x::AbstractVector)
-    size(A, 2) == length(x) || throw(DimensionMismatch("mul!"))
-    return @inbounds mul!(similar(x, promote_type(eltype(A), eltype(x)), size(A, 1)), A, x)
+    size(A, 2) == length(x) || throw(DimensionMismatch("linear map has dimensions ($mA,$nA), " *
+        "vector has length $mB"))
+    return mul!(similar(x, promote_type(eltype(A), eltype(x)), size(A, 1)), A, x)
 end
 
-@propagate_inbounds function mul!(y::AbstractVecOrMat, A::LinearMap, x::AbstractVector, α::Number, β::Number)
-    @boundscheck check_dim_mul(y, A, x)
-    return @inbounds _generic_mapvec_mul!(y, A, x, α, β)
+function mul!(y::AbstractVecOrMat, A::LinearMap, x::AbstractVector, α::Number, β::Number)
+    check_dim_mul(y, A, x)
+    return _generic_mapvec_mul!(y, A, x, α, β)
 end
 
-@propagate_inbounds function _generic_mapvec_mul!(y::AbstractVecOrMat, A::LinearMap, x::AbstractVector, α::Number, β::Number)
+function _generic_mapvec_mul!(y::AbstractVecOrMat, A::LinearMap, x::AbstractVector, α::Number, β::Number)
     if isone(α)
         iszero(β) && (mul!(y, A, x); return y)
         isone(β) && (y .+= A * x; return y)
         # β != 0, 1
-        rmul!(y, β)
-        y .+= A * x
+        z = A * x
+        y .= y.*β .+ z
         return y
     elseif iszero(α)
         iszero(β) && (fill!(y, zero(eltype(y))); return y)
@@ -106,16 +106,16 @@ end
 end
 
 # the following is of interest in, e.g., subspace-iteration methods
-@propagate_inbounds function mul!(Y::AbstractMatrix, A::LinearMap, X::AbstractMatrix)
-    @boundscheck check_dim_mul(Y, A, X)
-    return @inbounds _generic_mapmat_mul!(Y, A, X)
+function mul!(Y::AbstractMatrix, A::LinearMap, X::AbstractMatrix)
+    check_dim_mul(Y, A, X)
+    return _generic_mapmat_mul!(Y, A, X)
 end
-@propagate_inbounds function mul!(Y::AbstractMatrix, A::LinearMap, X::AbstractMatrix, α::Number, β::Number)
-    @boundscheck check_dim_mul(Y, A, X)
-    return @inbounds _generic_mapmat_mul!(Y, A, X, α, β)
+function mul!(Y::AbstractMatrix, A::LinearMap, X::AbstractMatrix, α::Number, β::Number)
+    check_dim_mul(Y, A, X)
+    return _generic_mapmat_mul!(Y, A, X, α, β)
 end
 
-@propagate_inbounds function _generic_mapmat_mul!(Y, A, X)
+function _generic_mapmat_mul!(Y, A, X)
     @views for i in 1:size(X, 2)
         mul!(Y[:, i], A, X[:, i])
     end
@@ -125,7 +125,7 @@ end
     # end
     return Y
 end
-@propagate_inbounds function _generic_mapmat_mul!(Y, A, X, α, β)
+function _generic_mapmat_mul!(Y, A, X, α, β)
     @views for i in 1:size(X, 2)
         mul!(Y[:, i], A, X[:, i], α, β)
     end

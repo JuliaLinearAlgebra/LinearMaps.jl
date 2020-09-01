@@ -129,26 +129,26 @@ LinearAlgebra.adjoint(A::CompositeMap{T}) where {T}   = CompositeMap{T}(map(adjo
 Base.:(==)(A::CompositeMap, B::CompositeMap) = (eltype(A) == eltype(B) && A.maps == B.maps)
 
 # multiplication with vectors
-@propagate_inbounds function mul!(y::AbstractVecOrMat, A::CompositeMap{<:Any,<:Tuple{LinearMap}}, x::AbstractVector)
-    @boundscheck check_dim_mul(y, A, x)
-    return @inbounds mul!(y, A.maps[1], x)
+function mul!(y::AbstractVecOrMat, A::CompositeMap{<:Any,<:Tuple{LinearMap}}, x::AbstractVector)
+    check_dim_mul(y, A, x)
+    return mul!(y, A.maps[1], x)
 end
-@propagate_inbounds function mul!(y::AbstractVecOrMat, A::CompositeMap{<:Any,<:Tuple{LinearMap,LinearMap}}, x::AbstractVector)
-    @boundscheck check_dim_mul(y, A, x)
-    @inbounds _compositemul!(y, A, x, similar(y, size(A.maps[1], 1)))
+function mul!(y::AbstractVecOrMat, A::CompositeMap{<:Any,<:Tuple{LinearMap,LinearMap}}, x::AbstractVector)
+    check_dim_mul(y, A, x)
+    _compositemul!(y, A, x, similar(y, size(A.maps[1], 1)))
 end
-@propagate_inbounds function mul!(y::AbstractVecOrMat, A::CompositeMap{<:Any,<:Tuple{Vararg{LinearMap}}}, x::AbstractVector)
-    @boundscheck check_dim_mul(y, A, x)
-    @inbounds _compositemul!(y, A, x, similar(y, size(A.maps[1], 1)), similar(y, size(A.maps[2], 1)))
+function mul!(y::AbstractVecOrMat, A::CompositeMap{<:Any,<:Tuple{Vararg{LinearMap}}}, x::AbstractVector)
+    check_dim_mul(y, A, x)
+    _compositemul!(y, A, x, similar(y, size(A.maps[1], 1)), similar(y, size(A.maps[2], 1)))
 end
 
-@propagate_inbounds function _compositemul!(y::AbstractVecOrMat, A::CompositeMap{T,<:Tuple{LinearMap,LinearMap}}, x::AbstractVector, z::AbstractVector) where {T}
+function _compositemul!(y::AbstractVecOrMat, A::CompositeMap{T,<:Tuple{LinearMap,LinearMap}}, x::AbstractVector, z::AbstractVector) where {T}
     # no size checking, will be done by individual maps
     mul!(z, A.maps[1], x)
     mul!(y, A.maps[2], z)
     return y
 end
-@propagate_inbounds function _compositemul!(y::AbstractVecOrMat, A::CompositeMap{T,<:Tuple{Vararg{LinearMap}}}, x::AbstractVector, source::AbstractVector, dest::AbstractVector) where {T}
+function _compositemul!(y::AbstractVecOrMat, A::CompositeMap{T,<:Tuple{Vararg{LinearMap}}}, x::AbstractVector, source::AbstractVector, dest::AbstractVector) where {T}
     # no size checking, will be done by individual maps
     N = length(A.maps)
     mul!(source, A.maps[1], x)

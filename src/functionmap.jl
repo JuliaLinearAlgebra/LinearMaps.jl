@@ -40,7 +40,7 @@ _ismutating(f) = first(methods(f)).nargs == 3
 # multiplication with vector
 function Base.:(*)(A::FunctionMap, x::AbstractVector)
     length(x) == A.N || throw(DimensionMismatch())
-    @inbounds if ismutating(A)
+    if ismutating(A)
         y = similar(x, promote_type(eltype(A), eltype(x)), A.M)
         A.f(y, x)
     else
@@ -52,7 +52,7 @@ function Base.:(*)(A::AdjointMap{<:Any,<:FunctionMap}, x::AbstractVector)
     Afun = A.lmap
     ishermitian(Afun) && return Afun*x
     length(x) == size(A, 2) || throw(DimensionMismatch())
-    @inbounds if Afun.fc !== nothing
+    if Afun.fc !== nothing
         if ismutating(Afun)
             y = similar(x, promote_type(eltype(A), eltype(x)), size(A, 1))
             Afun.fc(y, x)
@@ -78,7 +78,7 @@ function Base.:(*)(A::TransposeMap{<:Any,<:FunctionMap}, x::AbstractVector)
     Afun = A.lmap
     (issymmetric(Afun) || (isreal(A) && ishermitian(Afun))) && return Afun*x
     length(x) == size(A, 2) || throw(DimensionMismatch())
-    @inbounds if Afun.fc !== nothing
+    if Afun.fc !== nothing
         if !isreal(A)
             x = conj(x)
         end
@@ -107,17 +107,17 @@ function Base.:(*)(A::TransposeMap{<:Any,<:FunctionMap}, x::AbstractVector)
     end
 end
 
-@propagate_inbounds function mul!(y::AbstractVecOrMat, A::FunctionMap, x::AbstractVector)
-    @boundscheck check_dim_mul(y, A, x)
-    @inbounds ismutating(A) ? A.f(y, x) : copyto!(y, A.f(x))
+function mul!(y::AbstractVecOrMat, A::FunctionMap, x::AbstractVector)
+    check_dim_mul(y, A, x)
+    ismutating(A) ? A.f(y, x) : copyto!(y, A.f(x))
     return y
 end
 
-@propagate_inbounds function mul!(y::AbstractVecOrMat, At::TransposeMap{<:Any,<:FunctionMap}, x::AbstractVector)
-    @boundscheck check_dim_mul(y, At, x)
+function mul!(y::AbstractVecOrMat, At::TransposeMap{<:Any,<:FunctionMap}, x::AbstractVector)
+    check_dim_mul(y, At, x)
     A = At.lmap
-    (issymmetric(A) || (isreal(A) && ishermitian(A))) && return @inbounds mul!(y, A, x)
-    @inbounds if A.fc !== nothing
+    (issymmetric(A) || (isreal(A) && ishermitian(A))) && return mul!(y, A, x)
+    if A.fc !== nothing
         if !isreal(A)
             x = conj(x)
         end
@@ -135,11 +135,11 @@ end
     end
 end
 
-@propagate_inbounds function mul!(y::AbstractVecOrMat, Ac::AdjointMap{<:Any,<:FunctionMap}, x::AbstractVector)
-    @boundscheck check_dim_mul(y, Ac, x)
+function mul!(y::AbstractVecOrMat, Ac::AdjointMap{<:Any,<:FunctionMap}, x::AbstractVector)
+    check_dim_mul(y, Ac, x)
     A = Ac.lmap
-    ishermitian(A) && return @inbounds mul!(y, A, x)
-    @inbounds if A.fc !== nothing
+    ishermitian(A) && return mul!(y, A, x)
+    if A.fc !== nothing
         ismutating(A) ? A.fc(y, x) : copyto!(y, A.fc(x))
         return y
     elseif issymmetric(A) # but !isreal(A)

@@ -33,79 +33,77 @@ Base.:(==)(A::LinearMap, B::AdjointMap)      = ishermitian(A) && B.lmap == A
 
 # multiplication with vector/matrices
 # # TransposeMap
-@propagate_inbounds function mul!(y::AbstractVecOrMat, A::TransposeMap, x::AbstractVector)
-    @boundscheck check_dim_mul(y, A, x)
-    @inbounds issymmetric(A.lmap) ? mul!(y, A.lmap, x) : error("transpose not implemented for $A")
+function mul!(y::AbstractVecOrMat, A::TransposeMap, x::AbstractVector)
+    check_dim_mul(y, A, x)
+    issymmetric(A.lmap) ? mul!(y, A.lmap, x) : error("transpose not implemented for $A")
 end
-@propagate_inbounds function mul!(y::AbstractMatrix, A::TransposeMap, x::AbstractMatrix)
-    @boundscheck check_dim_mul(y, A, x)
-    @inbounds issymmetric(A.lmap) ? mul!(y, A.lmap, x) : _generic_mapmat_mul!(y, A, x)
+function mul!(y::AbstractMatrix, A::TransposeMap, x::AbstractMatrix)
+    check_dim_mul(y, A, x)
+    issymmetric(A.lmap) ? mul!(y, A.lmap, x) : _generic_mapmat_mul!(y, A, x)
 end
-@propagate_inbounds function mul!(y::AbstractVecOrMat, A::TransposeMap, x::AbstractVector, α::Number, β::Number)
-    @boundscheck check_dim_mul(y, A, x)
-    @inbounds issymmetric(A.lmap) ? mul!(y, A.lmap, x, α, β) : _generic_mapvec_mul!(y, A, x, α, β)
+function mul!(y::AbstractVecOrMat, A::TransposeMap, x::AbstractVector, α::Number, β::Number)
+    check_dim_mul(y, A, x)
+    issymmetric(A.lmap) ? mul!(y, A.lmap, x, α, β) : _generic_mapvec_mul!(y, A, x, α, β)
 end
-@propagate_inbounds function mul!(y::AbstractMatrix, A::TransposeMap, x::AbstractMatrix, α::Number, β::Number)
-    @boundscheck check_dim_mul(y, A, x)
-    @inbounds issymmetric(A.lmap) ? mul!(y, A.lmap, x, α, β) : _generic_mapmat_mul!(y, A, x, α, β)
+function mul!(y::AbstractMatrix, A::TransposeMap, x::AbstractMatrix, α::Number, β::Number)
+    check_dim_mul(y, A, x)
+    issymmetric(A.lmap) ? mul!(y, A.lmap, x, α, β) : _generic_mapmat_mul!(y, A, x, α, β)
 end
 # # AdjointMap
-@propagate_inbounds function mul!(y::AbstractVecOrMat, A::AdjointMap, x::AbstractVector)
-    @boundscheck check_dim_mul(y, A, x)
-    @inbounds issymmetric(A.lmap) ? mul!(y, A.lmap, x) : error("adjoint not implemented for $A")
+function mul!(y::AbstractVecOrMat, A::AdjointMap, x::AbstractVector)
+    check_dim_mul(y, A, x)
+    issymmetric(A.lmap) ? mul!(y, A.lmap, x) : error("adjoint not implemented for $A")
 end
-@propagate_inbounds function mul!(y::AbstractMatrix, A::AdjointMap, x::AbstractMatrix)
-    @boundscheck check_dim_mul(y, A, x)
-    @inbounds issymmetric(A.lmap) ? mul!(y, A.lmap, x) : _generic_mapmat_mul!(y, A, x)
+function mul!(y::AbstractMatrix, A::AdjointMap, x::AbstractMatrix)
+    check_dim_mul(y, A, x)
+    issymmetric(A.lmap) ? mul!(y, A.lmap, x) : _generic_mapmat_mul!(y, A, x)
 end
-@propagate_inbounds function mul!(y::AbstractVecOrMat, A::AdjointMap, x::AbstractVector, α::Number, β::Number)
-    @boundscheck check_dim_mul(y, A, x)
-    @inbounds issymmetric(A.lmap) ? mul!(y, A.lmap, x, α, β) : _generic_mapvec_mul!(y, A, x, α, β)
+function mul!(y::AbstractVecOrMat, A::AdjointMap, x::AbstractVector, α::Number, β::Number)
+    check_dim_mul(y, A, x)
+    issymmetric(A.lmap) ? mul!(y, A.lmap, x, α, β) : _generic_mapvec_mul!(y, A, x, α, β)
 end
-@propagate_inbounds function mul!(y::AbstractMatrix, A::AdjointMap, x::AbstractMatrix, α::Number, β::Number)
-    @boundscheck check_dim_mul(y, A, x)
-    @inbounds issymmetric(A.lmap) ? mul!(y, A.lmap, x, α, β) : _generic_mapmat_mul!(y, A, x, α, β)
+function mul!(y::AbstractMatrix, A::AdjointMap, x::AbstractMatrix, α::Number, β::Number)
+    check_dim_mul(y, A, x)
+    issymmetric(A.lmap) ? mul!(y, A.lmap, x, α, β) : _generic_mapmat_mul!(y, A, x, α, β)
 end
 # # ConjugateMap
-for (intype, outtype) in Any[Any[AbstractVector, AbstractVecOrMat], Any[AbstractMatrix, AbstractMatrix]]
+for (intype, outtype) in ((AbstractVector, AbstractVecOrMat), (AbstractMatrix, AbstractMatrix))
     @eval begin
-        @propagate_inbounds function mul!(y::$outtype, Ac::AdjointMap{<:Any,<:TransposeMap}, x::$intype)
-            @boundscheck check_dim_mul(y, Ac, x)
+        function mul!(y::$outtype, Ac::AdjointMap{<:Any,<:TransposeMap}, x::$intype)
+            check_dim_mul(y, Ac, x)
             A = Ac.lmap
-            return @inbounds _conjmul!(y, A.lmap, x)
+            return _conjmul!(y, A.lmap, x)
         end
-        @propagate_inbounds function mul!(y::$outtype, Ac::AdjointMap{<:Any,<:TransposeMap}, x::$intype, α::Number, β::Number)
-            @boundscheck check_dim_mul(y, Ac, x)
+        function mul!(y::$outtype, Ac::AdjointMap{<:Any,<:TransposeMap}, x::$intype, α::Number, β::Number)
+            check_dim_mul(y, Ac, x)
             A = Ac.lmap
-            return @inbounds _conjmul!(y, A.lmap, x, α, β)
+            return _conjmul!(y, A.lmap, x, α, β)
         end
-        @propagate_inbounds function mul!(y::$outtype, At::TransposeMap{<:Any,<:AdjointMap}, x::$intype)
-            @boundscheck check_dim_mul(y, At, x)
+        function mul!(y::$outtype, At::TransposeMap{<:Any,<:AdjointMap}, x::$intype)
+            check_dim_mul(y, At, x)
             A = At.lmap
-            @inbounds isreal(A.lmap) ? mul!(y, A.lmap, x) : _conjmul!(y, A.lmap, x)
+            isreal(A.lmap) ? mul!(y, A.lmap, x) : _conjmul!(y, A.lmap, x)
         end
-        @propagate_inbounds function mul!(y::$outtype, At::TransposeMap{<:Any,<:AdjointMap}, x::$intype, α::Number, β::Number)
-            @boundscheck check_dim_mul(y, At, x)
+        function mul!(y::$outtype, At::TransposeMap{<:Any,<:AdjointMap}, x::$intype, α::Number, β::Number)
+            check_dim_mul(y, At, x)
             A = At.lmap
-            return @inbounds _conjmul!(y, A.lmap, x, α, β)
+            return _conjmul!(y, A.lmap, x, α, β)
         end
     end
 end
 
 # multiplication helper function
-@propagate_inbounds _conjmul!(y, A, x) = (mul!(y, A, conj(x)); conj!(y))
-@propagate_inbounds function _conjmul!(y, A, x::AbstractVector, α, β)
-    xca = rmul!(conj(x), conj(α))
+_conjmul!(y, A, x) = conj!(mul!(y, A, conj(x)))
+function _conjmul!(y, A, x::AbstractVector, α, β)
+    xca = conj!(x * α)
     z = A*xca
-    rmul!(y, β)
-    y .+= conj.(z)
+    y .= y .* β + conj.(z)
     return y
 end
-@propagate_inbounds function _conjmul!(y, A, x::AbstractMatrix, α, β)
-    xca = rmul!(conj(x), conj(α))
+function _conjmul!(y, A, x::AbstractMatrix, α, β)
+    xca = conj!(x * α)
     z = similar(y, size(A, 1), size(x, 2))
     mul!(z, A, xca)
-    rmul!(y, β)
-    y .+= conj.(z)
+    y .= y .* β + conj.(z)
     return y
 end
