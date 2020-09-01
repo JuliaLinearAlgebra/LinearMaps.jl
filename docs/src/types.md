@@ -95,6 +95,7 @@ Base.:*(::AbstractMatrix,::LinearMap)
 LinearAlgebra.mul!(::AbstractVector,::LinearMap,::AbstractVector)
 LinearAlgebra.mul!(::AbstractVector,::LinearMap,::AbstractVector,::Number,::Number)
 *(::LinearAlgebra.AdjointAbsVec,::LinearMap)
+*(::LinearAlgebra.TransposeAbsVec,::LinearMap)
 ```
 
 Applying the adjoint or transpose of `A` (if defined) to `x` works exactly

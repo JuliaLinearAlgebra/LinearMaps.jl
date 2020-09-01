@@ -68,7 +68,7 @@ convert_to_lmaps(A) = (convert_to_lmaps_(A),)
     (convert_to_lmaps_(A), convert_to_lmaps_(B), convert_to_lmaps(Cs...)...)
 
 """
-    *(A::LinearMap, x::AbstractVector)
+    *(A::LinearMap, x::AbstractVector)::AbstractVector
 
 Compute the action of the linear map `A` on the vector `x`.
 

@@ -12,11 +12,10 @@ import LinearAlgebra: AdjointAbsVec, TransposeAbsVec
 
 # x = y'*A ⇐⇒ x' = (A'*y)
 """
-    *(::LinearAlgebra.AdjointAbsVec, A::LinearMap)
-    *(::LinearAlgebra.TransposeAbsVec, A::LinearMap)
+    *(x::LinearAlgebra.AdjointAbsVec, A::LinearMap)::AdjointAbsVec
 
-Compute the right-action of the linear map `A` on the adjoint and transpose vector `x`
-and return an adjoint and transpose vector, respectively.
+Compute the right-action of the linear map `A` on the adjoint vector `x`
+and return an adjoint vector.
 
 ## Examples
 ```jldoctest; setup=(using LinearAlgebra, LinearMaps)
@@ -26,6 +25,20 @@ julia> A=LinearMap([1.0 2.0; 3.0 4.0]); x=[1.0, 1.0]; x'A
 ```
 """
 Base.:(*)(y::AdjointAbsVec, A::LinearMap) = adjoint(A' * y')
+
+"""
+    *(x::LinearAlgebra.TransposeAbsVec, A::LinearMap)::TransposeAbsVec
+
+Compute the right-action of the linear map `A` on the transpose vector `x`
+and return a transpose vector.
+
+## Examples
+```jldoctest; setup=(using LinearAlgebra, LinearMaps)
+julia> A=LinearMap([1.0 2.0; 3.0 4.0]); x=[1.0, 1.0]; transpose(x)*A
+1×2 Transpose{Float64,Array{Float64,1}}:
+ 4.0  6.0
+```
+"""
 Base.:(*)(y::TransposeAbsVec, A::LinearMap) = transpose(transpose(A) * transpose(y))
 
 # multiplication with vector/matrix
