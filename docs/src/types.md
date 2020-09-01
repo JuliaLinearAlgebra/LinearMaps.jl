@@ -24,7 +24,7 @@ matrix-vector product as a `LinearMap`; see above.
 Type for wrapping an `AbstractMatrix` or `LinearMap` and to possible redefine
 the properties `isreal`, `issymmetric`, `ishermitian` and `isposdef`. An
 `AbstractMatrix` will automatically be converted to a `WrappedMap` when it is
-combined with other `AbstractLinearMap` objects via linear combination or
+combined with other `LinearMap` objects via linear combination or
 composition (multiplication). Note that `WrappedMap(mat1)*WrappedMap(mat2)`
 will never evaluate `mat1*mat2`, since this is more costly than evaluating
 `mat1*(mat2*x)` and the latter is the only operation that needs to be performed
@@ -91,6 +91,7 @@ SparseArrays.blockdiag
 ```@docs
 Base.:*(::LinearMap,::AbstractVector)
 Base.:*(::LinearMap,::AbstractMatrix)
+Base.:*(::AbstractMatrix,::LinearMap)
 LinearAlgebra.mul!(::AbstractVector,::LinearMap,::AbstractVector)
 LinearAlgebra.mul!(::AbstractVector,::LinearMap,::AbstractVector,::Number,::Number)
 *(::LinearAlgebra.AdjointAbsVec,::LinearMap)

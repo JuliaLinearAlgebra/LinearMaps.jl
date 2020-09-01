@@ -83,7 +83,7 @@ Arpack.eigs(-A; nev=3, which=:SR)
 Δ = kronsum(A, A)
 
 Arpack.eigs(Δ; nev=3, which=:LR)
-KrylovKit.eigsolve(x -> Δ*x, size(Δ, 1), 3, :LR)
+KrylovKit.eigsolve(Δ, size(Δ, 1), 3, :LR)
 ```
 
 ## Philosophy

@@ -70,13 +70,11 @@ Base.:(-)(A₁::LinearMap, A₂::AbstractMatrix) = -(A₁, WrappedMap(A₂))
 Base.:(-)(A₁::AbstractMatrix, A₂::LinearMap) = -(WrappedMap(A₁), A₂)
 
 """
-    *(A::LinearMap, X::AbstractMatrix)
-    *(X::AbstractMatrix, A::LinearMap)
+    *(A::LinearMap, X::AbstractMatrix)::CompositeMap
 
-Return the composite `LinearMap` `A*LinearMap(X)` and `LinearMap(X)*A`, respectively,
-interpreting the matrix `X` as a linear operator, rather than a (row) collection of
-column vectors. To compute the action of `A` on each column of `X`, call `Matrix(A*X)`
-or use the in-place multiplication `mul!(Y, A, X[, α, β])` with an appropriately sized,
+Return the `CompositeMap` `A*LinearMap(X)`, interpreting the matrix `X` as a linear operator,
+rather than a collection of column vectors. To compute the action of `A` on each column of `X`,
+call `Matrix(A*X)` or use the in-place multiplication `mul!(Y, A, X[, α, β])` with an appropriately sized,
 preallocated matrix `Y`.
 
 ## Examples
@@ -88,4 +86,19 @@ true
 ```
 """
 Base.:(*)(A₁::LinearMap, A₂::AbstractMatrix) = *(A₁, WrappedMap(A₂))
+
+"""
+    *(X::AbstractMatrix, A::LinearMap)::CompositeMap
+
+Return the `CompositeMap` `LinearMap(X)*A`, interpreting the matrix `X` as a linear operator.
+To compute the right-action of `A` on each row of `X`, call `Matrix(X*A)`.
+
+## Examples
+```jldoctest; setup=(using LinearMaps)
+julia> X=[1.0 1.0; 1.0 1.0]; A=LinearMap([1.0 2.0; 3.0 4.0]);
+
+julia> X*A isa LinearMaps.CompositeMap
+true
+```
+"""
 Base.:(*)(A₁::AbstractMatrix, A₂::LinearMap) = *(WrappedMap(A₁), A₂)
