@@ -41,6 +41,14 @@ function left_tester(L::LinearMap{T}) where {T}
     @test mul!(X, Y', L) === X
     @test mul!(X, Y', L, α, β) === X
 
+    @test transpose(Y)*L isa LinearMap
+    @test Matrix(transpose(Y)*L) ≈ transpose(Y)*A
+    @test mul!(X, transpose(Y), L) ≈ mul!(Xt, transpose(Y), L) ≈ transpose(Y)*A
+    @test mul!(Xt, transpose(Y), L) === Xt
+    @test mul!(copy(X), transpose(Y), L, α, β) ≈ X*β + transpose(Y)*A*α
+    @test mul!(X, transpose(Y), L) === X
+    @test mul!(X, transpose(Y), L, α, β) === X
+
     return true
 end
 
