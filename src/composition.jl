@@ -135,13 +135,13 @@ function _unsafe_mul!(y::AbstractVecOrMat, A::CompositeMap{<:Any,<:Tuple{Vararg{
     _compositemul!(y, A, x, similar(y, size(A.maps[1], 1)), similar(y, size(A.maps[2], 1)))
 end
 
-function _compositemul!(y::AbstractVecOrMat, A::CompositeMap{T,<:Tuple{LinearMap,LinearMap}}, x::AbstractVector, z::AbstractVector) where {T}
+function _compositemul!(y::AbstractVecOrMat, A::CompositeMap{<:Any,<:Tuple{LinearMap,LinearMap}}, x::AbstractVector, z::AbstractVector)
     # no size checking, will be done by individual maps
     _unsafe_mul!(z, A.maps[1], x)
     _unsafe_mul!(y, A.maps[2], z)
     return y
 end
-function _compositemul!(y::AbstractVecOrMat, A::CompositeMap{T,<:Tuple{Vararg{LinearMap}}}, x::AbstractVector, source::AbstractVector, dest::AbstractVector) where {T}
+function _compositemul!(y::AbstractVecOrMat, A::CompositeMap{<:Any,<:Tuple{Vararg{LinearMap}}}, x::AbstractVector, source::AbstractVector, dest::AbstractVector)
     # no size checking, will be done by individual maps
     N = length(A.maps)
     _unsafe_mul!(source, A.maps[1], x)
