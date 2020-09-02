@@ -11,7 +11,7 @@ using Test, LinearMaps, LinearAlgebra, BenchmarkTools
     n = 10
     L = sum(fill(CS!, n))
     @test_throws AssertionError LinearMaps.LinearCombination{Float64}((CS!, CS!))
-    @test occursin("10×10 LinearMaps.LinearCombination{Complex{Float64}}", sprint((t, s) -> show(t, "text/plain", s), L))
+    @test occursin("10×10 LinearMaps.LinearCombination{$(eltype(L))}", sprint((t, s) -> show(t, "text/plain", s), L))
     @test mul!(u, L, v) ≈ n * cumsum(v)
     b = @benchmarkable mul!($u, $L, $v, 2, 2)
     @test run(b, samples=5).allocs <= 1

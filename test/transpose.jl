@@ -8,8 +8,8 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
         @test transform(transform(CS)) == CS
         @test LinearMaps.MulStyle(transform(CS)) === LinearMaps.MulStyle(CS)
     end
-    @test occursin("10×10 LinearMaps.TransposeMap{Complex{Float64}}", sprint((t, s) -> show(t, "text/plain", s), transpose(CS)))
-    @test occursin("10×10 LinearMaps.AdjointMap{Complex{Float64}}", sprint((t, s) -> show(t, "text/plain", s), adjoint(CS)))
+    @test occursin("10×10 LinearMaps.TransposeMap{$(eltype(CS))}", sprint((t, s) -> show(t, "text/plain", s), transpose(CS)))
+    @test occursin("10×10 LinearMaps.AdjointMap{$(eltype(CS))}", sprint((t, s) -> show(t, "text/plain", s), adjoint(CS)))
     @test !(transpose(CS) == adjoint(CS))
     @test !(adjoint(CS) == transpose(CS))
     M = Matrix(CS)
