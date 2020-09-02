@@ -10,6 +10,7 @@ using Test, LinearMaps, LinearAlgebra, BenchmarkTools
     v = rand(ComplexF64, 10)
     w = similar(v)
     Id = @inferred LinearMap(I, 10)
+    @test occursin("10×10 LinearMaps.UniformScalingMap{Bool}", sprint((t, s) -> show(t, "text/plain", s), Id))
     @test_throws ErrorException LinearMaps.UniformScalingMap(1, 10, 20)
     @test_throws ErrorException LinearMaps.UniformScalingMap(1, (10, 20))
     @test size(Id) == (10, 10)

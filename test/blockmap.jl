@@ -7,6 +7,7 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays, BenchmarkTools, Interactive
             A12 = rand(elty, 10, n2)
             v = rand(elty, 10)
             L = @inferred hcat(LinearMap(A11), LinearMap(A12))
+            @test occursin("10×$(10+n2) LinearMaps.BlockMap{$elty}", sprint((t, s) -> show(t, "text/plain", s), L))
             @test @inferred(LinearMaps.MulStyle(L)) === matrixstyle
             @test L isa LinearMaps.BlockMap{elty}
             if elty <: Complex
@@ -45,6 +46,7 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays, BenchmarkTools, Interactive
             @test Matrix(L) ≈ A11
             A21 = rand(elty, 20, 10)
             L = @inferred vcat(LinearMap(A11), LinearMap(A21))
+            @test occursin("30×10 LinearMaps.BlockMap{$elty}", sprint((t, s) -> show(t, "text/plain", s), L))
             @test L isa LinearMaps.BlockMap{elty}
             @test @inferred(LinearMaps.MulStyle(L)) === matrixstyle
             @test (@which [A11; A21]).module != LinearMaps
@@ -193,6 +195,7 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays, BenchmarkTools, Interactive
             @test (@which cat(M1, M2, M3, M2, M1; dims=(1,2))).module != LinearMaps
             x = randn(elty, size(Md, 2))
             Bd = @inferred blockdiag(L1, L2, L3, L2, L1)
+            @test occursin("25×39 LinearMaps.BlockDiagonalMap{$elty}", sprint((t, s) -> show(t, "text/plain", s), Bd))
             @test Matrix(Bd) == Md
             @test convert(AbstractMatrix, Bd) isa SparseMatrixCSC
             @test sparse(Bd) == Md

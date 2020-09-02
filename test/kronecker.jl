@@ -9,6 +9,7 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
         LB = LinearMap(B)
         LK = @inferred kron(LA, LB)
         @test_throws AssertionError LinearMaps.KroneckerMap{Float64}((LA, LB))
+        @test occursin("6×6 LinearMaps.KroneckerMap{Complex{Float64}}", sprint((t, s) -> show(t, "text/plain", s), LK))
         @test @inferred size(LK) == size(K)
         @test LinearMaps.MulStyle(LK) === LinearMaps.ThreeArg()
         for i in (1, 2)
@@ -68,6 +69,7 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
             LA = LinearMap(A)
             LB = LinearMap(B)
             KS = @inferred kronsum(LA, B)
+            @test occursin("6×6 LinearMaps.KroneckerSumMap{$elty}", sprint((t, s) -> show(t, "text/plain", s), KS))
             @test_throws ArgumentError kronsum(LA, [B B]) # non-square map
             KSmat = kron(A, Matrix(I, 2, 2)) + kron(Matrix(I, 3, 3), B)
             @test Matrix(KS) ≈ Matrix(kron(A, LinearMap(I, 2)) + kron(LinearMap(I, 3), B))
