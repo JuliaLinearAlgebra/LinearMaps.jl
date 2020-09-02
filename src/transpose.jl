@@ -50,59 +50,47 @@ Base.:(==)(A::LinearMap, B::AdjointMap)      = ishermitian(A) && B.lmap == A
 
 # multiplication with vector/matrices
 # # TransposeMap
-function mul!(y::AbstractVecOrMat, A::TransposeMap, x::AbstractVector)
-    check_dim_mul(y, A, x)
-    issymmetric(A.lmap) ? mul!(y, A.lmap, x) : error("transpose not implemented for $A")
+function _unsafe_mul!(y::AbstractVecOrMat, A::TransposeMap, x::AbstractVector)
+    issymmetric(A.lmap) ? _unsafe_mul!(y, A.lmap, x) : error("transpose not implemented for $A")
 end
-function mul!(y::AbstractMatrix, A::TransposeMap, x::AbstractMatrix)
-    check_dim_mul(y, A, x)
-    issymmetric(A.lmap) ? mul!(y, A.lmap, x) : _generic_mapmat_mul!(y, A, x)
+function _unsafe_mul!(y::AbstractMatrix, A::TransposeMap, x::AbstractMatrix)
+    issymmetric(A.lmap) ? _unsafe_mul!(y, A.lmap, x) : _generic_mapmat_mul!(y, A, x)
 end
-function mul!(y::AbstractVecOrMat, A::TransposeMap, x::AbstractVector, α::Number, β::Number)
-    check_dim_mul(y, A, x)
-    issymmetric(A.lmap) ? mul!(y, A.lmap, x, α, β) : _generic_mapvec_mul!(y, A, x, α, β)
+function _unsafe_mul!(y::AbstractVecOrMat, A::TransposeMap, x::AbstractVector, α::Number, β::Number)
+    issymmetric(A.lmap) ? _unsafe_mul!(y, A.lmap, x, α, β) : _generic_mapvec_mul!(y, A, x, α, β)
 end
-function mul!(y::AbstractMatrix, A::TransposeMap, x::AbstractMatrix, α::Number, β::Number)
-    check_dim_mul(y, A, x)
-    issymmetric(A.lmap) ? mul!(y, A.lmap, x, α, β) : _generic_mapmat_mul!(y, A, x, α, β)
+function _unsafe_mul!(y::AbstractMatrix, A::TransposeMap, x::AbstractMatrix, α::Number, β::Number)
+    issymmetric(A.lmap) ? _unsafe_mul!(y, A.lmap, x, α, β) : _generic_mapmat_mul!(y, A, x, α, β)
 end
 # # AdjointMap
-function mul!(y::AbstractVecOrMat, A::AdjointMap, x::AbstractVector)
-    check_dim_mul(y, A, x)
-    issymmetric(A.lmap) ? mul!(y, A.lmap, x) : error("adjoint not implemented for $A")
+function _unsafe_mul!(y::AbstractVecOrMat, A::AdjointMap, x::AbstractVector)
+    issymmetric(A.lmap) ? _unsafe_mul!(y, A.lmap, x) : error("adjoint not implemented for $A")
 end
-function mul!(y::AbstractMatrix, A::AdjointMap, x::AbstractMatrix)
-    check_dim_mul(y, A, x)
-    issymmetric(A.lmap) ? mul!(y, A.lmap, x) : _generic_mapmat_mul!(y, A, x)
+function _unsafe_mul!(y::AbstractMatrix, A::AdjointMap, x::AbstractMatrix)
+    issymmetric(A.lmap) ? _unsafe_mul!(y, A.lmap, x) : _generic_mapmat_mul!(y, A, x)
 end
-function mul!(y::AbstractVecOrMat, A::AdjointMap, x::AbstractVector, α::Number, β::Number)
-    check_dim_mul(y, A, x)
-    issymmetric(A.lmap) ? mul!(y, A.lmap, x, α, β) : _generic_mapvec_mul!(y, A, x, α, β)
+function _unsafe_mul!(y::AbstractVecOrMat, A::AdjointMap, x::AbstractVector, α::Number, β::Number)
+    issymmetric(A.lmap) ? _unsafe_mul!(y, A.lmap, x, α, β) : _generic_mapvec_mul!(y, A, x, α, β)
 end
-function mul!(y::AbstractMatrix, A::AdjointMap, x::AbstractMatrix, α::Number, β::Number)
-    check_dim_mul(y, A, x)
-    issymmetric(A.lmap) ? mul!(y, A.lmap, x, α, β) : _generic_mapmat_mul!(y, A, x, α, β)
+function _unsafe_mul!(y::AbstractMatrix, A::AdjointMap, x::AbstractMatrix, α::Number, β::Number)
+    issymmetric(A.lmap) ? _unsafe_mul!(y, A.lmap, x, α, β) : _generic_mapmat_mul!(y, A, x, α, β)
 end
 # # ConjugateMap
 for (intype, outtype) in ((AbstractVector, AbstractVecOrMat), (AbstractMatrix, AbstractMatrix))
     @eval begin
-        function mul!(y::$outtype, Ac::AdjointMap{<:Any,<:TransposeMap}, x::$intype)
-            check_dim_mul(y, Ac, x)
+        function _unsafe_mul!(y::$outtype, Ac::AdjointMap{<:Any,<:TransposeMap}, x::$intype)
             A = Ac.lmap
             return _conjmul!(y, A.lmap, x)
         end
-        function mul!(y::$outtype, Ac::AdjointMap{<:Any,<:TransposeMap}, x::$intype, α::Number, β::Number)
-            check_dim_mul(y, Ac, x)
+        function _unsafe_mul!(y::$outtype, Ac::AdjointMap{<:Any,<:TransposeMap}, x::$intype, α::Number, β::Number)
             A = Ac.lmap
             return _conjmul!(y, A.lmap, x, α, β)
         end
-        function mul!(y::$outtype, At::TransposeMap{<:Any,<:AdjointMap}, x::$intype)
-            check_dim_mul(y, At, x)
+        function _unsafe_mul!(y::$outtype, At::TransposeMap{<:Any,<:AdjointMap}, x::$intype)
             A = At.lmap
-            isreal(A.lmap) ? mul!(y, A.lmap, x) : _conjmul!(y, A.lmap, x)
+            isreal(A.lmap) ? _unsafe_mul!(y, A.lmap, x) : _conjmul!(y, A.lmap, x)
         end
-        function mul!(y::$outtype, At::TransposeMap{<:Any,<:AdjointMap}, x::$intype, α::Number, β::Number)
-            check_dim_mul(y, At, x)
+        function _unsafe_mul!(y::$outtype, At::TransposeMap{<:Any,<:AdjointMap}, x::$intype, α::Number, β::Number)
             A = At.lmap
             return _conjmul!(y, A.lmap, x, α, β)
         end
@@ -120,7 +108,7 @@ end
 function _conjmul!(y, A, x::AbstractMatrix, α, β)
     xca = conj!(x * α)
     z = similar(y, size(A, 1), size(x, 2))
-    mul!(z, A, xca)
+    _unsafe_mul!(z, A, xca)
     y .= y .* β + conj.(z)
     return y
 end

@@ -86,7 +86,7 @@ julia> A*x
 function Base.:(*)(A::LinearMap, x::AbstractVector)
     size(A, 2) == length(x) || throw(DimensionMismatch("linear map has dimensions ($mA,$nA), " *
         "vector has length $mB"))
-    return mul!(similar(x, promote_type(eltype(A), eltype(x)), size(A, 1)), A, x)
+    return _unsafe_mul!(similar(x, promote_type(eltype(A), eltype(x)), size(A, 1)), A, x)
 end
 
 """
@@ -118,14 +118,19 @@ julia> C
  730.0  740.0
 ```
 """
+function mul!(y::AbstractVecOrMat, A::LinearMap, x::AbstractVector)
+    check_dim_mul(y, A, x)
+    return _unsafe_mul!(y, A, x)
+end
+
 function mul!(y::AbstractVecOrMat, A::LinearMap, x::AbstractVector, α::Number, β::Number)
     check_dim_mul(y, A, x)
-    return _generic_mapvec_mul!(y, A, x, α, β)
+    return _unsafe_mul!(y, A, x, α, β)
 end
 
 function _generic_mapvec_mul!(y, A, x, α, β)
     if isone(α)
-        iszero(β) && (mul!(y, A, x); return y)
+        iszero(β) && (_unsafe_mul!(y, A, x); return y)
         isone(β) && (y .+= A * x; return y)
         # β != 0, 1
         z = A * x
@@ -138,7 +143,7 @@ function _generic_mapvec_mul!(y, A, x, α, β)
         rmul!(y, β)
         return y
     else # α != 0, 1
-        iszero(β) && (mul!(y, A, x); rmul!(y, α); return y)
+        iszero(β) && (_unsafe_mul!(y, A, x); rmul!(y, α); return y)
         z = A * x
         if isone(β)
             y .+= z .* α
@@ -182,9 +187,9 @@ function mul!(Y::AbstractMatrix, A::LinearMap, X::AbstractMatrix, α::Number, β
     return _generic_mapmat_mul!(Y, A, X, α, β)
 end
 
-function _generic_mapmat_mul!(Y, A, X)
+function _generic_mapmat_mul!(Y, A, X, α=true, β=false)
     @views for i in 1:size(X, 2)
-        mul!(Y[:, i], A, X[:, i])
+        _unsafe_mul!(Y[:, i], A, X[:, i], α, β)
     end
     # starting from Julia v1.1, we could use the `eachcol` iterator
     # for (Xi, Yi) in zip(eachcol(X), eachcol(Y))
@@ -192,15 +197,14 @@ function _generic_mapmat_mul!(Y, A, X)
     # end
     return Y
 end
-function _generic_mapmat_mul!(Y, A, X, α, β)
-    @views for i in 1:size(X, 2)
-        mul!(Y[:, i], A, X[:, i], α, β)
-    end
-    # starting from Julia v1.1, we could use the `eachcol` iterator
-    # for (Xi, Yi) in zip(eachcol(X), eachcol(Y))
-    #     mul!(Yi, A, Xi, α, β)
-    # end
-    return Y
+
+_unsafe_mul!(y, A::MapOrMatrix, x)       = mul!(y, A, x)
+_unsafe_mul!(y, A::AbstractMatrix, x, α, β) = mul!(y, A, x, α, β)
+function _unsafe_mul!(y::AbstractVecOrMat, A::LinearMap, x::AbstractVector, α, β)
+    return _generic_mapvec_mul!(y, A, x, α, β)
+end
+function _unsafe_mul!(y::AbstractMatrix, A::LinearMap, x::AbstractMatrix, α, β)
+    return _generic_mapmat_mul!(y, A, x, α, β)
 end
 
 include("left.jl") # left multiplication by a transpose or adjoint vector

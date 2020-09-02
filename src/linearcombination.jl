@@ -66,16 +66,15 @@ LinearAlgebra.adjoint(A::LinearCombination)   = LinearCombination{eltype(A)}(map
 # multiplication with vectors & matrices
 for (intype, outtype) in ((AbstractVector, AbstractVecOrMat), (AbstractMatrix, AbstractMatrix))
     @eval begin
-        function mul!(y::$outtype, A::LinearCombination, x::$intype)
-            check_dim_mul(y, A, x)
-            mul!(y, first(A.maps), x)
+        function _unsafe_mul!(y::$outtype, A::LinearCombination, x::$intype)
+
+            _unsafe_mul!(y, first(A.maps), x)
             _mul!(MulStyle(A), y, A, x, true)
             return y
         end
 
-        function mul!(y::$outtype, A::LinearCombination, x::$intype,
+        function _unsafe_mul!(y::$outtype, A::LinearCombination, x::$intype,
                                 α::Number, β::Number)
-            check_dim_mul(y, A, x)
             if iszero(α) # trivial cases
                 iszero(β) && return fill!(y, zero(eltype(y)))
                 isone(β) && return y
@@ -91,7 +90,7 @@ for (intype, outtype) in ((AbstractVector, AbstractVecOrMat), (AbstractMatrix, A
                     __mul!(y, Base.tail(A.maps), x, α, z)
                 else # MulStyle(A1) === FiveArg() || β == 0
                     # this is allocation-free
-                    mul!(y, A1, x, α, β)
+                    _unsafe_mul!(y, A1, x, α, β)
                     # let _mul! decide whether an intermediate vector needs to be allocated
                     _mul!(MulStyle(A), y, A, x, α)
                 end
@@ -113,9 +112,9 @@ __mul!(y, As::Tuple{Vararg{LinearMap}}, x, α, z) =
 __mul!(y, A::Tuple{LinearMap}, x, α, z) = __mul!(y, first(A), x, α, z)
 __mul!(y, A::LinearMap, x, α, z) = muladd!(MulStyle(A), y, A, x, α, z)
 
-muladd!(::FiveArg, y, A, x, α, _) = mul!(y, A, x, α, true)
+muladd!(::FiveArg, y, A, x, α, _) = _unsafe_mul!(y, A, x, α, true)
 function muladd!(::ThreeArg, y, A, x, α, z)
-    mul!(z, A, x)
+    _unsafe_mul!(z, A, x)
     if isone(α)
         y .+= z
     else

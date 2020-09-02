@@ -43,14 +43,12 @@ Base.:(*)(A::UniformScalingMap, x::AbstractVector) =
 # multiplication with vector/matrix
 for (intype, outtype) in ((AbstractVector, AbstractVecOrMat), (AbstractMatrix, AbstractMatrix))
     @eval begin
-        function mul!(y::$outtype, J::UniformScalingMap, x::$intype)
-            check_dim_mul(y, J, x)
+        function _unsafe_mul!(y::$outtype, J::UniformScalingMap, x::$intype)
             _scaling!(y, J.λ, x, true, false)
             return y
         end
-        function mul!(y::$outtype, J::UniformScalingMap, x::$intype,
+        function _unsafe_mul!(y::$outtype, J::UniformScalingMap, x::$intype,
                     α::Number, β::Number)
-            check_dim_mul(y, J, x)
             _scaling!(y, J.λ, x, α, β)
             return y
         end

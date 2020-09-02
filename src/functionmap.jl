@@ -107,16 +107,14 @@ function Base.:(*)(A::TransposeMap{<:Any,<:FunctionMap}, x::AbstractVector)
     end
 end
 
-function mul!(y::AbstractVecOrMat, A::FunctionMap, x::AbstractVector)
-    check_dim_mul(y, A, x)
+function _unsafe_mul!(y::AbstractVecOrMat, A::FunctionMap, x::AbstractVector)
     ismutating(A) ? A.f(y, x) : copyto!(y, A.f(x))
     return y
 end
 
-function mul!(y::AbstractVecOrMat, At::TransposeMap{<:Any,<:FunctionMap}, x::AbstractVector)
-    check_dim_mul(y, At, x)
+function _unsafe_mul!(y::AbstractVecOrMat, At::TransposeMap{<:Any,<:FunctionMap}, x::AbstractVector)
     A = At.lmap
-    (issymmetric(A) || (isreal(A) && ishermitian(A))) && return mul!(y, A, x)
+    (issymmetric(A) || (isreal(A) && ishermitian(A))) && return _unsafe_mul!(y, A, x)
     if A.fc !== nothing
         if !isreal(A)
             x = conj(x)
@@ -127,7 +125,7 @@ function mul!(y::AbstractVecOrMat, At::TransposeMap{<:Any,<:FunctionMap}, x::Abs
         end
         return y
     elseif ishermitian(A) # but !isreal(A)
-        mul!(y, A, conj(x))
+        _unsafe_mul!(y, A, conj(x))
         conj!(y)
         return y
     else
@@ -135,15 +133,14 @@ function mul!(y::AbstractVecOrMat, At::TransposeMap{<:Any,<:FunctionMap}, x::Abs
     end
 end
 
-function mul!(y::AbstractVecOrMat, Ac::AdjointMap{<:Any,<:FunctionMap}, x::AbstractVector)
-    check_dim_mul(y, Ac, x)
+function _unsafe_mul!(y::AbstractVecOrMat, Ac::AdjointMap{<:Any,<:FunctionMap}, x::AbstractVector)
     A = Ac.lmap
-    ishermitian(A) && return mul!(y, A, x)
+    ishermitian(A) && return _unsafe_mul!(y, A, x)
     if A.fc !== nothing
         ismutating(A) ? A.fc(y, x) : copyto!(y, A.fc(x))
         return y
     elseif issymmetric(A) # but !isreal(A)
-        mul!(y, A, conj(x))
+        _unsafe_mul!(y, A, conj(x))
         conj!(y)
         return y
     else

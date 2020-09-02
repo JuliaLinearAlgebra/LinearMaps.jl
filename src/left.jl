@@ -43,24 +43,24 @@ const TransposeAbsVecOrMat{T} = Transpose{T,<:AbstractVecOrMat}
 
 function mul!(x::AbstractMatrix, y::AdjointAbsVecOrMat, A::LinearMap)
     check_dim_mul(x, y, A)
-    mul!(x', A', y')
+    _unsafe_mul!(x', A', y')
     return x
 end
 
 function mul!(x::AbstractMatrix, y::AdjointAbsVecOrMat, A::LinearMap, α::Number, β::Number)
     check_dim_mul(x, y, A)
-    mul!(x', conj(α)*A', y', true, conj(β))
+    _unsafe_mul!(x', conj(α)*A', y', true, conj(β))
     return x
 end
 
 function mul!(x::AbstractMatrix, y::TransposeAbsVecOrMat, A::LinearMap)
     check_dim_mul(x, y, A)
-    mul!(transpose(x), transpose(A), transpose(y))
+    _unsafe_mul!(transpose(x), transpose(A), transpose(y))
     return x
 end
 
 function mul!(x::AbstractMatrix, y::TransposeAbsVecOrMat, A::LinearMap, α::Number, β::Number)
     check_dim_mul(x, y, A)
-    mul!(transpose(x), α*transpose(A), transpose(y), true, β)
+    _unsafe_mul!(transpose(x), α*transpose(A), transpose(y), true, β)
     return x
 end

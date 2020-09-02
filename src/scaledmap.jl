@@ -56,13 +56,11 @@ Base.:(*)(A::LinearMap, B::ScaledMap) = (A * B.lmap) * B.λ
 # multiplication with vectors/matrices
 for (intype, outtype) in ((AbstractVector, AbstractVecOrMat), (AbstractMatrix, AbstractMatrix))
     @eval begin
-        function mul!(y::$outtype, A::ScaledMap, x::$intype)
-            check_dim_mul(y, A, x)
-            return mul!(y, A.lmap, x, A.λ, false)
+        function _unsafe_mul!(y::$outtype, A::ScaledMap, x::$intype)
+            return _unsafe_mul!(y, A.lmap, x, A.λ, false)
         end
-        function mul!(y::$outtype, A::ScaledMap, x::$intype, α::Number, β::Number)
-            check_dim_mul(y, A, x)
-            return mul!(y, A.lmap, x, A.λ * α, β)
+        function _unsafe_mul!(y::$outtype, A::ScaledMap, x::$intype, α::Number, β::Number)
+            return _unsafe_mul!(y, A.lmap, x, A.λ * α, β)
         end
     end
 end
