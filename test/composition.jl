@@ -5,6 +5,7 @@ using Test, LinearMaps, LinearAlgebra
     FC = @inferred LinearMap{ComplexF64}(cumsum, reverse ∘ cumsum ∘ reverse, 10; ismutating=false)
     FCM = LinearMaps.CompositeMap{ComplexF64}((FC,))
     L = LowerTriangular(ones(10,10))
+    @test_throws DimensionMismatch F * LinearMap(rand(2,2))
     A = 2 * rand(ComplexF64, (10, 10)) .- 1
     B = rand(size(A)...)
     H = LinearMap(Hermitian(A'A))

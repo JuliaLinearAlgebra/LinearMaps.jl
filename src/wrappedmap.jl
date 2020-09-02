@@ -37,29 +37,41 @@ LinearAlgebra.ishermitian(A::WrappedMap) = A._ishermitian
 LinearAlgebra.isposdef(A::WrappedMap) = A._isposdef
 
 # multiplication with vectors & matrices
-A_mul_B!(y::AbstractVector, A::WrappedMap, x::AbstractVector) = A_mul_B!(y, A.lmap, x)
 Base.:(*)(A::WrappedMap, x::AbstractVector) = *(A.lmap, x)
 
-At_mul_B!(y::AbstractVector, A::WrappedMap, x::AbstractVector) =
-    (issymmetric(A) || (isreal(A) && ishermitian(A))) ? A_mul_B!(y, A.lmap, x) : At_mul_B!(y, A.lmap, x)
-
-Ac_mul_B!(y::AbstractVector, A::WrappedMap, x::AbstractVector) =
-    ishermitian(A) ? A_mul_B!(y, A.lmap, x) : Ac_mul_B!(y, A.lmap, x)
+for (intype, outtype) in ((AbstractVector, AbstractVecOrMat), (AbstractMatrix, AbstractMatrix))
+    @eval begin
+        _unsafe_mul!(y::$outtype, A::WrappedMap, x::$intype) = _unsafe_mul!(y, A.lmap, x)
+        function _unsafe_mul!(y::$outtype, At::TransposeMap{<:Any,<:WrappedMap}, x::$intype)
+            A = At.lmap
+            return (issymmetric(A) || (isreal(A) && ishermitian(A))) ?
+                _unsafe_mul!(y, A.lmap, x) :
+                _unsafe_mul!(y, transpose(A.lmap), x)
+        end
+        function _unsafe_mul!(y::$outtype, Ac::AdjointMap{<:Any,<:WrappedMap}, x::$intype)
+            A = Ac.lmap
+            return ishermitian(A) ? _unsafe_mul!(y, A.lmap, x) : _unsafe_mul!(y, adjoint(A.lmap), x)
+        end
+    end
+end
 
 if VERSION ≥ v"1.3.0-alpha.115"
-    for Atype in (AbstractVector, AbstractMatrix)
-        @eval Base.@propagate_inbounds LinearAlgebra.mul!(y::$Atype, A::WrappedMap, x::$Atype,
-                        α::Number, β::Number) =
-            mul!(y, A.lmap, x, α, β)
-    end
-else
-# This is somewhat suboptimal, because the absence of 5-arg mul! for MatrixMaps
-# doesn't allow to define a 5-arg mul! for WrappedMaps which do have a 5-arg mul!
-# I'd assume, however, that 5-arg mul! becomes standard in Julia v≥1.3 anyway
-# the idea is to let the fallback handle 5-arg calls
-    for Atype in (AbstractVector, AbstractMatrix)
-        @eval Base.@propagate_inbounds LinearAlgebra.mul!(Y::$Atype, A::WrappedMap, X::$Atype) =
-            mul!(Y, A.lmap, X)
+    for (intype, outtype) in ((AbstractVector, AbstractVecOrMat), (AbstractMatrix, AbstractMatrix))
+        @eval begin
+            function _unsafe_mul!(y::$outtype, A::WrappedMap, x::$intype, α::Number, β::Number)
+                return _unsafe_mul!(y, A.lmap, x, α, β)
+            end
+            function _unsafe_mul!(y::$outtype, At::TransposeMap{<:Any,<:WrappedMap}, x::$intype, α::Number, β::Number)
+                A = At.lmap
+                return (issymmetric(A) || (isreal(A) && ishermitian(A))) ?
+                    _unsafe_mul!(y, A.lmap, x, α, β) :
+                    _unsafe_mul!(y, transpose(A.lmap), x, α, β)
+            end
+            function _unsafe_mul!(y::$outtype, Ac::AdjointMap{<:Any,<:WrappedMap}, x::$intype, α::Number, β::Number)
+                A = Ac.lmap
+                return ishermitian(A) ? _unsafe_mul!(y, A.lmap, x, α, β) : _unsafe_mul!(y, adjoint(A.lmap), x, α, β)
+            end
+        end
     end
 end # VERSION
 

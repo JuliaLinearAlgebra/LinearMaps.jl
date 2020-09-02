@@ -5,10 +5,6 @@
 # so we want handle it like a vector (Issue#99)
 # So this is an exception to the left multiplication rule by a AbstractMatrix
 # that usually makes a WrappedMap.
-# The "transpose" versions may be of dubious use, but the adjoint versions
-# are useful for ensuring that (y'A)*x ≈ y'*(A*x) are both scalars.
-
-import LinearAlgebra: AdjointAbsVec, TransposeAbsVec
 
 # x = y'*A ⇐⇒ x' = (A'*y)
 """
@@ -24,7 +20,7 @@ julia> A=LinearMap([1.0 2.0; 3.0 4.0]); x=[1.0, 1.0]; x'A
  4.0  6.0
 ```
 """
-Base.:(*)(y::AdjointAbsVec, A::LinearMap) = adjoint(A' * y')
+Base.:(*)(y::LinearAlgebra.AdjointAbsVec, A::LinearMap) = adjoint(A' * y')
 
 """
     *(x::LinearAlgebra.TransposeAbsVec, A::LinearMap)::TransposeAbsVec
@@ -39,38 +35,32 @@ julia> A=LinearMap([1.0 2.0; 3.0 4.0]); x=[1.0, 1.0]; transpose(x)*A
  4.0  6.0
 ```
 """
-Base.:(*)(y::TransposeAbsVec, A::LinearMap) = transpose(transpose(A) * transpose(y))
+Base.:(*)(y::LinearAlgebra.TransposeAbsVec, A::LinearMap) = transpose(transpose(A) * transpose(y))
 
 # multiplication with vector/matrix
-for Atype in (AdjointAbsVec, Adjoint{<:Any,<:AbstractMatrix})
-    @eval begin
-        Base.@propagate_inbounds function LinearAlgebra.mul!(x::AbstractMatrix, y::$Atype, A::LinearMap)
-            @boundscheck check_dim_mul(x, y, A)
-            @inbounds mul!(x', A', y')
-            return x
-        end
+const AdjointAbsVecOrMat{T} = Adjoint{T,<:AbstractVecOrMat}
+const TransposeAbsVecOrMat{T} = Transpose{T,<:AbstractVecOrMat}
 
-        Base.@propagate_inbounds function LinearAlgebra.mul!(x::AbstractMatrix, y::$Atype, A::LinearMap,
-                α::Number, β::Number)
-            @boundscheck check_dim_mul(x, y, A)
-            @inbounds mul!(x', A', y', conj(α), conj(β))
-            return x
-        end
-    end
+function mul!(x::AbstractMatrix, y::AdjointAbsVecOrMat, A::LinearMap)
+    check_dim_mul(x, y, A)
+    _unsafe_mul!(x', A', y')
+    return x
 end
-for Atype in (TransposeAbsVec, Transpose{<:Any,<:AbstractMatrix})
-    @eval begin
-        Base.@propagate_inbounds function LinearAlgebra.mul!(x::AbstractMatrix, y::$Atype, A::LinearMap)
-            @boundscheck check_dim_mul(x, y, A)
-            @inbounds mul!(transpose(x), transpose(A), transpose(y))
-            return x
-        end
 
-        Base.@propagate_inbounds function LinearAlgebra.mul!(x::AbstractMatrix, y::$Atype, A::LinearMap,
-                α::Number, β::Number)
-            @boundscheck check_dim_mul(x, y, A)
-            @inbounds mul!(transpose(x), transpose(A), transpose(y), α, β)
-            return x
-        end
-    end
+function mul!(x::AbstractMatrix, y::AdjointAbsVecOrMat, A::LinearMap, α::Number, β::Number)
+    check_dim_mul(x, y, A)
+    _unsafe_mul!(x', conj(α)*A', y', true, conj(β))
+    return x
+end
+
+function mul!(x::AbstractMatrix, y::TransposeAbsVecOrMat, A::LinearMap)
+    check_dim_mul(x, y, A)
+    _unsafe_mul!(transpose(x), transpose(A), transpose(y))
+    return x
+end
+
+function mul!(x::AbstractMatrix, y::TransposeAbsVecOrMat, A::LinearMap, α::Number, β::Number)
+    check_dim_mul(x, y, A)
+    _unsafe_mul!(transpose(x), α*transpose(A), transpose(y), true, β)
+    return x
 end

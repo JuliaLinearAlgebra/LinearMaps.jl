@@ -6,7 +6,7 @@ function Base.Matrix(A::LinearMap)
     v = fill(zero(T), N)
     @inbounds for i in 1:N
         v[i] = one(T)
-        mul!(view(mat, :, i), A, v)
+        _unsafe_mul!(view(mat, :, i), A, v)
         v[i] = zero(T)
     end
     return mat
@@ -28,7 +28,7 @@ function SparseArrays.sparse(A::LinearMap{T}) where {T}
 
     @inbounds for i in 1:N
         v[i] = one(T)
-        mul!(Av, A, v)
+        _unsafe_mul!(Av, A, v)
         js = findall(!iszero, Av)
         colptr[i] = length(nzval) + 1
         if length(js) > 0

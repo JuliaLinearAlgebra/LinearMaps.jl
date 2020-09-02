@@ -4,6 +4,7 @@ export LinearMap
 export ⊗, kronsum, ⊕
 
 using LinearAlgebra
+import LinearAlgebra: mul!
 using SparseArrays
 
 if VERSION < v"1.2-"
@@ -83,35 +84,9 @@ julia> A*x
 ```
 """
 function Base.:(*)(A::LinearMap, x::AbstractVector)
-    size(A, 2) == length(x) || throw(DimensionMismatch("mul!"))
-    return @inbounds A_mul_B!(similar(x, promote_type(eltype(A), eltype(x)), size(A, 1)), A, x)
-end
-"""
-    mul!(Y, A::LinearMap, B) -> Y
-
-Calculates the action of the linear map `A` on the vector or matrix `B` and stores the result in `Y`,
-overwriting the existing value of `Y`. Note that `Y` must not be aliased with either `A` or `B`.
-
-## Examples
-```jldoctest; setup=(using LinearAlgebra, LinearMaps)
-julia> A=LinearMap([1.0 2.0; 3.0 4.0]); B=[1.0, 1.0]; Y = similar(B); mul!(Y, A, B);
-
-julia> Y
-2-element Array{Float64,1}:
- 3.0
- 7.0
-
-julia> A=LinearMap([1.0 2.0; 3.0 4.0]); B=[1.0 1.0; 1.0 1.0]; Y = similar(B); mul!(Y, A, B);
-
-julia> Y
-2×2 Array{Float64,2}:
- 3.0  3.0
- 7.0  7.0
-```
-"""
-function LinearAlgebra.mul!(y::AbstractVector, A::LinearMap, x::AbstractVector)
-    @boundscheck check_dim_mul(y, A, x)
-    return @inbounds A_mul_B!(y, A, x)
+    size(A, 2) == length(x) || throw(DimensionMismatch("linear map has dimensions ($mA,$nA), " *
+        "vector has length $mB"))
+    return _unsafe_mul!(similar(x, promote_type(eltype(A), eltype(x)), size(A, 1)), A, x)
 end
 
 """
@@ -143,14 +118,23 @@ julia> C
  730.0  740.0
 ```
 """
-function LinearAlgebra.mul!(y::AbstractVector, A::LinearMap, x::AbstractVector, α::Number, β::Number)
-    @boundscheck check_dim_mul(y, A, x)
+function mul!(y::AbstractVecOrMat, A::LinearMap, x::AbstractVector)
+    check_dim_mul(y, A, x)
+    return _unsafe_mul!(y, A, x)
+end
+
+function mul!(y::AbstractVecOrMat, A::LinearMap, x::AbstractVector, α::Number, β::Number)
+    check_dim_mul(y, A, x)
+    return _unsafe_mul!(y, A, x, α, β)
+end
+
+function _generic_mapvec_mul!(y, A, x, α, β)
     if isone(α)
-        iszero(β) && (A_mul_B!(y, A, x); return y)
+        iszero(β) && (_unsafe_mul!(y, A, x); return y)
         isone(β) && (y .+= A * x; return y)
         # β != 0, 1
-        rmul!(y, β)
-        y .+= A * x
+        z = A * x
+        y .= y.*β .+ z
         return y
     elseif iszero(α)
         iszero(β) && (fill!(y, zero(eltype(y))); return y)
@@ -159,19 +143,53 @@ function LinearAlgebra.mul!(y::AbstractVector, A::LinearMap, x::AbstractVector, 
         rmul!(y, β)
         return y
     else # α != 0, 1
-        iszero(β) && (A_mul_B!(y, A, x); rmul!(y, α); return y)
-        isone(β) && (y .+= rmul!(A * x, α); return y)
-        # β != 0, 1
-        rmul!(y, β)
-        y .+= rmul!(A * x, α)
+        iszero(β) && (_unsafe_mul!(y, A, x); rmul!(y, α); return y)
+        z = A * x
+        if isone(β)
+            y .+= z .* α
+        else
+            y .= y .* β .+ z .* α
+        end
         return y
     end
 end
+
 # the following is of interest in, e.g., subspace-iteration methods
-Base.@propagate_inbounds function LinearAlgebra.mul!(Y::AbstractMatrix, A::LinearMap, X::AbstractMatrix, α::Number=true, β::Number=false)
-    @boundscheck check_dim_mul(Y, A, X)
-    @inbounds @views for i = 1:size(X, 2)
-        mul!(Y[:, i], A, X[:, i], α, β)
+"""
+    mul!(Y, A::LinearMap, B) -> Y
+
+Calculates the action of the linear map `A` on the vector or matrix `B` and stores the result in `Y`,
+overwriting the existing value of `Y`. Note that `Y` must not be aliased with either `A` or `B`.
+
+## Examples
+```jldoctest; setup=(using LinearAlgebra, LinearMaps)
+julia> A=LinearMap([1.0 2.0; 3.0 4.0]); B=[1.0, 1.0]; Y = similar(B); mul!(Y, A, B);
+
+julia> Y
+2-element Array{Float64,1}:
+ 3.0
+ 7.0
+
+julia> A=LinearMap([1.0 2.0; 3.0 4.0]); B=[1.0 1.0; 1.0 1.0]; Y = similar(B); mul!(Y, A, B);
+
+julia> Y
+2×2 Array{Float64,2}:
+ 3.0  3.0
+ 7.0  7.0
+```
+"""
+function mul!(Y::AbstractMatrix, A::LinearMap, X::AbstractMatrix)
+    check_dim_mul(Y, A, X)
+    return _generic_mapmat_mul!(Y, A, X)
+end
+function mul!(Y::AbstractMatrix, A::LinearMap, X::AbstractMatrix, α::Number, β::Number)
+    check_dim_mul(Y, A, X)
+    return _generic_mapmat_mul!(Y, A, X, α, β)
+end
+
+function _generic_mapmat_mul!(Y, A, X, α=true, β=false)
+    @views for i in 1:size(X, 2)
+        _unsafe_mul!(Y[:, i], A, X[:, i], α, β)
     end
     # starting from Julia v1.1, we could use the `eachcol` iterator
     # for (Xi, Yi) in zip(eachcol(X), eachcol(Y))
@@ -180,14 +198,19 @@ Base.@propagate_inbounds function LinearAlgebra.mul!(Y::AbstractMatrix, A::Linea
     return Y
 end
 
-A_mul_B!(y::AbstractVector, A::AbstractMatrix, x::AbstractVector)  = mul!(y, A, x)
-At_mul_B!(y::AbstractVector, A::AbstractMatrix, x::AbstractVector) = mul!(y, transpose(A), x)
-Ac_mul_B!(y::AbstractVector, A::AbstractMatrix, x::AbstractVector) = mul!(y, adjoint(A), x)
+_unsafe_mul!(y, A::MapOrMatrix, x)       = mul!(y, A, x)
+_unsafe_mul!(y, A::AbstractMatrix, x, α, β) = mul!(y, A, x, α, β)
+function _unsafe_mul!(y::AbstractVecOrMat, A::LinearMap, x::AbstractVector, α, β)
+    return _generic_mapvec_mul!(y, A, x, α, β)
+end
+function _unsafe_mul!(y::AbstractMatrix, A::LinearMap, x::AbstractMatrix, α, β)
+    return _generic_mapmat_mul!(y, A, x, α, β)
+end
 
 include("left.jl") # left multiplication by a transpose or adjoint vector
+include("transpose.jl") # transposing linear maps
 include("wrappedmap.jl") # wrap a matrix of linear map in a new type, thereby allowing to alter its properties
 include("uniformscalingmap.jl") # the uniform scaling map, to be able to make linear combinations of LinearMap objects and multiples of I
-include("transpose.jl") # transposing linear maps
 include("linearcombination.jl") # defining linear combinations of linear maps
 include("scaledmap.jl") # multiply by a (real or complex) scalar
 include("composition.jl") # composition of linear maps

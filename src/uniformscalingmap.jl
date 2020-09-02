@@ -41,16 +41,21 @@ Base.:(*)(A::UniformScalingMap, x::AbstractVector) =
     length(x) == A.M ? A.λ * x : throw(DimensionMismatch("*"))
 
 # multiplication with vector/matrix
-for Atype in (AbstractVector, AbstractMatrix)
-    @eval Base.@propagate_inbounds function LinearAlgebra.mul!(y::$Atype, J::UniformScalingMap, x::$Atype,
-                α::Number, β::Number)
-        @boundscheck check_dim_mul(y, J, x)
-        _scaling!(y, J.λ, x, α, β)
-        return y
+for (intype, outtype) in ((AbstractVector, AbstractVecOrMat), (AbstractMatrix, AbstractMatrix))
+    @eval begin
+        function _unsafe_mul!(y::$outtype, J::UniformScalingMap, x::$intype)
+            _scaling!(y, J.λ, x, true, false)
+            return y
+        end
+        function _unsafe_mul!(y::$outtype, J::UniformScalingMap, x::$intype,
+                    α::Number, β::Number)
+            _scaling!(y, J.λ, x, α, β)
+            return y
+        end
     end
 end
 
-function _scaling!(y, λ::Number, x, α::Number, β::Number)
+function _scaling!(y, λ, x, α, β)
     if (iszero(α) || iszero(λ))
         iszero(β) && (fill!(y, zero(eltype(y))); return y)
         isone(β) && return y
@@ -87,10 +92,6 @@ function _scaling!(y, λ::Number, x, α::Number, β::Number)
         end # β-cases
     end # α-cases
 end # function _scaling!
-
-A_mul_B!(y::AbstractVector, A::UniformScalingMap, x::AbstractVector) = mul!(y, A, x, true, false)
-At_mul_B!(y::AbstractVector, A::UniformScalingMap, x::AbstractVector) = A_mul_B!(y, transpose(A), x)
-Ac_mul_B!(y::AbstractVector, A::UniformScalingMap, x::AbstractVector) = A_mul_B!(y, adjoint(A), x)
 
 # combine LinearMap and UniformScaling objects in linear combinations
 Base.:(+)(A₁::LinearMap, A₂::UniformScaling) = A₁ + UniformScalingMap(A₂.λ, size(A₁, 1))

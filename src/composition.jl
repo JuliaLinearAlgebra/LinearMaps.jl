@@ -101,22 +101,18 @@ julia> LinearMap(ones(Int, 3, 3)) * CS * I * rand(3, 3);
 ```
 """
 function Base.:(*)(A₁::LinearMap, A₂::LinearMap)
-    check_dim_mul(A₁, A₂) || throw(DimensionMismatch("*"))
     T = promote_type(eltype(A₁), eltype(A₂))
     return CompositeMap{T}(tuple(A₂, A₁))
 end
 function Base.:(*)(A₁::LinearMap, A₂::CompositeMap)
-    check_dim_mul(A₁, A₂) || throw(DimensionMismatch("*"))
     T = promote_type(eltype(A₁), eltype(A₂))
     return CompositeMap{T}(tuple(A₂.maps..., A₁))
 end
 function Base.:(*)(A₁::CompositeMap, A₂::LinearMap)
-    check_dim_mul(A₁, A₂) || throw(DimensionMismatch("*"))
     T = promote_type(eltype(A₁), eltype(A₂))
     return CompositeMap{T}(tuple(A₂, A₁.maps...))
 end
 function Base.:(*)(A₁::CompositeMap, A₂::CompositeMap)
-    check_dim_mul(A₁, A₂) || throw(DimensionMismatch("*"))
     T = promote_type(eltype(A₁), eltype(A₂))
     return CompositeMap{T}(tuple(A₂.maps..., A₁.maps...))
 end
@@ -129,26 +125,26 @@ LinearAlgebra.adjoint(A::CompositeMap{T}) where {T}   = CompositeMap{T}(map(adjo
 Base.:(==)(A::CompositeMap, B::CompositeMap) = (eltype(A) == eltype(B) && A.maps == B.maps)
 
 # multiplication with vectors
-function A_mul_B!(y::AbstractVector, A::CompositeMap{T,<:Tuple{LinearMap}}, x::AbstractVector) where {T}
-    return A_mul_B!(y, A.maps[1], x)
+function _unsafe_mul!(y::AbstractVecOrMat, A::CompositeMap{<:Any,<:Tuple{LinearMap}}, x::AbstractVector)
+    return _unsafe_mul!(y, A.maps[1], x)
 end
-function A_mul_B!(y::AbstractVector, A::CompositeMap{T,<:Tuple{LinearMap,LinearMap}}, x::AbstractVector) where {T}
+function _unsafe_mul!(y::AbstractVecOrMat, A::CompositeMap{<:Any,<:Tuple{LinearMap,LinearMap}}, x::AbstractVector)
     _compositemul!(y, A, x, similar(y, size(A.maps[1], 1)))
 end
-function A_mul_B!(y::AbstractVector, A::CompositeMap{T,<:Tuple{Vararg{LinearMap}}}, x::AbstractVector) where {T}
+function _unsafe_mul!(y::AbstractVecOrMat, A::CompositeMap{<:Any,<:Tuple{Vararg{LinearMap}}}, x::AbstractVector)
     _compositemul!(y, A, x, similar(y, size(A.maps[1], 1)), similar(y, size(A.maps[2], 1)))
 end
 
-function _compositemul!(y::AbstractVector, A::CompositeMap{T,<:Tuple{LinearMap,LinearMap}}, x::AbstractVector, z::AbstractVector) where {T}
+function _compositemul!(y::AbstractVecOrMat, A::CompositeMap{<:Any,<:Tuple{LinearMap,LinearMap}}, x::AbstractVector, z::AbstractVector)
     # no size checking, will be done by individual maps
-    A_mul_B!(z, A.maps[1], x)
-    A_mul_B!(y, A.maps[2], z)
+    _unsafe_mul!(z, A.maps[1], x)
+    _unsafe_mul!(y, A.maps[2], z)
     return y
 end
-function _compositemul!(y::AbstractVector, A::CompositeMap{T,<:Tuple{Vararg{LinearMap}}}, x::AbstractVector, source::AbstractVector, dest::AbstractVector) where {T}
+function _compositemul!(y::AbstractVecOrMat, A::CompositeMap{<:Any,<:Tuple{Vararg{LinearMap}}}, x::AbstractVector, source::AbstractVector, dest::AbstractVector)
     # no size checking, will be done by individual maps
     N = length(A.maps)
-    A_mul_B!(source, A.maps[1], x)
+    _unsafe_mul!(source, A.maps[1], x)
     for n in 2:N-1
         try
             resize!(dest, size(A.maps[n], 1))
@@ -159,13 +155,9 @@ function _compositemul!(y::AbstractVector, A::CompositeMap{T,<:Tuple{Vararg{Line
                 rethrow(err)
             end
         end
-        A_mul_B!(dest, A.maps[n], source)
+        _unsafe_mul!(dest, A.maps[n], source)
         dest, source = source, dest # alternate dest and source
     end
-    A_mul_B!(y, A.maps[N], source)
+    _unsafe_mul!(y, A.maps[N], source)
     return y
 end
-
-At_mul_B!(y::AbstractVector, A::CompositeMap, x::AbstractVector) = A_mul_B!(y, transpose(A), x)
-
-Ac_mul_B!(y::AbstractVector, A::CompositeMap, x::AbstractVector) = A_mul_B!(y, adjoint(A), x)
