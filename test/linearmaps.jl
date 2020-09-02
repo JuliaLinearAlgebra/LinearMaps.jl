@@ -55,8 +55,8 @@ LinearAlgebra.mul!(y::AbstractVector, A::Union{SimpleFunctionMap,SimpleComplexFu
     @test @inferred !ishermitian(F)
     @test @inferred !ishermitian(FC)
     @test @inferred !isposdef(F)
-    @test occursin("10×10 SimpleFunctionMap{Float64}", sprint((t, s) -> show(t, "text/plain", s), F))
-    @test occursin("10×10 SimpleComplexFunctionMap{Complex{Float64}}", sprint((t, s) -> show(t, "text/plain", s), FC))
+    @test occursin("10×10 SimpleFunctionMap{$(eltype(F))}", sprint((t, s) -> show(t, "text/plain", s), F))
+    @test occursin("10×10 SimpleComplexFunctionMap{$(eltype(FC))}", sprint((t, s) -> show(t, "text/plain", s), FC))
     α = rand(ComplexF64); β = rand(ComplexF64)
     v = rand(ComplexF64, 10); V = rand(ComplexF64, 10, 3)
     w = rand(ComplexF64, 10); W = rand(ComplexF64, 10, 3)
@@ -71,8 +71,10 @@ LinearAlgebra.mul!(y::AbstractVector, A::Union{SimpleFunctionMap,SimpleComplexFu
     @test F * v ≈ L * v
     # generic 5-arg mul! and matrix-mul!
     @test mul!(copy(w), F, v, α, β) ≈ L*v*α + w*β
+    @test mul!(copy(w), F, v, 0, β) ≈ w*β
     @test mul!(copy(W), F, V) ≈ L*V
     @test mul!(copy(W), F, V, α, β) ≈ L*V*α + W*β
+    @test mul!(copy(W), F, V, 0, β) ≈ W*β
 
     Fs = sparse(F)
     @test SparseMatrixCSC(F) == Fs == L
