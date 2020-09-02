@@ -25,9 +25,10 @@ function _show(io::IO, A::Union{AdjointMap,TransposeMap,WrappedMap})
     if A isa MatrixMap
         # summary(io, L)
         # println(io, ":")
-        Base.print_matrix(io, L)
+        # Base.print_matrix(io, L)
+        print(io, typeof(L))
     else
-        _show(io, L)
+        show(io, L)
     end
 end
 function _show(io::IO, A::BlockMap)
@@ -37,7 +38,6 @@ function _show(io::IO, A::BlockMap)
     print_maps(io, A.maps)
 end
 function _show(io::IO, A::BlockDiagonalMap)
-    nrows = length(A.rows)
     n = length(A.maps)
     println(io, " with $n diagonal block map", n>1 ? "s" : "")
     print_maps(io, A.maps)
@@ -45,6 +45,10 @@ end
 function _show(io::IO, J::UniformScalingMap)
     s = "$(J.λ)"
     print(io, " with scaling factor: $s")
+end
+function _show(io::IO, A::ScaledMap{T}) where {T}
+    println(io, " with scale: $(A.λ) of")
+    show(io, A.lmap)
 end
 
 # helper functions
