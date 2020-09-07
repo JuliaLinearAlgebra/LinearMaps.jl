@@ -11,12 +11,11 @@ end
 KroneckerMap{T}(maps::As) where {T, As<:Tuple{Vararg{LinearMap}}} = KroneckerMap{T, As}(maps)
 
 """
-    kron(A::LinearMap, B::LinearMap)
-    kron(A, B, Cs...)
+    kron(A::LinearMap, B::LinearMap)::KroneckerMap
+    kron(A, B, Cs...)::KroneckerMap
 
-Construct a `KroneckerMap <: LinearMap` object, a (lazy) representation of the
-Kronecker product of two `LinearMap`s. One of the two factors can be an `AbstractMatrix`,
-which is then promoted to a `LinearMap` automatically.
+Construct a (lazy) representation of the Kronecker product `A⊗B`. One of the two factors
+can be an `AbstractMatrix`, which is then promoted to a `LinearMap` automatically.
 
 To avoid fallback to the generic [`Base.kron`](@ref) in the multi-map case,
 there must be a `LinearMap` object among the first 8 arguments in usage like
@@ -109,9 +108,9 @@ Base.:(==)(A::KroneckerMap, B::KroneckerMap) = (eltype(A) == eltype(B) && A.maps
     temp2 = similar(y, nb)
     @views @inbounds for i in 1:ma
         v[i] = one(T)
-        A_mul_B!(temp1, At, v)
-        A_mul_B!(temp2, X, temp1)
-        A_mul_B!(y[((i-1)*mb+1):i*mb], B, temp2)
+        _unsafe_mul!(temp1, At, v)
+        _unsafe_mul!(temp2, X, temp1)
+        _unsafe_mul!(y[((i-1)*mb+1):i*mb], B, temp2)
         v[i] = zero(T)
     end
     return y
@@ -120,9 +119,9 @@ end
     na, ma = size(At)
     mb, nb = size(B)
     if nb*ma < mb*na
-        mul!(reshape(y, (mb, ma)), B, convert(Matrix, X*At))
+        _unsafe_mul!(reshape(y, (mb, ma)), B, convert(Matrix, X*At))
     else
-        mul!(reshape(y, (mb, ma)), convert(Matrix, B*X), At isa MatrixMap ? At.lmap : At.λ)
+        _unsafe_mul!(reshape(y, (mb, ma)), convert(Matrix, B*X), At isa MatrixMap ? At.lmap : At.λ)
     end
     return y
 end
@@ -131,17 +130,15 @@ end
 # multiplication with vectors
 #################
 
-Base.@propagate_inbounds function A_mul_B!(y::AbstractVector, L::KroneckerMap{T,<:NTuple{2,LinearMap}}, x::AbstractVector) where {T}
+function _unsafe_mul!(y::AbstractVecOrMat, L::KroneckerMap{T,<:NTuple{2,LinearMap}}, x::AbstractVector) where {T}
     require_one_based_indexing(y)
-    @boundscheck check_dim_mul(y, L, x)
     A, B = L.maps
     X = LinearMap(reshape(x, (size(B, 2), size(A, 2))); issymmetric=false, ishermitian=false, isposdef=false)
     _kronmul!(y, B, X, transpose(A), T)
     return y
 end
-Base.@propagate_inbounds function A_mul_B!(y::AbstractVector, L::KroneckerMap{T}, x::AbstractVector) where {T}
+function _unsafe_mul!(y::AbstractVecOrMat, L::KroneckerMap{T}, x::AbstractVector) where {T}
     require_one_based_indexing(y)
-    @boundscheck check_dim_mul(y, L, x)
     A = first(L.maps)
     B = kron(Base.tail(L.maps)...)
     X = LinearMap(reshape(x, (size(B, 2), size(A, 2))); issymmetric=false, ishermitian=false, isposdef=false)
@@ -150,34 +147,32 @@ Base.@propagate_inbounds function A_mul_B!(y::AbstractVector, L::KroneckerMap{T}
 end
 # mixed-product rule, prefer the right if possible
 # (A₁ ⊗ A₂ ⊗ ... ⊗ Aᵣ) * (B₁ ⊗ B₂ ⊗ ... ⊗ Bᵣ) = (A₁B₁) ⊗ (A₂B₂) ⊗ ... ⊗ (AᵣBᵣ)
-Base.@propagate_inbounds function A_mul_B!(y::AbstractVector, L::CompositeMap{<:Any,<:Tuple{KroneckerMap,KroneckerMap}}, x::AbstractVector)
+function _unsafe_mul!(y::AbstractVecOrMat, L::CompositeMap{<:Any,<:Tuple{KroneckerMap,KroneckerMap}}, x::AbstractVector)
+    require_one_based_indexing(y)
     B, A = L.maps
     if length(A.maps) == length(B.maps) && all(M -> check_dim_mul(M[1], M[2]), zip(A.maps, B.maps))
-        A_mul_B!(y, kron(map(*, A.maps, B.maps)...), x)
+        _unsafe_mul!(y, kron(map(*, A.maps, B.maps)...), x)
     else
-        A_mul_B!(y, LinearMap(A)*B, x)
+        _unsafe_mul!(y, LinearMap(A)*B, x)
     end
+    return y
 end
 # mixed-product rule, prefer the right if possible
 # (A₁ ⊗ B₁)*(A₂⊗B₂)*...*(Aᵣ⊗Bᵣ) = (A₁*A₂*...*Aᵣ) ⊗ (B₁*B₂*...*Bᵣ)
-Base.@propagate_inbounds function A_mul_B!(y::AbstractVector, L::CompositeMap{T,<:Tuple{Vararg{KroneckerMap{<:Any,<:Tuple{LinearMap,LinearMap}}}}}, x::AbstractVector) where {T}
+function _unsafe_mul!(y::AbstractVecOrMat, L::CompositeMap{T,<:Tuple{Vararg{KroneckerMap{<:Any,<:Tuple{LinearMap,LinearMap}}}}}, x::AbstractVector) where {T}
+    require_one_based_indexing(y)
     As = map(AB -> AB.maps[1], L.maps)
     Bs = map(AB -> AB.maps[2], L.maps)
     As1, As2 = Base.front(As), Base.tail(As)
     Bs1, Bs2 = Base.front(Bs), Base.tail(Bs)
     apply = all(A -> check_dim_mul(A...), zip(As1, As2)) && all(A -> check_dim_mul(A...), zip(Bs1, Bs2))
     if apply
-        A_mul_B!(y, kron(prod(As), prod(Bs)), x)
+        _unsafe_mul!(y, kron(prod(As), prod(Bs)), x)
     else
-        A_mul_B!(y, CompositeMap{T}(map(LinearMap, L.maps)), x)
+        _unsafe_mul!(y, CompositeMap{T}(map(LinearMap, L.maps)), x)
     end
+    return y
 end
-
-Base.@propagate_inbounds At_mul_B!(y::AbstractVector, A::KroneckerMap, x::AbstractVector) =
-    A_mul_B!(y, transpose(A), x)
-
-Base.@propagate_inbounds Ac_mul_B!(y::AbstractVector, A::KroneckerMap, x::AbstractVector) =
-    A_mul_B!(y, adjoint(A), x)
 
 ###############
 # KroneckerSumMap
@@ -196,14 +191,13 @@ end
 KroneckerSumMap{T}(maps::As) where {T, As<:Tuple{LinearMap,LinearMap}} = KroneckerSumMap{T, As}(maps)
 
 """
-    kronsum(A, B)
-    kronsum(A, B, Cs...)
+    kronsum(A, B)::KroneckerSumMap
+    kronsum(A, B, Cs...)::KroneckerSumMap
 
-Construct a `KroneckerSumMap <: LinearMap` object, a (lazy) representation of the
-Kronecker sum `A⊕B = A ⊗ Ib + Ia ⊗ B` of two square linear maps of type
-`LinearMap` or `AbstractMatrix`. Here, `Ia` and `Ib` are identity operators of
-the size of `A` and `B`, respectively. Arguments of type `AbstractMatrix` are
-automatically promoted to `LinearMap`s.
+Construct a (lazy) representation of the Kronecker sum `A⊕B = A ⊗ Ib + Ia ⊗ B`
+of two square linear maps of type `LinearMap` or `AbstractMatrix`. Here, `Ia`
+and `Ib` are identity operators of the size of `A` and `B`, respectively.
+Arguments of type `AbstractMatrix` are automatically promoted to `LinearMap`.
 
 For convenience, one can also use `A ⊕ B` or `⊕(A, B, Cs...)` (typed as
 `\\oplus+TAB`) to construct the `KroneckerSumMap`.
@@ -261,20 +255,13 @@ LinearAlgebra.transpose(A::KroneckerSumMap{T}) where {T} = KroneckerSumMap{T}(ma
 
 Base.:(==)(A::KroneckerSumMap, B::KroneckerSumMap) = (eltype(A) == eltype(B) && A.maps == B.maps)
 
-Base.@propagate_inbounds function A_mul_B!(y::AbstractVector, L::KroneckerSumMap, x::AbstractVector)
-    @boundscheck check_dim_mul(y, L, x)
+function _unsafe_mul!(y::AbstractVecOrMat, L::KroneckerSumMap, x::AbstractVector)
     A, B = L.maps
     ma, na = size(A)
     mb, nb = size(B)
     X = reshape(x, (nb, na))
     Y = reshape(y, (nb, na))
-    mul!(Y, X, convert(AbstractMatrix, transpose(A)))
-    mul!(Y, B, X, true, true)
+    _unsafe_mul!(Y, X, convert(AbstractMatrix, transpose(A)))
+    _unsafe_mul!(Y, B, X, true, true)
     return y
 end
-
-Base.@propagate_inbounds At_mul_B!(y::AbstractVector, A::KroneckerSumMap, x::AbstractVector) =
-    A_mul_B!(y, transpose(A), x)
-
-Base.@propagate_inbounds Ac_mul_B!(y::AbstractVector, A::KroneckerSumMap, x::AbstractVector) =
-    A_mul_B!(y, adjoint(A), x)
