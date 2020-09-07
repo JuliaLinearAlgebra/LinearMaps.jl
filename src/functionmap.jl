@@ -107,15 +107,14 @@ function Base.:(*)(A::TransposeMap{<:Any,<:FunctionMap}, x::AbstractVector)
     end
 end
 
-function A_mul_B!(y::AbstractVector, A::FunctionMap, x::AbstractVector)
-    (length(x) == A.N && length(y) == A.M) || throw(DimensionMismatch("A_mul_B!"))
+function _unsafe_mul!(y::AbstractVecOrMat, A::FunctionMap, x::AbstractVector)
     ismutating(A) ? A.f(y, x) : copyto!(y, A.f(x))
     return y
 end
 
-function At_mul_B!(y::AbstractVector, A::FunctionMap, x::AbstractVector)
-    (issymmetric(A) || (isreal(A) && ishermitian(A))) && return A_mul_B!(y, A, x)
-    (length(x) == A.M && length(y) == A.N) || throw(DimensionMismatch("At_mul_B!"))
+function _unsafe_mul!(y::AbstractVecOrMat, At::TransposeMap{<:Any,<:FunctionMap}, x::AbstractVector)
+    A = At.lmap
+    (issymmetric(A) || (isreal(A) && ishermitian(A))) && return _unsafe_mul!(y, A, x)
     if A.fc !== nothing
         if !isreal(A)
             x = conj(x)
@@ -126,8 +125,7 @@ function At_mul_B!(y::AbstractVector, A::FunctionMap, x::AbstractVector)
         end
         return y
     elseif ishermitian(A) # but !isreal(A)
-        x = conj(x)
-        A_mul_B!(y, A, x)
+        _unsafe_mul!(y, A, conj(x))
         conj!(y)
         return y
     else
@@ -135,15 +133,14 @@ function At_mul_B!(y::AbstractVector, A::FunctionMap, x::AbstractVector)
     end
 end
 
-function Ac_mul_B!(y::AbstractVector, A::FunctionMap, x::AbstractVector)
-    ishermitian(A) && return A_mul_B!(y, A, x)
-    (length(x) == A.M && length(y) == A.N) || throw(DimensionMismatch("Ac_mul_B!"))
+function _unsafe_mul!(y::AbstractVecOrMat, Ac::AdjointMap{<:Any,<:FunctionMap}, x::AbstractVector)
+    A = Ac.lmap
+    ishermitian(A) && return _unsafe_mul!(y, A, x)
     if A.fc !== nothing
         ismutating(A) ? A.fc(y, x) : copyto!(y, A.fc(x))
         return y
     elseif issymmetric(A) # but !isreal(A)
-        x = conj(x)
-        A_mul_B!(y, A, x)
+        _unsafe_mul!(y, A, conj(x))
         conj!(y)
         return y
     else

@@ -1,8 +1,8 @@
-using Test, LinearMaps, LinearAlgebra, SparseArrays
+using Test, LinearMaps, LinearAlgebra, SparseArrays, BenchmarkTools
 
 @testset "block maps" begin
     @testset "hcat" begin
-        for elty in (Float32, Float64, ComplexF64), n2 = (0, 20)
+        for elty in (Float32, ComplexF64), n2 = (0, 20)
             A11 = rand(elty, 10, 10)
             A12 = rand(elty, 10, n2)
             L = @inferred hcat(LinearMap(A11), LinearMap(A12))
@@ -29,7 +29,7 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
     end
 
     @testset "vcat" begin
-        for elty in (Float32, Float64, ComplexF64)
+        for elty in (Float32, ComplexF64)
             A11 = rand(elty, 10, 10)
             L = @inferred vcat(LinearMap(A11))
             @test L == [LinearMap(A11);]
@@ -56,7 +56,7 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
     end
 
     @testset "hvcat" begin
-        for elty in (Float32, Float64, ComplexF64)
+        for elty in (Float32, ComplexF64)
             A11 = rand(elty, 10, 10)
             A12 = rand(elty, 10, 20)
             A21 = rand(elty, 20, 10)
@@ -71,7 +71,8 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
             @test L isa LinearMaps.BlockMap{elty}
             @test size(L) == size(A)
             @test L * x ≈ A * x
-            @test Matrix(L) ≈ A
+            @test Matrix(L) == A
+            @test convert(AbstractMatrix, L) == A
             A = [I A12; A21 I]
             @inferred hvcat((2,2), I, LinearMap(A12), LinearMap(A21), I)
             L = @inferred hvcat((2,2), I, LinearMap(A12), LinearMap(A21), I)
@@ -116,7 +117,7 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
     end
 
     @testset "adjoint/transpose" begin
-        for elty in (Float32, Float64, ComplexF64), transform in (transpose, adjoint)
+        for elty in (Float32, ComplexF64), transform in (transpose, adjoint)
             A12 = rand(elty, 10, 10)
             A = [I A12; transform(A12) I]
             L = [I LinearMap(A12); transform(LinearMap(A12)) I]
@@ -136,13 +137,17 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
             @test L isa LinearMaps.LinearMap{elty}
             @test size(L) == size(A)
             @test L * x ≈ A * x
-            @test Matrix(L) ≈ A
+            @test Matrix(L) == A
+            @test convert(AbstractMatrix, L) == A
+            @test sparse(L) == sparse(A)
             Lt = @inferred transform(L)
             @test Lt isa LinearMaps.LinearMap{elty}
             @test Lt * x ≈ transform(A) * x
+            @test convert(AbstractMatrix, Lt) == transform(A)
+            @test sparse(transform(L)) == transform(A)
             Lt = @inferred transform(LinearMap(L))
             @test Lt * x ≈ transform(A) * x
-            @test Matrix(Lt) ≈ Matrix(transform(A))
+            @test Matrix(Lt) == Matrix(transform(A))
             A21 = rand(elty, 10, 10)
             A = [I A12; A21 I]
             L = [I LinearMap(A12); LinearMap(A21) I]
@@ -160,7 +165,7 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
     end
 
     @testset "block diagonal maps" begin
-        for elty in (Float64, ComplexF64)
+        for elty in (Float32, ComplexF64)
             m = 5; n = 6
             M1 = 10*(1:m) .+ (1:(n+1))'; L1 = LinearMap(M1)
             M2 = randn(elty, m, n+2); L2 = LinearMap(M2)
@@ -170,6 +175,9 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
             Md = Matrix(blockdiag(sparse.((M1, M2, M3, M2, M1))...))
             x = randn(elty, size(Md, 2))
             Bd = @inferred blockdiag(L1, L2, L3, L2, L1)
+            @test Matrix(Bd) == Md
+            @test convert(AbstractMatrix, Bd) isa SparseMatrixCSC
+            @test sparse(Bd) == Md
             @test Matrix(@inferred blockdiag(L1)) == M1
             @test Matrix(@inferred blockdiag(L1, L2)) == blockdiag(sparse.((M1, M2))...)
             Bd2 = @inferred cat(L1, L2, L3, L2, L1; dims=(1,2))
@@ -192,6 +200,35 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
             Y = randn(elty, size(Md, 1), 10)
             for α in (0, 1, rand(elty)), β in (0, 1, rand(elty))
                 @test mul!(copy(Y), Bd, X, α, β) ≈ Y*β .+ Md*X*α
+            end
+        end
+    end
+
+    @testset "function block map" begin
+        N = 100
+        T = ComplexF64
+        CS! = LinearMap{T}(cumsum!,
+            (y, x) -> (copyto!(y, x); reverse!(cumsum!(y, reverse!(y)))), N;
+            ismutating=true)
+        A = rand(T, N, N)
+        B = rand(T, N, N)
+        LT = LowerTriangular(ones(T, N, N))
+        L1 = [CS! CS! CS!; CS! CS! CS!; CS! CS! CS!]
+        M1 = [LT LT LT; LT LT LT; LT LT LT]
+        L2 = [CS! LinearMap(A) CS!; LinearMap(B) CS! CS!; CS! CS! CS!]
+        M2 = [LT A LT
+              B LT LT
+              LT LT LT]
+        u = rand(T, 3N)
+        v = rand(T, 3N)
+        for α in (false, true, rand(T)), β in (false, true, rand(T))
+            for transform in (identity, adjoint), (L, M) in ((L1, M1), (L2, M2))
+                # @show α, β, transform
+                @test mul!(copy(v), transform(L), u, α, β) ≈ transform(M)*u*α + v*β
+                @test mul!(copy(v), transform(LinearMap(L)), u, α, β) ≈ transform(M)*u*α + v*β
+                @test mul!(copy(v), LinearMap(transform(L)), u, α, β) ≈ transform(M)*u*α + v*β
+                bmap = @benchmarkable mul!($(copy(v)), $(transform(L)), $u, $α, $β)
+                transform != adjoint && @test run(bmap, samples=3).memory < 2sizeof(u)
             end
         end
     end

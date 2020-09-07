@@ -37,11 +37,13 @@ using Test, LinearMaps, LinearAlgebra, BenchmarkTools
         @inferred mul!(y, Λ, x, α, β)
         @test y ≈ λ * x * α + β * x
     end
-    for elty in (Float64, ComplexF64), transform in (transpose, adjoint)
+    for elty in (Float64, ComplexF64), transform in (identity, transpose, adjoint)
         λ = rand(elty)
         x = rand(10)
         J = @inferred LinearMap(LinearMaps.UniformScalingMap(λ, 10))
         @test transform(J) * x == transform(λ) * x
+        J = @inferred LinearMap(λ*I, 10)
+        @test (λ * J) * x == (J * λ) * x == (λ * λ) * x
     end
     X = rand(10, 10); Y = similar(X)
     @test mul!(Y, Id, X) == X

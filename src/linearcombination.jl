@@ -23,10 +23,10 @@ LinearAlgebra.isposdef(A::LinearCombination) = all(isposdef, A.maps) # sufficien
 
 # adding linear maps
 """
-    A::LinearMap + B::LinearMap
+    +(A::LinearMap, B::LinearMap)::LinearCombination
 
-Construct a `LinearCombination <: LinearMap`, a (lazy) representation of the sum
-of the two operators. Sums of `LinearMap`/`LinearCombination` objects and
+Construct a (lazy) representation of the sum/linear combination of the two operators.
+Sums of `LinearMap`/`LinearCombination` objects and
 `LinearMap`/`LinearCombination` objects are reduced to a single `LinearCombination`.
 In sums of `LinearMap`s and `AbstractMatrix`/`UniformScaling` objects, the latter
 get promoted to `LinearMap`s automatically.
@@ -64,38 +64,57 @@ LinearAlgebra.transpose(A::LinearCombination) = LinearCombination{eltype(A)}(map
 LinearAlgebra.adjoint(A::LinearCombination)   = LinearCombination{eltype(A)}(map(adjoint, A.maps))
 
 # multiplication with vectors & matrices
-for Atype in (AbstractVector, AbstractMatrix)
-    @eval Base.@propagate_inbounds function LinearAlgebra.mul!(y::$Atype, A::LinearCombination, x::$Atype,
-                             α::Number=true, β::Number=false)
-        @boundscheck check_dim_mul(y, A, x)
-        if iszero(α) # trivial cases
-            iszero(β) && (fill!(y, zero(eltype(y))); return y)
-            isone(β) && return y
-            # β != 0, 1
-            rmul!(y, β)
+for (intype, outtype) in ((AbstractVector, AbstractVecOrMat), (AbstractMatrix, AbstractMatrix))
+    @eval begin
+        function _unsafe_mul!(y::$outtype, A::LinearCombination, x::$intype)
+
+            _unsafe_mul!(y, first(A.maps), x)
+            _mul!(MulStyle(A), y, A, x, true)
             return y
-        else
-            mul!(y, first(A.maps), x, α, β)
-            return _mul!(MulStyle(A), y, A, x, α)
+        end
+
+        function _unsafe_mul!(y::$outtype, A::LinearCombination, x::$intype,
+                                α::Number, β::Number)
+            if iszero(α) # trivial cases
+                iszero(β) && return fill!(y, zero(eltype(y)))
+                isone(β) && return y
+                return rmul!(y, β)
+            else
+                A1 = first(A.maps)
+                if MulStyle(A1) === ThreeArg() && !iszero(β)
+                    # if we need an intermediate vector, allocate here and reuse in
+                    # LinearCombination multiplication
+                    !isone(β) && rmul!(y, β)
+                    z = similar(y)
+                    muladd!(ThreeArg(), y, A1, x, α, z)
+                    __mul!(y, Base.tail(A.maps), x, α, z)
+                else # MulStyle(A1) === FiveArg() || β == 0
+                    # this is allocation-free
+                    _unsafe_mul!(y, A1, x, α, β)
+                    # let _mul! decide whether an intermediate vector needs to be allocated
+                    _mul!(MulStyle(A), y, A, x, α)
+                end
+                return y
+            end
         end
     end
 end
 
-@inline _mul!(::FiveArg, y, A::LinearCombination, x, α::Number) =
-    __mul!(y, Base.tail(A.maps), x, α, nothing)
-@inline function _mul!(::ThreeArg, y, A::LinearCombination, x, α::Number)
-    z = similar(y)
-    __mul!(y, Base.tail(A.maps), x, α, z)
+function _mul!(::FiveArg, y, A::LinearCombination, x, α)
+    return __mul!(y, Base.tail(A.maps), x, α, nothing)
+end
+function _mul!(::ThreeArg, y, A::LinearCombination, x, α)
+    return __mul!(y, Base.tail(A.maps), x, α, similar(y))
 end
 
-@inline __mul!(y, As::Tuple{Vararg{LinearMap}}, x, α, z) =
+__mul!(y, As::Tuple{Vararg{LinearMap}}, x, α, z) =
     __mul!(__mul!(y, first(As), x, α, z), Base.tail(As), x, α, z)
-@inline __mul!(y, A::Tuple{LinearMap}, x, α, z) = __mul!(y, first(A), x, α, z)
-@inline __mul!(y, A::LinearMap, x, α, z) = muladd!(MulStyle(A), y, A, x, α, z)
+__mul!(y, A::Tuple{LinearMap}, x, α, z) = __mul!(y, first(A), x, α, z)
+__mul!(y, A::LinearMap, x, α, z) = muladd!(MulStyle(A), y, A, x, α, z)
 
-@inline muladd!(::FiveArg, y, A, x, α, _) = mul!(y, A, x, α, true)
-@inline function muladd!(::ThreeArg, y, A, x, α, z)
-    mul!(z, A, x)
+muladd!(::FiveArg, y, A, x, α, _) = _unsafe_mul!(y, A, x, α, true)
+function muladd!(::ThreeArg, y, A, x, α, z)
+    _unsafe_mul!(z, A, x)
     if isone(α)
         y .+= z
     else
@@ -103,9 +122,3 @@ end
     end
     return y
 end
-
-A_mul_B!(y::AbstractVector, A::LinearCombination, x::AbstractVector) = mul!(y, A, x)
-
-At_mul_B!(y::AbstractVector, A::LinearCombination, x::AbstractVector) = mul!(y, transpose(A), x)
-
-Ac_mul_B!(y::AbstractVector, A::LinearCombination, x::AbstractVector) = mul!(y, adjoint(A), x)

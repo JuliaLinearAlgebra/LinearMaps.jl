@@ -28,93 +28,70 @@ LinearAlgebra.transpose(A::UniformScalingMap) = A
 LinearAlgebra.adjoint(A::UniformScalingMap)   = UniformScalingMap(conj(A.λ), size(A))
 
 # multiplication with scalar
+Base.:(*)(A::UniformScaling, B::LinearMap) = A.λ * B
+Base.:(*)(A::LinearMap, B::UniformScaling) = A * B.λ
 Base.:(*)(α::Number, J::UniformScalingMap) = UniformScalingMap(α * J.λ, size(J))
 Base.:(*)(J::UniformScalingMap, α::Number) = UniformScalingMap(J.λ * α, size(J))
+# needed for disambiguation
+Base.:(*)(α::RealOrComplex, J::UniformScalingMap) = UniformScalingMap(α * J.λ, size(J))
+Base.:(*)(J::UniformScalingMap, α::RealOrComplex) = UniformScalingMap(J.λ * α, size(J))
 
 # multiplication with vector
 Base.:(*)(A::UniformScalingMap, x::AbstractVector) =
-    length(x) == A.M ? A.λ * x : throw(DimensionMismatch("A_mul_B!"))
+    length(x) == A.M ? A.λ * x : throw(DimensionMismatch("*"))
 
-if VERSION < v"1.3.0-alpha.115"
-function A_mul_B!(y::AbstractVector, A::UniformScalingMap, x::AbstractVector)
-    (length(x) == length(y) == A.M || throw(DimensionMismatch("A_mul_B!")))
-    if iszero(A.λ)
-        return fill!(y, zero(eltype(y)))
-    elseif isone(A.λ)
-        return copyto!(y, x)
-    else
-        # call of LinearAlgebra.generic_mul! since order of arguments in mul! in
-        # stdlib/LinearAlgebra/src/generic.jl reversed
-        return LinearAlgebra.generic_mul!(y, A.λ, x)
-    end
-end
-else # 5-arg mul! exists and order of arguments is corrected
-
-A_mul_B!(y::AbstractVector, J::UniformScalingMap, x::AbstractVector) = mul!(y, J, x)
-
-end # VERSION
-
-@inline function LinearAlgebra.mul!(y::AbstractVector, J::UniformScalingMap, x::AbstractVector, α::Number=true, β::Number=false)
-    @boundscheck (length(x) == length(y) == J.M || throw(DimensionMismatch("mul!")))
-    _scaling!(y, J, x, α, β)
-    return y
-end
-
-@inline function LinearAlgebra.mul!(Y::AbstractMatrix, J::UniformScalingMap, X::AbstractMatrix, α::Number=true, β::Number=false)
-    @boundscheck size(X) == size(Y) || throw(DimensionMismatch("mul!"))
-    @boundscheck size(X,1) == J.M || throw(DimensionMismatch("mul!"))
-    _scaling!(Y, J, X, α, β)
-    return Y
-end
-
-function _scaling!(y, J::UniformScalingMap, x, α::Number=true, β::Number=false)
-    λ = J.λ
-    if isone(α)
-        if iszero(β)
-            iszero(λ) && return fill!(y, zero(eltype(y)))
-            isone(λ) && return copyto!(y, x)
-            y .= λ .* x
-            return y
-        elseif isone(β)
-            iszero(λ) && return y
-            isone(λ) && return y .+= x
-            y .+= λ .* x
-            return y
-        else # β != 0, 1
-            iszero(λ) && (rmul!(y, β); return y)
-            isone(λ) && (y .= y .* β .+ x; return y)
-            y .= y .* β .+ λ .* x
+# multiplication with vector/matrix
+for (intype, outtype) in ((AbstractVector, AbstractVecOrMat), (AbstractMatrix, AbstractMatrix))
+    @eval begin
+        function _unsafe_mul!(y::$outtype, J::UniformScalingMap, x::$intype)
+            _scaling!(y, J.λ, x, true, false)
             return y
         end
-    elseif iszero(α)
+        function _unsafe_mul!(y::$outtype, J::UniformScalingMap, x::$intype,
+                    α::Number, β::Number)
+            _scaling!(y, J.λ, x, α, β)
+            return y
+        end
+    end
+end
+
+function _scaling!(y, λ, x, α, β)
+    if (iszero(α) || iszero(λ))
         iszero(β) && (fill!(y, zero(eltype(y))); return y)
         isone(β) && return y
         # β != 0, 1
         rmul!(y, β)
         return y
+    elseif isone(α)
+        if iszero(β)
+            isone(λ) && return copyto!(y, x)
+            y .= λ .* x
+            return y
+        elseif isone(β)
+            isone(λ) && return y .+= x
+            y .+= λ .* x
+            return y
+        else # β != 0, 1
+            isone(λ) && (axpby!(one(eltype(x)), x, β, y); return y)
+            y .= y .* β .+ λ .* x
+            return y
+        end
     else # α != 0, 1
         if iszero(β)
-            iszero(λ) && return fill!(y, zero(eltype(y)))
-            isone(λ) && return y .= x .* α
+            isone(λ) && (y .= x .* α; return y)
             y .= λ .* x .* α
             return y
         elseif isone(β)
-            iszero(λ) && return y
-            isone(λ) && return y .+= x .* α
+            isone(λ) && (axpby!(α, x, β, y); return y)
             y .+= λ .* x .* α
             return y
         else # β != 0, 1
-            iszero(λ) && (rmul!(y, β); return y)
             isone(λ) && (y .= y .* β .+ x .* α; return y)
             y .= y .* β .+ λ .* x .* α
             return y
-        end
-    end
-end
-
-At_mul_B!(y::AbstractVector, A::UniformScalingMap, x::AbstractVector) = A_mul_B!(y, transpose(A), x)
-Ac_mul_B!(y::AbstractVector, A::UniformScalingMap, x::AbstractVector) = A_mul_B!(y, adjoint(A), x)
-
+        end # β-cases
+    end # α-cases
+end # function _scaling!
 
 # combine LinearMap and UniformScaling objects in linear combinations
 Base.:(+)(A₁::LinearMap, A₂::UniformScaling) = A₁ + UniformScalingMap(A₂.λ, size(A₁, 1))
