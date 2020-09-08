@@ -92,8 +92,8 @@ SparseArrays.blockdiag
 Base.:*(::LinearMap,::AbstractVector)
 Base.:*(::LinearMap,::AbstractMatrix)
 Base.:*(::AbstractMatrix,::LinearMap)
+LinearAlgebra.mul!(::AbstractVecOrMat,::LinearMap,::AbstractVector)
 LinearAlgebra.mul!(::AbstractMatrix,::LinearMap,::AbstractMatrix)
-LinearAlgebra.mul!(::AbstractVecOrMat,::LinearMap,::AbstractVector,::Number,::Number)
 *(::LinearAlgebra.AdjointAbsVec,::LinearMap)
 *(::LinearAlgebra.TransposeAbsVec,::LinearMap)
 ```

@@ -460,7 +460,6 @@ for k in 1:8 # is 8 sufficient?
     end
 end
 
-import SparseArrays: blockdiag
 """
     blockdiag(As::Union{LinearMap,AbstractMatrix}...)::BlockDiagonalMap
 
@@ -468,9 +467,8 @@ Construct a (lazy) representation of the diagonal concatenation of the arguments
 To avoid fallback to the generic `SparseArrays.blockdiag`, there must be a `LinearMap`
 object among the first 8 arguments.    
 """
-function blockdiag end
+SparseArrays.blockdiag
 
-import Base: cat
 """
     cat(As::Union{LinearMap,AbstractMatrix}...; dims=(1,2))::BlockDiagonalMap
 
@@ -478,7 +476,7 @@ Construct a (lazy) representation of the diagonal concatenation of the arguments
 To avoid fallback to the generic `Base.cat`, there must be a `LinearMap`
 object among the first 8 arguments.
 """
-function cat end
+Base.cat
 
 Base.size(A::BlockDiagonalMap) = (last(A.rowranges[end]), last(A.colranges[end]))
 
