@@ -61,9 +61,9 @@ for k in 1:8 # is 8 sufficient?
     args = ntuple(n->Symbol(:A,n), Val(k))
 
     @eval begin
-        Base.hcat($(Is...), $L, As::Union{LinearMap,UniformScaling,AbstractMatrix}...) = _hcat($(args...), As...)
-        Base.vcat($(Is...), $L, As::Union{LinearMap,UniformScaling,AbstractMatrix}...) = _vcat($(args...), As...)
-        Base.hvcat(rows::Tuple{Vararg{Int}}, $(Is...), $L, As::Union{LinearMap,UniformScaling,AbstractMatrix}...) = _hvcat(rows, $(args...), As...)
+        Base.hcat($(Is...), $L, As::Union{MapOrMatrix,UniformScaling}...) = _hcat($(args...), As...)
+        Base.vcat($(Is...), $L, As::Union{MapOrMatrix,UniformScaling}...) = _vcat($(args...), As...)
+        Base.hvcat(rows::Tuple{Vararg{Int}}, $(Is...), $L, As::Union{MapOrMatrix,UniformScaling}...) = _hvcat(rows, $(args...), As...)
     end
 end
 
@@ -185,7 +185,7 @@ julia> L * ones(Int, 6)
 """
 Base.hvcat
 
-function _hvcat(rows::Tuple{Vararg{Int}}, As::Union{LinearMap,UniformScaling,AbstractMatrix}...)::BlockMap
+function _hvcat(rows::Tuple{Vararg{Int}}, As::Union{LinearMap,UniformScaling,AbstractMatrix}...)
     nr = length(rows)
     T = promote_type(map(eltype, As)...)
     sum(rows) == length(As) || throw(ArgumentError("mismatch between row sizes and number of arguments"))
@@ -237,7 +237,7 @@ function _hvcat(rows::Tuple{Vararg{Int}}, As::Union{LinearMap,UniformScaling,Abs
     return BlockMap{T}(promote_to_lmaps(n, 1, 1, As...), rows)
 end
 
-promote_to_lmaps_(n::Int, dim, A::AbstractMatrix) = LinearMap(A)
+promote_to_lmaps_(n::Int, dim, A::AbstractMatrix) = (check_dim(A, dim, n); LinearMap(A))
 promote_to_lmaps_(n::Int, dim, J::UniformScaling) = UniformScalingMap(J.λ, n)
 promote_to_lmaps_(n::Int, dim, A::LinearMap) = (check_dim(A, dim, n); A)
 promote_to_lmaps(n, k, dim) = ()
