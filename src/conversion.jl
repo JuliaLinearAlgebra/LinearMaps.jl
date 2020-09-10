@@ -1,7 +1,6 @@
 # Matrix: create matrix representation of LinearMap
-function Base.Matrix(A::LinearMap)
+function Base.Matrix{T}(A::LinearMap) where {T}
     M, N = size(A)
-    T = eltype(A)
     mat = Matrix{T}(undef, (M, N))
     v = fill(zero(T), N)
     @inbounds for i in 1:N
@@ -11,8 +10,9 @@ function Base.Matrix(A::LinearMap)
     end
     return mat
 end
+Base.Matrix(A::LinearMap{T}) where {T} = Matrix{T}(A)
 Base.Array(A::LinearMap) = Matrix(A)
-Base.convert(::Type{Matrix}, A::LinearMap) = Matrix(A)
+Base.convert(::Type{T}, A::LinearMap) where {T<:Matrix} = T(A)
 Base.convert(::Type{Array}, A::LinearMap) = convert(Matrix, A)
 Base.convert(::Type{AbstractMatrix}, A::LinearMap) = convert(Matrix, A)
 Base.convert(::Type{AbstractArray}, A::LinearMap) = convert(AbstractMatrix, A)
@@ -42,21 +42,22 @@ function SparseArrays.sparse(A::LinearMap{T}) where {T}
     return SparseMatrixCSC(M, N, colptr, rowind, nzval)
 end
 Base.convert(::Type{SparseMatrixCSC}, A::LinearMap) = sparse(A)
+SparseArrays.SparseMatrixCSC(A::LinearMap) = sparse(A)
 
 # special cases
 
 # ScaledMap
-Base.Matrix(A::ScaledMap{<:Any,<:Any,<:MatrixMap}) = convert(Matrix, A.λ*A.lmap.lmap)
+Base.Matrix{T}(A::ScaledMap{<:Any,<:Any,<:MatrixMap}) where {T} = convert(Matrix{T}, A.λ*A.lmap.lmap)
 SparseArrays.sparse(A::ScaledMap{<:Any,<:Any,<:MatrixMap}) = convert(SparseMatrixCSC, A.λ*A.lmap.lmap)
 
 # UniformScalingMap
-Base.Matrix(J::UniformScalingMap) = Matrix(J.λ*I, size(J))
+Base.Matrix{T}(J::UniformScalingMap) where {T} = Matrix{T}(J.λ*I, size(J))
 Base.convert(::Type{AbstractMatrix}, J::UniformScalingMap) = Diagonal(fill(J.λ, J.M))
 
 # WrappedMap
-Base.Matrix(A::WrappedMap) = Matrix(A.lmap)
+Base.Matrix{T}(A::WrappedMap) where {T} = Matrix{T}(A.lmap)
+Base.convert(::Type{T}, A::WrappedMap) where {T<:Matrix} = convert(T, A.lmap)
 Base.convert(::Type{AbstractMatrix}, A::WrappedMap) = convert(AbstractMatrix, A.lmap)
-Base.convert(::Type{Matrix}, A::WrappedMap) = convert(Matrix, A.lmap)
 SparseArrays.sparse(A::WrappedMap) = sparse(A.lmap)
 Base.convert(::Type{SparseMatrixCSC}, A::WrappedMap) = convert(SparseMatrixCSC, A.lmap)
 
@@ -67,12 +68,15 @@ for (TT, T) in ((AdjointMap, adjoint), (TransposeMap, transpose))
 end
 
 # LinearCombination
-for (TT, T) in ((Type{Matrix}, Matrix), (Type{SparseMatrixCSC}, SparseMatrixCSC))
-    @eval function Base.convert(::$TT, ΣA::LinearCombination{<:Any,<:Tuple{Vararg{MatrixMap}}})
-        maps = ΣA.maps
-        mats = map(A->getfield(A, :lmap), maps)
-        return convert($T, sum(mats))
-    end
+function Base.Matrix{T}(ΣA::LinearCombination{<:Any,<:Tuple{Vararg{MatrixMap}}}) where {T}
+    maps = ΣA.maps
+    mats = map(A->getfield(A, :lmap), maps)
+    return Matrix{T}(sum(mats))
+end
+function SparseArrays.sparse(ΣA::LinearCombination{<:Any,<:Tuple{Vararg{MatrixMap}}})
+    maps = ΣA.maps
+    mats = map(A->getfield(A, :lmap), maps)
+    return convert(SparseMatrixCSC, sum(mats))
 end
 
 # CompositeMap
@@ -84,25 +88,25 @@ for ((TA, fieldA), (TB, fieldB)) in (((MatrixMap, :lmap), (MatrixMap, :lmap)),
         return convert(AbstractMatrix, A.$fieldA*B.$fieldB)
     end
 end
-function Base.Matrix(AB::CompositeMap{<:Any,<:Tuple{MatrixMap,MatrixMap}})
+function Base.Matrix{T}(AB::CompositeMap{<:Any,<:Tuple{MatrixMap,MatrixMap}}) where {T}
     B, A = AB.maps
-    return convert(Matrix, A.lmap*B.lmap)
+    return convert(Matrix{T}, A.lmap*B.lmap)
 end
 function SparseArrays.sparse(AB::CompositeMap{<:Any,<:Tuple{MatrixMap,MatrixMap}})
     B, A = AB.maps
     return convert(SparseMatrixCSC, A.lmap*B.lmap)
 end
-function Base.Matrix(λA::CompositeMap{<:Any,<:Tuple{MatrixMap,UniformScalingMap}})
+function Base.Matrix{T}(λA::CompositeMap{<:Any,<:Tuple{MatrixMap,UniformScalingMap}}) where {T}
     A, J = λA.maps
-    return convert(Matrix, J.λ*A.lmap)
+    return convert(Matrix{T}, J.λ*A.lmap)
 end
 function SparseArrays.sparse(λA::CompositeMap{<:Any,<:Tuple{MatrixMap,UniformScalingMap}})
     A, J = λA.maps
     return convert(SparseMatrixCSC, J.λ*A.lmap)
 end
-function Base.Matrix(Aλ::CompositeMap{<:Any,<:Tuple{UniformScalingMap,MatrixMap}})
+function Base.Matrix{T}(Aλ::CompositeMap{<:Any,<:Tuple{UniformScalingMap,MatrixMap}}) where {T}
     J, A = Aλ.maps
-    return convert(Matrix, A.lmap*J.λ)
+    return convert(Matrix{T}, A.lmap*J.λ)
 end
 function SparseArrays.sparse(Aλ::CompositeMap{<:Any,<:Tuple{UniformScalingMap,MatrixMap}})
     J, A = Aλ.maps
@@ -110,23 +114,23 @@ function SparseArrays.sparse(Aλ::CompositeMap{<:Any,<:Tuple{UniformScalingMap,M
 end
 
 # BlockMap & BlockDiagonalMap
-Base.Matrix(A::BlockMap) = hvcat(A.rows, convert.(Matrix, A.maps)...)
+Base.Matrix{T}(A::BlockMap) where {T} = hvcat(A.rows, convert.(Matrix{T}, A.maps)...)
 Base.convert(::Type{AbstractMatrix}, A::BlockMap) = hvcat(A.rows, convert.(AbstractMatrix, A.maps)...)
-function Base.convert(::Type{SparseMatrixCSC}, A::BlockMap)
+function SparseArrays.sparse(A::BlockMap)
     return hvcat(
         A.rows,
         convert(SparseMatrixCSC, first(A.maps)),
         convert.(AbstractMatrix, Base.tail(A.maps))...
     )
 end
-Base.Matrix(A::BlockDiagonalMap) = cat(convert.(Matrix, A.maps)...; dims=(1,2))
+Base.Matrix{T}(A::BlockDiagonalMap) where {T} = cat(convert.(Matrix{T}, A.maps)...; dims=(1,2))
 Base.convert(::Type{AbstractMatrix}, A::BlockDiagonalMap) = sparse(A)
 function SparseArrays.sparse(A::BlockDiagonalMap)
     return blockdiag(convert.(SparseMatrixCSC, A.maps)...)
 end
 
 # KroneckerMap & KroneckerSumMap
-Base.Matrix(A::KroneckerMap) = kron(convert.(Matrix, A.maps)...)
+Base.Matrix{T}(A::KroneckerMap) where {T} = kron(convert.(Matrix{T}, A.maps)...)
 Base.convert(::Type{AbstractMatrix}, A::KroneckerMap) = kron(convert.(AbstractMatrix, A.maps)...)
 function SparseArrays.sparse(A::KroneckerMap)
     return kron(
@@ -134,12 +138,13 @@ function SparseArrays.sparse(A::KroneckerMap)
         convert.(AbstractMatrix, Base.tail(A.maps))...
     )
 end
-function Base.Matrix(L::KroneckerSumMap)
+function Base.Matrix{T}(L::KroneckerSumMap) where {T}
     A, B = L.maps
     IA = Diagonal(ones(Bool, size(A, 1)))
     IB = Diagonal(ones(Bool, size(B, 1)))
-    return kron(Matrix(A), IB) + kron(IA, Matrix(B))
+    return kron(Matrix{T}(A), IB) + kron(IA, Matrix{T}(B))
 end
+Base.convert(::Type{T}, L::KroneckerSumMap) where {T<:Matrix} = T(L)
 function Base.convert(::Type{AbstractMatrix}, L::KroneckerSumMap)
     A, B = L.maps
     IA = Diagonal(ones(Bool, size(A, 1)))
