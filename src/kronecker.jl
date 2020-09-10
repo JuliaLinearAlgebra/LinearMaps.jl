@@ -119,9 +119,9 @@ end
     na, ma = size(At)
     mb, nb = size(B)
     if nb*ma < mb*na
-        _unsafe_mul!(reshape(y, (mb, ma)), B, convert(Matrix, X*At))
+        _unsafe_mul!(reshape(y, (mb, ma)), B, convert(AbstractMatrix, X*At))
     else
-        _unsafe_mul!(reshape(y, (mb, ma)), convert(Matrix, B*X), At isa MatrixMap ? At.lmap : At.λ)
+        _unsafe_mul!(reshape(y, (mb, ma)), convert(AbstractMatrix, B*X), At isa MatrixMap ? At.lmap : At.λ)
     end
     return y
 end
