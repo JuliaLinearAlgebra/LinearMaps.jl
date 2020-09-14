@@ -50,8 +50,9 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
     R1 = rand(ComplexF64, 10, 10); L1 = LinearMap(R1)
     R2 = rand(ComplexF64, 10, 10); L2 = LinearMap(R2)
     R3 = rand(ComplexF64, 10, 10); L3 = LinearMap(R3)
-    CompositeR = prod(R -> LinearMap(R), [R1, R2, R3])
+    CompositeR = prod(LinearMap, [R1, R2, R3])
     @test @inferred L1 * L2 * L3 == CompositeR
+    @test Matrix(CompositeR) ≈ sparse(CompositeR) ≈ R1 * R2 * R3
     @test @inferred transpose(CompositeR) == transpose(L3) * transpose(L2) * transpose(L1)
     @test @inferred adjoint(CompositeR) == L3' * L2' * L1'
     @test @inferred adjoint(adjoint((CompositeR))) == CompositeR

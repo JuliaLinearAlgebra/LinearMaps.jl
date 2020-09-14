@@ -96,6 +96,6 @@ LinearAlgebra.mul!(y::AbstractVector, A::Union{SimpleFunctionMap,SimpleComplexFu
     @test FM == L
     @test F * v ≈ L * v
     Fs = sparse(F)
-    @test Fs == L
+    @test SparseMatrixCSC(F) == Fs == L
     @test Fs isa SparseMatrixCSC
 end

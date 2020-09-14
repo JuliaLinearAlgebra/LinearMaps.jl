@@ -144,7 +144,6 @@ function Base.Matrix{T}(L::KroneckerSumMap) where {T}
     IB = Diagonal(ones(Bool, size(B, 1)))
     return kron(Matrix{T}(A), IB) + kron(IA, Matrix{T}(B))
 end
-Base.convert(::Type{T}, L::KroneckerSumMap) where {T<:Matrix} = T(L)
 function Base.convert(::Type{AbstractMatrix}, L::KroneckerSumMap)
     A, B = L.maps
     IA = Diagonal(ones(Bool, size(A, 1)))
