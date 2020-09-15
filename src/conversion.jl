@@ -85,7 +85,7 @@ for ((TA, fieldA), (TB, fieldB)) in (((MatrixMap, :lmap), (MatrixMap, :lmap)),
                                      ((UniformScalingMap, :λ), (MatrixMap, :lmap)))
     @eval function Base.convert(::Type{AbstractMatrix}, AB::CompositeMap{<:Any,<:Tuple{$TB,$TA}})
         B, A = AB.maps
-        return convert(AbstractMatrix, A.$fieldA*B.$fieldB)
+        return A.$fieldA*B.$fieldB
     end
 end
 function Base.Matrix{T}(AB::CompositeMap{<:Any,<:Tuple{MatrixMap,MatrixMap}}) where {T}
