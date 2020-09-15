@@ -8,6 +8,7 @@ using Test, LinearMaps, LinearAlgebra
     L = @inferred LinearMap{Float64}(A)
     MA = @inferred LinearMap(SA)
     MB = @inferred LinearMap(SB)
+    @test eltype(Matrix{Complex{Float32}}(LinearMap(A))) <: Complex
     @test size(L) == size(A)
     @test @inferred !issymmetric(L)
     @test @inferred issymmetric(MA)

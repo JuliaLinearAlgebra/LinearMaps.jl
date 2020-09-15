@@ -1,4 +1,4 @@
-using Test, LinearMaps, LinearAlgebra
+using Test, LinearMaps, LinearAlgebra, SparseArrays
 
 @testset "composition" begin
     F = @inferred LinearMap(cumsum, reverse ∘ cumsum ∘ reverse, 10; ismutating=false)
@@ -50,8 +50,9 @@ using Test, LinearMaps, LinearAlgebra
     R1 = rand(ComplexF64, 10, 10); L1 = LinearMap(R1)
     R2 = rand(ComplexF64, 10, 10); L2 = LinearMap(R2)
     R3 = rand(ComplexF64, 10, 10); L3 = LinearMap(R3)
-    CompositeR = prod(R -> LinearMap(R), [R1, R2, R3])
+    CompositeR = prod(LinearMap, [R1, R2, R3])
     @test @inferred L1 * L2 * L3 == CompositeR
+    @test Matrix(L1 * L2) ≈ sparse(L1 * L2) ≈ R1 * R2
     @test @inferred transpose(CompositeR) == transpose(L3) * transpose(L2) * transpose(L1)
     @test @inferred adjoint(CompositeR) == L3' * L2' * L1'
     @test @inferred adjoint(adjoint((CompositeR))) == CompositeR
@@ -60,6 +61,18 @@ using Test, LinearMaps, LinearAlgebra
     @test Lt * v ≈ transpose(R3) * transpose(R2) * transpose(R1) * v
     Lc = @inferred adjoint(LinearMap(CompositeR))
     @test Lc * v ≈ R3' * R2' * R1' * v
+
+    # convert to AbstractMatrix
+    for A in (LinearMap(sprandn(10, 10, 0.3)), LinearMap(rand()*I, 10))
+        for B in (LinearMap(sprandn(10, 10, 0.3)), LinearMap(rand()*I, 10))
+            AA = convert(AbstractMatrix, A*B)
+            if A isa LinearMaps.UniformScalingMap && B isa LinearMaps.UniformScalingMap
+                @test isdiag(AA)
+            else
+                @test issparse(AA)
+            end
+        end
+    end
 
     # test inplace operations
     w = similar(v)

@@ -68,6 +68,15 @@ convert_to_lmaps(A) = (convert_to_lmaps_(A),)
 @inline convert_to_lmaps(A, B, Cs...) =
     (convert_to_lmaps_(A), convert_to_lmaps_(B), convert_to_lmaps(Cs...)...)
 
+# The (internal) multiplication logic is as follows:
+#  - `*(A, x)` calls `mul!(y, A, x)` for appropriately-sized y
+#  - `mul!` checks consistency of the sizes, and calls `_unsafe_mul!`,
+#    which does not check sizes, but potentially one-based indexing if necessary
+#  - by default, `_unsafe_mul!` is redirected back to `mul!`
+#  - custom map types only need to implement 3-arg (vector) `mul!`, and
+#    everything else (5-arg multiplication, application to matrices,
+#    conversion to matrices) will just work
+
 """
     *(A::LinearMap, x::AbstractVector)::AbstractVector
 
@@ -200,7 +209,7 @@ function _generic_mapmat_mul!(Y, A, X, α=true, β=false)
     return Y
 end
 
-_unsafe_mul!(y, A::MapOrMatrix, x)       = mul!(y, A, x)
+_unsafe_mul!(y, A::MapOrMatrix, x) = mul!(y, A, x)
 _unsafe_mul!(y, A::AbstractMatrix, x, α, β) = mul!(y, A, x, α, β)
 function _unsafe_mul!(y::AbstractVecOrMat, A::LinearMap, x::AbstractVector, α, β)
     return _generic_mapvec_mul!(y, A, x, α, β)
