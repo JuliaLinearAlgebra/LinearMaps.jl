@@ -80,6 +80,15 @@ function SparseArrays.sparse(ΣA::LinearCombination{<:Any,<:Tuple{Vararg{MatrixM
 end
 
 # CompositeMap
+function Base.Matrix{T}(AB::CompositeMap{<:Any,<:Tuple{MatrixMap,LinearMap}}) where {T}
+    B, A = AB.maps
+    require_one_based_indexing(B)
+    Y = Matrix{eltype(AB)}(undef, size(AB))
+    @views for i in 1:size(Y, 2)
+        _unsafe_mul!(Y[:, i], A, B.lmap[:, i])
+    end
+    return Y
+end
 for ((TA, fieldA), (TB, fieldB)) in (((MatrixMap, :lmap), (MatrixMap, :lmap)),
                                      ((MatrixMap, :lmap), (UniformScalingMap, :λ)),
                                      ((UniformScalingMap, :λ), (MatrixMap, :lmap)))

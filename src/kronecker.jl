@@ -119,10 +119,10 @@ end
     na, ma = size(At)
     mb, nb = size(B)
     Y = reshape(y, (mb, ma))
-    if na * mb * (ma + nb) < ma * nb * (na + mb) #nb*ma < mb*na
-        _unsafe_mul!(Y, B, convert(AbstractMatrix, X*At))
+    if nb*ma < mb*na 
+        _unsafe_mul!(Y, B, Matrix(X*At))
     else
-        _unsafe_mul!(Y, convert(AbstractMatrix, B*X), At isa MatrixMap ? At.lmap : At.λ)
+        _unsafe_mul!(Y, Matrix(B*X), At isa MatrixMap ? At.lmap : At.λ)
     end
     return y
 end
