@@ -209,7 +209,7 @@ function _generic_mapmat_mul!(Y, A, X, α=true, β=false)
     return Y
 end
 
-_unsafe_mul!(y, A::MapOrMatrix, x)       = mul!(y, A, x)
+_unsafe_mul!(y, A::MapOrMatrix, x) = mul!(y, A, x)
 _unsafe_mul!(y, A::AbstractMatrix, x, α, β) = mul!(y, A, x, α, β)
 function _unsafe_mul!(y::AbstractVecOrMat, A::LinearMap, x::AbstractVector, α, β)
     return _generic_mapvec_mul!(y, A, x, α, β)
