@@ -165,37 +165,28 @@ end
 function _generic_mapvec_mul!(y, A, x, α, β)
     # this function needs to call mul! for, e.g.,  AdjointMap{...,<:CustomMap}
     if isone(α)
-        if iszero(β)
-            mul!(y, A, x)
-            return y
+        iszero(β) && return mul!(y, A, x)
+        z = A * x
+        if isone(β)
+            y .+= z
         else
-            z = A * x
-            if isone(β)
-                y .+= z
-            else
-                y .= y.*β .+ z
-            end
-            return y
+            y .= y.*β .+ z
         end
+        return y
     elseif iszero(α)
-        iszero(β) && (fill!(y, zero(eltype(y))); return y)
+        iszero(β) && return fill!(y, zero(eltype(y)))
         isone(β) && return y
         # β != 0, 1
-        rmul!(y, β)
-        return y
+        return rmul!(y, β)
     else # α != 0, 1
-        if iszero(β)
-            rmul!(mul!(y, A, x), α)
-            return y
+        iszero(β) && return rmul!(mul!(y, A, x), α)
+        z = A * x
+        if isone(β)
+            y .+= z .* α
         else
-            z = A * x
-            if isone(β)
-                y .+= z .* α
-            else
-                y .= y .* β .+ z .* α
-            end
-            return y
+            y .= y .* β .+ z .* α
         end
+        return y
     end
 end
 
