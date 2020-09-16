@@ -17,7 +17,7 @@ struct MyFillMap{T} <: LinearMaps.LinearMap{T}
     λ::T
     size::Dims{2}
     function MyFillMap(λ::T, dims::Dims{2}) where {T}
-        all(d -> d >= 0, dims) || throw(ArgumentError("dims of MyFillMap must be non-negative"))
+        all(≥(0), dims) || throw(ArgumentError("dims of MyFillMap must be non-negative"))
         promote_type(T, typeof(λ)) == T || throw(InexactError())
         return new{T}(λ, dims)
     end
@@ -42,7 +42,7 @@ function LinearAlgebra.mul!(y::AbstractVecOrMat, A::MyFillMap, x::AbstractVector
 end
 ```
 
-Again, due to generic fallbacks the following now "just works":
+Again, due to generic fallbacks the following now "just work":
 * out-of-place multiplication `A*x`,
 * in-place multiplication with vectors `mul!(y, A, x)`,
 * in-place multiply-and-add with vectors `mul!(y, A, x, α, β)`,
@@ -93,7 +93,7 @@ julia> @btime mul!($(zeros(3)), $A, $x, $(rand()), $(rand()));
   58.695 ns (1 allocation: 112 bytes)
 ```
 
-The second benchmark indicates the allocation of an intermediate vector `z``
+The second benchmark indicates the allocation of an intermediate vector `z`
 which stores the result of `A*x` before it gets scaled and added to (the scaled)
 `y = zeros(3)`. For that reason, it is beneficial to provide a custom "5-arg `mul!`"
 if you can avoid the allocation of an intermediate vector. To indicate that there
@@ -103,7 +103,13 @@ whose default is `ThreeArg()`.
 ```julia
 LinearMaps.MulStyle(A::MyFillMap) = FiveArg()
 
-function LinearAlgebra.mul!(y::AbstractVecOrMat, A::MyFillMap, x::AbstractVector, α::Number, β::Number)
+function LinearAlgebra.mul!(
+    y::AbstractVecOrMat,
+    A::MyFillMap,
+    x::AbstractVector,
+    α::Number,
+    β::Number
+)
     if iszero(α)
         !isone(β) && rmul!(y, β)
         return y
@@ -171,7 +177,11 @@ This can be fixed by providing `LinearAlgebra.mul!` methods for the correspondin
 map types; for instance,
 
 ```julia
-function LinearAlgebra.mul!(y::AbstractVecOrMat, transA::LinearMaps.TransposeMap{<:Any,<:MyFillMap}, x::AbstractVector)
+function LinearAlgebra.mul!(
+    y::AbstractVecOrMat,
+    transA::LinearMaps.TransposeMap{<:Any,<:MyFillMap},
+    x::AbstractVector
+)
     LinearMaps.check_dim_mul(y, transA, x)
     λ = transA.lmap.λ
     return fill!(y, iszero(λ) ? zero(eltype(y)) : transpose(λ)*sum(x))
