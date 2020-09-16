@@ -1,4 +1,4 @@
-struct FillMap{T} <: LinearMaps.LinearMap{T}
+struct FillMap{T} <: LinearMap{T}
     λ::T
     size::Dims{2}
     function FillMap(λ::T, dims) where {T}
