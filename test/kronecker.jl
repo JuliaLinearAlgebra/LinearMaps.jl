@@ -8,6 +8,7 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
         LA = LinearMap(A)
         LB = LinearMap(B)
         LK = @inferred kron(LA, LB)
+        @test_throws AssertionError LinearMaps.KroneckerMap{Float64}((LA, LB))
         @test @inferred size(LK) == size(K)
         @test LinearMaps.MulStyle(LK) === LinearMaps.ThreeArg()
         for i in (1, 2)

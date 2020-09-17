@@ -4,8 +4,8 @@ struct BlockMap{T,As<:Tuple{Vararg{LinearMap}},Rs<:Tuple{Vararg{Int}},Rranges<:T
     rowranges::Rranges
     colranges::Cranges
     function BlockMap{T,R,S}(maps::R, rows::S) where {T, R<:Tuple{Vararg{LinearMap}}, S<:Tuple{Vararg{Int}}}
-        for A in maps
-            promote_type(T, eltype(A)) == T || throw(InexactError())
+        for n in eachindex(maps)
+            @assert promote_type(T, eltype(maps[n])) == T "eltype $(eltype(maps[n])) cannot be promoted to $T in BlockMap constructor"
         end
         rowranges, colranges = rowcolranges(maps, rows)
         return new{T,R,S,typeof(rowranges),typeof(colranges)}(maps, rows, rowranges, colranges)
@@ -391,8 +391,8 @@ struct BlockDiagonalMap{T,As<:Tuple{Vararg{LinearMap}},Ranges<:Tuple{Vararg{Unit
     rowranges::Ranges
     colranges::Ranges
     function BlockDiagonalMap{T,As}(maps::As) where {T, As<:Tuple{Vararg{LinearMap}}}
-        for A in maps
-            promote_type(T, eltype(A)) == T || throw(InexactError())
+        for n in eachindex(maps)
+            @assert promote_type(T, eltype(maps[n])) == T "eltype $(eltype(maps[n])) cannot be promoted to $T in BlockDiagonalMap constructor"
         end
         # row ranges
         inds = vcat(1, size.(maps, 1)...)

@@ -5,7 +5,7 @@ struct LinearCombination{T, As<:Tuple{Vararg{LinearMap}}} <: LinearMap{T}
         sz = size(maps[1])
         for n in 1:N
             size(maps[n]) == sz || throw(DimensionMismatch("LinearCombination"))
-            promote_type(T, eltype(maps[n])) == T || throw(InexactError())
+            @assert promote_type(T, eltype(maps[n])) == T  "eltype $(eltype(maps[n])) cannot be promoted to $T in LinearCombination constructor"
         end
         new{T, As}(maps)
     end

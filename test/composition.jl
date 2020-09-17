@@ -6,6 +6,7 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
     FCM = LinearMaps.CompositeMap{ComplexF64}((FC,))
     L = LowerTriangular(ones(10,10))
     @test_throws DimensionMismatch F * LinearMap(rand(2,2))
+    @test_throws AssertionError LinearMaps.CompositeMap{Float64}((FC, LinearMap(rand(10,10))))
     A = 2 * rand(ComplexF64, (10, 10)) .- 1
     B = rand(size(A)...)
     H = LinearMap(Hermitian(A'A))
