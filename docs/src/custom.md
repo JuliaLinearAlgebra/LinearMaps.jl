@@ -43,6 +43,7 @@ end
 ```
 
 Again, due to generic fallbacks the following now "just work":
+
 * out-of-place multiplication `A*x`,
 * in-place multiplication with vectors `mul!(y, A, x)`,
 * in-place multiply-and-add with vectors `mul!(y, A, x, α, β)`,
@@ -140,7 +141,7 @@ There you go, the allocation is gone and the computation time is significantly r
 
 The following functions are obviously helpful additions.
 
-```
+```julia
 LinearAlgebra.issymmetric(A::MyFillMap) = A.size[1] == A.size[2]
 LinearAlgebra.ishermitian(A::MyFillMap) = isreal(A) && A.size[1] == A.size[2]
 LinearAlgebra.isposdef(A::MyFillMap) = (size(A, 1) == size(A, 2) == 1 && isposdef(A.λ))
