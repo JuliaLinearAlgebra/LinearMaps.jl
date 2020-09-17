@@ -1,15 +1,15 @@
 struct ScaledMap{T, S<:RealOrComplex, A<:LinearMap} <: LinearMap{T}
     λ::S
     lmap::A
-    function ScaledMap{T,S,A}(λ::S, lmap::A) where {T, S <: RealOrComplex, A <: LinearMap}
-        Base.promote_op(*, S, eltype(lmap)) == T || throw(InexactError())
+    function ScaledMap{T}(λ::S, lmap::A) where {T, S <: RealOrComplex, A <: LinearMap}
+        @assert Base.promote_op(*, S, eltype(lmap)) == T "target type $T cannot hold products of $S and $(eltype(lmap)) objects"
         new{T,S,A}(λ, lmap)
     end
 end
 
 # constructor
-ScaledMap{T}(λ::S, lmap::A) where {T,S<:RealOrComplex,A<:LinearMap} =
-    ScaledMap{Base.promote_op(*, S, eltype(lmap)),S,A}(λ, lmap)
+ScaledMap(λ::S, lmap::A) where {S<:RealOrComplex,A<:LinearMap} =
+    ScaledMap{Base.promote_op(*, S, eltype(lmap))}(λ, lmap)
 
 # show
 function Base.show(io::IO, A::ScaledMap{T}) where {T}
@@ -32,14 +32,8 @@ Base.:(==)(A::ScaledMap, B::ScaledMap) =
     (eltype(A) == eltype(B) && A.lmap == B.lmap) && A.λ == B.λ
 
 # scalar multiplication and division
-function Base.:(*)(α::RealOrComplex, A::LinearMap)
-    T = Base.promote_op(*, typeof(α), eltype(A))
-    return ScaledMap{T}(α, A)
-end
-function Base.:(*)(A::LinearMap, α::RealOrComplex)
-    T = Base.promote_op(*, typeof(α), eltype(A))
-    return ScaledMap{T}(α, A)
-end
+Base.:(*)(α::RealOrComplex, A::LinearMap) = ScaledMap(α, A)
+Base.:(*)(A::LinearMap, α::RealOrComplex) = ScaledMap(α, A)
 
 Base.:(*)(α::Number, A::ScaledMap) = (α * A.λ) * A.lmap
 Base.:(*)(A::ScaledMap, α::Number) = A.lmap * (A.λ * α)
