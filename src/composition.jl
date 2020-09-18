@@ -9,7 +9,8 @@ struct CompositeMap{T, As<:Tuple{Vararg{LinearMap}}} <: LinearMap{T}
             check_dim_mul(maps[n], maps[n-1]) || throw(DimensionMismatch("CompositeMap"))
         end
         for n in eachindex(maps)
-            @assert promote_type(T, eltype(maps[n])) == T "eltype $(maps[n]) cannot be promoted to $T in CompositeMap constructor"
+            A = maps[n]
+            @assert promote_type(T, eltype(A)) == T "eltype $(eltype(A)) cannot be promoted to $T in CompositeMap constructor"
         end
         new{T, As}(maps)
     end
