@@ -69,9 +69,9 @@ mul!(ones(3,3), A, reshape(collect(1:9), 3, 3), 2, 2)
 
 using BenchmarkTools
 
-@btime mul!($(zeros(3)), $A, $x);
+@btime mul!($(zeros(3)), $A, $x)
 
-@btime mul!($(zeros(3)), $A, $x, $(rand()), $(rand()));
+@btime mul!($(zeros(3)), $A, $x, $(rand()), $(rand()))
 
 # The second benchmark indicates the allocation of an intermediate vector `z`
 # which stores the result of `A*x` before it gets scaled and added to (the scaled)
@@ -107,7 +107,7 @@ end
 
 # With this function at hand, let's redo the benchmark.
 
-@btime mul!($(zeros(3)), $A, $x, $(rand()), $(rand()));
+@btime mul!($(zeros(3)), $A, $x, $(rand()), $(rand()))
 
 # There you go, the allocation is gone and the computation time is significantly reduced.
 
@@ -176,9 +176,9 @@ mul!(ones(3), A', x, 2, 2)
 
 x'A
 
-# and `transpose(x) * A` correspondingly, as well as
+# and `transpose(x) * A` correspondingly, as well as in-place multiplication
 
-mul!(y', x', A)
+mul!(similar(x)', x', A)
 
 # and `mul!(transpose(y), transpose(x), A)`.
 
