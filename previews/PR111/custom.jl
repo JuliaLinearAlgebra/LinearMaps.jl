@@ -120,7 +120,7 @@ end
 LinearAlgebra.issymmetric(A::MyFillMap) = A.size[1] == A.size[2]
 LinearAlgebra.ishermitian(A::MyFillMap) = isreal(A) && A.size[1] == A.size[2]
 LinearAlgebra.isposdef(A::MyFillMap) = (size(A, 1) == size(A, 2) == 1 && isposdef(A.λ))
-Base.:(==)(A::FillMap, B::MyFillMap) = A.λ == B.λ && A.size == B.size
+Base.:(==)(A::MyFillMap, B::MyFillMap) = A.λ == B.λ && A.size == B.size
 
 # These are used, for instance, in checking symmetry or positive definiteness of
 # higher-order `LinearMap`s, like products or linear combinations of linear maps, or signal
