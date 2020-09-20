@@ -70,6 +70,8 @@ mul!(ones(3,3), A, reshape(collect(1:9), 3, 3), 2, 2)
 using BenchmarkTools
 
 @btime mul!($(zeros(3)), $A, $x)
+ 
+#-
 
 @btime mul!($(zeros(3)), $A, $x, $(rand()), $(rand()))
 

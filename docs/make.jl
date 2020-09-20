@@ -7,7 +7,7 @@ using SparseArrays
 Literate.markdown(joinpath(@__DIR__, "src", "custom.jl"), joinpath(@__DIR__, "src/generated"))
 
 makedocs(
-    sitename = "LinearMaps",
+    sitename = "LinearMaps.jl",
     format = Documenter.HTML(),
     modules = [LinearMaps],
     pages = Any[
