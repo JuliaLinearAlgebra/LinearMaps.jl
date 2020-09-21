@@ -1,9 +1,8 @@
 struct FillMap{T} <: LinearMap{T}
     λ::T
     size::Dims{2}
-    function FillMap(λ::T, dims) where {T}
-        all(d -> d >= 0, dims) || throw(ArgumentError("dims of FillMap must be non-negative"))
-        promote_type(T, typeof(λ)) == T || throw(InexactError())
+    function FillMap(λ::T, dims::Dims{2}) where {T}
+        all(>=(0), dims) || throw(ArgumentError("dims of FillMap must be non-negative"))
         return new{T}(λ, dims)
     end
 end
@@ -12,7 +11,7 @@ end
 Base.size(A::FillMap) = A.size
 MulStyle(A::FillMap) = FiveArg()
 LinearAlgebra.issymmetric(A::FillMap) = A.size[1] == A.size[2]
-LinearAlgebra.ishermitian(A::FillMap) = isreal(A) && A.size[1] == A.size[2]
+LinearAlgebra.ishermitian(A::FillMap) = isreal(A.λ) && A.size[1] == A.size[2]
 LinearAlgebra.isposdef(A::FillMap) = (size(A, 1) == size(A, 2) == 1 && isposdef(A.λ))
 Base.:(==)(A::FillMap, B::FillMap) = A.λ == B.λ && A.size == B.size
 
@@ -31,7 +30,6 @@ end
 function _unsafe_mul!(y::AbstractVecOrMat, A::FillMap, x::AbstractVector, α::Number, β::Number)
     if iszero(α)
         !isone(β) && rmul!(y, β)
-        return y
     else
         temp = A.λ * sum(x) * α
         if iszero(β)
@@ -53,8 +51,6 @@ Base.:(*)(λ::RealOrComplex, A::FillMap) = FillMap(λ * A.λ, size(A))
 Base.:(*)(A::FillMap, λ::RealOrComplex) = FillMap(A.λ * λ, size(A))
 
 function Base.:(*)(A::FillMap, B::FillMap)
-    mA, nA = size(A)
-    mB, nB = size(B)
-    nA != mB && throw(DimensionMismatch())
-    return FillMap(A.λ*B.λ*nA, (mA, nB))
+    check_dim_mul(A, B)
+    return FillMap(A.λ*B.λ*nA, (size(A, 1), size(B, 2)))
 end
