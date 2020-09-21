@@ -152,7 +152,7 @@ end
 function _unsafe_mul!(y::AbstractVecOrMat, L::CompositeMap{<:Any,<:Tuple{KroneckerMap,KroneckerMap}}, x::AbstractVector)
     require_one_based_indexing(y)
     B, A = L.maps
-    if length(A.maps) == length(B.maps) && all(M -> check_dim_mul(M[1], M[2]), zip(A.maps, B.maps))
+    if length(A.maps) == length(B.maps) && all(_iscompatible, zip(A.maps, B.maps))
         _unsafe_mul!(y, kron(map(*, A.maps, B.maps)...), x)
     else
         _unsafe_mul!(y, LinearMap(A)*B, x)
@@ -167,7 +167,7 @@ function _unsafe_mul!(y::AbstractVecOrMat, L::CompositeMap{T,<:Tuple{Vararg{Kron
     Bs = map(AB -> AB.maps[2], L.maps)
     As1, As2 = Base.front(As), Base.tail(As)
     Bs1, Bs2 = Base.front(Bs), Base.tail(Bs)
-    apply = all(A -> check_dim_mul(A...), zip(As1, As2)) && all(A -> check_dim_mul(A...), zip(Bs1, Bs2))
+    apply = all(_iscompatible, zip(As1, As2)) && all(_iscompatible, zip(Bs1, Bs2))
     if apply
         _unsafe_mul!(y, kron(prod(As), prod(Bs)), x)
     else
@@ -268,3 +268,5 @@ function _unsafe_mul!(y::AbstractVecOrMat, L::KroneckerSumMap, x::AbstractVector
     _unsafe_mul!(Y, B, X, true, true)
     return y
 end
+
+_iscompatible((A, B)) = size(A,2) == size(B,1)

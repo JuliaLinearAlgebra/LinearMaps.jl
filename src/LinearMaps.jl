@@ -48,9 +48,16 @@ Base.ndims(::LinearMap) = 2
 Base.size(A::LinearMap, n) = (n==1 || n==2 ? size(A)[n] : error("LinearMap objects have only 2 dimensions"))
 Base.length(A::LinearMap) = size(A)[1] * size(A)[2]
 
+# check dimension consistency for multiplication A*B
+function check_dim_mul(A, B)
+    mA, nA = size(A)
+    mB, nB = size(B)
+    (mB == nA) ||
+        throw(DimensionMismatch("left factor has dimensions ($mA,$nA), right factor has dimensions ($mB,$nB)"))
+    return nothing
+end
 # check dimension consistency for multiplication C = A*B
 function check_dim_mul(C, A, B)
-    # @info "checked vector dimensions" # uncomment for testing
     mA, nA = size(A) # A always has two dimensions
     mB, nB = size(B, 1), size(B, 2)
     (mB == nA) ||
