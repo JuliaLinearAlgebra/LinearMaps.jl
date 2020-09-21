@@ -50,20 +50,18 @@ Base.length(A::LinearMap) = size(A)[1] * size(A)[2]
 
 # check dimension consistency for multiplication A*B
 function check_dim_mul(A, B)
-    mA, nA = size(A)
-    mB, nB = size(B)
+    nA = size(A, 2)
+    mB = size(B, 1)
     (mB == nA) ||
-        throw(DimensionMismatch("left factor has dimensions ($mA,$nA), right factor has dimensions ($mB,$nB)"))
+        throw(DimensionMismatch("second dimension of left factor, $nA, does not match first dimension of right factor, $mB"))
     return nothing
 end
 # check dimension consistency for multiplication C = A*B
 function check_dim_mul(C, A, B)
     mA, nA = size(A) # A always has two dimensions
     mB, nB = size(B, 1), size(B, 2)
-    (mB == nA) ||
-        throw(DimensionMismatch("left factor has dimensions ($mA,$nA), right factor has dimensions ($mB,$nB)"))
-    (size(C, 1) != mA || size(C, 2) != nB) &&
-        throw(DimensionMismatch("result has dimensions $(size(C)), needs ($mA,$nB)"))
+    (mB == nA && size(C, 1) == mA && size(C, 2) == nB) ||
+        throw(DimensionMismatch("A has size ($mA,$nA), B has size ($mB,$nB), C has size $(size(C))"))
     return nothing
 end
 
@@ -100,10 +98,8 @@ julia> A*x
 ```
 """
 function Base.:(*)(A::LinearMap, x::AbstractVector)
-    m, n = size(A)
-    n == length(x) || throw(DimensionMismatch("linear map has dimensions ($m,$n), " *
-        "vector has length $(length(x))"))
-    return mul!(similar(x, promote_type(eltype(A), eltype(x)), m), A, x)
+    check_dim_mul(A, x)
+    return _unsafe_mul!(similar(x, promote_type(eltype(A), eltype(x)), size(A, 1)), A, x)
 end
 
 """
