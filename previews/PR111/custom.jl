@@ -115,10 +115,21 @@ end
 
 # ## Adjoints and transposes
 
-# The following functions are obviously helpful additions.
+# Generically, taking the transpose (or the adjoint) of a (real, resp.) map wraps the
+# linear map by a `TransposeMap`, taking the adjoint of a complex map wraps it by an
+# `AdjointMap`.
+
+typeof(A')
+
+# Not surprisingly, without further definitions, multiplying `A'` by `x` yields an error.
+
+A'x
+
+# If the operator is symmetric or Hermitian, the transpose and the adjoint, respectively,
+# of the linear map `A` is given by `A` itself. So let's define corresponding checks.
 
 LinearAlgebra.issymmetric(A::MyFillMap) = A.size[1] == A.size[2]
-LinearAlgebra.ishermitian(A::MyFillMap) = isreal(A) && A.size[1] == A.size[2]
+LinearAlgebra.ishermitian(A::MyFillMap) = isreal(A.λ) && A.size[1] == A.size[2]
 LinearAlgebra.isposdef(A::MyFillMap) = (size(A, 1) == size(A, 2) == 1 && isposdef(A.λ))
 Base.:(==)(A::MyFillMap, B::MyFillMap) = A.λ == B.λ && A.size == B.size
 
@@ -127,22 +138,20 @@ Base.:(==)(A::MyFillMap, B::MyFillMap) = A.λ == B.λ && A.size == B.size
 # to iterative eigenproblem solvers that real eigenvalues are to be computed.
 # Without these definitions, the first three functions would return `false` (by default),
 # and the last one would fall back to `===`.
-#
-# As for the multiplication of adjoints/transposes of `MyFillMap`s with vectors, there exist
-# two *distinct* paths.
+
+# With this at hand, we note that `A` above is symmetric, and we can compute
+
+transpose(A)*x
+
+# This, however, does not work for nonsquare maps
+
+MyFillMap(5.0, (3, 4))' * ones(3)
+
+# which require explicit adjoint/transpose handling, for which there exist two *distinct* paths.
 
 # ### Path 1: Generic, non-invariant `LinearMap` subtypes
 
-# Generically, taking the transpose (or the adjoint) of a (real, resp.) map wraps the
-# linear map by a `TransposeMap`.
-
-typeof(A')
-
-# Not surprisingly, without further definitions, multipliying `A'` by `x` yields an error.
-
-A'x
-
-# This can be fixed by providing `LinearAlgebra.mul!` methods for the corresponding wrapped
+# The first option is to write `LinearAlgebra.mul!` methods for the corresponding wrapped
 # map types; for instance,
 
 function LinearAlgebra.mul!(
@@ -161,7 +170,7 @@ end
 
 # ### Path 2: Invariant `LinearMap` subtypes
 
-# The easier option is when your class of linear maps that are modelled by your custom
+# The seconnd option is when your class of linear maps that are modelled by your custom
 # `LinearMap` subtype are invariant under taking adjoints and transposes.
 
 LinearAlgebra.adjoint(A::MyFillMap) = MyFillMap(adjoint(A.λ), reverse(A.size))
@@ -173,10 +182,14 @@ LinearAlgebra.transpose(A::MyFillMap) = MyFillMap(transpose(A.λ), reverse(A.siz
 
 mul!(ones(3), A', x, 2, 2)
 
+#-
+
+MyFillMap(5.0, (3, 4))' * ones(3)
+
 # Now that we have defined the action of adjoints/transposes, the
 # following right action on vectors is automatically defined:
 
-x'A
+ones(3)' * MyFillMap(5.0, (3, 4))
 
 # and `transpose(x) * A` correspondingly, as well as in-place multiplication
 
