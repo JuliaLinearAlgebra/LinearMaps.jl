@@ -93,9 +93,10 @@ julia> A*x
 ```
 """
 function Base.:(*)(A::LinearMap, x::AbstractVector)
-    size(A, 2) == length(x) || throw(DimensionMismatch("linear map has dimensions ($mA,$nA), " *
-        "vector has length $mB"))
-    return mul!(similar(x, promote_type(eltype(A), eltype(x)), size(A, 1)), A, x)
+    m, n = size(A)
+    n == length(x) || throw(DimensionMismatch("linear map has dimensions ($m,$n), " *
+        "vector has length $(length(x))"))
+    return mul!(similar(x, promote_type(eltype(A), eltype(x)), m), A, x)
 end
 
 """
