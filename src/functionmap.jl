@@ -71,7 +71,7 @@ function Base.:(*)(A::AdjointMap{<:Any,<:FunctionMap}, x::AbstractVector)
         conj!(y)
         return y
     else
-        error("adjoint not implemented for $A")
+        error("adjoint not implemented for $(A.lmap)")
     end
 end
 function Base.:(*)(A::TransposeMap{<:Any,<:FunctionMap}, x::AbstractVector)
@@ -103,7 +103,7 @@ function Base.:(*)(A::TransposeMap{<:Any,<:FunctionMap}, x::AbstractVector)
         conj!(y)
         return y
     else
-        error("transpose not implemented for $A")
+        error("transpose not implemented for $(A.lmap)")
     end
 end
 
@@ -129,7 +129,7 @@ function _unsafe_mul!(y::AbstractVecOrMat, At::TransposeMap{<:Any,<:FunctionMap}
         conj!(y)
         return y
     else
-        error("transpose not implemented for $A")
+        error("transpose not implemented for $(A.lmap)")
     end
 end
 
@@ -144,6 +144,6 @@ function _unsafe_mul!(y::AbstractVecOrMat, Ac::AdjointMap{<:Any,<:FunctionMap}, 
         conj!(y)
         return y
     else
-        error("adjoint not implemented for $A")
+        error("adjoint not implemented for $(A.lmap)")
     end
 end

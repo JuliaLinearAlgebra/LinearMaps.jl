@@ -99,3 +99,37 @@ LinearAlgebra.mul!(y::AbstractVector, A::Union{SimpleFunctionMap,SimpleComplexFu
     @test SparseMatrixCSC(F) == Fs == L
     @test Fs isa SparseMatrixCSC
 end
+
+struct MyFillMap{T} <: LinearMaps.LinearMap{T}
+    λ::T
+    size::Dims{2}
+    function MyFillMap(λ::T, dims::Dims{2}) where {T}
+        all(d -> d >= 0, dims) || throw(ArgumentError("dims of MyFillMap must be non-negative"))
+        promote_type(T, typeof(λ)) == T || throw(InexactError())
+        return new{T}(λ, dims)
+    end
+end
+Base.size(A::MyFillMap) = A.size
+function LinearAlgebra.mul!(y::AbstractVecOrMat, A::MyFillMap, x::AbstractVector)
+    LinearMaps.check_dim_mul(y, A, x)
+    return fill!(y, iszero(A.λ) ? zero(eltype(y)) : A.λ*sum(x))
+end
+function LinearAlgebra.mul!(y::AbstractVecOrMat, transA::LinearMaps.TransposeMap{<:Any,<:MyFillMap}, x::AbstractVector)
+    LinearMaps.check_dim_mul(y, transA, x)
+    λ = transA.lmap.λ
+    return fill!(y, iszero(λ) ? zero(eltype(y)) : transpose(λ)*sum(x))
+end
+
+@testset "transpose of new LinearMap type" begin
+    A = MyFillMap(5.0, (3, 3))
+    x = ones(3)
+    @test A * x == fill(15.0, 3)
+    @test mul!(zeros(3), A, x) == mul!(zeros(3), A, x, 1, 0) == fill(15.0, 3)
+    @test mul!(ones(3), A, x, 2, 2) == fill(32.0, 3)
+    @test mul!(ones(3,3), A, reshape(collect(1:9), 3, 3), 2, 2)[:,1] == fill(62.0, 3)
+    @test A'x == mul!(zeros(3), A', x)
+    for α in (true, false, 0, 1, randn()), β in (true, false, 0, 1, randn())
+        @test mul!(ones(3), A', x, α, β) == fill(β, 3) + fill(15α, 3)
+        @test mul!(ones(3, 2), A', [x x], α, β) == fill(β, 3, 2) + fill(15α, 3, 2)
+    end
+end

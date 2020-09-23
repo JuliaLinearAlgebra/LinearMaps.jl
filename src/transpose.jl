@@ -51,7 +51,7 @@ Base.:(==)(A::LinearMap, B::AdjointMap)      = ishermitian(A) && B.lmap == A
 # multiplication with vector/matrices
 # # TransposeMap
 function _unsafe_mul!(y::AbstractVecOrMat, A::TransposeMap, x::AbstractVector)
-    issymmetric(A.lmap) ? _unsafe_mul!(y, A.lmap, x) : error("transpose not implemented for $A")
+    issymmetric(A.lmap) ? _unsafe_mul!(y, A.lmap, x) : error("transpose not implemented for $(A.lmap)")
 end
 function _unsafe_mul!(y::AbstractMatrix, A::TransposeMap, x::AbstractMatrix)
     issymmetric(A.lmap) ? _unsafe_mul!(y, A.lmap, x) : _generic_mapmat_mul!(y, A, x)
@@ -64,7 +64,7 @@ function _unsafe_mul!(y::AbstractMatrix, A::TransposeMap, x::AbstractMatrix, α:
 end
 # # AdjointMap
 function _unsafe_mul!(y::AbstractVecOrMat, A::AdjointMap, x::AbstractVector)
-    ishermitian(A.lmap) ? _unsafe_mul!(y, A.lmap, x) : error("adjoint not implemented for $A")
+    ishermitian(A.lmap) ? _unsafe_mul!(y, A.lmap, x) : error("adjoint not implemented for $(A.lmap)")
 end
 function _unsafe_mul!(y::AbstractMatrix, A::AdjointMap, x::AbstractMatrix)
     ishermitian(A.lmap) ? _unsafe_mul!(y, A.lmap, x) : _generic_mapmat_mul!(y, A, x)

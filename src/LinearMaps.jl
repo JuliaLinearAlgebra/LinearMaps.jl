@@ -93,9 +93,10 @@ julia> A*x
 ```
 """
 function Base.:(*)(A::LinearMap, x::AbstractVector)
-    size(A, 2) == length(x) || throw(DimensionMismatch("linear map has dimensions ($mA,$nA), " *
-        "vector has length $mB"))
-    return _unsafe_mul!(similar(x, promote_type(eltype(A), eltype(x)), size(A, 1)), A, x)
+    m, n = size(A)
+    n == length(x) || throw(DimensionMismatch("linear map has dimensions ($m,$n), " *
+        "vector has length $(length(x))"))
+    return mul!(similar(x, promote_type(eltype(A), eltype(x)), m), A, x)
 end
 
 """
@@ -163,21 +164,23 @@ function mul!(y::AbstractVecOrMat, A::LinearMap, x::AbstractVector, α::Number, 
 end
 
 function _generic_mapvec_mul!(y, A, x, α, β)
+    # this function needs to call mul! for, e.g.,  AdjointMap{...,<:CustomMap}
     if isone(α)
-        iszero(β) && (_unsafe_mul!(y, A, x); return y)
-        isone(β) && (y .+= A * x; return y)
-        # β != 0, 1
+        iszero(β) && return mul!(y, A, x)
         z = A * x
-        y .= y.*β .+ z
+        if isone(β)
+            y .+= z
+        else
+            y .= y.*β .+ z
+        end
         return y
     elseif iszero(α)
-        iszero(β) && (fill!(y, zero(eltype(y))); return y)
+        iszero(β) && return fill!(y, zero(eltype(y)))
         isone(β) && return y
         # β != 0, 1
-        rmul!(y, β)
-        return y
+        return rmul!(y, β)
     else # α != 0, 1
-        iszero(β) && (_unsafe_mul!(y, A, x); rmul!(y, α); return y)
+        iszero(β) && return rmul!(mul!(y, A, x), α)
         z = A * x
         if isone(β)
             y .+= z .* α

@@ -1,6 +1,6 @@
 using Test, LinearMaps, LinearAlgebra, SparseArrays
 
-@testset "kronecker products" begin
+@testset "Kronecker products and sums" begin
     @testset "Kronecker product" begin
         A = rand(ComplexF64, 3, 3)
         B = rand(ComplexF64, 2, 2)
@@ -70,6 +70,7 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
             @test_throws ArgumentError kronsum(LA, [B B]) # non-square map
             KSmat = kron(A, Matrix(I, 2, 2)) + kron(Matrix(I, 3, 3), B)
             @test Matrix(KS) ≈ Matrix(kron(A, LinearMap(I, 2)) + kron(LinearMap(I, 3), B))
+            @test KS * ones(size(KS, 2)) ≈ KSmat * ones(size(KS, 2))
             @test size(KS) == size(kron(A, Matrix(I, 2, 2)))
             for transform in (identity, transpose, adjoint)
                 @test Matrix(transform(KS)) ≈ transform(Matrix(KS)) ≈ transform(KSmat)
