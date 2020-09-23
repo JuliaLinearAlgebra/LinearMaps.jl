@@ -268,5 +268,3 @@ function _unsafe_mul!(y::AbstractVecOrMat, L::KroneckerSumMap, x::AbstractVector
     _unsafe_mul!(Y, B, X, true, true)
     return y
 end
-
-_iscompatible((A, B)) = size(A,2) == size(B,1)

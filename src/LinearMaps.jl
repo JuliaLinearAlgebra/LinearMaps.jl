@@ -49,11 +49,11 @@ Base.size(A::LinearMap, n) = (n==1 || n==2 ? size(A)[n] : error("LinearMap objec
 Base.length(A::LinearMap) = size(A)[1] * size(A)[2]
 
 # check dimension consistency for multiplication A*B
+_iscompatible((A, B)) = size(A, 2) == size(B, 1)
 function check_dim_mul(A, B)
-    nA = size(A, 2)
-    mB = size(B, 1)
-    (mB == nA) ||
-        throw(DimensionMismatch("second dimension of left factor, $nA, does not match first dimension of right factor, $mB"))
+    _iscompatible((A, B)) ||
+        throw(DimensionMismatch("second dimension of left factor, $(size(A, 2)), " *
+            "does not match first dimension of right factor, $(size(B, 1))"))
     return nothing
 end
 # check dimension consistency for multiplication C = A*B
@@ -99,7 +99,7 @@ julia> A*x
 """
 function Base.:(*)(A::LinearMap, x::AbstractVector)
     check_dim_mul(A, x)
-    return _unsafe_mul!(similar(x, promote_type(eltype(A), eltype(x)), size(A, 1)), A, x)
+    return mul!(similar(x, promote_type(eltype(A), eltype(x)), size(A, 1)), A, x)
 end
 
 """
