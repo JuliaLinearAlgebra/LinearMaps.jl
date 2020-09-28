@@ -123,8 +123,9 @@ typeof(A')
 
 # Not surprisingly, without further definitions, multiplying `A'` by `x` yields an error.
 
-# ```@repl
+# ```julia
 # A'x
+# ERROR: transpose not implemented for MyFillMap{Float64}(5.0, (3, 3))
 # ```
 
 # If the operator is symmetric or Hermitian, the transpose and the adjoint, respectively,
@@ -147,8 +148,9 @@ transpose(A)*x
 
 # This, however, does not work for nonsquare maps
 
-# ```@repl
+# ```julia
 # MyFillMap(5.0, (3, 4))' * ones(3)
+# ERROR: transpose not implemented for MyFillMap{Float64}(5.0, (3, 4))
 # ```
 
 # which require explicit adjoint/transpose handling, for which there exist two *distinct* paths.
