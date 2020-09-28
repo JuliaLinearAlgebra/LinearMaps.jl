@@ -125,6 +125,7 @@ typeof(A')
 
 # ```jldoctest
 # A'x
+# # output
 # ```
 
 # If the operator is symmetric or Hermitian, the transpose and the adjoint, respectively,
@@ -149,6 +150,7 @@ transpose(A)*x
 
 # ```jldoctest
 # MyFillMap(5.0, (3, 4))' * ones(3)
+# # output
 # ```
 
 # which require explicit adjoint/transpose handling, for which there exist two *distinct* paths.
