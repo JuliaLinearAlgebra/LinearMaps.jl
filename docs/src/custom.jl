@@ -123,9 +123,8 @@ typeof(A')
 
 # Not surprisingly, without further definitions, multiplying `A'` by `x` yields an error.
 
-# ```jldoctest
+# ```@repl
 # A'x
-# # output
 # ```
 
 # If the operator is symmetric or Hermitian, the transpose and the adjoint, respectively,
@@ -148,9 +147,8 @@ transpose(A)*x
 
 # This, however, does not work for nonsquare maps
 
-# ```jldoctest
+# ```@repl
 # MyFillMap(5.0, (3, 4))' * ones(3)
-# # output
 # ```
 
 # which require explicit adjoint/transpose handling, for which there exist two *distinct* paths.
