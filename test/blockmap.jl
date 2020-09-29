@@ -181,6 +181,8 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays, BenchmarkTools, Interactive
 
             # Md = diag(M1, M2, M3, M2, M1) # unsupported so use sparse:
             Md = Matrix(blockdiag(sparse.((M1, M2, M3, M2, M1))...))
+            @test (@which blockdiag(sparse.((M1, M2, M3, M2, M1))...)).module != LinearMaps
+            @test (@which cat(M1, M2, M3, M2, M1; dims=(1,2))).module != LinearMaps
             x = randn(elty, size(Md, 2))
             Bd = @inferred blockdiag(L1, L2, L3, L2, L1)
             @test Matrix(Bd) == Md

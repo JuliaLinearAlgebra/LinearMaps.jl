@@ -439,28 +439,23 @@ BlockDiagonalMap{T}(maps::As) where {T,As<:Tuple{Vararg{LinearMap}}} =
 BlockDiagonalMap(maps::LinearMap...) =
     BlockDiagonalMap{promote_type(map(eltype, maps)...)}(maps)
 
-# for k in 1:8 # is 8 sufficient?
-#     Is = ntuple(n->:($(Symbol(:A,n))::AbstractMatrix), Val(k-1))
-#     # yields (:A1, :A2, :A3, ..., :A(k-1))
-#     L = :($(Symbol(:A,k))::LinearMap)
-#     # yields :Ak
-#     mapargs = ntuple(n -> :(LinearMap($(Symbol(:A,n)))), Val(k-1))
-#     # yields (:LinearMap(A1), :LinearMap(A2), ..., :LinearMap(A(k-1)))
+for k in 1:8 # is 8 sufficient?
+    Is = ntuple(n->:($(Symbol(:A,n))::AbstractMatrix), Val(k-1))
+    # yields (:A1, :A2, :A3, ..., :A(k-1))
+    L = :($(Symbol(:A,k))::LinearMap)
+    # yields :Ak
+    mapargs = ntuple(n -> :(LinearMap($(Symbol(:A,n)))), Val(k-1))
+    # yields (:LinearMap(A1), :LinearMap(A2), ..., :LinearMap(A(k-1)))
 
-#     @eval begin
-#         function SparseArrays.blockdiag($(Is...), $L, As::Union{LinearMap,AbstractMatrix}...)
-#             return BlockDiagonalMap($(mapargs...), $(Symbol(:A,k)), convert_to_lmaps(As...)...)
-#         end
-
-#         function Base.cat($(Is...), $L, As::Union{LinearMap,AbstractMatrix}...; dims::Dims{2})
-#             if dims == (1,2)
-#                 return BlockDiagonalMap($(mapargs...), $(Symbol(:A,k)), convert_to_lmaps(As...)...)
-#             else
-#                 throw(ArgumentError("dims keyword in cat of LinearMaps must be (1,2)"))
-#             end
-#         end
-#     end
-# end
+    # since the below method is more specific than the Base method, it would redefine Base behavior
+    @eval function Base.cat($(Is...), $L, As::MapOrMatrix...; dims::Dims{2})
+        if dims == (1,2)
+            return BlockDiagonalMap($(mapargs...), $(Symbol(:A,k)), convert_to_lmaps(As...)...)
+        else
+            throw(ArgumentError("dims keyword in cat of LinearMaps must be (1,2)"))
+        end
+    end
+end
 
 """
     blockdiag(As::Union{LinearMap,AbstractMatrix}...)::BlockDiagonalMap
@@ -473,6 +468,7 @@ function SparseArrays.blockdiag(As::MapOrMatrix...)
     return BlockDiagonalMap(convert_to_lmaps(As...)...)
 end
 
+import Base: cat
 """
     cat(As::Union{LinearMap,AbstractMatrix}...; dims=(1,2))::BlockDiagonalMap
 
@@ -480,13 +476,7 @@ Construct a (lazy) representation of the diagonal concatenation of the arguments
 To avoid fallback to the generic `Base.cat`, there must be a `LinearMap`
 object among the first 8 arguments.
 """
-function Base.cat(As::MapOrMatrix...; dims::Dims{2})
-    if dims == (1,2)
-        return BlockDiagonalMap(convert_to_lmaps(As...)...)
-    else
-        throw(ArgumentError("dims keyword in cat of LinearMaps must be (1,2)"))
-    end
-end
+Base.cat
 
 Base.size(A::BlockDiagonalMap) = (last(A.rowranges[end]), last(A.colranges[end]))
 
