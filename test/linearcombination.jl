@@ -37,6 +37,7 @@ using Test, LinearMaps, LinearAlgebra, BenchmarkTools
     @test @inferred(LinearMaps.MulStyle(LC)) === matrixstyle
     @test @inferred(LinearMaps.MulStyle(LC + I)) === matrixstyle
     @test @inferred(LinearMaps.MulStyle(LC + 2.0*I)) === matrixstyle
+    @test sparse(LC) == Matrix(LC) == A+B
     v = rand(ComplexF64, 10)
     w = similar(v)
     b = @benchmarkable mul!($w, $M, $v)

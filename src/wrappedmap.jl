@@ -37,8 +37,6 @@ LinearAlgebra.ishermitian(A::WrappedMap) = A._ishermitian
 LinearAlgebra.isposdef(A::WrappedMap) = A._isposdef
 
 # multiplication with vectors & matrices
-Base.:(*)(A::WrappedMap, x::AbstractVector) = *(A.lmap, x)
-
 for (intype, outtype) in ((AbstractVector, AbstractVecOrMat), (AbstractMatrix, AbstractMatrix))
     @eval begin
         _unsafe_mul!(y::$outtype, A::WrappedMap, x::$intype) = _unsafe_mul!(y, A.lmap, x)

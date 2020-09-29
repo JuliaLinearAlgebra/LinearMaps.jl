@@ -115,13 +115,14 @@ Base.:(==)(A::KroneckerMap, B::KroneckerMap) = (eltype(A) == eltype(B) && A.maps
     end
     return y
 end
-@inline function _kronmul!(y, B::Union{MatrixMap,UniformScalingMap}, X, At::Union{MatrixMap,UniformScalingMap}, T)
+@inline function _kronmul!(y, B, X, At::Union{MatrixMap,UniformScalingMap}, T)
     na, ma = size(At)
     mb, nb = size(B)
-    if nb*ma < mb*na
-        _unsafe_mul!(reshape(y, (mb, ma)), B, convert(Matrix, X*At))
+    Y = reshape(y, (mb, ma))
+    if nb*ma < mb*na 
+        _unsafe_mul!(Y, B, Matrix(X*At))
     else
-        _unsafe_mul!(reshape(y, (mb, ma)), convert(Matrix, B*X), At isa MatrixMap ? At.lmap : At.λ)
+        _unsafe_mul!(Y, Matrix(B*X), At isa MatrixMap ? At.lmap : At.λ)
     end
     return y
 end
