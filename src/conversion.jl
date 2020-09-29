@@ -109,7 +109,7 @@ function Base.convert(::Type{SparseMatrixCSC}, A::BlockMap)
         convert.(AbstractMatrix, Base.tail(A.maps))...
     )
 end
-Base.Matrix(A::BlockDiagonalMap) = cat(convert.(Matrix, A.maps)...; dims=(1,2))
+Base.Matrix(A::BlockDiagonalMap) = Base._cat((1,2), convert.(Matrix, A.maps)...)
 Base.convert(::Type{AbstractMatrix}, A::BlockDiagonalMap) = sparse(A)
 function SparseArrays.sparse(A::BlockDiagonalMap)
     return blockdiag(convert.(SparseMatrixCSC, A.maps)...)
