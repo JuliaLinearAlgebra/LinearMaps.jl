@@ -448,15 +448,22 @@ for k in 1:8 # is 8 sufficient?
     # yields (:LinearMap(A1), :LinearMap(A2), ..., :LinearMap(A(k-1)))
 
     # since the below method is more specific than the Base method, it would redefine Base behavior
-    @eval function Base.cat($(Is...), $L, As::MapOrMatrix...; dims::Dims{2})
-        if dims == (1,2)
+    @eval begin
+        function SparseArrays.blockdiag($(Is...), $L, As::Union{LinearMap,AbstractMatrix}...)
             return BlockDiagonalMap($(mapargs...), $(Symbol(:A,k)), convert_to_lmaps(As...)...)
-        else
-            throw(ArgumentError("dims keyword in cat of LinearMaps must be (1,2)"))
+        end
+
+        function Base.cat($(Is...), $L, As::MapOrMatrix...; dims::Dims{2})
+            if dims == (1,2)
+                return BlockDiagonalMap($(mapargs...), $(Symbol(:A,k)), convert_to_lmaps(As...)...)
+            else
+                throw(ArgumentError("dims keyword in cat of LinearMaps must be (1,2)"))
+            end
         end
     end
 end
 
+import SparseArrays: blockdiag
 """
     blockdiag(As::Union{LinearMap,AbstractMatrix}...)::BlockDiagonalMap
 
@@ -464,9 +471,7 @@ Construct a (lazy) representation of the diagonal concatenation of the arguments
 To avoid fallback to the generic `SparseArrays.blockdiag`, there must be a `LinearMap`
 object among the first 8 arguments.    
 """
-function SparseArrays.blockdiag(As::MapOrMatrix...)
-    return BlockDiagonalMap(convert_to_lmaps(As...)...)
-end
+SparseArrays.blockdiag
 
 import Base: cat
 """
