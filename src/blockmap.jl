@@ -16,7 +16,7 @@ BlockMap{T}(maps::As, rows::S) where {T,As<:Tuple{Vararg{LinearMap}},S} = BlockM
 
 MulStyle(A::BlockMap) = MulStyle(A.maps...)
 
-function check_dim(A::MapOrMatrix, dim, n)
+function check_dim(A, dim, n)
     n == size(A, dim) || throw(DimensionMismatch("Expected $n, got $(size(A, dim))"))
     return nothing
 end
@@ -463,7 +463,6 @@ for k in 1:8 # is 8 sufficient?
     end
 end
 
-import SparseArrays: blockdiag
 """
     blockdiag(As::Union{LinearMap,AbstractMatrix}...)::BlockDiagonalMap
 
@@ -473,7 +472,6 @@ object among the first 8 arguments.
 """
 SparseArrays.blockdiag
 
-import Base: cat
 """
     cat(As::Union{LinearMap,AbstractMatrix}...; dims=(1,2))::BlockDiagonalMap
 

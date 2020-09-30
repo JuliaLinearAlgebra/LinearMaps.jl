@@ -5,6 +5,7 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays, BenchmarkTools, Interactive
         for elty in (Float32, ComplexF64), n2 = (0, 20)
             A11 = rand(elty, 10, 10)
             A12 = rand(elty, 10, n2)
+            v = rand(elty, 10)
             L = @inferred hcat(LinearMap(A11), LinearMap(A12))
             @test @inferred(LinearMaps.MulStyle(L)) === matrixstyle
             @test L isa LinearMaps.BlockMap{elty}
@@ -16,14 +17,14 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays, BenchmarkTools, Interactive
             L = @inferred hcat(LinearMap(A11), LinearMap(A12), LinearMap(A11))
             A = [A11 A12 A11]
             @test Matrix(L) ≈ A
-            A = [I I I A11 A11 A11]
+            A = [I I I A11 A11 A11 v]
             @test (@which [A11 A11 A11]).module != LinearMaps
-            @test (@which [I I I A11 A11 A11]).module == LinearAlgebra
-            @test (@which hcat(I, I, I)).module == LinearAlgebra
+            @test (@which [I I I A11 A11 A11]).module != LinearMaps
+            @test (@which hcat(I, I, I)).module != LinearMaps
             @test (@which hcat(I, I, I, LinearMap(A11), A11, A11)).module == LinearMaps
-            L = @inferred hcat(I, I, I, LinearMap(A11), A11, A11)
-            @test L == [I I I LinearMap(A11) LinearMap(A11) LinearMap(A11)]
-            x = rand(elty, 60)
+            L = @inferred hcat(I, I, I, LinearMap(A11), A11, A11, v)
+            @test L == [I I I LinearMap(A11) LinearMap(A11) LinearMap(A11) LinearMap(reshape(v, :, 1))]
+            x = rand(elty, 61)
             @test L isa LinearMaps.BlockMap{elty}
             @test L * x ≈ A * x
             A11 = rand(elty, 11, 10)
@@ -35,6 +36,7 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays, BenchmarkTools, Interactive
     @testset "vcat" begin
         for elty in (Float32, ComplexF64)
             A11 = rand(elty, 10, 10)
+            v = rand(elty, 10)
             L = @inferred vcat(LinearMap(A11))
             @test L == [LinearMap(A11);]
             @test Matrix(L) ≈ A11
@@ -42,16 +44,16 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays, BenchmarkTools, Interactive
             L = @inferred vcat(LinearMap(A11), LinearMap(A21))
             @test L isa LinearMaps.BlockMap{elty}
             @test @inferred(LinearMaps.MulStyle(L)) === matrixstyle
-            @test (@which [A11; A21]) != LinearMaps
+            @test (@which [A11; A21]).module != LinearMaps
             A = [A11; A21]
             x = rand(10)
             @test size(L) == size(A)
             @test Matrix(L) ≈ A
             @test L * x ≈ A * x
-            A = [I; I; I; A11; A11; A11]
-            @test (@which [I; I; I; A11; A11; A11]).module == LinearAlgebra
-            L = @inferred vcat(I, I, I, LinearMap(A11), LinearMap(A11), LinearMap(A11))
-            @test L == [I; I; I; LinearMap(A11); LinearMap(A11); LinearMap(A11)]
+            A = [I; I; I; A11; A11; A11; v v v v v v v v v v]
+            @test (@which [I; I; I; A11; A11; A11; v v v v v v v v v v]).module != LinearMaps
+            L = @inferred vcat(I, I, I, LinearMap(A11), LinearMap(A11), LinearMap(A11), reduce(hcat, fill(v, 10)))
+            @test L == [I; I; I; LinearMap(A11); LinearMap(A11); LinearMap(A11); reduce(hcat, fill(v, 10))]
             x = rand(elty, 10)
             @test L isa LinearMaps.BlockMap{elty}
             @test L * x ≈ A * x
