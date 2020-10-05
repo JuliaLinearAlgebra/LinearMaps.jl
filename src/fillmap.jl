@@ -2,7 +2,7 @@ struct FillMap{T} <: LinearMap{T}
     λ::T
     size::Dims{2}
     function FillMap(λ::T, dims::Dims{2}) where {T}
-        all(>=(0), dims) || throw(ArgumentError("dims of FillMap must be non-negative"))
+        (dims[1]>=0 && dims[2]>=0) || throw(ArgumentError("dims of FillMap must be non-negative"))
         return new{T}(λ, dims)
     end
 end
@@ -52,5 +52,5 @@ Base.:(*)(A::FillMap, λ::RealOrComplex) = FillMap(A.λ * λ, size(A))
 
 function Base.:(*)(A::FillMap, B::FillMap)
     check_dim_mul(A, B)
-    return FillMap(A.λ*B.λ*nA, (size(A, 1), size(B, 2)))
+    return FillMap(A.λ*B.λ*size(A, 2), (size(A, 1), size(B, 2)))
 end
