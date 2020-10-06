@@ -10,6 +10,7 @@ using Test, LinearMaps, LinearAlgebra, BenchmarkTools
     @test run(b, samples=3).allocs == 0
     n = 10
     L = sum(fill(CS!, n))
+    @test_throws AssertionError LinearMaps.LinearCombination{Float64}((CS!, CS!))
     @test mul!(u, L, v) ≈ n * cumsum(v)
     b = @benchmarkable mul!($u, $L, $v, 2, 2)
     @test run(b, samples=5).allocs <= 1

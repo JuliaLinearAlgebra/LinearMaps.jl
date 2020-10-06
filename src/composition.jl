@@ -1,15 +1,13 @@
-# helper function
-check_dim_mul(A, B) = size(A, 2) == size(B, 1)
-
 struct CompositeMap{T, As<:Tuple{Vararg{LinearMap}}} <: LinearMap{T}
     maps::As # stored in order of application to vector
     function CompositeMap{T, As}(maps::As) where {T, As}
         N = length(maps)
         for n in 2:N
-            check_dim_mul(maps[n], maps[n-1]) || throw(DimensionMismatch("CompositeMap"))
+            check_dim_mul(maps[n], maps[n-1])
         end
-        for n in 1:N
-            promote_type(T, eltype(maps[n])) == T || throw(InexactError())
+        for n in eachindex(maps)
+            A = maps[n]
+            @assert promote_type(T, eltype(A)) == T "eltype $(eltype(A)) cannot be promoted to $T in CompositeMap constructor"
         end
         new{T, As}(maps)
     end

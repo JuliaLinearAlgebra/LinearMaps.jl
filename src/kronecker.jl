@@ -1,8 +1,9 @@
 struct KroneckerMap{T, As<:Tuple{Vararg{LinearMap}}} <: LinearMap{T}
     maps::As
     function KroneckerMap{T, As}(maps::As) where {T, As}
-        for A in maps
-            promote_type(T, eltype(A)) == T || throw(InexactError())
+        for n in eachindex(maps)
+            A = maps[n]
+            @assert promote_type(T, eltype(A)) == T  "eltype $(eltype(A)) cannot be promoted to $T in KroneckerMap constructor"
         end
         return new{T,As}(maps)
     end
@@ -151,7 +152,7 @@ end
 function _unsafe_mul!(y::AbstractVecOrMat, L::CompositeMap{<:Any,<:Tuple{KroneckerMap,KroneckerMap}}, x::AbstractVector)
     require_one_based_indexing(y)
     B, A = L.maps
-    if length(A.maps) == length(B.maps) && all(M -> check_dim_mul(M[1], M[2]), zip(A.maps, B.maps))
+    if length(A.maps) == length(B.maps) && all(_iscompatible, zip(A.maps, B.maps))
         _unsafe_mul!(y, kron(map(*, A.maps, B.maps)...), x)
     else
         _unsafe_mul!(y, LinearMap(A)*B, x)
@@ -166,7 +167,7 @@ function _unsafe_mul!(y::AbstractVecOrMat, L::CompositeMap{T,<:Tuple{Vararg{Kron
     Bs = map(AB -> AB.maps[2], L.maps)
     As1, As2 = Base.front(As), Base.tail(As)
     Bs1, Bs2 = Base.front(Bs), Base.tail(Bs)
-    apply = all(A -> check_dim_mul(A...), zip(As1, As2)) && all(A -> check_dim_mul(A...), zip(Bs1, Bs2))
+    apply = all(_iscompatible, zip(As1, As2)) && all(_iscompatible, zip(Bs1, Bs2))
     if apply
         _unsafe_mul!(y, kron(prod(As), prod(Bs)), x)
     else
@@ -181,9 +182,10 @@ end
 struct KroneckerSumMap{T, As<:Tuple{LinearMap,LinearMap}} <: LinearMap{T}
     maps::As
     function KroneckerSumMap{T, As}(maps::As) where {T, As}
-        for A in maps
+        for n in eachindex(maps)
+            A = maps[n]
             size(A, 1) == size(A, 2) || throw(ArgumentError("operators need to be square in Kronecker sums"))
-            promote_type(T, eltype(A)) == T || throw(InexactError())
+            @assert promote_type(T, eltype(A)) == T  "eltype $(eltype(A)) cannot be promoted to $T in KroneckerSumMap constructor"
         end
         return new{T,As}(maps)
     end

@@ -30,6 +30,7 @@ using Test, LinearMaps, LinearAlgebra, BenchmarkTools
     # complex case
     β = π + 2π * im
     C = @inferred β * A
+    @test_throws AssertionError LinearMaps.ScaledMap{Float64}(β, A)
     @inferred conj(β) * A' # needed in left-mul
     T = ComplexF64
     xc = rand(T, N)
