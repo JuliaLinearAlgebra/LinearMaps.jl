@@ -45,6 +45,7 @@ using Test, LinearMaps, LinearAlgebra, Quaternions
     @test M == (L * L * γ) * β == (L * L * α) * β == (L * L * α) * β.λ
     @test length(M.maps) == 3
     @test M.maps[1].λ == γ*β.λ
+    @test γ*LinearMap(γ, (3, 4)) == LinearMap(γ^2, (3, 4)) == LinearMap(γ, (3, 4))*γ
 
     # exercise non-RealOrComplex scalar operations
     @test Array(γ * (L'*L)) ≈ γ * (A'*A) # CompositeMap

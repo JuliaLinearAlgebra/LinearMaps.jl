@@ -282,7 +282,7 @@ LinearMap(f, M::Int; kwargs...) = LinearMap{Float64}(f, M; kwargs...)
 LinearMap(f, M::Int, N::Int; kwargs...) = LinearMap{Float64}(f, M, N; kwargs...)
 LinearMap(f, fc, M::Int; kwargs...) = LinearMap{Float64}(f, fc, M; kwargs...)
 LinearMap(f, fc, M::Int, N::Int; kwargs...) = LinearMap{Float64}(f, fc, M, N; kwargs...)
-LinearMap(λ::Number, M::Int, N::Int) = LinearMap(λ, (M, N))
+LinearMap(λ::Number, M::Int, N::Int) = FillMap(λ, (M, N))
 LinearMap(λ::Number, dims::Dims{2}) = FillMap(λ, dims)
 
 LinearMap{T}(A::MapOrMatrix; kwargs...) where {T} = WrappedMap{T}(A; kwargs...)
