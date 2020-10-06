@@ -35,5 +35,5 @@ using LinearMaps, LinearAlgebra, Test
     @test α*LinearMap(μ, (M, N)) == LinearMap(α * μ, (M, N))
     @test LinearMap(μ, (M, N))*α == LinearMap(μ * α, (M, N))
     @test LinearMap(μ, (M, N))*LinearMap(μ, (N, M)) == LinearMap(μ^2*N, (M, M))
-    @test Matrix(LinearMap(μ, (M, N))*LinearMap(μ, (N, M))) == fill(μ, (M, N))*fill(μ, (N, M))
+    @test Matrix(LinearMap(μ, (M, N))*LinearMap(μ, (N, M))) ≈ fill(μ, (M, N))*fill(μ, (N, M))
 end
