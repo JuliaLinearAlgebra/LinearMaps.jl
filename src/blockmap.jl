@@ -16,11 +16,6 @@ BlockMap{T}(maps::As, rows::S) where {T,As<:Tuple{Vararg{LinearMap}},S} = BlockM
 
 MulStyle(A::BlockMap) = MulStyle(A.maps...)
 
-function check_dim(A::LinearMap, dim, n)
-    n == size(A, dim) || throw(DimensionMismatch("Expected $n, got $(size(A, dim))"))
-    return nothing
-end
-
 """
     rowcolranges(maps, rows)
 
@@ -52,30 +47,13 @@ end
 Base.size(A::BlockMap) = (last(last(A.rowranges)), last(last(A.colranges)))
 
 ############
-# concatenation
-############
-
-for k in 1:8 # is 8 sufficient?
-    Is = ntuple(n->:($(Symbol(:A,n))::UniformScaling), Val(k-1))
-    L = :($(Symbol(:A,k))::LinearMap)
-    args = ntuple(n->Symbol(:A,n), Val(k))
-
-    @eval begin
-        Base.hcat($(Is...), $L, As::Union{LinearMap,UniformScaling}...) = _hcat($(args...), As...)
-        Base.vcat($(Is...), $L, As::Union{LinearMap,UniformScaling}...) = _vcat($(args...), As...)
-        Base.hvcat(rows::Tuple{Vararg{Int}}, $(Is...), $L, As::Union{LinearMap,UniformScaling}...) = _hvcat(rows, $(args...), As...)
-    end
-end
-
-############
 # hcat
 ############
 """
-    hcat(As::Union{LinearMap,UniformScaling}...)::BlockMap
+    hcat(As::Union{LinearMap,UniformScaling,AbstractVecOrMat}...)::BlockMap
 
 Construct a (lazy) representation of the horizontal concatenation of the arguments.
-`UniformScaling` objects are promoted to `LinearMap` automatically. To avoid fallback
-to the generic `Base.hcat`, there must be a `LinearMap` object among the first 8 arguments.
+All arguments are promoted to `LinearMap`s automatically.
 
 # Examples
 ```jldoctest; setup=(using LinearMaps)
@@ -90,9 +68,7 @@ julia> L * ones(Int, 6)
  6
 ```
 """
-Base.hcat
-
-function _hcat(As::Union{LinearMap,UniformScaling}...)
+function Base.hcat(As::Union{LinearMap,UniformScaling,AbstractVecOrMat}...)
     T = promote_type(map(eltype, As)...)
     nbc = length(As)
 
@@ -112,11 +88,10 @@ end
 # vcat
 ############
 """
-    vcat(As::Union{LinearMap,UniformScaling}...)::BlockMap
+    vcat(As::Union{LinearMap,UniformScaling,AbstractVecOrMat}...)::BlockMap
 
 Construct a (lazy) representation of the vertical concatenation of the arguments.
-`UniformScaling` objects are promoted to `LinearMap` automatically. To avoid fallback
-to the generic `Base.vcat`, there must be a `LinearMap` object among the first 8 arguments.
+All arguments are promoted to `LinearMap`s automatically.
 
 # Examples
 ```jldoctest; setup=(using LinearMaps)
@@ -134,9 +109,7 @@ julia> L * ones(Int, 3)
  3
 ```
 """
-Base.vcat
-
-function _vcat(As::Union{LinearMap,UniformScaling}...)
+function Base.vcat(As::Union{LinearMap,UniformScaling,AbstractVecOrMat}...)
     T = promote_type(map(eltype, As)...)
     nbr = length(As)
 
@@ -157,12 +130,11 @@ end
 # hvcat
 ############
 """
-    hvcat(rows::Tuple{Vararg{Int}}, As::Union{LinearMap,UniformScaling}...)::BlockMap
+    hvcat(rows::Tuple{Vararg{Int}}, As::Union{LinearMap,UniformScaling,AbstractVecOrMat}...)::BlockMap
 
 Construct a (lazy) representation of the horizontal-vertical concatenation of the arguments.
 The first argument specifies the number of arguments to concatenate in each block row.
-`UniformScaling` objects are promoted to `LinearMap` automatically. To avoid fallback
-to the generic `Base.hvcat`, there must be a `LinearMap` object among the first 8 arguments.
+All arguments are promoted to `LinearMap`s automatically.
 
 # Examples
 ```jldoctest; setup=(using LinearMaps)
@@ -185,7 +157,7 @@ julia> L * ones(Int, 6)
 """
 Base.hvcat
 
-function _hvcat(rows::Tuple{Vararg{Int}}, As::Union{LinearMap,UniformScaling}...)
+function Base.hvcat(rows::Tuple{Vararg{Int}}, As::Union{LinearMap,UniformScaling,AbstractVecOrMat}...)
     nr = length(rows)
     T = promote_type(map(eltype, As)...)
     sum(rows) == length(As) || throw(ArgumentError("mismatch between row sizes and number of arguments"))
@@ -237,6 +209,13 @@ function _hvcat(rows::Tuple{Vararg{Int}}, As::Union{LinearMap,UniformScaling}...
     return BlockMap{T}(promote_to_lmaps(n, 1, 1, As...), rows)
 end
 
+function check_dim(A, dim, n)
+    n == size(A, dim) || throw(DimensionMismatch("Expected $n, got $(size(A, dim))"))
+    return nothing
+end
+
+promote_to_lmaps_(n::Int, dim, A::AbstractMatrix) = (check_dim(A, dim, n); LinearMap(A))
+promote_to_lmaps_(n::Int, dim, A::AbstractVector) = (check_dim(A, dim, n); LinearMap(reshape(A, length(A), 1)))
 promote_to_lmaps_(n::Int, dim, J::UniformScaling) = UniformScalingMap(J.λ, n)
 promote_to_lmaps_(n::Int, dim, A::LinearMap) = (check_dim(A, dim, n); A)
 promote_to_lmaps(n, k, dim) = ()
@@ -292,11 +271,6 @@ end
 
 Base.:(==)(A::BlockMap, B::BlockMap) = (eltype(A) == eltype(B) && A.maps == B.maps && A.rows == B.rows)
 
-# special transposition behavior
-
-LinearAlgebra.transpose(A::BlockMap) = TransposeMap(A)
-LinearAlgebra.adjoint(A::BlockMap)  = AdjointMap(A)
-
 ############
 # multiplication helper functions
 ############
@@ -310,6 +284,7 @@ function _blockmul!(y, A::BlockMap, x, α, β)
     return __blockmul!(MulStyle(A), y, A, x, α, β)
 end
 
+# provide one global intermediate storage vector if necessary
 __blockmul!(::FiveArg, y, A, x, α, β)  = ___blockmul!(y, A, x, α, β, nothing)
 __blockmul!(::ThreeArg, y, A, x, α, β) = ___blockmul!(y, A, x, α, β, similar(y))
 
@@ -401,7 +376,6 @@ for (intype, outtype) in ((AbstractVector, AbstractVecOrMat), (AbstractMatrix, A
             function _unsafe_mul!(y::$outtype, wrapA::$maptype, x::$intype,
                             α::Number, β::Number)
                 require_one_based_indexing(y, x)
-
                 return _transblockmul!(y, wrapA.lmap, x, α, β, $transform)
             end
         end
@@ -437,22 +411,24 @@ BlockDiagonalMap{T}(maps::As) where {T,As<:Tuple{Vararg{LinearMap}}} =
 BlockDiagonalMap(maps::LinearMap...) =
     BlockDiagonalMap{promote_type(map(eltype, maps)...)}(maps)
 
+# since the below methods are more specific than the Base method,
+# they would redefine Base/SparseArrays behavior
 for k in 1:8 # is 8 sufficient?
-    Is = ntuple(n->:($(Symbol(:A,n))::AbstractMatrix), Val(k-1))
+    Is = ntuple(n->:($(Symbol(:A,n))::AbstractVecOrMat), Val(k-1))
     # yields (:A1, :A2, :A3, ..., :A(k-1))
     L = :($(Symbol(:A,k))::LinearMap)
     # yields :Ak
-    mapargs = ntuple(n -> :(LinearMap($(Symbol(:A,n)))), Val(k-1))
+    mapargs = ntuple(n -> :($(Symbol(:A,n))), Val(k-1))
     # yields (:LinearMap(A1), :LinearMap(A2), ..., :LinearMap(A(k-1)))
 
     @eval begin
-        function SparseArrays.blockdiag($(Is...), $L, As::Union{LinearMap,AbstractMatrix}...)
-            return BlockDiagonalMap($(mapargs...), $(Symbol(:A,k)), convert_to_lmaps(As...)...)
+        function SparseArrays.blockdiag($(Is...), $L, As::Union{LinearMap,AbstractVecOrMat}...)
+            return BlockDiagonalMap(convert_to_lmaps($(mapargs...))..., $(Symbol(:A,k)), convert_to_lmaps(As...)...)
         end
 
-        function Base.cat($(Is...), $L, As::Union{LinearMap,AbstractMatrix}...; dims::Dims{2})
+        function Base.cat($(Is...), $L, As::Union{LinearMap,AbstractVecOrMat}...; dims::Dims{2})
             if dims == (1,2)
-                return BlockDiagonalMap($(mapargs...), $(Symbol(:A,k)), convert_to_lmaps(As...)...)
+                return BlockDiagonalMap(convert_to_lmaps($(mapargs...))..., $(Symbol(:A,k)), convert_to_lmaps(As...)...)
             else
                 throw(ArgumentError("dims keyword in cat of LinearMaps must be (1,2)"))
             end
@@ -461,7 +437,7 @@ for k in 1:8 # is 8 sufficient?
 end
 
 """
-    blockdiag(As::Union{LinearMap,AbstractMatrix}...)::BlockDiagonalMap
+    blockdiag(As::Union{LinearMap,AbstractVecOrMat}...)::BlockDiagonalMap
 
 Construct a (lazy) representation of the diagonal concatenation of the arguments.
 To avoid fallback to the generic `SparseArrays.blockdiag`, there must be a `LinearMap`
@@ -470,7 +446,7 @@ object among the first 8 arguments.
 SparseArrays.blockdiag
 
 """
-    cat(As::Union{LinearMap,AbstractMatrix}...; dims=(1,2))::BlockDiagonalMap
+    cat(As::Union{LinearMap,AbstractVecOrMat}...; dims=(1,2))::BlockDiagonalMap
 
 Construct a (lazy) representation of the diagonal concatenation of the arguments.
 To avoid fallback to the generic `Base.cat`, there must be a `LinearMap`
