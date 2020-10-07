@@ -17,6 +17,8 @@ using Test, LinearMaps, LinearAlgebra, BenchmarkTools
     MyFT = @inferred LinearMap{ComplexF64}(myft, N) / sqrt(N)
     U = Matrix(MyFT) # will be a unitary matrix
     @test @inferred U'U ≈ Matrix{eltype(U)}(I, N, N)
+    @test occursin("$N×$N LinearMaps.FunctionMap{$(eltype(MyFT))}", sprint((t, s) -> show(t, "text/plain", s), MyFT))
+    @test parent(LinearMap{ComplexF64}(myft, N)) === (myft, nothing)
 
     CS = @inferred LinearMap(cumsum, 2)
     @test size(CS) == (2, 2)
@@ -33,6 +35,7 @@ using Test, LinearMaps, LinearAlgebra, BenchmarkTools
     @test *(CS, v) == cv
     @test_throws ErrorException CS' * v
     CS = @inferred LinearMap(cumsum, x -> reverse(cumsum(reverse(x))), 10; ismutating=false)
+    @test occursin("10×10 LinearMaps.FunctionMap{Float64}", sprint((t, s) -> show(t, "text/plain", s), CS))
     cv = cumsum(v)
     @test @inferred CS * v == cv
     @test @inferred *(CS, v) == cv

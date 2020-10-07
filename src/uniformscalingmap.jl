@@ -15,6 +15,7 @@ MulStyle(::UniformScalingMap) = FiveArg()
 
 # properties
 Base.size(A::UniformScalingMap) = (A.M, A.M)
+Base.parent(A::UniformScalingMap) = A.λ
 Base.isreal(A::UniformScalingMap) = isreal(A.λ)
 LinearAlgebra.issymmetric(::UniformScalingMap) = true
 LinearAlgebra.ishermitian(A::UniformScalingMap) = isreal(A)

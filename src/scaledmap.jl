@@ -11,14 +11,9 @@ end
 ScaledMap(λ::S, lmap::A) where {S<:RealOrComplex,A<:LinearMap} =
     ScaledMap{Base.promote_op(*, S, eltype(lmap))}(λ, lmap)
 
-# show
-function Base.show(io::IO, A::ScaledMap{T}) where {T}
-    println(io, "LinearMaps.ScaledMap{$T}, scale = $(A.λ)")
-    show(io, A.lmap)
-end
-
 # basic methods
 Base.size(A::ScaledMap) = size(A.lmap)
+Base.parent(A::ScaledMap) = (A.λ, A.lmap)
 Base.isreal(A::ScaledMap) = isreal(A.λ) && isreal(A.lmap)
 LinearAlgebra.issymmetric(A::ScaledMap) = issymmetric(A.lmap)
 LinearAlgebra.ishermitian(A::ScaledMap) = ishermitian(A.lmap)

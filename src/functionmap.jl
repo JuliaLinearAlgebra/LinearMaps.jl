@@ -21,16 +21,9 @@ FunctionMap{T}(f, M::Int; kwargs...) where {T}         = FunctionMap{T}(f, nothi
 FunctionMap{T}(f, M::Int, N::Int; kwargs...) where {T} = FunctionMap{T}(f, nothing, M, N; kwargs...)
 FunctionMap{T}(f, fc, M::Int; kwargs...) where {T}     = FunctionMap{T}(f, fc, M, M; kwargs...)
 
-# show
-function Base.show(io::IO, A::FunctionMap{T, F, Nothing}) where {T, F}
-    print(io, "LinearMaps.FunctionMap{$T}($(A.f), $(A.M), $(A.N); ismutating=$(A._ismutating), issymmetric=$(A._issymmetric), ishermitian=$(A._ishermitian), isposdef=$(A._isposdef))")
-end
-function Base.show(io::IO, A::FunctionMap{T}) where {T}
-    print(io, "LinearMaps.FunctionMap{$T}($(A.f), $(A.fc), $(A.M), $(A.N); ismutating=$(A._ismutating), issymmetric=$(A._issymmetric), ishermitian=$(A._ishermitian), isposdef=$(A._isposdef))")
-end
-
 # properties
 Base.size(A::FunctionMap) = (A.M, A.N)
+Base.parent(A::FunctionMap) = (A.f, A.fc)
 LinearAlgebra.issymmetric(A::FunctionMap) = A._issymmetric
 LinearAlgebra.ishermitian(A::FunctionMap) = A._ishermitian
 LinearAlgebra.isposdef(A::FunctionMap)    = A._isposdef

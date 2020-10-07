@@ -21,34 +21,6 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays, BenchmarkTools
         @test length(M) == length(A)
     end
 
-    Av = A * v
-    AV = A * V
-
-    @testset "mul! and *" begin
-        for w in (vec(u), u)
-            @test M * v == Av
-            @test N * v == Av
-            @test @inferred mul!(copy(w), M, v) == mul!(copy(w), A, v)
-            b = @benchmarkable mul!($w, $M, $v)
-            @test run(b, samples=3).allocs == 0
-            @test @inferred mul!(copy(w), N, v) == mul!(copy(w), A, v)
-
-            # mat-vec-mul
-            @test @inferred mul!(copy(w), M, v, 0, 0) == zero(w)
-            @test @inferred mul!(copy(w), M, v, 0, 1) == w
-            @test @inferred mul!(copy(w), M, v, 0, β) == β * w
-            @test @inferred mul!(copy(w), M, v, 1, 1) ≈ Av + w
-            @test @inferred mul!(copy(w), M, v, 1, β) ≈ Av + β * w
-            @test @inferred mul!(copy(w), M, v, α, 1) ≈ α * Av + w
-            @test @inferred mul!(copy(w), M, v, α, β) ≈ α * Av + β * w
-        end
-
-        # test mat-mat-mul!
-        @test @inferred mul!(copy(W), M, V, α, β) ≈ α * AV + β * W
-        @test @inferred mul!(copy(W), M, V) ≈ AV
-        @test typeof(M * V) <: LinearMap
-    end
-    
     @testset "dimension checking" begin
         w = vec(u)
         @test_throws DimensionMismatch M * similar(v, length(v) + 1)
@@ -70,11 +42,12 @@ struct SimpleComplexFunctionMap <: LinearMap{Complex{Float64}}
     N::Int
 end
 Base.size(A::Union{SimpleFunctionMap,SimpleComplexFunctionMap}) = (A.N, A.N)
-Base.:(*)(A::Union{SimpleFunctionMap,SimpleComplexFunctionMap}, v::Vector) = A.f(v)
+Base.:(*)(A::Union{SimpleFunctionMap,SimpleComplexFunctionMap}, v::AbstractVector) = A.f(v)
 LinearAlgebra.mul!(y::AbstractVector, A::Union{SimpleFunctionMap,SimpleComplexFunctionMap}, x::AbstractVector) = copyto!(y, *(A, x))
 
 @testset "new LinearMap type" begin
     F = SimpleFunctionMap(cumsum, 10)
+    @test parent(F) === F
     FC = SimpleComplexFunctionMap(cumsum, 10)
     @test @inferred ndims(F) == 2
     @test @inferred size(F, 1) == 10
@@ -83,10 +56,12 @@ LinearAlgebra.mul!(y::AbstractVector, A::Union{SimpleFunctionMap,SimpleComplexFu
     @test @inferred !ishermitian(F)
     @test @inferred !ishermitian(FC)
     @test @inferred !isposdef(F)
-    v = rand(ComplexF64, 10)
-    w = similar(v)
-    mul!(w, F, v)
-    @test w == F * v
+    @test occursin("10×10 SimpleFunctionMap{$(eltype(F))}", sprint((t, s) -> show(t, "text/plain", s), F))
+    @test occursin("10×10 SimpleComplexFunctionMap{$(eltype(FC))}", sprint((t, s) -> show(t, "text/plain", s), FC))
+    α = rand(ComplexF64); β = rand(ComplexF64)
+    v = rand(ComplexF64, 10); V = rand(ComplexF64, 10, 3)
+    w = rand(ComplexF64, 10); W = rand(ComplexF64, 10, 3)
+    @test mul!(w, F, v) === w == F * v
     @test_throws ErrorException F' * v
     @test_throws ErrorException transpose(F) * v
     @test_throws ErrorException mul!(w, adjoint(FC), v)
@@ -95,6 +70,13 @@ LinearAlgebra.mul!(y::AbstractVector, A::Union{SimpleFunctionMap,SimpleComplexFu
     L = LowerTriangular(ones(10, 10))
     @test FM == L
     @test F * v ≈ L * v
+    # generic 5-arg mul! and matrix-mul!
+    @test mul!(copy(w), F, v, α, β) ≈ L*v*α + w*β
+    @test mul!(copy(w), F, v, 0, β) ≈ w*β
+    @test mul!(copy(W), F, V) ≈ L*V
+    @test mul!(copy(W), F, V, α, β) ≈ L*V*α + W*β
+    @test mul!(copy(W), F, V, 0, β) ≈ W*β
+
     Fs = sparse(F)
     @test SparseMatrixCSC(F) == Fs == L
     @test Fs isa SparseMatrixCSC

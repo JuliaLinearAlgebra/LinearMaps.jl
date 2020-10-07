@@ -20,8 +20,10 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
     @test @inferred (A * F) * v == @inferred A * (F * v)
     @test @inferred A * (F * F) * v == @inferred A * (F * (F * v))
     F2 = F*F
+    @test parent(F2) == (F, F)
     FC2 = FC*FC
     F4 = FC2 * F2
+    @test occursin("10×10 LinearMaps.CompositeMap{$(eltype(F4))}", sprint((t, s) -> show(t, "text/plain", s), F4))
     @test length(F4.maps) == 4
     @test @inferred F4 * v == @inferred F * (F * (F * (F * v)))
     @test @inferred Matrix(M * transpose(M)) ≈ A * transpose(A)
