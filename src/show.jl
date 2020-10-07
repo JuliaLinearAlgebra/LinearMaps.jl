@@ -39,6 +39,9 @@ end
 function _show(io::IO, A::ScaledMap{T}, i) where {T}
     " with scale: $(A.λ) of\n" * map_show(io, A.lmap, i+2)
 end
+function _show(io::IO, A::FillMap{T}) where {T}
+    println(io, " with fill value: $(A.λ)")
+end
 
 # helper functions
 function _show_typeof(A::LinearMap{T}) where {T}
