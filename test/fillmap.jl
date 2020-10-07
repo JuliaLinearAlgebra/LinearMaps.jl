@@ -6,7 +6,7 @@ using LinearMaps, LinearAlgebra, Test
     for λ in (true, false, 3, μ, μ + 2im)
         L = LinearMap(λ, (M, N))
         @test L == LinearMap(λ, M, N)
-        @test occursin("$M×$N LinearMaps.FillMap{$(typeof(λ))}", sprint((t, s) -> show(t, "text/plain", s), L))
+        @test occursin("$M×$N LinearMaps.FillMap{$(typeof(λ))} with fill value: $λ", sprint((t, s) -> show(t, "text/plain", s), L))
         @test LinearMaps.MulStyle(L) === LinearMaps.FiveArg()
         A = fill(λ, (M, N))
         x = rand(typeof(λ) <: Real ? Float64 : ComplexF64, 3)
