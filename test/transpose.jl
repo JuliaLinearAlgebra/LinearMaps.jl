@@ -10,6 +10,8 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
     end
     @test occursin("10×10 LinearMaps.TransposeMap{$(eltype(CS))}", sprint((t, s) -> show(t, "text/plain", s), transpose(CS)))
     @test occursin("10×10 LinearMaps.AdjointMap{$(eltype(CS))}", sprint((t, s) -> show(t, "text/plain", s), adjoint(CS)))
+    @test parent(transpose(CS)) === CS
+    @test parent(adjoint(CS)) === CS
     @test !(transpose(CS) == adjoint(CS))
     @test !(adjoint(CS) == transpose(CS))
     M = Matrix(CS)

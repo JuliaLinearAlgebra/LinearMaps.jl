@@ -11,6 +11,8 @@ MulStyle(A::Union{TransposeMap,AdjointMap}) = MulStyle(A.lmap)
 LinearAlgebra.transpose(A::TransposeMap) = A.lmap
 LinearAlgebra.adjoint(A::AdjointMap) = A.lmap
 
+Base.parent(A::Union{AdjointMap,TransposeMap}) = A.lmap
+
 """
     transpose(A::LinearMap)
 

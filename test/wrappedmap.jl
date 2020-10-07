@@ -7,6 +7,7 @@ using Test, LinearMaps, LinearAlgebra
     SB = B'B + I
     L = @inferred LinearMap{Float64}(A)
     @test occursin("10×20 LinearMaps.WrappedMap{Float64}", sprint((t, s) -> show(t, "text/plain", s), L))
+    @test parent(L) === A
     MA = @inferred LinearMap(SA)
     MB = @inferred LinearMap(SB)
     @test eltype(Matrix{Complex{Float32}}(LinearMap(A))) <: Complex

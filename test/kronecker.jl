@@ -8,6 +8,7 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
         LA = LinearMap(A)
         LB = LinearMap(B)
         LK = @inferred kron(LA, LB)
+        @test parent(LK) == (LA, LB)
         @test_throws AssertionError LinearMaps.KroneckerMap{Float64}((LA, LB))
         @test occursin("6×6 LinearMaps.KroneckerMap{$(eltype(LK))}", sprint((t, s) -> show(t, "text/plain", s), LK))
         @test @inferred size(LK) == size(K)
@@ -69,6 +70,7 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
             LA = LinearMap(A)
             LB = LinearMap(B)
             KS = @inferred kronsum(LA, B)
+            @test parent(KS) == (LA, LB)
             @test occursin("6×6 LinearMaps.KroneckerSumMap{$elty}", sprint((t, s) -> show(t, "text/plain", s), KS))
             @test_throws ArgumentError kronsum(LA, [B B]) # non-square map
             KSmat = kron(A, Matrix(I, 2, 2)) + kron(Matrix(I, 3, 3), B)

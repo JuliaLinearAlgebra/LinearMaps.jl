@@ -9,6 +9,7 @@ using Test, LinearMaps, LinearAlgebra, BenchmarkTools
     α = float(π)
     B = @inferred α * A
     @test occursin("7×7 LinearMaps.ScaledMap{Float64} with scale: $α", sprint((t, s) -> show(t, "text/plain", s), B))
+    @test parent(B) == (α, A)
     x = rand(N)
 
     @test @inferred size(B) == size(A)

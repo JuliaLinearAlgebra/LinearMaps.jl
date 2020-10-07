@@ -32,6 +32,7 @@ Base.:(==)(A::MatrixMap, B::MatrixMap) =
 
 # properties
 Base.size(A::WrappedMap) = size(A.lmap)
+Base.parent(A::WrappedMap) = A.lmap
 LinearAlgebra.issymmetric(A::WrappedMap) = A._issymmetric
 LinearAlgebra.ishermitian(A::WrappedMap) = A._ishermitian
 LinearAlgebra.isposdef(A::WrappedMap) = A._isposdef

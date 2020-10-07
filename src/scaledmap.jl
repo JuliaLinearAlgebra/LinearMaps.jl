@@ -13,6 +13,7 @@ ScaledMap(λ::S, lmap::A) where {S<:RealOrComplex,A<:LinearMap} =
 
 # basic methods
 Base.size(A::ScaledMap) = size(A.lmap)
+Base.parent(A::ScaledMap) = (A.λ, A.lmap)
 Base.isreal(A::ScaledMap) = isreal(A.λ) && isreal(A.lmap)
 LinearAlgebra.issymmetric(A::ScaledMap) = issymmetric(A.lmap)
 LinearAlgebra.ishermitian(A::ScaledMap) = ishermitian(A.lmap)

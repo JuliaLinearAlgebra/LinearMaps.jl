@@ -17,6 +17,8 @@ BlockMap{T}(maps::As, rows::S) where {T,As<:Tuple{Vararg{LinearMap}},S} = BlockM
 
 MulStyle(A::BlockMap) = MulStyle(A.maps...)
 
+Base.parent(A::BlockMap) = A.maps
+
 """
     rowcolranges(maps, rows)
 
@@ -457,6 +459,10 @@ object among the first 8 arguments.
 Base.cat
 
 Base.size(A::BlockDiagonalMap) = (last(A.rowranges[end]), last(A.colranges[end]))
+
+MulStyle(A::BlockDiagonalMap) = MulStyle(A.maps...)
+
+Base.parent(A::BlockDiagonalMap) = A.maps
 
 LinearAlgebra.issymmetric(A::BlockDiagonalMap) = all(issymmetric, A.maps)
 LinearAlgebra.ishermitian(A::BlockDiagonalMap{<:Real}) = all(issymmetric, A.maps)
