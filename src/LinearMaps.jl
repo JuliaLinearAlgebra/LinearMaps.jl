@@ -247,11 +247,14 @@ include("show.jl") # show methods for LinearMap objects
     LinearMap(A::LinearMap; kwargs...)::WrappedMap
     LinearMap(A::AbstractMatrix; kwargs...)::WrappedMap
     LinearMap(J::UniformScaling, M::Int)::UniformScalingMap
+    LinearMap(λ::Number, M::Int, N::Int) = FillMap(λ, (M, N))::FillMap
+    LinearMap(λ::Number, dims::Dims{2}) = FillMap(λ, dims)::FillMap
     LinearMap{T=Float64}(f, [fc,], M::Int, N::Int = M; kwargs...)::FunctionMap
 
 Construct a linear map object, either from an existing `LinearMap` or `AbstractMatrix` `A`,
 with the purpose of redefining its properties via the keyword arguments `kwargs`;
-a `UniformScaling` object `J` with specified (square) dimension `M`; or
+a `UniformScaling` object `J` with specified (square) dimension `M`; from a `Number`
+object to lazily represent filled matrices; or
 from a function or callable object `f`. In the latter case, one also needs to specify
 the size of the equivalent matrix representation `(M, N)`, i.e., for functions `f` acting
 on length `N` vectors and producing length `M` vectors (with default value `N=M`).
