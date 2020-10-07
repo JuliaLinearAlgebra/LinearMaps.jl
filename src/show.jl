@@ -20,7 +20,7 @@ function _show(io::IO, A::Union{CompositeMap,LinearCombination,KroneckerMap,Kron
     print_maps(io, A.maps)
 end
 function _show(io::IO, A::Union{AdjointMap,TransposeMap,WrappedMap})
-    println(io, " of")
+    print(io, " of ")
     L = A.lmap
     if A isa MatrixMap
         # summary(io, L)
@@ -68,11 +68,11 @@ function print_maps(io::IO, maps::Tuple{Vararg{LinearMap}})
             for i in s
                 # print(io, ' ')
                 show(io, maps[i])
+                println(io, "")
             end
-            println(io, "⋮")
+            print(io, "⋮")
             for i in e
                 println(io, "")
-                # print(io, ' ')
                 show(io, maps[i])
             end
         else
