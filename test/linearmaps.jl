@@ -19,6 +19,7 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays, BenchmarkTools
         @test ndims(M) == 2
         @test_throws ErrorException size(M, 3)
         @test length(M) == length(A)
+        @test occursin(Base.dims2string(size(M)) * " LinearMaps.WrappedMap", summary(M))
     end
 
     @testset "dimension checking" begin

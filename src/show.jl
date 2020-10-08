@@ -7,8 +7,8 @@ end
 # show
 Base.show(io::IO, A::LinearMap) = print(io, map_show(io, A, 0))
 
-map_show(io::IO, A::LinearMap, i) = " "^i * map_summary(A) * _show(io, A, i)
-map_show(io::IO, A::AbstractMatrix, i) = " "^i * string(typeof(A))
+map_show(io::IO, A::LinearMap, i) = ' '^i * map_summary(A) * _show(io, A, i)
+map_show(io::IO, A::AbstractMatrix, i) = ' '^i * summary(A)
 _show(io::IO, ::LinearMap, _) = ""
 function _show(io::IO, A::FunctionMap{T,F,Nothing}, _) where {T,F}
     "($(A.f); ismutating=$(A._ismutating), issymmetric=$(A._issymmetric), ishermitian=$(A._ishermitian), isposdef=$(A._isposdef))"
@@ -27,7 +27,7 @@ function _show(io::IO, A::BlockMap, i)
     nrows = length(A.rows)
     n = length(A.maps)
     " with $n block map" * (n>1 ? "s" : "") * " in $nrows block row" * (nrows>1 ? "s" : "") *
-        "\n" * print_maps(io, A.maps, i+2)
+        '\n' * print_maps(io, A.maps, i+2)
 end
 function _show(io::IO, A::BlockDiagonalMap, i)
     n = length(A.maps)
@@ -53,21 +53,21 @@ function print_maps(io::IO, maps::Tuple{Vararg{LinearMap}}, k)
         e = n-5:n
         if e[1] - s[end] > 1
             for i in s
-                str *= map_show(io, maps[i], k) * "\n"
+                str *= map_show(io, maps[i], k) * '\n'
             end
-            str *= " "^k * "⋮"
+            str *= ' '^k * '⋮'
             for i in e
-                str *= "\n" * map_show(io, maps[i], k)
+                str *= '\n' * map_show(io, maps[i], k)
             end
         else
             for i in 1:n-1
-                str *= map_show(io, maps[i], k) * "\n"
+                str *= map_show(io, maps[i], k) * '\n'
             end
             str *= map_show(io, last(maps), k)
         end
     else
         for i in 1:n-1
-            str *= map_show(io, maps[i], k) * "\n"
+            str *= map_show(io, maps[i], k) * '\n'
         end
         str *= map_show(io, last(maps), k)
     end
