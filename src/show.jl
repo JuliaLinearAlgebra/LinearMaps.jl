@@ -1,5 +1,5 @@
 # summary
-Base.summary(io::IO, A::LinearMap) = println(io, map_summary(A))
+Base.summary(io::IO, A::LinearMap) = print(io, map_summary(A))
 function map_summary(A::LinearMap)
     Base.dims2string(size(A)) * ' ' * _show_typeof(A)
 end
@@ -42,7 +42,7 @@ end
 
 # helper functions
 function _show_typeof(A::LinearMap{T}) where {T}
-    string(typeof(A).name) * '{' * string(T) * '}'
+    split(string(typeof(A)), '{')[1] * '{' * string(T) * '}'
 end
 
 function print_maps(io::IO, maps::Tuple{Vararg{LinearMap}}, k)
