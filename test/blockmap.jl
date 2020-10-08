@@ -200,6 +200,7 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays, BenchmarkTools, Interactive
             @test (@which cat(M1, M2, M3, M2, M1; dims=(1,2))).module != LinearMaps
             x = randn(elty, size(Md, 2))
             Bd = @inferred blockdiag(L1, L2, L3, L2, L1)
+            @test @inferred(LinearMaps.MulStyle(Bd)) === matrixstyle
             @test parent(Bd) == (L1, L2, L3, L2, L1)
             @test occursin("25×39 LinearMaps.BlockDiagonalMap{$elty}", sprint((t, s) -> show(t, "text/plain", s), Bd))
             @test Matrix(Bd) == Md
