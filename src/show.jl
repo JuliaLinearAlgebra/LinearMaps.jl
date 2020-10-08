@@ -5,9 +5,10 @@ function map_summary(A::LinearMap)
 end
 
 # show
-Base.show(io::IO, A::LinearMap) = println(io, map_show(io, A, 0))
+Base.show(io::IO, A::LinearMap) = print(io, map_show(io, A, 0))
 
 map_show(io::IO, A::LinearMap, i) = " "^i * map_summary(A) * _show(io, A, i)
+map_show(io::IO, A::AbstractMatrix, i) = " "^i * string(typeof(A))
 _show(io::IO, ::LinearMap, _) = ""
 function _show(io::IO, A::FunctionMap{T,F,Nothing}, _) where {T,F}
     "($(A.f); ismutating=$(A._ismutating), issymmetric=$(A._issymmetric), ishermitian=$(A._ishermitian), isposdef=$(A._isposdef))"
@@ -20,7 +21,7 @@ function _show(io::IO, A::Union{CompositeMap,LinearCombination,KroneckerMap,Kron
     " with $n map" * (n>1 ? "s" : "") * ":\n" * print_maps(io, A.maps, i+2)
 end
 function _show(io::IO, A::Union{AdjointMap,TransposeMap,WrappedMap}, i)
-    " of\n" * (A isa MatrixMap ? " "^(i+2) * string(typeof(parent(A))) : map_show(io, parent(A), i+2))
+    " of\n" * map_show(io, parent(A), i+2)
 end
 function _show(io::IO, A::BlockMap, i)
     nrows = length(A.rows)
