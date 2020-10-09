@@ -62,6 +62,7 @@ using Test, LinearMaps, LinearAlgebra, BenchmarkTools
     @test_throws ErrorException mul!(similar(v), CS!', v)
     @test_throws ErrorException mul!(similar(v), transpose(CS!), v)
     CS! = LinearMap{ComplexF64}(cumsum!, (y, x) -> (copyto!(y, x); reverse!(y); cumsum!(y, y); reverse!(y)), 10; ismutating=true)
+    M = Matrix(CS!)
     @inferred adjoint(CS!)
     @test @inferred LinearMaps.ismutating(CS!)
     @test @inferred CS! * v == cv
@@ -75,6 +76,19 @@ using Test, LinearMaps, LinearAlgebra, BenchmarkTools
     @test run(b, samples=3).allocs == 0
     b = @benchmarkable mul!($u, $(3*CS!'), $v)
     @test run(b, samples=3).allocs == 0
+    u = rand(ComplexF64, 10)
+    v = rand(ComplexF64, 10)
+    for α in (false, true, rand(ComplexF64)), β in (false, true, rand(ComplexF64))
+        for transform in (identity, adjoint, transpose)
+            @test mul!(copy(v), transform(CS!), u, α, β) ≈ transform(M)*u*α + v*β
+            @test mul!(copy(v), transform(LinearMap(CS!)), u, α, β) ≈ transform(M)*u*α + v*β
+            @test mul!(copy(v), LinearMap(transform(CS!)), u, α, β) ≈ transform(M)*u*α + v*β
+            if transform != transpose
+                bm = @benchmarkable mul!($(copy(v)), $(transform(CS!)), $u, $α, $β)
+                @test run(bm, samples=3).allocs <= 1
+            end
+        end
+    end
 
     # Test fallback methods:
     L = @inferred LinearMap(x -> x, x -> x, 10)

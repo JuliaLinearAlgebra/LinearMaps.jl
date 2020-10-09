@@ -1,8 +1,8 @@
-using Test, LinearMaps, LinearAlgebra, BenchmarkTools
+using Test, LinearMaps, LinearAlgebra, SparseArrays, BenchmarkTools
 
 @testset "linear combinations" begin
     CS! = LinearMap{ComplexF64}(cumsum!,
-                                (y, x) -> (copyto!(y, x); reverse!(y); cumsum!(y, y)), 10;
+                                (y, x) -> (copyto!(y, x); reverse!(cumsum!(y, reverse!(y)))), 10;
                                 ismutating=true)
     v = rand(ComplexF64, 10)
     u = similar(v)
@@ -10,6 +10,8 @@ using Test, LinearMaps, LinearAlgebra, BenchmarkTools
     @test run(b, samples=3).allocs == 0
     n = 10
     L = sum(fill(CS!, n))
+    M = Matrix(L)
+    @test M == LowerTriangular(fill(n, size(L)))
     @test_throws AssertionError LinearMaps.LinearCombination{Float64}((CS!, CS!))
     @test occursin("10×10 LinearMaps.LinearCombination{$(eltype(L))}", sprint((t, s) -> show(t, "text/plain", s), L))
     @test occursin("10×10 LinearMaps.LinearCombination{$(eltype(L))}", sprint((t, s) -> show(t, "text/plain", s), L+CS!))
@@ -18,7 +20,9 @@ using Test, LinearMaps, LinearAlgebra, BenchmarkTools
     b = @benchmarkable mul!($u, $L, $v, 2, 2)
     @test run(b, samples=5).allocs <= 1
     for α in (false, true, rand(ComplexF64)), β in (false, true, rand(ComplexF64))
-        @test mul!(copy(u), L, v, α, β) ≈ Matrix(L)*v*α + u*β
+        for transform in (identity, adjoint, transpose)
+            @test mul!(copy(u), transform(L), v, α, β) ≈ transform(M)*v*α + u*β
+        end
     end
     V = rand(ComplexF64, 10, 3)
     U = similar(V)
