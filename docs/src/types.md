@@ -49,7 +49,7 @@ right.
 
 Type for representing a scalar multiple of the identity map (a.k.a. uniform
 scaling) of a certain size `M=N`, obtained simply as `LinearMap(λI, M)`,
-where `I` is the `LinearAlgreba.UniformScaling` object.
+where `I` is the `LinearAlgebra.UniformScaling` object.
 The type `T` of the resulting `LinearMap` object is inferred from the type of
 `λ`. A `UniformScalingMap` of the correct size will be automatically
 constructed if `LinearMap` objects are multiplied by scalars from the left
