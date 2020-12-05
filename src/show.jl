@@ -45,7 +45,7 @@ function _show_typeof(A::LinearMap{T}) where {T}
     split(string(typeof(A)), '{')[1] * '{' * string(T) * '}'
 end
 
-function print_maps(io::IO, maps::Tuple{Vararg{LinearMap}}, k)
+function print_maps(io::IO, maps::LinearMapTuple, k)
     n = length(maps)
     str = ""
     if get(io, :limit, true) && n > 10

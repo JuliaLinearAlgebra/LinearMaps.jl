@@ -235,6 +235,8 @@ function _unsafe_mul!(y::AbstractMatrix, A::LinearMap, x::AbstractMatrix, α, β
     return _generic_mapmat_mul!(y, A, x, α, β)
 end
 
+const LinearMapTuple = Tuple{Vararg{LinearMap}}
+
 include("left.jl") # left multiplication by a transpose or adjoint vector
 include("transpose.jl") # transposing linear maps
 include("wrappedmap.jl") # wrap a matrix of linear map in a new type, thereby allowing to alter its properties

@@ -82,6 +82,7 @@ _unsafe_mul!(y::AbstractMatrix, A::AdjointMap, x::AbstractMatrix, α::Number, β
 const ConjugateMap = AdjointMap{<:Any, <:TransposeMap}
 # canonical order of adjoint followed by transpose
 LinearAlgebra.transpose(A::AdjointMap) = adjoint(transpose(A.lmap))
+LinearAlgebra.transpose(A::ConjugateMap) = adjoint(A.lmap.lmap)
 for (In, Out) in ((AbstractVector, AbstractVecOrMat), (AbstractMatrix, AbstractMatrix))
     @eval begin
         function _unsafe_mul!(y::$Out, Ac::ConjugateMap, x::$In)

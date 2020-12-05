@@ -15,8 +15,8 @@ ScaledMap(λ::S, lmap::A) where {S<:RealOrComplex,A<:LinearMap} =
 Base.size(A::ScaledMap) = size(A.lmap)
 Base.parent(A::ScaledMap) = (A.λ, A.lmap)
 Base.isreal(A::ScaledMap) = isreal(A.λ) && isreal(A.lmap)
-LinearAlgebra.issymmetric(A::ScaledMap) = issymmetric(A.lmap)
-LinearAlgebra.ishermitian(A::ScaledMap) = ishermitian(A.lmap)
+LinearAlgebra.issymmetric(A::ScaledMap) = isreal(A.λ) && issymmetric(A.lmap)
+LinearAlgebra.ishermitian(A::ScaledMap) = isreal(A.λ) && ishermitian(A.lmap)
 LinearAlgebra.isposdef(A::ScaledMap) = isposdef(A.λ) && isposdef(A.lmap)
 
 Base.transpose(A::ScaledMap) = A.λ * transpose(A.lmap)

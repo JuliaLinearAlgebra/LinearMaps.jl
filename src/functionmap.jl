@@ -17,13 +17,16 @@ function FunctionMap{T}(f::F1, fc::F2, M::Int, N::Int;
 end
 
 # additional constructors
-FunctionMap{T}(f, M::Int; kwargs...) where {T}         = FunctionMap{T}(f, nothing, M, M; kwargs...)
-FunctionMap{T}(f, M::Int, N::Int; kwargs...) where {T} = FunctionMap{T}(f, nothing, M, N; kwargs...)
-FunctionMap{T}(f, fc, M::Int; kwargs...) where {T}     = FunctionMap{T}(f, fc, M, M; kwargs...)
+FunctionMap{T}(f, M::Int; kwargs...) where {T} =
+    FunctionMap{T}(f, nothing, M, M; kwargs...)
+FunctionMap{T}(f, M::Int, N::Int; kwargs...) where {T} =
+    FunctionMap{T}(f, nothing, M, N; kwargs...)
+FunctionMap{T}(f, fc, M::Int; kwargs...) where {T} =
+    FunctionMap{T}(f, fc, M, M; kwargs...)
 
 # properties
 Base.size(A::FunctionMap) = (A.M, A.N)
-Base.parent(A::FunctionMap) = (A.f, A.fc)
+Base.parent(A::FunctionMap) = (A.f, A.fc) # is this meanigful/useful?
 LinearAlgebra.issymmetric(A::FunctionMap) = A._issymmetric
 LinearAlgebra.ishermitian(A::FunctionMap) = A._ishermitian
 LinearAlgebra.isposdef(A::FunctionMap)    = A._isposdef
@@ -31,6 +34,9 @@ ismutating(A::FunctionMap) = A._ismutating
 _ismutating(f) = first(methods(f)).nargs == 3
 
 # multiplication with vector
+const TransposeFunctionMap = TransposeMap{<:Any, <:FunctionMap}
+const AdjointFunctionMap = AdjointMap{<:Any, <:FunctionMap}
+
 function Base.:(*)(A::FunctionMap, x::AbstractVector)
     length(x) == A.N || throw(DimensionMismatch())
     if ismutating(A)
@@ -41,7 +47,7 @@ function Base.:(*)(A::FunctionMap, x::AbstractVector)
     end
     return y
 end
-function Base.:(*)(A::AdjointMap{<:Any,<:FunctionMap}, x::AbstractVector)
+function Base.:(*)(A::AdjointFunctionMap, x::AbstractVector)
     Afun = A.lmap
     ishermitian(Afun) && return Afun*x
     length(x) == size(A, 2) || throw(DimensionMismatch())
@@ -67,7 +73,7 @@ function Base.:(*)(A::AdjointMap{<:Any,<:FunctionMap}, x::AbstractVector)
         error("adjoint not implemented for $(A.lmap)")
     end
 end
-function Base.:(*)(A::TransposeMap{<:Any,<:FunctionMap}, x::AbstractVector)
+function Base.:(*)(A::TransposeFunctionMap, x::AbstractVector)
     Afun = A.lmap
     (issymmetric(Afun) || (isreal(A) && ishermitian(Afun))) && return Afun*x
     length(x) == size(A, 2) || throw(DimensionMismatch())
@@ -105,7 +111,7 @@ function _unsafe_mul!(y::AbstractVecOrMat, A::FunctionMap, x::AbstractVector)
     return y
 end
 
-function _unsafe_mul!(y::AbstractVecOrMat, At::TransposeMap{<:Any,<:FunctionMap}, x::AbstractVector)
+function _unsafe_mul!(y::AbstractVecOrMat, At::TransposeFunctionMap, x::AbstractVector)
     A = At.lmap
     (issymmetric(A) || (isreal(A) && ishermitian(A))) && return _unsafe_mul!(y, A, x)
     if A.fc !== nothing
@@ -126,7 +132,7 @@ function _unsafe_mul!(y::AbstractVecOrMat, At::TransposeMap{<:Any,<:FunctionMap}
     end
 end
 
-function _unsafe_mul!(y::AbstractVecOrMat, Ac::AdjointMap{<:Any,<:FunctionMap}, x::AbstractVector)
+function _unsafe_mul!(y::AbstractVecOrMat, Ac::AdjointFunctionMap, x::AbstractVector)
     A = Ac.lmap
     ishermitian(A) && return _unsafe_mul!(y, A, x)
     if A.fc !== nothing

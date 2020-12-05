@@ -1,18 +1,18 @@
-struct CompositeMap{T, As<:Tuple{Vararg{LinearMap}}} <: LinearMap{T}
+struct CompositeMap{T, As<:LinearMapTuple} <: LinearMap{T}
     maps::As # stored in order of application to vector
     function CompositeMap{T, As}(maps::As) where {T, As}
         N = length(maps)
         for n in 2:N
             check_dim_mul(maps[n], maps[n-1])
         end
-        for n in eachindex(maps)
-            A = maps[n]
-            @assert promote_type(T, eltype(A)) == T "eltype $(eltype(A)) cannot be promoted to $T in CompositeMap constructor"
+        for TA in Base.Generator(eltype, maps)
+            promote_type(T, TA) == T ||
+                error("eltype $TA cannot be promoted to $T in CompositeMap constructor")
         end
         new{T, As}(maps)
     end
 end
-CompositeMap{T}(maps::As) where {T, As<:Tuple{Vararg{LinearMap}}} = CompositeMap{T, As}(maps)
+CompositeMap{T}(maps::As) where {T, As<:LinearMapTuple} = CompositeMap{T, As}(maps)
 
 # basic methods
 Base.size(A::CompositeMap) = (size(A.maps[end], 1), size(A.maps[1], 2))
@@ -27,7 +27,8 @@ for (f, _f, g) in ((:issymmetric, :_issymmetric, :transpose),
         LinearAlgebra.$f(A::CompositeMap) = $_f(A.maps)
         $_f(maps::Tuple{}) = true
         $_f(maps::Tuple{<:LinearMap}) = $f(maps[1])
-        $_f(maps::Tuple{Vararg{<:LinearMap}}) = maps[end] == $g(maps[1]) && $_f(Base.front(Base.tail(maps)))
+        $_f(maps::Tuple{Vararg{<:LinearMap}}) =
+            maps[end] == $g(maps[1]) && $_f(Base.front(Base.tail(maps)))
         # since the introduction of ScaledMap, the following cases cannot occur
         # function $_f(maps::Tuple{Vararg{<:LinearMap}}) # length(maps) >= 2
             # if maps[1] isa UniformScalingMap{<:RealOrComplex}
@@ -117,30 +118,40 @@ function Base.:(*)(A₁::CompositeMap, A₂::CompositeMap)
 end
 
 # special transposition behavior
-LinearAlgebra.transpose(A::CompositeMap{T}) where {T} = CompositeMap{T}(map(transpose, reverse(A.maps)))
-LinearAlgebra.adjoint(A::CompositeMap{T}) where {T}   = CompositeMap{T}(map(adjoint, reverse(A.maps)))
+LinearAlgebra.transpose(A::CompositeMap{T}) where {T} =
+    CompositeMap{T}(map(transpose, reverse(A.maps)))
+LinearAlgebra.adjoint(A::CompositeMap{T}) where {T} =
+    CompositeMap{T}(map(adjoint, reverse(A.maps)))
 
 # comparison of CompositeMap objects
 Base.:(==)(A::CompositeMap, B::CompositeMap) = (eltype(A) == eltype(B) && A.maps == B.maps)
 
 # multiplication with vectors
-function _unsafe_mul!(y::AbstractVecOrMat, A::CompositeMap{<:Any,<:Tuple{LinearMap}}, x::AbstractVector)
-    return _unsafe_mul!(y, A.maps[1], x)
-end
-function _unsafe_mul!(y::AbstractVecOrMat, A::CompositeMap{<:Any,<:Tuple{LinearMap,LinearMap}}, x::AbstractVector)
-    _compositemul!(y, A, x, similar(y, size(A.maps[1], 1)))
-end
-function _unsafe_mul!(y::AbstractVecOrMat, A::CompositeMap{<:Any,<:Tuple{Vararg{LinearMap}}}, x::AbstractVector)
-    _compositemul!(y, A, x, similar(y, size(A.maps[1], 1)), similar(y, size(A.maps[2], 1)))
-end
+const CompositeMap1 = CompositeMap{<:Any,<:Tuple{LinearMap}}
+const CompositeMap2 = CompositeMap{<:Any,<:Tuple{LinearMap,LinearMap}}
+_unsafe_mul!(y::AbstractVecOrMat, A::CompositeMap1, x::AbstractVector) =
+    _unsafe_mul!(y, A.maps[1], x)
+# function _unsafe_mul!(y::AbstractVecOrMat, A::CompositeMap2, x::AbstractVector)
+#     _compositemul!(y, A, x, similar(y, size(A.maps[1], 1)))
+# end
+# function _unsafe_mul!(y::AbstractVecOrMat, A::CompositeMap, x::AbstractVector)
+#     _compositemul!(y, A, x, similar(y, size(A.maps[1], 1)), similar(y, size(A.maps[2], 1)))
+# end
+_unsafe_mul!(y::AbstractVecOrMat, A::CompositeMap, x::AbstractVector) =
+    _compositemul!(y, A, x)
 
-function _compositemul!(y::AbstractVecOrMat, A::CompositeMap{<:Any,<:Tuple{LinearMap,LinearMap}}, x::AbstractVector, z::AbstractVector)
+function _compositemul!(y::AbstractVecOrMat, A::CompositeMap2, x::AbstractVector)
+    # was there any advantage in having this z an argument, this is not a public method?
+    z = similar(y, size(A.maps[1], 1))
     # no size checking, will be done by individual maps
     _unsafe_mul!(z, A.maps[1], x)
     _unsafe_mul!(y, A.maps[2], z)
     return y
 end
-function _compositemul!(y::AbstractVecOrMat, A::CompositeMap{<:Any,<:Tuple{Vararg{LinearMap}}}, x::AbstractVector, source::AbstractVector, dest::AbstractVector)
+function _compositemul!(y::AbstractVecOrMat, A::CompositeMap, x::AbstractVector)
+    # was there any advantage in having these arguments, this is not a public method?
+    source = similar(y, size(A.maps[1], 1))
+    dest = similar(y, size(A.maps[2], 1))
     # no size checking, will be done by individual maps
     N = length(A.maps)
     _unsafe_mul!(source, A.maps[1], x)
