@@ -52,45 +52,43 @@ Base.:(==)(A::LinearMap, B::AdjointMap)      = ishermitian(A) && B.lmap == A
 
 # multiplication with vector/matrices
 # # TransposeMap
-function _unsafe_mul!(y::AbstractVecOrMat, A::TransposeMap, x::AbstractVector)
-    issymmetric(A.lmap) ? _unsafe_mul!(y, A.lmap, x) : error("transpose not implemented for $(A.lmap)")
-end
-function _unsafe_mul!(y::AbstractMatrix, A::TransposeMap, x::AbstractMatrix)
-    issymmetric(A.lmap) ? _unsafe_mul!(y, A.lmap, x) : _generic_mapmat_mul!(y, A, x)
-end
-function _unsafe_mul!(y::AbstractVecOrMat, A::TransposeMap, x::AbstractVector, α::Number, β::Number)
-    issymmetric(A.lmap) ? _unsafe_mul!(y, A.lmap, x, α, β) : _generic_mapvec_mul!(y, A, x, α, β)
-end
-function _unsafe_mul!(y::AbstractMatrix, A::TransposeMap, x::AbstractMatrix, α::Number, β::Number)
-    issymmetric(A.lmap) ? _unsafe_mul!(y, A.lmap, x, α, β) : _generic_mapmat_mul!(y, A, x, α, β)
-end
+_unsafe_mul!(y::AbstractVecOrMat, A::TransposeMap, x::AbstractVector) =
+    issymmetric(A.lmap) ?
+        _unsafe_mul!(y, A.lmap, x) : error("transpose not implemented for $(A.lmap)")
+_unsafe_mul!(y::AbstractMatrix, A::TransposeMap, x::AbstractMatrix) =
+    issymmetric(A.lmap) ?
+        _unsafe_mul!(y, A.lmap, x) : _generic_mapmat_mul!(y, A, x)
+_unsafe_mul!(y::AbstractVecOrMat, A::TransposeMap, x::AbstractVector, α::Number, β::Number)=
+    issymmetric(A.lmap) ?
+        _unsafe_mul!(y, A.lmap, x, α, β) : _generic_mapvec_mul!(y, A, x, α, β)
+_unsafe_mul!(y::AbstractMatrix, A::TransposeMap, x::AbstractMatrix, α::Number, β::Number) =
+    issymmetric(A.lmap) ?
+        _unsafe_mul!(y, A.lmap, x, α, β) : _generic_mapmat_mul!(y, A, x, α, β)
 # # AdjointMap
-function _unsafe_mul!(y::AbstractVecOrMat, A::AdjointMap, x::AbstractVector)
-    ishermitian(A.lmap) ? _unsafe_mul!(y, A.lmap, x) : error("adjoint not implemented for $(A.lmap)")
-end
-function _unsafe_mul!(y::AbstractMatrix, A::AdjointMap, x::AbstractMatrix)
-    ishermitian(A.lmap) ? _unsafe_mul!(y, A.lmap, x) : _generic_mapmat_mul!(y, A, x)
-end
-function _unsafe_mul!(y::AbstractVecOrMat, A::AdjointMap, x::AbstractVector, α::Number, β::Number)
-    ishermitian(A.lmap) ? _unsafe_mul!(y, A.lmap, x, α, β) : _generic_mapvec_mul!(y, A, x, α, β)
-end
-function _unsafe_mul!(y::AbstractMatrix, A::AdjointMap, x::AbstractMatrix, α::Number, β::Number)
-    ishermitian(A.lmap) ? _unsafe_mul!(y, A.lmap, x, α, β) : _generic_mapmat_mul!(y, A, x, α, β)
-end
+_unsafe_mul!(y::AbstractVecOrMat, A::AdjointMap, x::AbstractVector) =
+    ishermitian(A.lmap) ?
+        _unsafe_mul!(y, A.lmap, x) : error("adjoint not implemented for $(A.lmap)")
+_unsafe_mul!(y::AbstractMatrix, A::AdjointMap, x::AbstractMatrix) =
+    ishermitian(A.lmap) ?
+        _unsafe_mul!(y, A.lmap, x) : _generic_mapmat_mul!(y, A, x)
+_unsafe_mul!(y::AbstractVecOrMat, A::AdjointMap, x::AbstractVector, α::Number, β::Number) =
+    ishermitian(A.lmap) ?
+        _unsafe_mul!(y, A.lmap, x, α, β) : _generic_mapvec_mul!(y, A, x, α, β)
+_unsafe_mul!(y::AbstractMatrix, A::AdjointMap, x::AbstractMatrix, α::Number, β::Number) =
+    ishermitian(A.lmap) ?
+        _unsafe_mul!(y, A.lmap, x, α, β) : _generic_mapmat_mul!(y, A, x, α, β)
+
 # # ConjugateMap
-for (intype, outtype) in ((AbstractVector, AbstractVecOrMat), (AbstractMatrix, AbstractMatrix))
+const ConjugateMap = AdjointMap{<:Any, <:TransposeMap}
+# canonical order of adjoint followed by transpose
+LinearAlgebra.transpose(A::AdjointMap) = adjoint(transpose(A.lmap))
+for (In, Out) in ((AbstractVector, AbstractVecOrMat), (AbstractMatrix, AbstractMatrix))
     @eval begin
-        function _unsafe_mul!(y::$outtype, Ac::AdjointMap{<:Any,<:TransposeMap}, x::$intype)
+        function _unsafe_mul!(y::$Out, Ac::ConjugateMap, x::$In)
             return _conjmul!(y, Ac.lmap.lmap, x)
         end
-        function _unsafe_mul!(y::$outtype, Ac::AdjointMap{<:Any,<:TransposeMap}, x::$intype, α::Number, β::Number)
+        function _unsafe_mul!(y::$Out, Ac::ConjugateMap, x::$In, α::Number, β::Number)
             return _conjmul!(y, Ac.lmap.lmap, x, α, β)
-        end
-        function _unsafe_mul!(y::$outtype, At::TransposeMap{<:Any,<:AdjointMap}, x::$intype)
-            return _conjmul!(y, At.lmap.lmap, x)
-        end
-        function _unsafe_mul!(y::$outtype, At::TransposeMap{<:Any,<:AdjointMap}, x::$intype, α::Number, β::Number)
-            return _conjmul!(y, At.lmap.lmap, x, α, β)
         end
     end
 end
@@ -99,7 +97,7 @@ end
 _conjmul!(y, A, x) = conj!(mul!(y, A, conj(x)))
 function _conjmul!(y, A, x::AbstractVector, α, β)
     xca = conj!(x * α)
-    z = A*xca
+    z = A * xca
     y .= y .* β + conj.(z)
     return y
 end

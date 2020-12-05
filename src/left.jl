@@ -50,6 +50,7 @@ end
 function mul!(x::AbstractMatrix, y::AdjointAbsVecOrMat, A::LinearMap, α::Number, β::Number)
     check_dim_mul(x, y, A)
     _unsafe_mul!(x', conj(α)*A', y', true, conj(β))
+    # why not?: _unsafe_mul!(x', A', y', conj(α), conj(β))
     return x
 end
 
@@ -62,5 +63,6 @@ end
 function mul!(x::AbstractMatrix, y::TransposeAbsVecOrMat, A::LinearMap, α::Number, β::Number)
     check_dim_mul(x, y, A)
     _unsafe_mul!(transpose(x), α*transpose(A), transpose(y), true, β)
+    # why not?: _unsafe_mul!(transpose(x), transpose(A), transpose(y), α, β)
     return x
 end

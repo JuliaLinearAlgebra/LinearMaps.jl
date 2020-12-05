@@ -16,8 +16,8 @@ end
 
 abstract type LinearMap{T} end
 
-const MapOrMatrix{T} = Union{LinearMap{T},AbstractMatrix{T}}
-const RealOrComplex = Union{Real,Complex}
+const MapOrMatrix{T} = Union{LinearMap{T}, AbstractMatrix{T}}
+const RealOrComplex = Union{Real, Complex}
 
 Base.eltype(::LinearMap{T}) where {T} = T
 
@@ -45,7 +45,8 @@ LinearAlgebra.ishermitian(::LinearMap) = false # default assumptions
 LinearAlgebra.isposdef(::LinearMap) = false # default assumptions
 
 Base.ndims(::LinearMap) = 2
-Base.size(A::LinearMap, n) = (n==1 || n==2 ? size(A)[n] : error("LinearMap objects have only 2 dimensions"))
+Base.size(A::LinearMap, n) =
+    (n==1 || n==2 ? size(A)[n] : error("LinearMap objects have only 2 dimensions"))
 Base.length(A::LinearMap) = size(A)[1] * size(A)[2]
 
 """
@@ -115,8 +116,9 @@ end
     mul!(Y::AbstractVecOrMat, A::LinearMap, B::AbstractVector) -> Y
     mul!(Y::AbstractMatrix, A::LinearMap, B::AbstractMatrix) -> Y
 
-Calculates the action of the linear map `A` on the vector or matrix `B` and stores the result in `Y`,
-overwriting the existing value of `Y`. Note that `Y` must not be aliased with either `A` or `B`.
+Calculates the action of the linear map `A` on the vector or matrix `B` and stores the
+result in `Y`, overwriting the existing value of `Y`. Note that `Y` must not be aliased
+with either `A` or `B`.
 
 ## Examples
 ```jldoctest; setup=(using LinearAlgebra, LinearMaps)
@@ -144,26 +146,26 @@ end
     mul!(C::AbstractVecOrMat, A::LinearMap, B::AbstractVector, α, β) -> C
     mul!(C::AbstractMatrix, A::LinearMap, B::AbstractMatrix, α, β) -> C
 
-Combined inplace multiply-add ``A B α + C β``. The result is stored in `C` by overwriting it.
-Note that `C` must not be aliased with either `A` or `B`.
+Combined inplace multiply-add ``A B α + C β``. The result is stored in `C` by overwriting
+it. Note that `C` must not be aliased with either `A` or `B`.
 
 ## Examples
 ```jldoctest; setup=(using LinearAlgebra, LinearMaps)
 julia> A=LinearMap([1.0 2.0; 3.0 4.0]); B=[1.0, 1.0]; C=[1.0, 3.0];
-  
+
 julia> mul!(C, A, B, 100.0, 10.0) === C
 true
-  
+
 julia> C
 2-element Array{Float64,1}:
  310.0
  730.0
 
 julia> A=LinearMap([1.0 2.0; 3.0 4.0]); B=[1.0 1.0; 1.0 1.0]; C=[1.0 2.0; 3.0 4.0];
-  
+
 julia> mul!(C, A, B, 100.0, 10.0) === C
 true
-  
+
 julia> C
 2×2 Array{Float64,2}:
  310.0  320.0
@@ -257,15 +259,17 @@ with the purpose of redefining its properties via the keyword arguments `kwargs`
 a `UniformScaling` object `J` with specified (square) dimension `M`; or
 from a function or callable object `f`. In the latter case, one also needs to specify
 the size of the equivalent matrix representation `(M, N)`, i.e., for functions `f` acting
-on length `N` vectors and producing length `M` vectors (with default value `N=M`). Preferably,
-also the `eltype` `T` of the corresponding matrix representation needs to be specified, i.e.
-whether the action of `f` on a vector will be similar to, e.g., multiplying by numbers of type `T`.
-If not specified, the devault value `T=Float64` will be assumed. Optionally, a corresponding
-function `fc` can be specified that implements the adjoint (=transpose in the real case) of `f`.
+on length `N` vectors and producing length `M` vectors (with default value `N=M`).
+Preferably, also the `eltype` `T` of the corresponding matrix representation needs to be
+specified, i.e. whether the action of `f` on a vector will be similar to, e.g., multiplying
+by numbers of type `T`. If not specified, the devault value `T=Float64` will be assumed.
+Optionally, a corresponding function `fc` can be specified that implements the adjoint
+(=transpose in the real case) of `f`.
 
 The keyword arguments and their default values for the function-based constructor are:
 *   `issymmetric::Bool = false` : whether `A` or `f` acts as a symmetric matrix
-*   `ishermitian::Bool = issymmetric & T<:Real` : whether `A` or `f` acts as a Hermitian matrix
+*   `ishermitian::Bool = issymmetric & T<:Real` : whether `A` or `f` acts as a Hermitian
+    matrix
 *   `isposdef::Bool = false` : whether `A` or `f` acts as a positive definite matrix.
 For existing linear maps or matrices `A`, the default values will be taken by calling
 `issymmetric`, `ishermitian` and `isposdef` on the existing object `A`.
@@ -274,8 +278,8 @@ For the function-based constructor, there is one more keyword argument:
 *   `ismutating::Bool` : flags whether the function acts as a mutating matrix multiplication
     `f(y,x)` where the result vector `y` is the first argument (in case of `true`),
     or as a normal matrix multiplication that is called as `y=f(x)` (in case of `false`).
-    The default value is guessed by looking at the number of arguments of the first occurrence
-    of `f` in the method table.
+    The default value is guessed by looking at the number of arguments of the first
+    occurrence of `f` in the method table.
 """
 LinearMap(A::MapOrMatrix; kwargs...) = WrappedMap(A; kwargs...)
 LinearMap(J::UniformScaling, M::Int) = UniformScalingMap(J.λ, M)

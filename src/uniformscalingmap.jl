@@ -7,9 +7,11 @@ struct UniformScalingMap{T} <: LinearMap{T}
     end
 end
 UniformScalingMap(λ::Number, M::Int, N::Int) =
-    (M == N ? UniformScalingMap(λ, M) : error("UniformScalingMap needs to be square"))
+    (M == N ?
+        UniformScalingMap(λ, M) : error("UniformScalingMap needs to be square"))
 UniformScalingMap(λ::T, sz::Dims{2}) where {T} =
-    (sz[1] == sz[2] ? UniformScalingMap(λ, sz[1]) : error("UniformScalingMap needs to be square"))
+    (sz[1] == sz[2] ?
+        UniformScalingMap(λ, sz[1]) : error("UniformScalingMap needs to be square"))
 
 MulStyle(::UniformScalingMap) = FiveArg()
 
@@ -42,13 +44,13 @@ Base.:(*)(A::UniformScalingMap, x::AbstractVector) =
     length(x) == A.M ? A.λ * x : throw(DimensionMismatch("*"))
 
 # multiplication with vector/matrix
-for (intype, outtype) in ((AbstractVector, AbstractVecOrMat), (AbstractMatrix, AbstractMatrix))
+for (In, Out) in ((AbstractVector, AbstractVecOrMat), (AbstractMatrix, AbstractMatrix))
     @eval begin
-        function _unsafe_mul!(y::$outtype, J::UniformScalingMap, x::$intype)
+        function _unsafe_mul!(y::$Out, J::UniformScalingMap, x::$In)
             _scaling!(y, J.λ, x, true, false)
             return y
         end
-        function _unsafe_mul!(y::$outtype, J::UniformScalingMap, x::$intype,
+        function _unsafe_mul!(y::$Out, J::UniformScalingMap, x::$In,
                     α::Number, β::Number)
             _scaling!(y, J.λ, x, α, β)
             return y
@@ -58,41 +60,27 @@ end
 
 function _scaling!(y, λ, x, α, β)
     if (iszero(α) || iszero(λ))
-        iszero(β) && (fill!(y, zero(eltype(y))); return y)
+        iszero(β) && return fill!(y, zero(eltype(y)))
         isone(β) && return y
-        # β != 0, 1
-        rmul!(y, β)
-        return y
+        return rmul!(y, β)
+    elseif isone(α) && isone(λ)
+        iszero(β) && return copyto!(y, x)
+        isone(β) && return y .+= x
+        return y .= y .* β .+ x
     elseif isone(α)
-        if iszero(β)
-            isone(λ) && return copyto!(y, x)
-            y .= λ .* x
-            return y
-        elseif isone(β)
-            isone(λ) && return y .+= x
-            y .+= λ .* x
-            return y
-        else # β != 0, 1
-            isone(λ) && (axpby!(one(eltype(x)), x, β, y); return y)
-            y .= y .* β .+ λ .* x
-            return y
-        end
-    else # α != 0, 1
-        if iszero(β)
-            isone(λ) && (y .= x .* α; return y)
-            y .= λ .* x .* α
-            return y
-        elseif isone(β)
-            isone(λ) && (axpby!(α, x, β, y); return y)
-            y .+= λ .* x .* α
-            return y
-        else # β != 0, 1
-            isone(λ) && (y .= y .* β .+ x .* α; return y)
-            y .= y .* β .+ λ .* x .* α
-            return y
-        end # β-cases
-    end # α-cases
-end # function _scaling!
+        iszero(β) && return y .= λ .* x
+        isone(β) && return y .+= λ .* x
+        return y .= y .* β .+ λ .* x
+    elseif isone(λ)
+        iszero(β) && return y .= x .* α
+        isone(β) && return y .+= x .* α
+        return y .= y .* β .+ x .* α
+    else
+        iszero(β) && return y .= λ .* x .* α
+        isone(β) && return y .+= λ .* x .* α
+        return y .= y .* β .+ λ .* x .* α
+    end
+end
 
 # combine LinearMap and UniformScaling objects in linear combinations
 Base.:(+)(A₁::LinearMap, A₂::UniformScaling) = A₁ + UniformScalingMap(A₂.λ, size(A₁, 1))
