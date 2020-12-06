@@ -127,31 +127,30 @@ LinearAlgebra.adjoint(A::CompositeMap{T}) where {T} =
 Base.:(==)(A::CompositeMap, B::CompositeMap) = (eltype(A) == eltype(B) && A.maps == B.maps)
 
 # multiplication with vectors
-const CompositeMap1 = CompositeMap{<:Any,<:Tuple{LinearMap}}
-const CompositeMap2 = CompositeMap{<:Any,<:Tuple{LinearMap,LinearMap}}
-_unsafe_mul!(y::AbstractVecOrMat, A::CompositeMap1, x::AbstractVector) =
-    _unsafe_mul!(y, A.maps[1], x)
-# function _unsafe_mul!(y::AbstractVecOrMat, A::CompositeMap2, x::AbstractVector)
-#     _compositemul!(y, A, x, similar(y, size(A.maps[1], 1)))
-# end
-# function _unsafe_mul!(y::AbstractVecOrMat, A::CompositeMap, x::AbstractVector)
-#     _compositemul!(y, A, x, similar(y, size(A.maps[1], 1)), similar(y, size(A.maps[2], 1)))
-# end
 _unsafe_mul!(y::AbstractVecOrMat, A::CompositeMap, x::AbstractVector) =
     _compositemul!(y, A, x)
-
-function _compositemul!(y::AbstractVecOrMat, A::CompositeMap2, x::AbstractVector)
+function _compositemul!(y::AbstractVecOrMat,
+                        A::CompositeMap{<:Any,<:Tuple{LinearMap}},
+                        x::AbstractVector,
+                        source = nothing,
+                        dest = nothing)
+    return _unsafe_mul!(y, A.maps[1], x)
+end
+function _compositemul!(y::AbstractVecOrMat,
+                        A::CompositeMap{<:Any,<:Tuple{LinearMap,LinearMap}}, x::AbstractVector,
+                        source = similar(y, size(A.maps[1], 1),
+                        dest = nothing)
     # was there any advantage in having this z an argument, this is not a public method?
-    z = similar(y, size(A.maps[1], 1))
     # no size checking, will be done by individual maps
-    _unsafe_mul!(z, A.maps[1], x)
-    _unsafe_mul!(y, A.maps[2], z)
+    _unsafe_mul!(source, A.maps[1], x)
+    _unsafe_mul!(y, A.maps[2], source)
     return y
 end
-function _compositemul!(y::AbstractVecOrMat, A::CompositeMap, x::AbstractVector)
-    # was there any advantage in having these arguments, this is not a public method?
-    source = similar(y, size(A.maps[1], 1))
-    dest = similar(y, size(A.maps[2], 1))
+function _compositemul!(y::AbstractVecOrMat,
+                        A::CompositeMap,
+                        x::AbstractVector,
+                        source = similar(y, size(A.maps[1], 1),
+                        dest = similar(y, size(A.maps[2], 1))
     # no size checking, will be done by individual maps
     N = length(A.maps)
     _unsafe_mul!(source, A.maps[1], x)
