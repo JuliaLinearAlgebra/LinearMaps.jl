@@ -12,7 +12,7 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays, BenchmarkTools, Interactive
             @test @inferred(LinearMaps.MulStyle(L)) === matrixstyle
             @test L isa LinearMaps.BlockMap{elty}
             if elty <: Complex
-                @test_throws AssertionError LinearMaps.BlockMap{Float64}((LinearMap(A11), LinearMap(A12)), (2,))
+                @test_throws ErrorException LinearMaps.BlockMap{Float64}((LinearMap(A11), LinearMap(A12)), (2,))
             end
             A = [A11 A12]
             x = rand(10+n2)
@@ -193,7 +193,7 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays, BenchmarkTools, Interactive
 
             # Md = diag(M1, M2, M3, M2, M1) # unsupported so use sparse:
             if elty <: Complex
-                @test_throws AssertionError LinearMaps.BlockDiagonalMap{Float64}((L1, L2, L3, L2, L1))
+                @test_throws ErrorException LinearMaps.BlockDiagonalMap{Float64}((L1, L2, L3, L2, L1))
             end
             Md = Matrix(blockdiag(sparse.((M1, M2, M3, M2, M1))...))
             @test (@which blockdiag(sparse.((M1, M2, M3, M2, M1))...)).module != LinearMaps

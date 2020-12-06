@@ -16,6 +16,7 @@ end
 
 abstract type LinearMap{T} end
 
+const MapOrVecOrMat{T} = Union{LinearMap{T}, AbstractVecOrMat{T}}
 const MapOrMatrix{T} = Union{LinearMap{T}, AbstractMatrix{T}}
 const RealOrComplex = Union{Real, Complex}
 
