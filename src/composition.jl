@@ -6,6 +6,7 @@ struct CompositeMap{T, As<:LinearMapTuple} <: LinearMap{T}
             check_dim_mul(maps[n], maps[n-1])
         end
         for TA in Base.Generator(eltype, maps)
+            # like lazy map; could use Base.Iterators.map in Julia >= 1.6
             promote_type(T, TA) == T ||
                 error("eltype $TA cannot be promoted to $T in CompositeMap constructor")
         end
