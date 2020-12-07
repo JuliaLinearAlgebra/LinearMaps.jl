@@ -9,7 +9,7 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
         LB = LinearMap(B)
         LK = @inferred kron(LA, LB)
         @test parent(LK) == (LA, LB)
-        @test_throws AssertionError LinearMaps.KroneckerMap{Float64}((LA, LB))
+        @test_throws ErrorException LinearMaps.KroneckerMap{Float64}((LA, LB))
         @test occursin("6×6 LinearMaps.KroneckerMap{$(eltype(LK))}", sprint((t, s) -> show(t, "text/plain", s), LK))
         @test @inferred size(LK) == size(K)
         @test LinearMaps.MulStyle(LK) === LinearMaps.ThreeArg()
