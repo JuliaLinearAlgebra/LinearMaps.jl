@@ -92,10 +92,9 @@ function Base.hcat(As::Union{LinearMap, UniformScaling, AbstractVecOrMat}...)
             break
         end
     end
-    errmsg = "hcat of only UniformScaling objects cannot determine the linear map size"
-    nrows == -1 && throw(ArgumentError(errmsg))
-    # does this mean we still have type piracy? I vagely remember this being discussed
-    return BlockMap{T}(promote_to_lmaps(fill(nrows, nbc), 1, 1, As...), (nbc,))
+    @assert nrows != -1
+    # this should not happen, function should only be called with at least one LinearMap
+    return BlockMap{T}(promote_to_lmaps(ntuple(i->nrows, nbc), 1, 1, As...), (nbc,))
 end
 
 ############
@@ -135,10 +134,10 @@ function Base.vcat(As::Union{LinearMap,UniformScaling,AbstractVecOrMat}...)
             break
         end
     end
-    errmsg = "vcat of only UniformScaling objects cannot determine the linear map size"
-    ncols == -1 && throw(ArgumentError(errmsg))
-    # same question about type piracy
-    return BlockMap{T}(promote_to_lmaps(fill(ncols, nbr), 1, 2, As...), ntuple(i->1, nbr))
+    @assert ncols != -1
+    # this should not happen, function should only be called with at least one LinearMap
+    rows = ntuple(i->1, nbr)
+    return BlockMap{T}(promote_to_lmaps(ntuple(i->ncols, nbr), 1, 2, As...), rows)
 end
 
 ############
