@@ -26,8 +26,8 @@ end
 function _show(io::IO, A::BlockMap, i)
     nrows = length(A.rows)
     n = length(A.maps)
-    " with $n block map" * (n>1 ? "s" : "") * " in $nrows block row" * (nrows>1 ? "s" : "") *
-        '\n' * print_maps(io, A.maps, i+2)
+    " with $n block map" * (n>1 ? "s" : "") *
+        " in $nrows block row" * (nrows>1 ? "s" : "") * '\n' * print_maps(io, A.maps, i+2)
 end
 function _show(io::IO, A::BlockDiagonalMap, i)
     n = length(A.maps)
