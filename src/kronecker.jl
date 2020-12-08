@@ -52,9 +52,8 @@ Base.kron(A::KroneckerMap, B::LinearMap) =
     KroneckerMap{promote_type(eltype(A), eltype(B))}(tuple(A.maps..., B))
 Base.kron(A::KroneckerMap, B::KroneckerMap) =
     KroneckerMap{promote_type(eltype(A), eltype(B))}(tuple(A.maps..., B.maps...))
-Base.kron(A::LinearMap, B::LinearMap, Cs::LinearMap...) =
-    KroneckerMap{promote_type(eltype(A), eltype(B), map(eltype, Cs)...)}(tuple(A, B, Cs...))
-    # could this just be a recursive definition: kron(A, B, C) = kron(kron(A, B), C) ?
+Base.kron(A::LinearMap, B::LinearMap, C::LinearMap, Ds::LinearMap...) =
+    kron(kron(A, B), C, Ds...)
 Base.kron(A::AbstractMatrix, B::LinearMap) = kron(LinearMap(A), B)
 Base.kron(A::LinearMap, B::AbstractMatrix) = kron(A, LinearMap(B))
 # promote AbstractMatrix arguments to LinearMaps, then take LinearMap-Kronecker product
