@@ -26,7 +26,6 @@ FunctionMap{T}(f, fc, M::Int; kwargs...) where {T} =
 
 # properties
 Base.size(A::FunctionMap) = (A.M, A.N)
-Base.parent(A::FunctionMap) = (A.f, A.fc)
 LinearAlgebra.issymmetric(A::FunctionMap) = A._issymmetric
 LinearAlgebra.ishermitian(A::FunctionMap) = A._ishermitian
 LinearAlgebra.isposdef(A::FunctionMap)    = A._isposdef

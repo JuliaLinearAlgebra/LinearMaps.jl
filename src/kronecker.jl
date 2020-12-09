@@ -91,8 +91,6 @@ Base.:(^)(A::MapOrMatrix, ::KronPower{p}) where {p} =
 
 Base.size(A::KroneckerMap) = map(*, size.(A.maps)...)
 
-Base.parent(A::KroneckerMap) = A.maps
-
 LinearAlgebra.issymmetric(A::KroneckerMap) = all(issymmetric, A.maps)
 LinearAlgebra.ishermitian(A::KroneckerMap{<:Real}) = issymmetric(A)
 LinearAlgebra.ishermitian(A::KroneckerMap) = all(ishermitian, A.maps)
@@ -128,7 +126,7 @@ end
     if nb*ma < mb*na
         _unsafe_mul!(Y, B, Matrix(X*At))
     else
-        _unsafe_mul!(Y, Matrix(B*X), parent(At))
+        _unsafe_mul!(Y, Matrix(B*X), _parent(At))
     end
     return y
 end
@@ -262,7 +260,6 @@ Base.:(^)(A::MapOrMatrix, ::KronSumPower{p}) where {p} =
 
 Base.size(A::KroneckerSumMap, i) = prod(size.(A.maps, i))
 Base.size(A::KroneckerSumMap) = (size(A, 1), size(A, 2))
-Base.parent(A::KroneckerSumMap) = A.maps
 
 LinearAlgebra.issymmetric(A::KroneckerSumMap) = all(issymmetric, A.maps)
 LinearAlgebra.ishermitian(A::KroneckerSumMap{<:Real}) = all(issymmetric, A.maps)

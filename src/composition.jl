@@ -18,7 +18,6 @@ CompositeMap{T}(maps::As) where {T, As<:LinearMapTuple} = CompositeMap{T, As}(ma
 # basic methods
 Base.size(A::CompositeMap) = (size(A.maps[end], 1), size(A.maps[1], 2))
 Base.isreal(A::CompositeMap) = all(isreal, A.maps) # sufficient but not necessary
-Base.parent(A::CompositeMap) = A.maps
 
 # the following rules are sufficient but not necessary
 for (f, _f, g) in ((:issymmetric, :_issymmetric, :transpose),
@@ -141,7 +140,6 @@ function _compositemul!(y::AbstractVecOrMat,
                         A::CompositeMap{<:Any,<:Tuple{LinearMap,LinearMap}}, x::AbstractVector,
                         source = similar(y, size(A.maps[1], 1)),
                         dest = nothing)
-    # no size checking, will be done by individual maps
     _unsafe_mul!(source, A.maps[1], x)
     _unsafe_mul!(y, A.maps[2], source)
     return y
@@ -151,7 +149,6 @@ function _compositemul!(y::AbstractVecOrMat,
                         x::AbstractVector,
                         source = similar(y, size(A.maps[1], 1)),
                         dest = similar(y, size(A.maps[2], 1)))
-    # no size checking, will be done by individual maps
     N = length(A.maps)
     _unsafe_mul!(source, A.maps[1], x)
     for n in 2:N-1

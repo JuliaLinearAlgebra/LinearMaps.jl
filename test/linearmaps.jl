@@ -48,7 +48,6 @@ LinearAlgebra.mul!(y::AbstractVector, A::Union{SimpleFunctionMap,SimpleComplexFu
 
 @testset "new LinearMap type" begin
     F = SimpleFunctionMap(cumsum, 10)
-    @test parent(F) === F
     FC = SimpleComplexFunctionMap(cumsum, 10)
     @test @inferred ndims(F) == 2
     @test @inferred size(F, 1) == 10

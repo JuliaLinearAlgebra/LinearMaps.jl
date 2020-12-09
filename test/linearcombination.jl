@@ -15,7 +15,6 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays, BenchmarkTools
     @test_throws AssertionError LinearMaps.LinearCombination{Float64}((CS!, CS!))
     @test occursin("10×10 LinearMaps.LinearCombination{$(eltype(L))}", sprint((t, s) -> show(t, "text/plain", s), L))
     @test occursin("10×10 LinearMaps.LinearCombination{$(eltype(L))}", sprint((t, s) -> show(t, "text/plain", s), L+CS!))
-    @test parent(L) == ntuple(_ -> CS!, 10)
     @test mul!(u, L, v) ≈ n * cumsum(v)
     b = @benchmarkable mul!($u, $L, $v, 2, 2)
     @test run(b, samples=5).allocs <= 1

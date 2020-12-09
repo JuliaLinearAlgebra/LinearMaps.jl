@@ -7,7 +7,6 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays, BenchmarkTools, Interactive
             A12 = rand(elty, 10, n2)
             v = rand(elty, 10)
             L = @inferred hcat(LinearMap(A11), LinearMap(A12))
-            @test parent(L) == (LinearMap(A11), LinearMap(A12))
             @test occursin("10×$(10+n2) LinearMaps.BlockMap{$elty}", sprint((t, s) -> show(t, "text/plain", s), L))
             @test @inferred(LinearMaps.MulStyle(L)) === matrixstyle
             @test L isa LinearMaps.BlockMap{elty}
@@ -201,7 +200,6 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays, BenchmarkTools, Interactive
             x = randn(elty, size(Md, 2))
             Bd = @inferred blockdiag(L1, L2, L3, L2, L1)
             @test @inferred(LinearMaps.MulStyle(Bd)) === matrixstyle
-            @test parent(Bd) == (L1, L2, L3, L2, L1)
             @test occursin("25×39 LinearMaps.BlockDiagonalMap{$elty}", sprint((t, s) -> show(t, "text/plain", s), Bd))
             @test Matrix(Bd) == Md
             @test convert(AbstractMatrix, Bd) isa SparseMatrixCSC

@@ -21,7 +21,7 @@ function _show(io::IO, A::Union{CompositeMap,LinearCombination,KroneckerMap,Kron
     " with $n map" * (n>1 ? "s" : "") * ":\n" * print_maps(io, A.maps, i+2)
 end
 function _show(io::IO, A::Union{AdjointMap,TransposeMap,WrappedMap}, i)
-    " of\n" * map_show(io, parent(A), i+2)
+    " of\n" * map_show(io, A.lmap, i+2)
 end
 function _show(io::IO, A::BlockMap, i)
     nrows = length(A.rows)
