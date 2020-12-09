@@ -84,7 +84,7 @@ Construct a lazy representation of the `k`-th Kronecker power
 """
 ⊗(k::Integer) = KronPower(k)
 
-⊗(A, B, Cs...) = kron(convert_to_lmaps(A, B, Cs...))
+⊗(A, B, Cs...) = kron(convert_to_lmaps(A, B, Cs...)...)
 
 Base.:(^)(A::MapOrMatrix, ::KronPower{p}) where {p} =
     kron(ntuple(n -> convert_to_lmaps_(A), Val(p))...)

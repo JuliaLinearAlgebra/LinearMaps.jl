@@ -50,15 +50,6 @@ Base.size(A::LinearMap, n) =
     (n==1 || n==2 ? size(A)[n] : error("LinearMap objects have only 2 dimensions"))
 Base.length(A::LinearMap) = size(A)[1] * size(A)[2]
 
-"""
-    parent(A::LinearMap)
-
-Return the underlying "parent map". This parent map is what was passed as an argument to
-the specific `LinearMap` constructor, including implicit constructors and up to implicit
-promotion to a `LinearMap` subtype. The fallback is to return the input itself.
-"""
-Base.parent(A::LinearMap) = A
-
 # check dimension consistency for multiplication A*B
 _iscompatible((A, B)) = size(A, 2) == size(B, 1)
 function check_dim_mul(A, B)

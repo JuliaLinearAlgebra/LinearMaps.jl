@@ -23,7 +23,7 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
             @test Matrix(transform(LinearMap(LK))) ≈ transform(Matrix(LK)) ≈ transform(K)
         end
         @test kron(LA, kron(LA, B)) == kron(LA, LA, LB)
-        @test kron(kron(LA, LB), kron(LA, LB)) == kron(LA, LB, LA, LB)
+        @test kron(kron(LA, LB), kron(LA, LB)) == kron(LA, LB, LA, LB) == ⊗(LA, LB, LA, LB)
         @test kron(A, A, A) ≈ Matrix(@inferred kron(LA, LA, LA)) ≈ Matrix(@inferred LA^⊗(3)) ≈ Matrix(@inferred A^⊗(3))
         LAs = LinearMap(sparse(A))
         K = @inferred kron(A, A, A, LAs)
