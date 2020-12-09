@@ -82,10 +82,6 @@ function SparseArrays.sparse(ΣA::LinearCombination{<:Any, <:Tuple{Vararg{Matrix
 end
 
 # CompositeMap
-# Are all these methods below really useful?
-# The conversion to matrices is not something that belongs to ordinary use of LinearMaps.
-# It's rather for debugging purposes, where efficiency is not the primary concern.
-# Also, I don't think they are really that much more efficient
 function Base.Matrix{T}(AB::CompositeMap{<:Any, <:Tuple{MatrixMap, LinearMap}}) where {T}
     B, A = AB.maps
     require_one_based_indexing(B)
@@ -115,31 +111,24 @@ end
 function Base.Matrix{T}(λA::CompositeMap{<:Any, <:Tuple{MatrixMap, UniformScalingMap}}) where {T}
     A, J = λA.maps
     return convert(Matrix{T}, J.λ*A.lmap)
-    # if you want less allocations: lmul!(J.λ, convert(Matrix{T}, A.lmap))
 end
 function SparseArrays.sparse(λA::CompositeMap{<:Any, <:Tuple{MatrixMap, UniformScalingMap}})
     A, J = λA.maps
     return convert(SparseMatrixCSC, J.λ*A.lmap)
-    # probably also works with sparse: lmul!(J.λ, convert(SparseMatrixCSC, A.lmap))
-
 end
 function Base.Matrix{T}(Aλ::CompositeMap{<:Any, <:Tuple{UniformScalingMap, MatrixMap}}) where {T}
     J, A = Aλ.maps
     return convert(Matrix{T}, A.lmap*J.λ)
-    # if you want less allocations: rmul!(convert(Matrix{T}, A.lmap), J.λ)
 end
 function SparseArrays.sparse(Aλ::CompositeMap{<:Any, <:Tuple{UniformScalingMap, MatrixMap}})
     J, A = Aλ.maps
     return convert(SparseMatrixCSC, A.lmap*J.λ)
-    # probably also works with sparse: rmul!(convert(SparseMatrixCSC, A.lmap), J.λ)
 end
 
 # BlockMap & BlockDiagonalMap
 Base.Matrix{T}(A::BlockMap) where {T} = hvcat(A.rows, convert.(Matrix{T}, A.maps)...)
-Base.convert(::Type{AbstractMatrix}, A::BlockMap) = hvcat(A.rows, convert.(AbstractMatrix, A.maps)...)
-# seems like code duplication:
-# convert(AbstractMatrix, A) will anyway fall back to Matrix{eltype(A)}(A)
-
+Base.convert(::Type{AbstractMatrix}, A::BlockMap) =
+    hvcat(A.rows, convert.(AbstractMatrix, A.maps)...)
 function SparseArrays.sparse(A::BlockMap)
     return hvcat(
         A.rows,
@@ -157,8 +146,6 @@ end
 Base.Matrix{T}(A::KroneckerMap) where {T} = kron(convert.(Matrix{T}, A.maps)...)
 Base.convert(::Type{AbstractMatrix}, A::KroneckerMap) =
     kron(convert.(AbstractMatrix, A.maps)...)
-# seems like code duplication:
-# convert(AbstractMatrix, A) will anyway fall back to Matrix{eltype(A)}(A)
 function SparseArrays.sparse(A::KroneckerMap)
     return kron(
         convert(SparseMatrixCSC, first(A.maps)),
@@ -178,9 +165,6 @@ function Base.convert(::Type{AbstractMatrix}, L::KroneckerSumMap)
     IB = Diagonal(ones(Bool, size(B, 1)))
     return kron(convert(AbstractMatrix, A), IB) + kron(IA, convert(AbstractMatrix, B))
 end
-# seems like code duplication:
-# convert(AbstractMatrix, L) will anyway fall back to Matrix{eltype(L)}(L)
-
 function SparseArrays.sparse(L::KroneckerSumMap)
     A, B = L.maps
     IA = sparse(Diagonal(ones(Bool, size(A, 1))))
