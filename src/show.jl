@@ -21,13 +21,13 @@ function _show(io::IO, A::Union{CompositeMap,LinearCombination,KroneckerMap,Kron
     " with $n map" * (n>1 ? "s" : "") * ":\n" * print_maps(io, A.maps, i+2)
 end
 function _show(io::IO, A::Union{AdjointMap,TransposeMap,WrappedMap}, i)
-    " of\n" * map_show(io, parent(A), i+2)
+    " of\n" * map_show(io, A.lmap, i+2)
 end
 function _show(io::IO, A::BlockMap, i)
     nrows = length(A.rows)
     n = length(A.maps)
-    " with $n block map" * (n>1 ? "s" : "") * " in $nrows block row" * (nrows>1 ? "s" : "") *
-        '\n' * print_maps(io, A.maps, i+2)
+    " with $n block map" * (n>1 ? "s" : "") *
+        " in $nrows block row" * (nrows>1 ? "s" : "") * '\n' * print_maps(io, A.maps, i+2)
 end
 function _show(io::IO, A::BlockDiagonalMap, i)
     n = length(A.maps)
@@ -45,7 +45,7 @@ function _show_typeof(A::LinearMap{T}) where {T}
     split(string(typeof(A)), '{')[1] * '{' * string(T) * '}'
 end
 
-function print_maps(io::IO, maps::Tuple{Vararg{LinearMap}}, k)
+function print_maps(io::IO, maps::LinearMapTuple, k)
     n = length(maps)
     str = ""
     if get(io, :limit, true) && n > 10

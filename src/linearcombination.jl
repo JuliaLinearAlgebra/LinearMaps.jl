@@ -1,4 +1,4 @@
-struct LinearCombination{T, As<:Tuple{Vararg{LinearMap}}} <: LinearMap{T}
+struct LinearCombination{T, As<:LinearMapTuple} <: LinearMap{T}
     maps::As
     function LinearCombination{T, As}(maps::As) where {T, As}
         N = length(maps)
@@ -18,10 +18,10 @@ MulStyle(A::LinearCombination) = MulStyle(A.maps...)
 
 # basic methods
 Base.size(A::LinearCombination) = size(A.maps[1])
-Base.parent(A::LinearCombination) = A.maps
-LinearAlgebra.issymmetric(A::LinearCombination) = all(issymmetric, A.maps) # sufficient but not necessary
-LinearAlgebra.ishermitian(A::LinearCombination) = all(ishermitian, A.maps) # sufficient but not necessary
-LinearAlgebra.isposdef(A::LinearCombination) = all(isposdef, A.maps) # sufficient but not necessary
+# following conditions are sufficient but not necessary
+LinearAlgebra.issymmetric(A::LinearCombination) = all(issymmetric, A.maps)
+LinearAlgebra.ishermitian(A::LinearCombination) = all(ishermitian, A.maps)
+LinearAlgebra.isposdef(A::LinearCombination) = all(isposdef, A.maps)
 
 # adding linear maps
 """
@@ -59,24 +59,24 @@ end
 Base.:(-)(A₁::LinearMap, A₂::LinearMap) = +(A₁, -A₂)
 
 # comparison of LinearCombination objects, sufficient but not necessary
-Base.:(==)(A::LinearCombination, B::LinearCombination) = (eltype(A) == eltype(B) && A.maps == B.maps)
+Base.:(==)(A::LinearCombination, B::LinearCombination) =
+    (eltype(A) == eltype(B) && A.maps == B.maps)
 
 # special transposition behavior
-LinearAlgebra.transpose(A::LinearCombination) = LinearCombination{eltype(A)}(map(transpose, A.maps))
-LinearAlgebra.adjoint(A::LinearCombination)   = LinearCombination{eltype(A)}(map(adjoint, A.maps))
+LinearAlgebra.transpose(A::LinearCombination) =
+    LinearCombination{eltype(A)}(map(transpose, A.maps))
+LinearAlgebra.adjoint(A::LinearCombination) =
+    LinearCombination{eltype(A)}(map(adjoint, A.maps))
 
 # multiplication with vectors & matrices
-for (intype, outtype) in ((AbstractVector, AbstractVecOrMat), (AbstractMatrix, AbstractMatrix))
+for (In, Out) in ((AbstractVector, AbstractVecOrMat), (AbstractMatrix, AbstractMatrix))
     @eval begin
-        function _unsafe_mul!(y::$outtype, A::LinearCombination, x::$intype)
-
+        function _unsafe_mul!(y::$Out, A::LinearCombination, x::$In)
             _unsafe_mul!(y, first(A.maps), x)
             _mul!(MulStyle(A), y, A, x, true)
             return y
         end
-
-        function _unsafe_mul!(y::$outtype, A::LinearCombination, x::$intype,
-                                α::Number, β::Number)
+        function _unsafe_mul!(y::$Out, A::LinearCombination, x::$In, α::Number, β::Number)
             if iszero(α) # trivial cases
                 iszero(β) && return fill!(y, zero(eltype(y)))
                 isone(β) && return y
@@ -109,7 +109,7 @@ function _mul!(::ThreeArg, y, A::LinearCombination, x, α)
     return __mul!(y, Base.tail(A.maps), x, α, similar(y))
 end
 
-__mul!(y, As::Tuple{Vararg{LinearMap}}, x, α, z) =
+__mul!(y, As::LinearMapTuple, x, α, z) =
     __mul!(__mul!(y, first(As), x, α, z), Base.tail(As), x, α, z)
 __mul!(y, A::Tuple{LinearMap}, x, α, z) = __mul!(y, first(A), x, α, z)
 __mul!(y, A::LinearMap, x, α, z) = muladd!(MulStyle(A), y, A, x, α, z)

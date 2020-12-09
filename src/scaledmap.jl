@@ -13,10 +13,9 @@ ScaledMap(λ::S, lmap::A) where {S<:RealOrComplex,A<:LinearMap} =
 
 # basic methods
 Base.size(A::ScaledMap) = size(A.lmap)
-Base.parent(A::ScaledMap) = (A.λ, A.lmap)
 Base.isreal(A::ScaledMap) = isreal(A.λ) && isreal(A.lmap)
 LinearAlgebra.issymmetric(A::ScaledMap) = issymmetric(A.lmap)
-LinearAlgebra.ishermitian(A::ScaledMap) = ishermitian(A.lmap)
+LinearAlgebra.ishermitian(A::ScaledMap) = isreal(A.λ) && ishermitian(A.lmap)
 LinearAlgebra.isposdef(A::ScaledMap) = isposdef(A.λ) && isposdef(A.lmap)
 
 Base.transpose(A::ScaledMap) = A.λ * transpose(A.lmap)
@@ -24,7 +23,7 @@ Base.adjoint(A::ScaledMap) = conj(A.λ) * adjoint(A.lmap)
 
 # comparison (sufficient, not necessary)
 Base.:(==)(A::ScaledMap, B::ScaledMap) =
-    (eltype(A) == eltype(B) && A.lmap == B.lmap) && A.λ == B.λ
+    eltype(A) == eltype(B) && A.lmap == B.lmap && A.λ == B.λ
 
 # scalar multiplication and division
 Base.:(*)(α::RealOrComplex, A::LinearMap) = ScaledMap(α, A)
@@ -43,12 +42,12 @@ Base.:(*)(A::ScaledMap, B::LinearMap) = A.λ * (A.lmap * B)
 Base.:(*)(A::LinearMap, B::ScaledMap) = (A * B.lmap) * B.λ
 
 # multiplication with vectors/matrices
-for (intype, outtype) in ((AbstractVector, AbstractVecOrMat), (AbstractMatrix, AbstractMatrix))
+for (In, Out) in ((AbstractVector, AbstractVecOrMat), (AbstractMatrix, AbstractMatrix))
     @eval begin
-        function _unsafe_mul!(y::$outtype, A::ScaledMap, x::$intype)
+        function _unsafe_mul!(y::$Out, A::ScaledMap, x::$In)
             return _unsafe_mul!(y, A.lmap, x, A.λ, false)
         end
-        function _unsafe_mul!(y::$outtype, A::ScaledMap, x::$intype, α::Number, β::Number)
+        function _unsafe_mul!(y::$Out, A::ScaledMap, x::$In, α::Number, β::Number)
             return _unsafe_mul!(y, A.lmap, x, A.λ * α, β)
         end
     end

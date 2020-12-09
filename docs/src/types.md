@@ -14,12 +14,6 @@ Abstract supertype
 LinearMaps.LinearMap
 ```
 
-Unwrapping function
-
-```@docs
-Base.parent
-```
-
 ### `FunctionMap`
 
 Type for wrapping an arbitrary function that is supposed to implement the

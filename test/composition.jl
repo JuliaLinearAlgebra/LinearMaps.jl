@@ -6,7 +6,7 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
     FCM = LinearMaps.CompositeMap{ComplexF64}((FC,))
     L = LowerTriangular(ones(10,10))
     @test_throws DimensionMismatch F * LinearMap(rand(2,2))
-    @test_throws AssertionError LinearMaps.CompositeMap{Float64}((FC, LinearMap(rand(10,10))))
+    @test_throws ErrorException LinearMaps.CompositeMap{Float64}((FC, LinearMap(rand(10,10))))
     A = 2 * rand(ComplexF64, (10, 10)) .- 1
     B = rand(size(A)...)
     H = LinearMap(Hermitian(A'A))
@@ -20,7 +20,6 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
     @test @inferred (A * F) * v == @inferred A * (F * v)
     @test @inferred A * (F * F) * v == @inferred A * (F * (F * v))
     F2 = F*F
-    @test parent(F2) == (F, F)
     FC2 = FC*FC
     F4 = FC2 * F2
     @test occursin("10×10 LinearMaps.CompositeMap{$(eltype(F4))}", sprint((t, s) -> show(t, "text/plain", s), F4))

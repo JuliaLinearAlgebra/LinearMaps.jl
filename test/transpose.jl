@@ -10,8 +10,6 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
     end
     @test occursin("10×10 LinearMaps.TransposeMap{$(eltype(CS))}", sprint((t, s) -> show(t, "text/plain", s), transpose(CS)))
     @test occursin("10×10 LinearMaps.AdjointMap{$(eltype(CS))}", sprint((t, s) -> show(t, "text/plain", s), adjoint(CS)))
-    @test parent(transpose(CS)) === CS
-    @test parent(adjoint(CS)) === CS
     @test !(transpose(CS) == adjoint(CS))
     @test !(adjoint(CS) == transpose(CS))
     M = Matrix(CS)
@@ -29,6 +27,8 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
         @test mul!(copy(W), transform(CS), X, α, β) ≈ transform(M)*X*α + W*β
     end
     for transform1 in (adjoint, transpose), transform2 in (adjoint, transpose)
+        @test transform1(transform1(CS)) === CS
+        @test transform2(transform1(transform2(CS))) === transform1(CS)
         @test transform2(transform1(CS)) * x ≈ transform2(transform1(M))*x
         @test mul!(copy(w), transform2(transform1(CS)), x) ≈ transform2(transform1(M))*x
         @test mul!(copy(W), transform2(transform1(CS)), X) ≈ transform2(transform1(M))*X
