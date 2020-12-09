@@ -141,7 +141,6 @@ function _compositemul!(y::AbstractVecOrMat,
                         A::CompositeMap{<:Any,<:Tuple{LinearMap,LinearMap}}, x::AbstractVector,
                         source = similar(y, size(A.maps[1], 1)),
                         dest = nothing)
-    # was there any advantage in having this z an argument, this is not a public method?
     # no size checking, will be done by individual maps
     _unsafe_mul!(source, A.maps[1], x)
     _unsafe_mul!(y, A.maps[2], source)

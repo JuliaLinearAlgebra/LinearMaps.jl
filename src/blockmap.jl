@@ -186,9 +186,6 @@ function Base.hvcat(rows::Tuple{Vararg{Int}},
                 na = size(As[j+k], 1)
                 ni >= 0 && ni != na &&
                     throw(DimensionMismatch("mismatch in number of rows"))
-                # here we check all maps, in hcat and vcat we only find the first map
-                # which is not UniformScaling to set the size.
-                # Should we also include this check in hcat and vcat?
                 ni = na
             end
         end
