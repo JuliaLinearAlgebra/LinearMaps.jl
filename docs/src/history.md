@@ -16,8 +16,10 @@
   produces a transpose or adjoint vector output, rather than a composite `LinearMap`.
 * Block concatenation now handles matrices and vectors directly by internal promotion
   to `LinearMap`s. For `[h/v/hc]cat` it suffices to have a `LinearMap` object anywhere
-  in the list of arguments. For the block diagonal concatenation, a `LinearMap` object
-  has to appear among the first 8 arguments.
+  in the list of arguments. For the block-diagonal concatenation via
+  `SparseArrays.blockdiag`, a `LinearMap` object has to appear among the first 8 arguments.
+  This restriction, however, does not apply to block-diagonal concatenation via
+  `Base.cat(As...; dims=(1,2))`.
 * Introduction of more expressive and visually appealing `show` methods, replacing
   the fallback to the generic `show`.
 
