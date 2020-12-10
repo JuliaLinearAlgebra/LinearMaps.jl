@@ -88,6 +88,10 @@ SparseArrays.blockdiag
 
 Type for lazily representing constantly filled matrices.
 
+```@docs
+LinearMaps.FillMap
+```
+
 ## Methods
 
 ### Multiplication methods
@@ -107,28 +111,28 @@ as in the usual matrix case: `transpose(A) * x` and `mul!(y, A', x)`, for instan
 
 ### Conversion methods
 
-*   `Array`, `Matrix` and associated `convert` methods
+* `Array`, `Matrix` and associated `convert` methods
 
-    Create a dense matrix representation of the `LinearMap` object, by
-    multiplying it with the successive basis vectors. This is mostly for testing
-    purposes or if you want to have the explicit matrix representation of a
-    linear map for which you only have a function definition (e.g. to be able to
-    use its `transpose` or `adjoint`). This way, one may conveniently make `A`
-    act on the columns of a matrix `X`, instead of interpreting `A * X` as a
-    composed linear map: `Matrix(A * X)`. For generic code, that is supposed to
-    handle both `A::AbstractMatrix` and `A::LinearMap`, it is recommended to use
-    `convert(Matrix, A*X)`.
+  Create a dense matrix representation of the `LinearMap` object, by
+  multiplying it with the successive basis vectors. This is mostly for testing
+  purposes or if you want to have the explicit matrix representation of a
+  linear map for which you only have a function definition (e.g. to be able to
+  use its `transpose` or `adjoint`). This way, one may conveniently make `A`
+  act on the columns of a matrix `X`, instead of interpreting `A * X` as a
+  composed linear map: `Matrix(A * X)`. For generic code, that is supposed to
+  handle both `A::AbstractMatrix` and `A::LinearMap`, it is recommended to use
+  `convert(Matrix, A*X)`.
 
-*   `convert(Abstract[Matrix/Array], A::LinearMap)`
+* `convert(Abstract[Matrix/Array], A::LinearMap)`
 
-    Create an `AbstractMatrix` representation of the `LinearMap`. This falls
-    back to `Matrix(A)`, but avoids explicit construction in case the `LinearMap`
-    object is matrix-based.
+  Create an `AbstractMatrix` representation of the `LinearMap`. This falls
+  back to `Matrix(A)`, but avoids explicit construction in case the `LinearMap`
+  object is matrix-based.
 
-*   `SparseArrays.sparse(A::LinearMap)` and `convert(SparseMatrixCSC, A::LinearMap)`
+* `SparseArrays.sparse(A::LinearMap)` and `convert(SparseMatrixCSC, A::LinearMap)`
 
-    Create a sparse matrix representation of the `LinearMap` object, by
-    multiplying it with the successive basis vectors. This is mostly for testing
-    purposes or if you want to have the explicit sparse matrix representation of
-    a linear map for which you only have a function definition (e.g. to be able
-    to use its `transpose` or `adjoint`).
+  Create a sparse matrix representation of the `LinearMap` object, by
+  multiplying it with the successive basis vectors. This is mostly for testing
+  purposes or if you want to have the explicit sparse matrix representation of
+  a linear map for which you only have a function definition (e.g. to be able
+  to use its `transpose` or `adjoint`).

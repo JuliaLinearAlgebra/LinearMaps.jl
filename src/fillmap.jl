@@ -1,3 +1,10 @@
+"""
+    FillMap(λ, (m, n))::FillMap
+    FillMap(λ, m, n)::FillMap
+
+Construct a (lazy) representation of an operator whose matrix representation
+would be an m×n-matrix filled constantly with the value `λ`.
+"""
 struct FillMap{T} <: LinearMap{T}
     λ::T
     size::Dims{2}
@@ -6,6 +13,8 @@ struct FillMap{T} <: LinearMap{T}
         return new{T}(λ, dims)
     end
 end
+
+FillMap(λ, m::Int, n::Int) = FillMap(λ, (m, n))
 
 # properties
 Base.size(A::FillMap) = A.size
