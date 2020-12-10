@@ -200,7 +200,7 @@ mul!(similar(x)', x', A)
 # ## Application to matrices
 
 # By default, applying a `LinearMap` `A` to a matrix `X` via `A*X` does
-# *not* aplly `A` to each column of `X` viewed as a vector, but interprets
+# *not* apply `A` to each column of `X` viewed as a vector, but interprets
 # `X` as a linear map, wraps it as such and returns `(A*X)::CompositeMap`.
 # Calling the in-place multiplication function `mul!(Y, A, X)` for matrices,
 # however, does compute the columnwise action of `A` on `X` and stores the
