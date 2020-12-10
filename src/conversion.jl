@@ -171,3 +171,6 @@ function SparseArrays.sparse(L::KroneckerSumMap)
     IB = sparse(Diagonal(ones(Bool, size(B, 1))))
     return kron(convert(AbstractMatrix, A), IB) + kron(IA, convert(AbstractMatrix, B))
 end
+
+# FillMap
+Base.Matrix{T}(A::FillMap) where {T} = fill(T(A.λ), size(A))

@@ -30,3 +30,5 @@ include("kronecker.jl")
 include("conversion.jl")
 
 include("left.jl")
+
+include("fillmap.jl")
