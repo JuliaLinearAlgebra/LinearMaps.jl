@@ -84,7 +84,7 @@ Base.cat
 SparseArrays.blockdiag
 ```
 
-### `FillMap``
+### `FillMap`
 
 Type for lazily representing constantly filled matrices.
 
