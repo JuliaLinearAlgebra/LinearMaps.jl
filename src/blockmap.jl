@@ -442,20 +442,22 @@ for k in 1:8 # is 8 sufficient?
     mapargs = ntuple(n ->:($(Symbol(:A, n))), Val(k-1))
     # yields (:LinearMap(A1), :LinearMap(A2), ..., :LinearMap(A(k-1)))
 
-    @eval function SparseArrays.blockdiag($(Is...), $L, As::MapOrVecOrMat...)
-        return BlockDiagonalMap(convert_to_lmaps($(mapargs...))...,
-                                $(Symbol(:A, k)),
-                                convert_to_lmaps(As...)...)
-    end
-end
+    @eval begin
+        function SparseArrays.blockdiag($(Is...), $L, As::MapOrVecOrMat...)
+            return BlockDiagonalMap(convert_to_lmaps($(mapargs...))...,
+                                    $(Symbol(:A, k)),
+                                    convert_to_lmaps(As...)...)
+        end
 
-# This method is more generic than Base._cat(catdims, A::AbstractArray...), and
-# therefore does not override Base/StdLib behavior
-function Base._cat(dims, As::MapOrVecOrMat...)
-    if dims::Dims{2} == (1, 2)
-        return BlockDiagonalMap(convert_to_lmaps(As...)...)
-    else
-        throw(ArgumentError("dims keyword in cat of LinearMaps must be (1,2)"))
+        function Base.cat($(Is...), $L, As::MapOrVecOrMat...; dims::Dims{2})
+            if dims == (1,2)
+                return BlockDiagonalMap(convert_to_lmaps($(mapargs...))...,
+                                        $(Symbol(:A, k)),
+                                        convert_to_lmaps(As...)...)
+            else
+                throw(ArgumentError("dims keyword in cat of LinearMaps must be (1,2)"))
+            end
+        end
     end
 end
 
@@ -472,8 +474,8 @@ SparseArrays.blockdiag
     cat(As::Union{LinearMap,AbstractVecOrMat}...; dims=(1,2))::BlockDiagonalMap
 
 Construct a (lazy) representation of the diagonal concatenation of the arguments.
-To avoid fallback to the generic `Base.cat`, there must be a `LinearMap` object
-among the arguments, without any restriction on its position.
+To avoid fallback to the generic `Base.cat`, there must be a `LinearMap`
+object among the first 8 arguments.
 """
 Base.cat
 
