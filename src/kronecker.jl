@@ -125,7 +125,7 @@ end
 @inline function _kronmul!(y, B, x, At::UniformScalingMap, _)
     na, ma = size(At)
     mb, nb = size(B)
-    X = reshape(x, (nb, ma))
+    X = reshape(x, (nb, na))
     Y = reshape(y, (mb, ma))
     _unsafe_mul!(Y, B, X, _parent(At), false)
     return y
@@ -133,7 +133,7 @@ end
 @inline function _kronmul!(y, B, x, At::MatrixMap, _)
     na, ma = size(At)
     mb, nb = size(B)
-    X = reshape(x, (nb, ma))
+    X = reshape(x, (nb, na))
     Y = reshape(y, (mb, ma))
     if nb*ma < mb*na
         _unsafe_mul!(Y, B, X * _parent(At))
