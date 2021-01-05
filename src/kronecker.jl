@@ -107,9 +107,10 @@ Base.:(==)(A::KroneckerMap, B::KroneckerMap) = (eltype(A) == eltype(B) && A.maps
 # multiplication helper functions
 #################
 
-@inline function _kronmul!(y, B, X, At, T)
+@inline function _kronmul!(y, B, x, At, T)
     na, ma = size(At)
     mb, nb = size(B)
+    X = reshape(x, (nb, na))
     v = zeros(T, ma)
     temp1 = similar(y, na)
     temp2 = similar(y, nb)
