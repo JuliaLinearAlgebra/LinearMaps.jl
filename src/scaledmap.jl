@@ -1,15 +1,20 @@
+"""
+    struct ScaledMap{T, S<:RealOrComplex, A<:LinearMap} <: LinearMap{T}
+
+Lazy representation of real or complex scaled maps ``\\alpha A``.
+"""
 struct ScaledMap{T, S<:RealOrComplex, A<:LinearMap} <: LinearMap{T}
     λ::S
     lmap::A
-    function ScaledMap{T}(λ::S, lmap::A) where {T, S <: RealOrComplex, A <: LinearMap}
+    function ScaledMap{T}(λ::S, lmap::A) where {T, S <: RealOrComplex, A <: LinearMap{<:RealOrComplex}}
         @assert Base.promote_op(*, S, eltype(lmap)) == T "target type $T cannot hold products of $S and $(eltype(lmap)) objects"
         new{T,S,A}(λ, lmap)
     end
 end
 
 # constructor
-ScaledMap(λ::S, lmap::A) where {S<:RealOrComplex,A<:LinearMap} =
-    ScaledMap{Base.promote_op(*, S, eltype(lmap))}(λ, lmap)
+ScaledMap(λ::RealOrComplex, lmap::LinearMap{<:RealOrComplex}) =
+    ScaledMap{Base.promote_op(*, typeof(λ), eltype(lmap))}(λ, lmap)
 
 # basic methods
 Base.size(A::ScaledMap) = size(A.lmap)
@@ -26,8 +31,8 @@ Base.:(==)(A::ScaledMap, B::ScaledMap) =
     eltype(A) == eltype(B) && A.lmap == B.lmap && A.λ == B.λ
 
 # scalar multiplication and division
-Base.:(*)(α::RealOrComplex, A::LinearMap) = ScaledMap(α, A)
-Base.:(*)(A::LinearMap, α::RealOrComplex) = ScaledMap(α, A)
+Base.:(*)(α::RealOrComplex, A::LinearMap{<:RealOrComplex}) = ScaledMap(α, A)
+Base.:(*)(A::LinearMap{<:RealOrComplex}, α::RealOrComplex) = ScaledMap(α, A)
 
 Base.:(*)(α::Number, A::ScaledMap) = (α * A.λ) * A.lmap
 Base.:(*)(A::ScaledMap, α::Number) = A.lmap * (A.λ * α)
@@ -42,7 +47,10 @@ Base.:(*)(A::ScaledMap, B::LinearMap) = A.λ * (A.lmap * B)
 Base.:(*)(A::LinearMap, B::ScaledMap) = (A * B.lmap) * B.λ
 
 # multiplication with vectors/matrices
-for (In, Out) in ((AbstractVector, AbstractVecOrMat), (AbstractMatrix, AbstractMatrix))
+for (In, Out) in (
+        (AbstractVector{<:RealOrComplex}, AbstractVecOrMat{<:RealOrComplex}),
+        (AbstractMatrix{<:RealOrComplex}, AbstractMatrix{<:RealOrComplex}),
+    )
     @eval begin
         function _unsafe_mul!(y::$Out, A::ScaledMap, x::$In)
             return _unsafe_mul!(y, A.lmap, x, A.λ, false)
