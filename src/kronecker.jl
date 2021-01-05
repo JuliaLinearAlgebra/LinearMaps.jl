@@ -122,17 +122,21 @@ Base.:(==)(A::KroneckerMap, B::KroneckerMap) = (eltype(A) == eltype(B) && A.maps
     end
     return y
 end
-@inline function _kronmul!(y, B, X, At::UniformScalingMap, T)
-    Y = reshape(y, (size(B, 1), size(At, 2)))
-    _unsafe_mul!(Y, B, _parent(X), _parent(At), false)
-    return y
-end
-@inline function _kronmul!(y, B, X, At::MatrixMap, T)
+@inline function _kronmul!(y, B, x, At::UniformScalingMap, _)
     na, ma = size(At)
     mb, nb = size(B)
+    X = reshape(x, (nb, ma))
+    Y = reshape(y, (mb, ma))
+    _unsafe_mul!(Y, B, X, _parent(At), false)
+    return y
+end
+@inline function _kronmul!(y, B, x, At::MatrixMap, _)
+    na, ma = size(At)
+    mb, nb = size(B)
+    X = reshape(x, (nb, ma))
     Y = reshape(y, (mb, ma))
     if nb*ma < mb*na
-        _unsafe_mul!(Y, B, Matrix(X*At))
+        _unsafe_mul!(Y, B, X * _parent(At))
     else
         _unsafe_mul!(Y, Matrix(B*X), _parent(At))
     end
@@ -148,18 +152,14 @@ const KroneckerMap2{T} = KroneckerMap{T, <:Tuple{LinearMap, LinearMap}}
 function _unsafe_mul!(y::AbstractVecOrMat, L::KroneckerMap2, x::AbstractVector)
     require_one_based_indexing(y)
     A, B = L.maps
-    X = LinearMap(reshape(x, (size(B, 2), size(A, 2)));
-                    issymmetric = false, ishermitian = false, isposdef = false)
-    _kronmul!(y, B, X, transpose(A), eltype(L))
+    _kronmul!(y, B, x, transpose(A), eltype(L))
     return y
 end
 function _unsafe_mul!(y::AbstractVecOrMat, L::KroneckerMap, x::AbstractVector)
     require_one_based_indexing(y)
     A = first(L.maps)
     B = kron(Base.tail(L.maps)...)
-    X = LinearMap(reshape(x, (size(B, 2), size(A, 2)));
-                    issymmetric = false, ishermitian = false, isposdef = false)
-    _kronmul!(y, B, X, transpose(A), eltype(L))
+    _kronmul!(y, B, x, transpose(A), eltype(L))
     return y
 end
 # mixed-product rule, prefer the right if possible
