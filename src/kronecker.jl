@@ -52,6 +52,9 @@ Base.kron(A::KroneckerMap, B::LinearMap) =
     KroneckerMap{promote_type(eltype(A), eltype(B))}(tuple(A.maps..., B))
 Base.kron(A::KroneckerMap, B::KroneckerMap) =
     KroneckerMap{promote_type(eltype(A), eltype(B))}(tuple(A.maps..., B.maps...))
+Base.kron(A::ScaledMap, B::LinearMap) = A.λ * kron(A.lmap, B)
+Base.kron(A::LinearMap{<:RealOrComplex}, B::ScaledMap) = B.λ * kron(A, B.lmap)
+Base.kron(A::ScaledMap, B::ScaledMap) = (A.λ * B.λ) * kron(A.lmap, B.lmap)
 Base.kron(A::LinearMap, B::LinearMap, C::LinearMap, Ds::LinearMap...) =
     kron(kron(A, B), C, Ds...)
 Base.kron(A::AbstractMatrix, B::LinearMap) = kron(LinearMap(A), B)
@@ -119,7 +122,12 @@ Base.:(==)(A::KroneckerMap, B::KroneckerMap) = (eltype(A) == eltype(B) && A.maps
     end
     return y
 end
-@inline function _kronmul!(y, B, X, At::Union{MatrixMap, UniformScalingMap}, T)
+@inline function _kronmul!(y, B, X, At::UniformScalingMap, T)
+    Y = reshape(y, (size(B, 1), size(At, 2)))
+    _unsafe_mul!(Y, B, _parent(X), _parent(At), false)
+    return y
+end
+@inline function _kronmul!(y, B, X, At::MatrixMap, T)
     na, ma = size(At)
     mb, nb = size(B)
     Y = reshape(y, (mb, ma))
