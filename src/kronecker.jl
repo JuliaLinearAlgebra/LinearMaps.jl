@@ -128,7 +128,7 @@ end
     mb, nb = size(B)
     X = reshape(x, (nb, na))
     Y = reshape(y, (mb, ma))
-    _unsafe_mul!(Y, B, X, _parent(At), false)
+    _unsafe_mul!(Y, B, X, At.λ, false)
     return y
 end
 @inline function _kronmul!(y, B, x, At::MatrixMap, _)
@@ -137,9 +137,9 @@ end
     X = reshape(x, (nb, na))
     Y = reshape(y, (mb, ma))
     if nb*ma < mb*na
-        _unsafe_mul!(Y, B, X * _parent(At))
+        _unsafe_mul!(Y, B, X * At.lmap)
     else
-        _unsafe_mul!(Y, Matrix(B*X), _parent(At))
+        _unsafe_mul!(Y, Matrix(B*X), At.lmap)
     end
     return y
 end
