@@ -1,5 +1,9 @@
 using Test, LinearMaps, LinearAlgebra, Quaternions
 
+# type piracy because Quaternions.jl doesn't have it right
+Base.:(*)(z::Complex{T}, q::Quaternion{T}) where {T<:Real} = quat(z) * q
+Base.:(*)(q::Quaternion{T}, z::Complex{T}) where {T<:Real} = q * quat(z)
+
 @testset "noncommutative number type" begin
     x = Quaternion.(rand(10), rand(10), rand(10), rand(10))
     v = rand(10)
@@ -53,6 +57,12 @@ using Test, LinearMaps, LinearAlgebra, Quaternions
     @test Array(-L) == -A
     @test Array(γ \ L) ≈ γ \ A
     @test Array(L / γ) ≈ A / γ
+    M = rand(ComplexF64, 10, 10); α = rand(ComplexF64); y = α * M * x
+    @test (α * LinearMap(M)) * x ≈ (quat(α) * LinearMap(M)) * x ≈ y
+    @test mul!(copy(y), LinearMap(M), x, α, false) ≈ M * x * α
+    @test mul!(copy(y), LinearMap(M), x, quat(α), false) ≈ M * x * α
+    @test mul!(similar(M*A), LinearMap(M), A) ≈ M * A
+    @test mul!(similar(M*A), LinearMap(M), A, α, false) ≈ M * A * α
 end
 
 @testset "nonassociative number type" begin
