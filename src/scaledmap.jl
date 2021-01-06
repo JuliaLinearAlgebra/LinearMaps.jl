@@ -1,14 +1,14 @@
 """
-    struct ScaledMap{T, S<:RealOrComplex, A<:LinearMap} <: LinearMap{T}
-
-Lazy representation of real or complex scaled maps ``\\alpha A``.
+Lazy representation of a scaled map `λ * A = A * λ` with real or complex map
+`A <: LinearMap{RealOrComplex}` and real or complex scaling factor
+`λ <: RealOrComplex`.
 """
-struct ScaledMap{T, S<:RealOrComplex, A<:LinearMap} <: LinearMap{T}
+struct ScaledMap{T, S<:RealOrComplex, L<:LinearMap} <: LinearMap{T}
     λ::S
-    lmap::A
-    function ScaledMap{T}(λ::S, lmap::A) where {T, S <: RealOrComplex, A <: LinearMap{<:RealOrComplex}}
-        @assert Base.promote_op(*, S, eltype(lmap)) == T "target type $T cannot hold products of $S and $(eltype(lmap)) objects"
-        new{T,S,A}(λ, lmap)
+    lmap::L
+    function ScaledMap{T}(λ::S, A::L) where {T, S <: RealOrComplex, L <: LinearMap{<:RealOrComplex}}
+        @assert Base.promote_op(*, S, eltype(A)) == T "target type $T cannot hold products of $S and $(eltype(A)) objects"
+        new{T,S,L}(λ, A)
     end
 end
 
