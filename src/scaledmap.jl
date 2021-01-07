@@ -63,9 +63,3 @@ for (In, Out) in ((AbstractVector, AbstractVecOrMat),
         end
     end
 end
-function _unsafe_mul!(y::AbstractVecOrMat, A::ScaledMap, x::AbstractVector, α::Number, β::Number)
-    return _generic_mapvec_mul!(y, A, x, α, β)
-end
-function _unsafe_mul!(y::AbstractMatrix, A::ScaledMap, x::AbstractMatrix, α::Number, β::Number)
-    return _generic_mapmat_mul!(y, A, x, α, β)
-end
