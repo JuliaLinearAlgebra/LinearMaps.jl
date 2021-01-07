@@ -8,6 +8,7 @@ Base.:(*)(q::Quaternion{T}, z::Complex{T}) where {T<:Real} = q * quat(z)
     x = Quaternion.(rand(10), rand(10), rand(10), rand(10))
     v = rand(10)
     A = Quaternion.(rand(10,10), rand(10,10), rand(10,10), rand(10,10))
+    B = rand(ComplexF64, 10, 10)
     γ = Quaternion.(rand(4)...) # "Number"
     α = UniformScaling(γ)
     β = UniformScaling(Quaternion.(rand(4)...))
@@ -30,6 +31,8 @@ Base.:(*)(q::Quaternion{T}, z::Complex{T}) where {T<:Real} = q * quat(z)
     @test 3L * x ≈ 3A * x
     @test 3L' * x ≈ 3A' * x
     @test λ*L isa LinearMaps.CompositeMap
+    @test γ * (λ * LinearMap(B)) isa LinearMaps.CompositeMap
+    @test (λ * LinearMap(B)) * γ isa LinearMaps.CompositeMap
     @test λ*L * x ≈ λ*A * x
     @test λ*L' * x ≈ λ*A' * x
     @test α * (3L * x) ≈ α * (3A * x)
@@ -62,12 +65,13 @@ Base.:(*)(q::Quaternion{T}, z::Complex{T}) where {T<:Real} = q * quat(z)
     @test Array(-L) == -A
     @test Array(γ \ L) ≈ γ \ A
     @test Array(L / γ) ≈ A / γ
-    M = rand(ComplexF64, 10, 10); α = rand(ComplexF64); y = α * M * x
+    M = rand(ComplexF64, 10, 10); α = rand(ComplexF64);
+    y = α * M * x; Y = α * M * A
     @test (α * LinearMap(M)) * x ≈ (quat(α) * LinearMap(M)) * x ≈ y
-    @test mul!(copy(y), LinearMap(M), x, α, false) ≈ M * x * α
-    @test mul!(copy(y), LinearMap(M), x, quat(α), false) ≈ M * x * α
-    @test mul!(similar(M*A), LinearMap(M), A) ≈ M * A
-    @test mul!(similar(M*A), LinearMap(M), A, α, false) ≈ M * A * α
+    @test mul!(copy(y), α * LinearMap(M), x, α, false) ≈ α * M * x * α
+    @test mul!(copy(y), α * LinearMap(M), x, quat(α), false) ≈ α * M * x * α
+    @test mul!(copy(Y), α * LinearMap(M), A) ≈ α * M * A
+    @test mul!(copy(Y), α * LinearMap(M), A, α, false) ≈ α * M * A * α
 end
 
 @testset "nonassociative number type" begin
