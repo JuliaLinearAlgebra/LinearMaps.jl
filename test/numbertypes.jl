@@ -11,6 +11,7 @@ Base.:(*)(q::Quaternion{T}, z::Complex{T}) where {T<:Real} = q * quat(z)
     γ = Quaternion.(rand(4)...) # "Number"
     α = UniformScaling(γ)
     β = UniformScaling(Quaternion.(rand(4)...))
+    λ = rand(ComplexF64)
     L = LinearMap(A)
     @test Array(L) == A
     @test Array(L') == A'
@@ -25,8 +26,12 @@ Base.:(*)(q::Quaternion{T}, z::Complex{T}) where {T<:Real} = q * quat(z)
     @test L' * x ≈ A' * x
     @test α * (L * x) ≈ α * (A * x)
     @test α * L * x ≈ α * A * x
+    @test L * α * x ≈ A * α * x
     @test 3L * x ≈ 3A * x
     @test 3L' * x ≈ 3A' * x
+    @test λ*L isa LinearMaps.CompositeMap
+    @test λ*L * x ≈ λ*A * x
+    @test λ*L' * x ≈ λ*A' * x
     @test α * (3L * x) ≈ α * (3A * x)
     @test (@inferred α * 3L) * x ≈ α * 3A * x
     @test (@inferred 3L * α) * x ≈ 3A * α * x
