@@ -90,6 +90,10 @@ convert_to_lmaps(A) = (convert_to_lmaps_(A),)
 
 Compute the action of the linear map `A` on the vector `x`.
 
+!!! compat
+    In Julia versions v1.3 and above, objects `L` of any subtype of `LinearMap`
+    are callable in the sense that `L(x) = L*x` for `x::AbstractVector`.
+
 ## Examples
 ```jldoctest; setup=(using LinearAlgebra, LinearMaps)
 julia> A=LinearMap([1.0 2.0; 3.0 4.0]); x=[1.0, 1.0];
@@ -103,6 +107,9 @@ julia> A*x
 function Base.:(*)(A::LinearMap, x::AbstractVector)
     check_dim_mul(A, x)
     return mul!(similar(x, promote_type(eltype(A), eltype(x)), size(A, 1)), A, x)
+end
+if VERSION ≥ v"1.3"
+    (L::LinearMap)(x::AbstractVector) = L*x
 end
 
 """

@@ -87,6 +87,14 @@ Arpack.eigs(Δ; nev=3, which=:LR)
 KrylovKit.eigsolve(x -> Δ*x, size(Δ, 1), 3, :LR)
 ```
 
+In Julia v1.3 and above, the last line can be simplified to
+
+```julia
+KrylovKit.eigsolve(Δ, size(Δ, 1), 3, :LR)
+````
+
+leveraging the fact that objects of type `L <: LinearMap` are callable.
+
 ## Philosophy
 
 Several iterative linear algebra methods such as linear solvers or eigensolvers
