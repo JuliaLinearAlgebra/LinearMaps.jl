@@ -1,12 +1,18 @@
 using Test, LinearMaps, LinearAlgebra, Quaternions
 
+# type piracy because Quaternions.jl doesn't have it right
+Base.:(*)(z::Complex{T}, q::Quaternion{T}) where {T<:Real} = quat(z) * q
+Base.:(*)(q::Quaternion{T}, z::Complex{T}) where {T<:Real} = q * quat(z)
+
 @testset "noncommutative number type" begin
     x = Quaternion.(rand(10), rand(10), rand(10), rand(10))
     v = rand(10)
     A = Quaternion.(rand(10,10), rand(10,10), rand(10,10), rand(10,10))
+    B = rand(ComplexF64, 10, 10)
     γ = Quaternion.(rand(4)...) # "Number"
     α = UniformScaling(γ)
     β = UniformScaling(Quaternion.(rand(4)...))
+    λ = rand(ComplexF64)
     L = LinearMap(A)
     @test Array(L) == A
     @test Array(L') == A'
@@ -21,8 +27,14 @@ using Test, LinearMaps, LinearAlgebra, Quaternions
     @test L' * x ≈ A' * x
     @test α * (L * x) ≈ α * (A * x)
     @test α * L * x ≈ α * A * x
+    @test L * α * x ≈ A * α * x
     @test 3L * x ≈ 3A * x
     @test 3L' * x ≈ 3A' * x
+    @test λ*L isa LinearMaps.CompositeMap
+    @test γ * (λ * LinearMap(B)) isa LinearMaps.CompositeMap
+    @test (λ * LinearMap(B)) * γ isa LinearMaps.CompositeMap
+    @test λ*L * x ≈ λ*A * x
+    @test λ*L' * x ≈ λ*A' * x
     @test α * (3L * x) ≈ α * (3A * x)
     @test (@inferred α * 3L) * x ≈ α * 3A * x
     @test (@inferred 3L * α) * x ≈ 3A * α * x
@@ -53,6 +65,13 @@ using Test, LinearMaps, LinearAlgebra, Quaternions
     @test Array(-L) == -A
     @test Array(γ \ L) ≈ γ \ A
     @test Array(L / γ) ≈ A / γ
+    M = rand(ComplexF64, 10, 10); α = rand(ComplexF64);
+    y = α * M * x; Y = α * M * A
+    @test (α * LinearMap(M)) * x ≈ (quat(α) * LinearMap(M)) * x ≈ y
+    @test mul!(copy(y), α * LinearMap(M), x, α, false) ≈ α * M * x * α
+    @test mul!(copy(y), α * LinearMap(M), x, quat(α), false) ≈ α * M * x * α
+    @test mul!(copy(Y), α * LinearMap(M), A) ≈ α * M * A
+    @test mul!(copy(Y), α * LinearMap(M), A, α, false) ≈ α * M * A * α
 end
 
 @testset "nonassociative number type" begin
