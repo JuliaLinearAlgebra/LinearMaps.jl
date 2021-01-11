@@ -1,5 +1,10 @@
 # Version history
 
+## What's new in v3.1
+
+* In Julia v1.3 and above, `LinearMap`-typed objects are callable on `AbstractVector`s:
+  For `L::LinearMap` and `x::AbstractVector`, `L(x) = L*x`.
+
 ## What's new in v3.0
 
 * BREAKING change: Internally, any dependence on former `A*_mul_B!` methods is abandonned.
