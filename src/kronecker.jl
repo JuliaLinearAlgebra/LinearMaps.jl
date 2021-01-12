@@ -30,7 +30,7 @@ holds. Upon vector multiplication, this rule is checked for applicability.
 # Examples
 ```jldoctest; setup=(using LinearAlgebra, SparseArrays, LinearMaps)
 julia> J = LinearMap(I, 2) # 2×2 identity map
-LinearMaps.UniformScalingMap{Bool}(true, 2)
+2×2 LinearMaps.UniformScalingMap{Bool} with scaling factor: true
 
 julia> E = spdiagm(-1 => trues(1)); D = E + E' - 2I;
 
@@ -228,7 +228,7 @@ For convenience, one can also use `A ⊕ B` or `⊕(A, B, Cs...)` (typed as
 # Examples
 ```jldoctest; setup=(using LinearAlgebra, SparseArrays, LinearMaps)
 julia> J = LinearMap(I, 2) # 2×2 identity map
-LinearMaps.UniformScalingMap{Bool}(true, 2)
+2×2 LinearMaps.UniformScalingMap{Bool} with scaling factor: true
 
 julia> E = spdiagm(-1 => trues(1)); D = LinearMap(E + E' - 2I);
 

@@ -90,7 +90,7 @@ convert_to_lmaps(A) = (convert_to_lmaps_(A),)
 
 Compute the action of the linear map `A` on the vector `x`.
 
-!!! compat
+!!! compat "Julia 1.3"
     In Julia versions v1.3 and above, objects `L` of any subtype of `LinearMap`
     are callable in the sense that `L(x) = L*x` for `x::AbstractVector`.
 
@@ -99,6 +99,11 @@ Compute the action of the linear map `A` on the vector `x`.
 julia> A=LinearMap([1.0 2.0; 3.0 4.0]); x=[1.0, 1.0];
 
 julia> A*x
+2-element Array{Float64,1}:
+ 3.0
+ 7.0
+
+julia> A(x)
 2-element Array{Float64,1}:
  3.0
  7.0
