@@ -59,9 +59,9 @@ for (In, Out) in ((AbstractVector, AbstractVecOrMat), (AbstractMatrix, AbstractM
                 _unsafe_mul!(y, adjoint(A.lmap), x)
         end
     end
-
-    mul!(Y::AbstractMatrix, X::AbstractMatrix, A::MatrixMap) = mul!(Y, X, A.lmap)
 end
+
+mul!(Y::AbstractMatrix, X::AbstractMatrix, A::MatrixMap) = mul!(Y, X, A.lmap)
 
 if VERSION ≥ v"1.3.0-alpha.115"
     for (In, Out) in ((AbstractVector, AbstractVecOrMat), (AbstractMatrix, AbstractMatrix))
