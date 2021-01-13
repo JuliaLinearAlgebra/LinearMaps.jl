@@ -30,23 +30,23 @@ end</code></pre><p>Again, due to generic fallbacks the following now &quot;just 
   memory estimate:  0 bytes
   allocs estimate:  0
   --------------
-  minimum time:     9.710 ns (0.00% GC)
-  median time:      9.710 ns (0.00% GC)
-  mean time:        9.771 ns (0.00% GC)
-  maximum time:     30.831 ns (0.00% GC)
+  minimum time:     8.709 ns (0.00% GC)
+  median time:      8.709 ns (0.00% GC)
+  mean time:        8.742 ns (0.00% GC)
+  maximum time:     37.238 ns (0.00% GC)
   --------------
   samples:          10000
   evals/sample:     999</pre><pre><code class="language-julia">@benchmark mul!($(zeros(3)), $A, $x, $(rand()), $(rand()))</code></pre><pre class="documenter-example-output">BenchmarkTools.Trial: 
   memory estimate:  112 bytes
   allocs estimate:  1
   --------------
-  minimum time:     54.407 ns (0.00% GC)
-  median time:      57.852 ns (0.00% GC)
-  mean time:        64.195 ns (6.24% GC)
-  maximum time:     1.985 μs (94.22% GC)
+  minimum time:     52.434 ns (0.00% GC)
+  median time:      54.868 ns (0.00% GC)
+  mean time:        61.741 ns (7.10% GC)
+  maximum time:     1.986 μs (95.54% GC)
   --------------
   samples:          10000
-  evals/sample:     987</pre><p>The second benchmark indicates the allocation of an intermediate vector <code>z</code> which stores the result of <code>A*x</code> before it gets scaled and added to (the scaled) <code>y = zeros(3)</code>. For that reason, it is beneficial to provide a custom &quot;5-arg <code>mul!</code>&quot; if you can avoid the allocation of an intermediate vector. To indicate that there exists an allocation-free implementation, you should set the <code>MulStyle</code> trait, whose default is <code>ThreeArg()</code>.</p><pre><code class="language-julia">LinearMaps.MulStyle(A::MyFillMap) = FiveArg()
+  evals/sample:     986</pre><p>The second benchmark indicates the allocation of an intermediate vector <code>z</code> which stores the result of <code>A*x</code> before it gets scaled and added to (the scaled) <code>y = zeros(3)</code>. For that reason, it is beneficial to provide a custom &quot;5-arg <code>mul!</code>&quot; if you can avoid the allocation of an intermediate vector. To indicate that there exists an allocation-free implementation, you should set the <code>MulStyle</code> trait, whose default is <code>ThreeArg()</code>.</p><pre><code class="language-julia">LinearMaps.MulStyle(A::MyFillMap) = FiveArg()
 
 function LinearAlgebra.mul!(
     y::AbstractVecOrMat,
@@ -73,10 +73,10 @@ end</code></pre><p>With this function at hand, let&#39;s redo the benchmark.</p>
   memory estimate:  0 bytes
   allocs estimate:  0
   --------------
-  minimum time:     10.310 ns (0.00% GC)
-  median time:      10.611 ns (0.00% GC)
-  mean time:        10.666 ns (0.00% GC)
-  maximum time:     27.528 ns (0.00% GC)
+  minimum time:     9.309 ns (0.00% GC)
+  median time:      9.910 ns (0.00% GC)
+  mean time:        9.810 ns (0.00% GC)
+  maximum time:     29.630 ns (0.00% GC)
   --------------
   samples:          10000
   evals/sample:     999</pre><p>There you go, the allocation is gone and the computation time is significantly reduced.</p><h2 id="Adjoints-and-transposes"><a class="docs-heading-anchor" href="#Adjoints-and-transposes">Adjoints and transposes</a><a id="Adjoints-and-transposes-1"></a><a class="docs-heading-anchor-permalink" href="#Adjoints-and-transposes" title="Permalink"></a></h2><p>Generically, taking the transpose (or the adjoint) of a (real, resp.) map wraps the linear map by a <code>TransposeMap</code>, taking the adjoint of a complex map wraps it by an <code>AdjointMap</code>.</p><pre><code class="language-julia">typeof(A&#39;)</code></pre><pre class="documenter-example-output">LinearMaps.TransposeMap{Float64,Main.ex-custom.MyFillMap{Float64}}</pre><p>Not surprisingly, without further definitions, multiplying <code>A&#39;</code> by <code>x</code> yields an error.</p><pre><code class="language-julia">try A&#39;x catch e println(e) end</code></pre><pre class="documenter-example-output">ErrorException(&quot;transpose not implemented for 3×3 Main.ex-custom.MyFillMap{Float64}&quot;)</pre><p>If the operator is symmetric or Hermitian, the transpose and the adjoint, respectively, of the linear map <code>A</code> is given by <code>A</code> itself. So let&#39;s define corresponding checks.</p><pre><code class="language-julia">LinearAlgebra.issymmetric(A::MyFillMap) = A.size[1] == A.size[2]
@@ -103,4 +103,4 @@ LinearAlgebra.transpose(A::MyFillMap) = MyFillMap(transpose(A.λ), reverse(A.siz
  15.0
  15.0</pre><p>Now that we have defined the action of adjoints/transposes, the following right action on vectors is automatically defined:</p><pre><code class="language-julia">ones(3)&#39; * MyFillMap(5.0, (3, 4))</code></pre><pre class="documenter-example-output">1×4 Adjoint{Float64,Array{Float64,1}}:
  15.0  15.0  15.0  15.0</pre><p>and <code>transpose(x) * A</code> correspondingly, as well as in-place multiplication</p><pre><code class="language-julia">mul!(similar(x)&#39;, x&#39;, A)</code></pre><pre class="documenter-example-output">1×3 Adjoint{Float64,Array{Float64,1}}:
- 15.0  15.0  15.0</pre><p>and <code>mul!(transpose(y), transpose(x), A)</code>.</p><h2 id="Application-to-matrices"><a class="docs-heading-anchor" href="#Application-to-matrices">Application to matrices</a><a id="Application-to-matrices-1"></a><a class="docs-heading-anchor-permalink" href="#Application-to-matrices" title="Permalink"></a></h2><p>By default, applying a <code>LinearMap</code> <code>A</code> to a matrix <code>X</code> via <code>A*X</code> does <em>not</em> apply <code>A</code> to each column of <code>X</code> viewed as a vector, but interprets <code>X</code> as a linear map, wraps it as such and returns <code>(A*X)::CompositeMap</code>. Calling the in-place multiplication function <code>mul!(Y, A, X)</code> for matrices, however, does compute the columnwise action of <code>A</code> on <code>X</code> and stores the result in <code>Y</code>. In case there is a more efficient implementation for the matrix application, you can provide <code>mul!</code> methods with signature <code>mul!(Y::AbstractMatrix, A::MyFillMap, X::AbstractMatrix)</code>, and, depending on the chosen path to handle adjoints/transposes, corresponding methods for wrapped maps of type <code>AdjointMap</code> or <code>TransposeMap</code>, plus potentially corresponding 5-arg <code>mul!</code> methods. This may seem like a lot of methods to be implemented, but note that adding such methods is only necessary/recommended for performance.</p><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../types/">« Types and methods</a><a class="docs-footer-nextpage" href="../../related/">Related packages »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Wednesday 13 January 2021 12:26">Wednesday 13 January 2021</span>. Using Julia version 1.5.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+ 15.0  15.0  15.0</pre><p>and <code>mul!(transpose(y), transpose(x), A)</code>.</p><h2 id="Application-to-matrices"><a class="docs-heading-anchor" href="#Application-to-matrices">Application to matrices</a><a id="Application-to-matrices-1"></a><a class="docs-heading-anchor-permalink" href="#Application-to-matrices" title="Permalink"></a></h2><p>By default, applying a <code>LinearMap</code> <code>A</code> to a matrix <code>X</code> via <code>A*X</code> does <em>not</em> apply <code>A</code> to each column of <code>X</code> viewed as a vector, but interprets <code>X</code> as a linear map, wraps it as such and returns <code>(A*X)::CompositeMap</code>. Calling the in-place multiplication function <code>mul!(Y, A, X)</code> for matrices, however, does compute the columnwise action of <code>A</code> on <code>X</code> and stores the result in <code>Y</code>. In case there is a more efficient implementation for the matrix application, you can provide <code>mul!</code> methods with signature <code>mul!(Y::AbstractMatrix, A::MyFillMap, X::AbstractMatrix)</code>, and, depending on the chosen path to handle adjoints/transposes, corresponding methods for wrapped maps of type <code>AdjointMap</code> or <code>TransposeMap</code>, plus potentially corresponding 5-arg <code>mul!</code> methods. This may seem like a lot of methods to be implemented, but note that adding such methods is only necessary/recommended for performance.</p><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../types/">« Types and methods</a><a class="docs-footer-nextpage" href="../../related/">Related packages »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Wednesday 13 January 2021 13:33">Wednesday 13 January 2021</span>. Using Julia version 1.5.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
