@@ -59,6 +59,8 @@ for (In, Out) in ((AbstractVector, AbstractVecOrMat), (AbstractMatrix, AbstractM
                 _unsafe_mul!(y, adjoint(A.lmap), x)
         end
     end
+
+    mul!(Y::AbstractMatrix, X::AbstractMatrix, A::MatrixMap) = mul!(Y, X, A.lmap)
 end
 
 if VERSION ≥ v"1.3.0-alpha.115"
@@ -82,6 +84,14 @@ if VERSION ≥ v"1.3.0-alpha.115"
             end
         end
     end
+
+    mul!(Y::AbstractMatrix, X::AbstractMatrix, A::MatrixMap, α::Number, β::Number) =
+        mul!(Y, X, A.lmap, α, β)
+    # the following 2 methods are needed for disambiguation with left-multiplication
+    mul!(Y::AbstractMatrix, X::AdjointAbsVecOrMat, A::MatrixMap, α::Number, β::Number) =
+        mul!(Y, X, A.lmap, α, β)
+    mul!(Y::AbstractMatrix, X::TransposeAbsVecOrMat, A::MatrixMap, α::Number, β::Number) =
+        mul!(Y, X, A.lmap, α, β)
 end # VERSION
 
 # combine LinearMap and Matrix objects: linear combinations and map composition
