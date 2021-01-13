@@ -127,7 +127,7 @@ function _unsafe_mul!(y::AbstractVecOrMat, At::TransposeFunctionMap, x::Abstract
         conj!(y)
         return y
     else
-        error("transpose not implemented for $(A.lmap)")
+        error("transpose not implemented for $A")
     end
 end
 
@@ -142,6 +142,6 @@ function _unsafe_mul!(y::AbstractVecOrMat, Ac::AdjointFunctionMap, x::AbstractVe
         conj!(y)
         return y
     else
-        error("adjoint not implemented for $(A.lmap)")
+        error("adjoint not implemented for $A")
     end
 end
