@@ -62,6 +62,9 @@ for (In, Out) in ((AbstractVector, AbstractVecOrMat), (AbstractMatrix, AbstractM
 end
 
 mul!(Y::AbstractMatrix, X::AbstractMatrix, A::MatrixMap) = mul!(Y, X, A.lmap)
+# the following 2 methods are needed for disambiguation with left-multiplication
+mul!(Y::AbstractMatrix, X::AdjointAbsVecOrMat, A::MatrixMap) = mul!(Y, X, A.lmap)
+mul!(Y::AbstractMatrix, X::TransposeAbsVecOrMat, A::MatrixMap) = mul!(Y, X, A.lmap)
 
 if VERSION ≥ v"1.3.0-alpha.115"
     for (In, Out) in ((AbstractVector, AbstractVecOrMat), (AbstractMatrix, AbstractMatrix))
