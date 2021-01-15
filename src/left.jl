@@ -38,29 +38,47 @@ julia> A=LinearMap([1.0 2.0; 3.0 4.0]); x=[1.0, 1.0]; transpose(x)*A
 Base.:(*)(y::LinearAlgebra.TransposeAbsVec, A::LinearMap) = transpose(transpose(A) * transpose(y))
 
 # multiplication with vector/matrix
-const AdjointAbsVecOrMat{T} = Adjoint{T,<:AbstractVecOrMat}
 const TransposeAbsVecOrMat{T} = Transpose{T,<:AbstractVecOrMat}
 
-function mul!(x::AbstractMatrix, y::AdjointAbsVecOrMat, A::LinearMap)
-    check_dim_mul(x, y, A)
-    _unsafe_mul!(x', A', y')
-    return x
+# handles both y::AbstractMatrix and y::AdjointAbsVecOrMat
+function mul!(X::AbstractMatrix, Y::AbstractMatrix, A::LinearMap)
+    check_dim_mul(X, Y, A)
+    _unsafe_mul!(X', A', Y')
+    return X
 end
 
-function mul!(x::AbstractMatrix, y::AdjointAbsVecOrMat, A::LinearMap, α::Number, β::Number)
-    check_dim_mul(x, y, A)
-    _unsafe_mul!(x', conj(α)*A', y', true, conj(β))
-    return x
+function mul!(X::AbstractMatrix, Y::TransposeAbsVecOrMat, A::LinearMap)
+    check_dim_mul(X, Y, A)
+    _unsafe_mul!(transpose(X), transpose(A), transpose(Y))
+    return X
 end
 
-function mul!(x::AbstractMatrix, y::TransposeAbsVecOrMat, A::LinearMap)
-    check_dim_mul(x, y, A)
-    _unsafe_mul!(transpose(x), transpose(A), transpose(y))
-    return x
+# commutative case, handles both the abstract and adjoint case
+function mul!(X::AbstractMatrix{<:RealOrComplex}, Y::AbstractMatrix{<:RealOrComplex}, A::LinearMap{<:RealOrComplex},
+                α::RealOrComplex, β::RealOrComplex)
+    check_dim_mul(X, Y, A)
+    _unsafe_mul!(X', A', Y', conj(α), conj(β))
+    return X
 end
 
-function mul!(x::AbstractMatrix, y::TransposeAbsVecOrMat, A::LinearMap, α::Number, β::Number)
-    check_dim_mul(x, y, A)
-    _unsafe_mul!(transpose(x), α*transpose(A), transpose(y), true, β)
-    return x
+function mul!(X::AbstractMatrix{<:RealOrComplex}, Y::TransposeAbsVecOrMat{<:RealOrComplex}, A::LinearMap{<:RealOrComplex},
+                α::RealOrComplex, β::RealOrComplex)
+    check_dim_mul(X, Y, A)
+    _unsafe_mul!(transpose(X), transpose(A), transpose(Y), α, β)
+    return X
+end
+
+# non-commutative case
+function mul!(X::AbstractMatrix, Y::AbstractMatrix, A::LinearMap, α::Number, β::Number)
+    check_dim_mul(X, Y, A)
+    iszero(β) ? fill!(X, zero(eltype(X))) : (!isone(β) && rmul!(X, β))
+    _unsafe_mul!(X', conj(α)*A', Y', true, true)
+    return X
+end
+
+function mul!(X::AbstractMatrix, Y::TransposeAbsVecOrMat, A::LinearMap, α::Number, β::Number)
+    check_dim_mul(X, Y, A)
+    iszero(β) ? fill!(X, zero(eltype(X))) : (!isone(β) && rmul!(X, β))
+    _unsafe_mul!(transpose(X), α*transpose(A), transpose(Y), true, true)
+    return X
 end

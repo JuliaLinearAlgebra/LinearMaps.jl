@@ -62,8 +62,7 @@ for (In, Out) in ((AbstractVector, AbstractVecOrMat), (AbstractMatrix, AbstractM
 end
 
 mul!(Y::AbstractMatrix, X::AbstractMatrix, A::MatrixMap) = mul!(Y, X, A.lmap)
-# the following 2 methods are needed for disambiguation with left-multiplication
-mul!(Y::AbstractMatrix, X::AdjointAbsVecOrMat, A::MatrixMap) = mul!(Y, X, A.lmap)
+# the following method is needed for disambiguation with left-multiplication
 mul!(Y::AbstractMatrix, X::TransposeAbsVecOrMat, A::MatrixMap) = mul!(Y, X, A.lmap)
 
 if VERSION ≥ v"1.3.0-alpha.115"
@@ -88,13 +87,17 @@ if VERSION ≥ v"1.3.0-alpha.115"
         end
     end
 
-    mul!(Y::AbstractMatrix, X::AbstractMatrix, A::MatrixMap, α::Number, β::Number) =
-        mul!(Y, X, A.lmap, α, β)
-    # the following 2 methods are needed for disambiguation with left-multiplication
-    mul!(Y::AbstractMatrix, X::AdjointAbsVecOrMat, A::MatrixMap, α::Number, β::Number) =
-        mul!(Y, X, A.lmap, α, β)
-    mul!(Y::AbstractMatrix, X::TransposeAbsVecOrMat, A::MatrixMap, α::Number, β::Number) =
-        mul!(Y, X, A.lmap, α, β)
+    mul!(X::AbstractMatrix, Y::AbstractMatrix, A::MatrixMap, α::Number, β::Number) =
+        mul!(X, Y, A.lmap, α, β)
+    # the following method is needed for disambiguation with left-multiplication
+    function mul!(Y::AbstractMatrix{<:RealOrComplex}, X::AbstractMatrix{<:RealOrComplex}, A::MatrixMap{<:RealOrComplex},
+                    α::RealOrComplex, β::RealOrComplex)
+        return mul!(Y, X, A.lmap, α, β)
+    end
+    function mul!(Y::AbstractMatrix{<:RealOrComplex}, X::TransposeAbsVecOrMat{<:RealOrComplex}, A::MatrixMap{<:RealOrComplex},
+                    α::RealOrComplex, β::RealOrComplex)
+        return mul!(Y, X, A.lmap, α, β)
+    end
 end # VERSION
 
 # combine LinearMap and Matrix objects: linear combinations and map composition
