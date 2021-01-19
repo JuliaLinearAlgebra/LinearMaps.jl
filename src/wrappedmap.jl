@@ -61,6 +61,10 @@ for (In, Out) in ((AbstractVector, AbstractVecOrMat), (AbstractMatrix, AbstractM
     end
 end
 
+mul!(Y::AbstractMatrix, X::AbstractMatrix, A::MatrixMap) = mul!(Y, X, A.lmap)
+# the following method is needed for disambiguation with left-multiplication
+mul!(Y::AbstractMatrix, X::TransposeAbsVecOrMat, A::MatrixMap) = mul!(Y, X, A.lmap)
+
 if VERSION ≥ v"1.3.0-alpha.115"
     for (In, Out) in ((AbstractVector, AbstractVecOrMat), (AbstractMatrix, AbstractMatrix))
         @eval begin
@@ -81,6 +85,18 @@ if VERSION ≥ v"1.3.0-alpha.115"
                     _unsafe_mul!(y, adjoint(A.lmap), x, α, β)
             end
         end
+    end
+
+    mul!(X::AbstractMatrix, Y::AbstractMatrix, A::MatrixMap, α::Number, β::Number) =
+        mul!(X, Y, A.lmap, α, β)
+    # the following method is needed for disambiguation with left-multiplication
+    function mul!(Y::AbstractMatrix{<:RealOrComplex}, X::AbstractMatrix{<:RealOrComplex}, A::MatrixMap{<:RealOrComplex},
+                    α::RealOrComplex, β::RealOrComplex)
+        return mul!(Y, X, A.lmap, α, β)
+    end
+    function mul!(Y::AbstractMatrix{<:RealOrComplex}, X::TransposeAbsVecOrMat{<:RealOrComplex}, A::MatrixMap{<:RealOrComplex},
+                    α::RealOrComplex, β::RealOrComplex)
+        return mul!(Y, X, A.lmap, α, β)
     end
 end # VERSION
 
@@ -112,7 +128,8 @@ Base.:(*)(A₁::LinearMap, A₂::AbstractMatrix) = *(A₁, WrappedMap(A₂))
     *(X::AbstractMatrix, A::LinearMap)::CompositeMap
 
 Return the `CompositeMap` `LinearMap(X)*A`, interpreting the matrix `X` as a linear
-operator. To compute the right-action of `A` on each row of `X`, call `Matrix(X*A)`.
+operator. To compute the right-action of `A` on each row of `X`, call `Matrix(X*A)`
+or `mul!(Y, X, A)` for the in-place version.
 
 ## Examples
 ```jldoctest; setup=(using LinearMaps)

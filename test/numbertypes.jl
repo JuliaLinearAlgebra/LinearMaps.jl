@@ -1,28 +1,41 @@
 using Test, LinearMaps, LinearAlgebra, Quaternions
 
 # type piracy because Quaternions.jl doesn't have it right
-Base.:(*)(z::Complex{T}, q::Quaternion{T}) where {T<:Real} = quat(z) * q
-Base.:(*)(q::Quaternion{T}, z::Complex{T}) where {T<:Real} = q * quat(z)
+Base.:(*)(z::Complex, q::Quaternion) = quat(z) * q
+Base.:(*)(q::Quaternion, z::Complex) = q * quat(z)
+Base.:(+)(q::Quaternion, z::Complex) = q + quat(z)
 
 @testset "noncommutative number type" begin
     x = Quaternion.(rand(10), rand(10), rand(10), rand(10))
     v = rand(10)
     A = Quaternion.(rand(10,10), rand(10,10), rand(10,10), rand(10,10))
     B = rand(ComplexF64, 10, 10)
+    C = similar(A)
     γ = Quaternion.(rand(4)...) # "Number"
     α = UniformScaling(γ)
     β = UniformScaling(Quaternion.(rand(4)...))
     λ = rand(ComplexF64)
     L = LinearMap(A)
-    @test Array(L) == A
-    @test Array(L') == A'
-    @test Array(transpose(L)) == transpose(A)
-    @test Array(α * L) == α * A
-    @test Array(L * α) == A * α
-    @test Array(α * L) == α * A
-    @test Array(L * α ) == A * α
-    @test Array(α * L') == α * A'
-    @test Array((α * L')') ≈ (α * A')' ≈ A * conj(α)
+    F = LinearMap{eltype(A)}(x -> A*x, y -> A'y, 10)
+    @test Array(F) == A
+    @test Array(F') == A'
+    @test Array(transpose(F)) == transpose(A)
+    @test Array(α * F) == α * A
+    @test Array(F * α) == A * α
+    @test Array(α * F) == α * A
+    @test Array(F * α ) == A * α
+    @test Array(α * F') == α * A'
+    for M in (L, F)
+        @test mul!(C, transpose(A), M) ≈ transpose(A)*A
+        @test mul!(C, A', M) ≈ A'A
+        @test mul!(C, A, M) ≈ A*A
+        @test mul!(copy(C), M, A, γ, λ) ≈ A*A*γ + C*λ
+        @test mul!(copy(C), A, M, γ, λ) ≈ A*A*γ + C*λ
+        @test mul!(copy(C), A, M, γ, 0) ≈ A*A*γ
+        @test mul!(copy(C), transpose(A), M, γ, λ) ≈ transpose(A)*A*γ + C*λ
+        @test mul!(copy(C), adjoint(A), M, γ, λ) ≈ A'*A*γ + C*λ
+    end
+    @test Array((α * F')') ≈ (α * A')' ≈ A * conj(α)
     @test L * x ≈ A * x
     @test L' * x ≈ A' * x
     @test α * (L * x) ≈ α * (A * x)

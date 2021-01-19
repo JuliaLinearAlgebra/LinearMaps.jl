@@ -288,7 +288,7 @@ function _unsafe_mul!(y::AbstractVecOrMat, L::KroneckerSumMap, x::AbstractVector
     mb, nb = size(B)
     X = reshape(x, (nb, na))
     Y = reshape(y, (nb, na))
-    _unsafe_mul!(Y, X, convert(AbstractMatrix, transpose(A)))
+    _unsafe_mul!(Y, X, transpose(A))
     _unsafe_mul!(Y, B, X, true, true)
     return y
 end
