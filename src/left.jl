@@ -89,7 +89,7 @@ end
 function mul!(X::AbstractMatrix, Y::AbstractMatrix, A::LinearMap, α::Number, β::Number)
     check_dim_mul(X, Y, A)
     if iszero(β)
-        _unsafe_mul!(X', α*A', Y')
+        _unsafe_mul!(X', conj(α)*A', Y')
     else
         !isone(β) && rmul!(X, β)
         _unsafe_mul!(X', conj(α)*A', Y', true, true)
