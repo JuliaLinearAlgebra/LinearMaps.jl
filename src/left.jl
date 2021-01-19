@@ -41,6 +41,23 @@ Base.:(*)(y::LinearAlgebra.TransposeAbsVec, A::LinearMap) = transpose(transpose(
 const TransposeAbsVecOrMat{T} = Transpose{T,<:AbstractVecOrMat}
 
 # handles both y::AbstractMatrix and y::AdjointAbsVecOrMat
+"""
+    mul!(C::AbstractMatrix, A::AbstractMatrix, B::LinearMap) -> C
+
+Calculates the matrix representation of `A*B` and stores the result in `C`,
+overwriting the existing value of `C`. Note that `C` must not be aliased with
+either `A` or `B`. The computation `C = A*B` is performed via `C' = B'A'`.
+
+## Examples
+```jldoctest; setup=(using LinearAlgebra, LinearMaps)
+julia> A=[1.0 1.0; 1.0 1.0]; B=LinearMap([1.0 2.0; 3.0 4.0]); C = similar(A); mul!(C, A, B);
+
+julia> C
+2×2 Array{Float64,2}:
+ 4.0  6.0
+ 4.0  6.0
+```
+"""
 function mul!(X::AbstractMatrix, Y::AbstractMatrix, A::LinearMap)
     check_dim_mul(X, Y, A)
     _unsafe_mul!(X', A', Y')
@@ -71,14 +88,11 @@ end
 # non-commutative case
 function mul!(X::AbstractMatrix, Y::AbstractMatrix, A::LinearMap, α::Number, β::Number)
     check_dim_mul(X, Y, A)
-    iszero(β) ? fill!(X, zero(eltype(X))) : (!isone(β) && rmul!(X, β))
-    _unsafe_mul!(X', conj(α)*A', Y', true, true)
-    return X
-end
-
-function mul!(X::AbstractMatrix, Y::TransposeAbsVecOrMat, A::LinearMap, α::Number, β::Number)
-    check_dim_mul(X, Y, A)
-    iszero(β) ? fill!(X, zero(eltype(X))) : (!isone(β) && rmul!(X, β))
-    _unsafe_mul!(transpose(X), α*transpose(A), transpose(Y), true, true)
+    if iszero(β)
+        _unsafe_mul!(X', α*A', Y')
+    else
+        !isone(β) && rmul!(X, β)
+        _unsafe_mul!(X', conj(α)*A', Y', true, true)
+    end
     return X
 end
