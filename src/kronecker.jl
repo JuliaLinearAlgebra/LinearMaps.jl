@@ -54,13 +54,20 @@ Base.kron(A::KroneckerMap, B::KroneckerMap) =
     KroneckerMap{promote_type(eltype(A), eltype(B))}(tuple(A.maps..., B.maps...))
 # bilinearity
 Base.kron(A::ScaledMap, B::LinearMap) = A.λ * kron(A.lmap, B)
-Base.kron(A::LinearMap{<:RealOrComplex}, B::ScaledMap) = B.λ * kron(A, B.lmap)
+Base.kron(A::LinearMap, B::ScaledMap) = kron(A, B.lmap) * B.λ
 Base.kron(A::ScaledMap, B::ScaledMap) = (A.λ * B.λ) * kron(A.lmap, B.lmap)
 Base.kron(A::LinearCombination, B::LinearMap) = sum(Ai -> kron(Ai, B), A.maps)
 Base.kron(A::LinearMap, B::LinearCombination) = sum(Bi -> kron(A, Bi), B.maps)
 Base.kron(A::LinearCombination, B::LinearCombination) =
     sum(((Ai, Bj),) -> kron(Ai, Bj), Iterators.product(A.maps, B.maps))
-
+# disambiguation: (a) hoist out scaling, (b) split sums
+for T in (KroneckerMap, LinearCombination)
+    @eval Base.kron(A::ScaledMap, B::$T) = A.λ * kron(A.lmap, B)
+    @eval Base.kron(A::$T, B::ScaledMap) = kron(A, B.lmap) * B.λ
+end
+Base.kron(A::LinearCombination, B::KroneckerMap) = sum(Ai -> kron(Ai, B), A.maps)
+Base.kron(A::KroneckerMap, B::LinearCombination) = sum(Bi -> kron(A, Bi), B.maps)
+# generic definitions
 Base.kron(A::LinearMap, B::LinearMap, C::LinearMap, Ds::LinearMap...) =
     kron(kron(A, B), C, Ds...)
 Base.kron(A::AbstractMatrix, B::LinearMap) = kron(LinearMap(A), B)
