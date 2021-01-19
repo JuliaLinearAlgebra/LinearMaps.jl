@@ -56,17 +56,9 @@ Base.kron(A::KroneckerMap, B::KroneckerMap) =
 Base.kron(A::ScaledMap, B::LinearMap) = A.λ * kron(A.lmap, B)
 Base.kron(A::LinearMap, B::ScaledMap) = kron(A, B.lmap) * B.λ
 Base.kron(A::ScaledMap, B::ScaledMap) = (A.λ * B.λ) * kron(A.lmap, B.lmap)
-Base.kron(A::LinearCombination, B::LinearMap) = sum(Ai -> kron(Ai, B), A.maps)
-Base.kron(A::LinearMap, B::LinearCombination) = sum(Bi -> kron(A, Bi), B.maps)
-Base.kron(A::LinearCombination, B::LinearCombination) =
-    sum(((Ai, Bj),) -> kron(Ai, Bj), Iterators.product(A.maps, B.maps))
-# disambiguation: (a) hoist out scaling, (b) split sums
-for T in (KroneckerMap, LinearCombination)
-    @eval Base.kron(A::ScaledMap, B::$T) = A.λ * kron(A.lmap, B)
-    @eval Base.kron(A::$T, B::ScaledMap) = kron(A, B.lmap) * B.λ
-end
-Base.kron(A::LinearCombination, B::KroneckerMap) = sum(Ai -> kron(Ai, B), A.maps)
-Base.kron(A::KroneckerMap, B::LinearCombination) = sum(Bi -> kron(A, Bi), B.maps)
+# disambiguation
+Base.kron(A::ScaledMap, B::KroneckerMap) = A.λ * kron(A.lmap, B)
+Base.kron(A::KroneckerMap, B::ScaledMap) = kron(A, B.lmap) * B.λ
 # generic definitions
 Base.kron(A::LinearMap, B::LinearMap, C::LinearMap, Ds::LinearMap...) =
     kron(kron(A, B), C, Ds...)
@@ -301,7 +293,7 @@ function _unsafe_mul!(y::AbstractVecOrMat, L::KroneckerSumMap, x::AbstractVector
     mb, nb = size(B)
     X = reshape(x, (nb, na))
     Y = reshape(y, (nb, na))
-    _unsafe_mul!(Y, X, transpose(A))
+    _unsafe_mul!(Y, X, convert(AbstractMatrix, transpose(A)))
     _unsafe_mul!(Y, B, X, true, true)
     return y
 end
