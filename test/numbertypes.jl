@@ -31,6 +31,7 @@ Base.:(+)(q::Quaternion, z::Complex) = q + quat(z)
         @test mul!(C, A, M) ≈ A*A
         @test mul!(copy(C), M, A, γ, λ) ≈ A*A*γ + C*λ
         @test mul!(copy(C), A, M, γ, λ) ≈ A*A*γ + C*λ
+        @test mul!(copy(C), A, M, γ, 0) ≈ A*A*γ
         @test mul!(copy(C), transpose(A), M, γ, λ) ≈ transpose(A)*A*γ + C*λ
         @test mul!(copy(C), adjoint(A), M, γ, λ) ≈ A'*A*γ + C*λ
     end
