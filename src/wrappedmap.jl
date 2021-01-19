@@ -128,7 +128,8 @@ Base.:(*)(A₁::LinearMap, A₂::AbstractMatrix) = *(A₁, WrappedMap(A₂))
     *(X::AbstractMatrix, A::LinearMap)::CompositeMap
 
 Return the `CompositeMap` `LinearMap(X)*A`, interpreting the matrix `X` as a linear
-operator. To compute the right-action of `A` on each row of `X`, call `Matrix(X*A)`.
+operator. To compute the right-action of `A` on each row of `X`, call `Matrix(X*A)`
+or `mul!(Y, X, A)` for the in-place version.
 
 ## Examples
 ```jldoctest; setup=(using LinearMaps)
