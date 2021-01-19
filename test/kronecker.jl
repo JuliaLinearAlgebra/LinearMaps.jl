@@ -11,6 +11,9 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
         @test kron(LA, 2LB) isa LinearMaps.ScaledMap
         @test kron(3LA, LB) isa LinearMaps.ScaledMap
         @test kron(3LA, 2LB) isa LinearMaps.ScaledMap
+        @test kron(LA + LA, LB) isa LinearMaps.LinearCombination
+        @test kron(LA, LB + LB) isa LinearMaps.LinearCombination
+        @test kron(LA + LA, LB + LB) isa LinearMaps.LinearCombination
         @test kron(3LA, 2LB).λ == 6
         @test_throws ErrorException LinearMaps.KroneckerMap{Float64}((LA, LB))
         @test occursin("6×6 LinearMaps.KroneckerMap{$(eltype(LK))}", sprint((t, s) -> show(t, "text/plain", s), LK))
