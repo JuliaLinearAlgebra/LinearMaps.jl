@@ -52,7 +52,7 @@ Base.kron(A::KroneckerMap, B::LinearMap) =
     KroneckerMap{promote_type(eltype(A), eltype(B))}(tuple(A.maps..., B))
 Base.kron(A::KroneckerMap, B::KroneckerMap) =
     KroneckerMap{promote_type(eltype(A), eltype(B))}(tuple(A.maps..., B.maps...))
-# bilinearity
+# hoist out scalings
 Base.kron(A::ScaledMap, B::LinearMap) = A.λ * kron(A.lmap, B)
 Base.kron(A::LinearMap, B::ScaledMap) = kron(A, B.lmap) * B.λ
 Base.kron(A::ScaledMap, B::ScaledMap) = (A.λ * B.λ) * kron(A.lmap, B.lmap)
@@ -293,7 +293,7 @@ function _unsafe_mul!(y::AbstractVecOrMat, L::KroneckerSumMap, x::AbstractVector
     mb, nb = size(B)
     X = reshape(x, (nb, na))
     Y = reshape(y, (nb, na))
-    _unsafe_mul!(Y, X, convert(AbstractMatrix, transpose(A)))
+    _unsafe_mul!(Y, X, transpose(A))
     _unsafe_mul!(Y, B, X, true, true)
     return y
 end
