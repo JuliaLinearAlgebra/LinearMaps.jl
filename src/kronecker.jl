@@ -52,9 +52,14 @@ Base.kron(A::KroneckerMap, B::LinearMap) =
     KroneckerMap{promote_type(eltype(A), eltype(B))}(tuple(A.maps..., B))
 Base.kron(A::KroneckerMap, B::KroneckerMap) =
     KroneckerMap{promote_type(eltype(A), eltype(B))}(tuple(A.maps..., B.maps...))
+# hoist out scalings
 Base.kron(A::ScaledMap, B::LinearMap) = A.λ * kron(A.lmap, B)
-Base.kron(A::LinearMap{<:RealOrComplex}, B::ScaledMap) = B.λ * kron(A, B.lmap)
+Base.kron(A::LinearMap, B::ScaledMap) = kron(A, B.lmap) * B.λ
 Base.kron(A::ScaledMap, B::ScaledMap) = (A.λ * B.λ) * kron(A.lmap, B.lmap)
+# disambiguation
+Base.kron(A::ScaledMap, B::KroneckerMap) = A.λ * kron(A.lmap, B)
+Base.kron(A::KroneckerMap, B::ScaledMap) = kron(A, B.lmap) * B.λ
+# generic definitions
 Base.kron(A::LinearMap, B::LinearMap, C::LinearMap, Ds::LinearMap...) =
     kron(kron(A, B), C, Ds...)
 Base.kron(A::AbstractMatrix, B::LinearMap) = kron(LinearMap(A), B)

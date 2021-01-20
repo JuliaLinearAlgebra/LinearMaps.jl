@@ -6,6 +6,7 @@ using Test, LinearMaps, LinearAlgebra
     SA = A'A + I
     SB = B'B + I
     L = @inferred LinearMap{Float64}(A)
+    @test summary(L) == "10×20 LinearMaps.WrappedMap{Float64}"
     @test occursin("10×20 LinearMaps.WrappedMap{Float64}", sprint((t, s) -> show(t, "text/plain", s), L))
     MA = @inferred LinearMap(SA)
     MB = @inferred LinearMap(SB)

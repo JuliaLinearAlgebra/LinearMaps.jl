@@ -1,5 +1,10 @@
 # Version history
 
+## What's new in v3.2
+
+* In-place left-multiplication `mul!(Y, X, A::LinearMap)` is now allowed for
+  `X::AbstractMatrix` and implemented via the adjoint equation `Y' = A'X'`.
+
 ## What's new in v3.1
 
 * In Julia v1.3 and above, `LinearMap`-typed objects are callable on `AbstractVector`s:
