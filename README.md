@@ -30,8 +30,8 @@ julia> import Pkg; Pkg.add("LinearMaps")
 [docs-stable-img]: https://img.shields.io/badge/docs-stable-blue.svg
 [docs-stable-url]: https://jutho.github.io/LinearMaps.jl/stable
 
-[build-img]: https://github.com/Jutho/LinearMaps.jl/workflows/CI/badge.svg
-[build-url]: https://github.com/Jutho/LinearMaps.jl/actions?query=workflow%3ACI
+[build-img]: https://github.com/Jutho/LinearMaps.jl/workflows/CI/badge.svg?branch=master
+[build-url]: https://github.com/Jutho/LinearMaps.jl/actions?query=workflow%3ACI+branch%3Amaster
 
 [codecov-img]: http://codecov.io/github/Jutho/LinearMaps.jl/coverage.svg?branch=master
 [codecov-url]: http://codecov.io/github/Jutho/LinearMaps.jl?branch=master
