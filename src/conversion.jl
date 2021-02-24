@@ -50,7 +50,7 @@ SparseArrays.SparseMatrixCSC(A::LinearMap) = sparse(A)
 Base.Matrix{T}(A::ScaledMap{<:Any, <:Any, <:VecOrMatMap}) where {T} =
     convert(Matrix{T}, A.λ * A.lmap.lmap)
 SparseArrays.sparse(A::ScaledMap{<:Any, <:Any, <:VecOrMatMap}) =
-    convert(SparseMatrixCSC, A.λ * A.lmap.lmap)
+    convert(AbstractSparseArray, A.λ * A.lmap.lmap)
 
 # UniformScalingMap
 Base.Matrix{T}(J::UniformScalingMap) where {T} = Matrix{T}(J.λ*I, size(J))
@@ -59,6 +59,8 @@ Base.convert(::Type{AbstractMatrix}, J::UniformScalingMap) = Diagonal(fill(J.λ,
 # WrappedMap
 Base.Matrix{T}(A::WrappedMap) where {T} = Matrix{T}(A.lmap)
 Base.convert(::Type{T}, A::WrappedMap) where {T<:Matrix} = convert(T, A.lmap)
+Base.convert(::Type{T}, A::VectorMap) where {T<:Matrix} =
+    copyto!(Matrix{eltype(T)}(undef, size(A)), A.lmap)
 Base.convert(::Type{AbstractMatrix}, A::WrappedMap) = convert(AbstractMatrix, A.lmap)
 SparseArrays.sparse(A::WrappedMap) = sparse(A.lmap)
 Base.convert(::Type{SparseMatrixCSC}, A::WrappedMap) = convert(SparseMatrixCSC, A.lmap)
