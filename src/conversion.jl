@@ -50,7 +50,7 @@ SparseArrays.SparseMatrixCSC(A::LinearMap) = sparse(A)
 Base.Matrix{T}(A::ScaledMap{<:Any, <:Any, <:VecOrMatMap}) where {T} =
     convert(Matrix{T}, A.λ * A.lmap.lmap)
 SparseArrays.sparse(A::ScaledMap{<:Any, <:Any, <:VecOrMatMap}) =
-    convert(AbstractSparseArray, A.λ * A.lmap.lmap)
+    A.λ * sparse(A.lmap.lmap)
 
 # UniformScalingMap
 Base.Matrix{T}(J::UniformScalingMap) where {T} = Matrix{T}(J.λ*I, size(J))
