@@ -116,6 +116,9 @@ function Base.:(*)(A₁::CompositeMap, A₂::CompositeMap)
     T = promote_type(eltype(A₁), eltype(A₂))
     return CompositeMap{T}(tuple(A₂.maps..., A₁.maps...))
 end
+# needed for disambiguation
+Base.:(*)(A₁::ScaledMap, A₂::CompositeMap) = A₁.λ * (A₁.lmap * A₂)
+Base.:(*)(A₁::CompositeMap, A₂::ScaledMap) = (A₁ * A₂.lmap) * A₂.λ
 
 # special transposition behavior
 LinearAlgebra.transpose(A::CompositeMap{T}) where {T} =

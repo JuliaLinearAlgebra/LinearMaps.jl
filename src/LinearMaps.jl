@@ -260,8 +260,6 @@ include("show.jl") # show methods for LinearMap objects
     LinearMap(A::LinearMap; kwargs...)::WrappedMap
     LinearMap(A::AbstractMatrix; kwargs...)::WrappedMap
     LinearMap(J::UniformScaling, M::Int)::UniformScalingMap
-    LinearMap(λ::Number, M::Int, N::Int) = FillMap(λ, (M, N))::FillMap
-    LinearMap(λ::Number, dims::Dims{2}) = FillMap(λ, dims)::FillMap
     LinearMap{T=Float64}(f, [fc,], M::Int, N::Int = M; kwargs...)::FunctionMap
 
 Construct a linear map object, either from an existing `LinearMap` or `AbstractMatrix` `A`,

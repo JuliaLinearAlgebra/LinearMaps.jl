@@ -1,9 +1,11 @@
-using Test, LinearMaps
+using Test, LinearMaps, Aqua
 import LinearMaps: FiveArg, ThreeArg
 
 const matrixstyle = VERSION ≥ v"1.3.0-alpha.115" ? FiveArg() : ThreeArg()
 
 const testallocs = VERSION ≥ v"1.4-"
+
+Aqua.test_all(LinearMaps)
 
 include("linearmaps.jl")
 

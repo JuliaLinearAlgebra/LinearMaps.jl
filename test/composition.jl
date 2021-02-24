@@ -14,6 +14,7 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
     M = @inferred 1 * LinearMap(A)
     N = @inferred LinearMap(B)
     v = rand(ComplexF64, 10)
+    α = rand(ComplexF64)
     @test FCM * v == F * v
     @test @inferred (F * F) * v == @inferred F * (F * v)
     @test @inferred (F * A) * v == @inferred F * (A * v)
@@ -52,17 +53,20 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
     R1 = rand(ComplexF64, 10, 10); L1 = LinearMap(R1)
     R2 = rand(ComplexF64, 10, 10); L2 = LinearMap(R2)
     R3 = rand(ComplexF64, 10, 10); L3 = LinearMap(R3)
-    CompositeR = prod(LinearMap, [R1, R2, R3])
-    @test @inferred L1 * L2 * L3 == CompositeR
+    CompositeR = *(R1, R2, R3)
+    CompositeL = prod(LinearMap, [R1, R2, R3])
+    @test @inferred L1 * L2 * L3 == CompositeL
     @test Matrix(L1 * L2) ≈ sparse(L1 * L2) ≈ R1 * R2
-    @test @inferred transpose(CompositeR) == transpose(L3) * transpose(L2) * transpose(L1)
-    @test @inferred adjoint(CompositeR) == L3' * L2' * L1'
-    @test @inferred adjoint(adjoint((CompositeR))) == CompositeR
-    @test transpose(transpose((CompositeR))) == CompositeR
-    Lt = @inferred transpose(LinearMap(CompositeR))
-    @test Lt * v ≈ transpose(R3) * transpose(R2) * transpose(R1) * v
-    Lc = @inferred adjoint(LinearMap(CompositeR))
-    @test Lc * v ≈ R3' * R2' * R1' * v
+    @test Matrix(@inferred((α * L1) * (L2 * L3))::LinearMaps.ScaledMap) ≈ α * CompositeR
+    @test Matrix(@inferred((L1 * L2) * (L3 * α))::LinearMaps.ScaledMap) ≈ α * CompositeR
+    @test @inferred transpose(CompositeL) == transpose(L3) * transpose(L2) * transpose(L1)
+    @test @inferred adjoint(CompositeL) == L3' * L2' * L1'
+    @test @inferred adjoint(adjoint((CompositeL))) == CompositeL
+    @test transpose(transpose((CompositeL))) == CompositeL
+    Lt = @inferred transpose(LinearMap(CompositeL))
+    @test Lt * v ≈ transpose(CompositeR) * v
+    Lc = @inferred adjoint(LinearMap(CompositeL))
+    @test Lc * v ≈ adjoint(CompositeR) * v
 
     # convert to AbstractMatrix
     for A in (LinearMap(sprandn(10, 10, 0.3)), LinearMap(rand()*I, 10))
