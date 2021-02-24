@@ -1,14 +1,8 @@
-struct WrappedMap{T, A<:MapOrMatrix} <: LinearMap{T}
+struct WrappedMap{T, A<:MapOrVecOrMat} <: LinearMap{T}
     lmap::A
     _issymmetric::Bool
     _ishermitian::Bool
     _isposdef::Bool
-end
-function WrappedMap(lmap::MapOrMatrix{T};
-                    issymmetric::Bool = issymmetric(lmap),
-                    ishermitian::Bool = ishermitian(lmap),
-                    isposdef::Bool = isposdef(lmap)) where {T}
-    WrappedMap{T, typeof(lmap)}(lmap, issymmetric, ishermitian, isposdef)
 end
 function WrappedMap{T}(lmap::MapOrMatrix;
                         issymmetric::Bool = issymmetric(lmap),
@@ -16,28 +10,40 @@ function WrappedMap{T}(lmap::MapOrMatrix;
                         isposdef::Bool = isposdef(lmap)) where {T}
     WrappedMap{T, typeof(lmap)}(lmap, issymmetric, ishermitian, isposdef)
 end
+WrappedMap(lmap::MapOrMatrix{T}; kwargs...) where {T} = WrappedMap{T}(lmap; kwargs...)
+function WrappedMap{T}(lmap::AbstractVector;
+                        issymmetric::Bool = false,
+                        ishermitian::Bool = false,
+                        isposdef::Bool = false) where {T}
+    WrappedMap{T, typeof(lmap)}(lmap,
+                                length(lmap) == 1 && isreal(T),
+                                length(lmap) == 1 && isreal(T),
+                                length(lmap) == 1 && isposdef(first(lmap)))
+end
+WrappedMap(lmap::AbstractVector{T}; kwargs...) where {T} = WrappedMap{T}(lmap; kwargs...)
 
-const MatrixMap{T} = WrappedMap{T,<:AbstractMatrix}
+const VecOrMatMap{T} = WrappedMap{T,<:AbstractVecOrMat}
 
-MulStyle(A::WrappedMap) = MulStyle(A.lmap)
+MulStyle(A::VecOrMatMap) = MulStyle(A.lmap)
 
-LinearAlgebra.transpose(A::MatrixMap{T}) where {T} =
+LinearAlgebra.transpose(A::VecOrMatMap{T}) where {T} =
     WrappedMap{T}(transpose(A.lmap);
                     issymmetric = A._issymmetric,
                     ishermitian = A._ishermitian,
                     isposdef = A._isposdef)
-LinearAlgebra.adjoint(A::MatrixMap{T}) where {T} =
+LinearAlgebra.adjoint(A::VecOrMatMap{T}) where {T} =
     WrappedMap{T}(adjoint(A.lmap);
                     issymmetric = A._issymmetric,
                     ishermitian = A._ishermitian,
                     isposdef = A._isposdef)
 
-Base.:(==)(A::MatrixMap, B::MatrixMap) =
+Base.:(==)(A::VecOrMatMap, B::VecOrMatMap) =
     (eltype(A) == eltype(B) && A.lmap == B.lmap && A._issymmetric == B._issymmetric &&
      A._ishermitian == B._ishermitian && A._isposdef == B._isposdef)
 
 # properties
 Base.size(A::WrappedMap) = size(A.lmap)
+Base.size(A::WrappedMap{<:Any,<:AbstractVector}) = (Int(length(A.lmap))::Int, 1)
 LinearAlgebra.issymmetric(A::WrappedMap) = A._issymmetric
 LinearAlgebra.ishermitian(A::WrappedMap) = A._ishermitian
 LinearAlgebra.isposdef(A::WrappedMap) = A._isposdef
@@ -61,9 +67,9 @@ for (In, Out) in ((AbstractVector, AbstractVecOrMat), (AbstractMatrix, AbstractM
     end
 end
 
-mul!(Y::AbstractMatrix, X::AbstractMatrix, A::MatrixMap) = mul!(Y, X, A.lmap)
+mul!(Y::AbstractMatrix, X::AbstractMatrix, A::VecOrMatMap) = mul!(Y, X, A.lmap)
 # the following method is needed for disambiguation with left-multiplication
-mul!(Y::AbstractMatrix, X::TransposeAbsVecOrMat, A::MatrixMap) = mul!(Y, X, A.lmap)
+mul!(Y::AbstractMatrix, X::TransposeAbsVecOrMat, A::VecOrMatMap) = mul!(Y, X, A.lmap)
 
 if VERSION ≥ v"1.3.0-alpha.115"
     for (In, Out) in ((AbstractVector, AbstractVecOrMat), (AbstractMatrix, AbstractMatrix))
@@ -87,14 +93,14 @@ if VERSION ≥ v"1.3.0-alpha.115"
         end
     end
 
-    mul!(X::AbstractMatrix, Y::AbstractMatrix, A::MatrixMap, α::Number, β::Number) =
+    mul!(X::AbstractMatrix, Y::AbstractMatrix, A::VecOrMatMap, α::Number, β::Number) =
         mul!(X, Y, A.lmap, α, β)
     # the following method is needed for disambiguation with left-multiplication
-    function mul!(Y::AbstractMatrix{<:RealOrComplex}, X::AbstractMatrix{<:RealOrComplex}, A::MatrixMap{<:RealOrComplex},
+    function mul!(Y::AbstractMatrix{<:RealOrComplex}, X::AbstractMatrix{<:RealOrComplex}, A::VecOrMatMap{<:RealOrComplex},
                     α::RealOrComplex, β::RealOrComplex)
         return mul!(Y, X, A.lmap, α, β)
     end
-    function mul!(Y::AbstractMatrix{<:RealOrComplex}, X::TransposeAbsVecOrMat{<:RealOrComplex}, A::MatrixMap{<:RealOrComplex},
+    function mul!(Y::AbstractMatrix{<:RealOrComplex}, X::TransposeAbsVecOrMat{<:RealOrComplex}, A::VecOrMatMap{<:RealOrComplex},
                     α::RealOrComplex, β::RealOrComplex)
         return mul!(Y, X, A.lmap, α, β)
     end

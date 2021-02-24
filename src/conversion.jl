@@ -47,9 +47,9 @@ SparseArrays.SparseMatrixCSC(A::LinearMap) = sparse(A)
 # special cases
 
 # ScaledMap
-Base.Matrix{T}(A::ScaledMap{<:Any, <:Any, <:MatrixMap}) where {T} =
+Base.Matrix{T}(A::ScaledMap{<:Any, <:Any, <:VecOrMatMap}) where {T} =
     convert(Matrix{T}, A.λ * A.lmap.lmap)
-SparseArrays.sparse(A::ScaledMap{<:Any, <:Any, <:MatrixMap}) =
+SparseArrays.sparse(A::ScaledMap{<:Any, <:Any, <:VecOrMatMap}) =
     convert(SparseMatrixCSC, A.λ * A.lmap.lmap)
 
 # UniformScalingMap
@@ -70,19 +70,19 @@ for (T, t) in ((AdjointMap, adjoint), (TransposeMap, transpose))
 end
 
 # LinearCombination
-function Base.Matrix{T}(ΣA::LinearCombination{<:Any, <:Tuple{Vararg{MatrixMap}}}) where {T}
+function Base.Matrix{T}(ΣA::LinearCombination{<:Any, <:Tuple{Vararg{VecOrMatMap}}}) where {T}
     maps = ΣA.maps
     mats = map(A->getfield(A, :lmap), maps)
     return Matrix{T}(sum(mats))
 end
-function SparseArrays.sparse(ΣA::LinearCombination{<:Any, <:Tuple{Vararg{MatrixMap}}})
+function SparseArrays.sparse(ΣA::LinearCombination{<:Any, <:Tuple{Vararg{VecOrMatMap}}})
     maps = ΣA.maps
     mats = map(A->getfield(A, :lmap), maps)
     return convert(SparseMatrixCSC, sum(mats))
 end
 
 # CompositeMap
-function Base.Matrix{T}(AB::CompositeMap{<:Any, <:Tuple{MatrixMap, LinearMap}}) where {T}
+function Base.Matrix{T}(AB::CompositeMap{<:Any, <:Tuple{VecOrMatMap, LinearMap}}) where {T}
     B, A = AB.maps
     require_one_based_indexing(B)
     Y = Matrix{eltype(AB)}(undef, size(AB))
@@ -91,36 +91,36 @@ function Base.Matrix{T}(AB::CompositeMap{<:Any, <:Tuple{MatrixMap, LinearMap}}) 
     end
     return Y
 end
-for ((TA, fieldA), (TB, fieldB)) in (((MatrixMap, :lmap), (MatrixMap, :lmap)),
-                                     ((MatrixMap, :lmap), (UniformScalingMap, :λ)),
-                                     ((UniformScalingMap, :λ), (MatrixMap, :lmap)))
+for ((TA, fieldA), (TB, fieldB)) in (((VecOrMatMap, :lmap), (VecOrMatMap, :lmap)),
+                                     ((VecOrMatMap, :lmap), (UniformScalingMap, :λ)),
+                                     ((UniformScalingMap, :λ), (VecOrMatMap, :lmap)))
     @eval function Base.convert(::Type{AbstractMatrix},
                                 AB::CompositeMap{<:Any,<:Tuple{$TB,$TA}})
         B, A = AB.maps
         return A.$fieldA*B.$fieldB
     end
 end
-function Base.Matrix{T}(AB::CompositeMap{<:Any, <:Tuple{MatrixMap, MatrixMap}}) where {T}
+function Base.Matrix{T}(AB::CompositeMap{<:Any, <:Tuple{VecOrMatMap, VecOrMatMap}}) where {T}
     B, A = AB.maps
     return convert(Matrix{T}, A.lmap*B.lmap)
 end
-function SparseArrays.sparse(AB::CompositeMap{<:Any, <:Tuple{MatrixMap, MatrixMap}})
+function SparseArrays.sparse(AB::CompositeMap{<:Any, <:Tuple{VecOrMatMap, VecOrMatMap}})
     B, A = AB.maps
     return convert(SparseMatrixCSC, A.lmap*B.lmap)
 end
-function Base.Matrix{T}(λA::CompositeMap{<:Any, <:Tuple{MatrixMap, UniformScalingMap}}) where {T}
+function Base.Matrix{T}(λA::CompositeMap{<:Any, <:Tuple{VecOrMatMap, UniformScalingMap}}) where {T}
     A, J = λA.maps
     return convert(Matrix{T}, J.λ*A.lmap)
 end
-function SparseArrays.sparse(λA::CompositeMap{<:Any, <:Tuple{MatrixMap, UniformScalingMap}})
+function SparseArrays.sparse(λA::CompositeMap{<:Any, <:Tuple{VecOrMatMap, UniformScalingMap}})
     A, J = λA.maps
     return convert(SparseMatrixCSC, J.λ*A.lmap)
 end
-function Base.Matrix{T}(Aλ::CompositeMap{<:Any, <:Tuple{UniformScalingMap, MatrixMap}}) where {T}
+function Base.Matrix{T}(Aλ::CompositeMap{<:Any, <:Tuple{UniformScalingMap, VecOrMatMap}}) where {T}
     J, A = Aλ.maps
     return convert(Matrix{T}, A.lmap*J.λ)
 end
-function SparseArrays.sparse(Aλ::CompositeMap{<:Any, <:Tuple{UniformScalingMap, MatrixMap}})
+function SparseArrays.sparse(Aλ::CompositeMap{<:Any, <:Tuple{UniformScalingMap, VecOrMatMap}})
     J, A = Aλ.maps
     return convert(SparseMatrixCSC, A.lmap*J.λ)
 end

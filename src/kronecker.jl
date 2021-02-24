@@ -139,7 +139,7 @@ end
     !isone(A.λ) && rmul!(y, A.λ)
     return y
 end
-@inline function _kronmul!(y, B, x, A::MatrixMap, _)
+@inline function _kronmul!(y, B, x, A::VecOrMatMap, _)
     ma, na = size(A)
     mb, nb = size(B)
     X = reshape(x, (nb, na))
@@ -153,10 +153,13 @@ end
     elseif nb*ma <= mb*na
         _unsafe_mul!(Y, B, X * At)
     else
-        _unsafe_mul!(Y, Matrix(B*X), At)
+        _unsafe_mul!(Y, Matrix(B*X), transpose(A))
     end
     return y
 end
+const VectorMap{T} = WrappedMap{T,<:AbstractVector}
+const AdjOrTransVectorMap{T} = WrappedMap{T,<:LinearAlgebra.AdjOrTransAbsVec}
+_kronmul!(y, B::AdjOrTransVectorMap, x, a::VectorMap, _) = mul!(y, a.lmap, first(B * x))
 
 #################
 # multiplication with vectors

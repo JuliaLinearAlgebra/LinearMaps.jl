@@ -26,8 +26,10 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays, BenchmarkTools, Interactive
             @test (@which [I I I A11 A11 A11]).module != LinearMaps
             @test (@which hcat(I, I, I)).module != LinearMaps
             @test (@which hcat(I, I, I, LinearMap(A11), A11, A11)).module == LinearMaps
+            maps = @inferred LinearMaps.promote_to_lmaps(ntuple(i->10, 7), 1, 1, I, I, I, LinearMap(A11), A11, A11, v)
+            @inferred LinearMaps.rowcolranges(maps, (7,))
             L = @inferred hcat(I, I, I, LinearMap(A11), A11, A11, v)
-            @test L == [I I I LinearMap(A11) LinearMap(A11) LinearMap(A11) LinearMap(reshape(v, :, 1))]
+            @test L == [I I I LinearMap(A11) LinearMap(A11) LinearMap(A11) LinearMap(v)]
             x = rand(elty, 61)
             @test L isa LinearMaps.BlockMap{elty}
             @test L * x ≈ A * x

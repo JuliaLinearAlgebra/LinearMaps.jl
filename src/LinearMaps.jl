@@ -34,9 +34,9 @@ MulStyle(::FiveArg, ::ThreeArg) = ThreeArg()
 MulStyle(::ThreeArg, ::ThreeArg) = ThreeArg()
 MulStyle(::LinearMap) = ThreeArg() # default
 @static if VERSION ≥ v"1.3.0-alpha.115"
-    MulStyle(::AbstractMatrix) = FiveArg()
+    MulStyle(::AbstractVecOrMat) = FiveArg()
 else
-    MulStyle(::AbstractMatrix) = ThreeArg()
+    MulStyle(::AbstractVecOrMat) = ThreeArg()
 end
 MulStyle(A::LinearMap, As::LinearMap...) = MulStyle(MulStyle(A), MulStyle(As...))
 
@@ -68,8 +68,8 @@ function check_dim_mul(C, A, B)
     return nothing
 end
 
-# conversion of AbstractMatrix to LinearMap
-convert_to_lmaps_(A::AbstractMatrix) = LinearMap(A)
+# conversion of AbstractVecOrMat to LinearMap
+convert_to_lmaps_(A::AbstractVecOrMat) = LinearMap(A)
 convert_to_lmaps_(A::LinearMap) = A
 convert_to_lmaps() = ()
 convert_to_lmaps(A) = (convert_to_lmaps_(A),)
@@ -231,8 +231,8 @@ function _generic_mapmat_mul!(Y, A, X, α=true, β=false)
     return Y
 end
 
-_unsafe_mul!(y, A::MapOrMatrix, x) = mul!(y, A, x)
-_unsafe_mul!(y, A::AbstractMatrix, x, α, β) = mul!(y, A, x, α, β)
+_unsafe_mul!(y, A::MapOrVecOrMat, x) = mul!(y, A, x)
+_unsafe_mul!(y, A::AbstractVecOrMat, x, α, β) = mul!(y, A, x, α, β)
 function _unsafe_mul!(y::AbstractVecOrMat, A::LinearMap, x::AbstractVector, α, β)
     return _generic_mapvec_mul!(y, A, x, α, β)
 end
@@ -261,7 +261,7 @@ include("show.jl") # show methods for LinearMap objects
 
 """
     LinearMap(A::LinearMap; kwargs...)::WrappedMap
-    LinearMap(A::AbstractMatrix; kwargs...)::WrappedMap
+    LinearMap(A::AbstractVecOrMat; kwargs...)::WrappedMap
     LinearMap(J::UniformScaling, M::Int)::UniformScalingMap
     LinearMap{T=Float64}(f, [fc,], M::Int, N::Int = M; kwargs...)::FunctionMap
 
@@ -293,7 +293,7 @@ For the function-based constructor, there is one more keyword argument:
     The default value is guessed by looking at the number of arguments of the first
     occurrence of `f` in the method table.
 """
-LinearMap(A::MapOrMatrix; kwargs...) = WrappedMap(A; kwargs...)
+LinearMap(A::MapOrVecOrMat; kwargs...) = WrappedMap(A; kwargs...)
 LinearMap(J::UniformScaling, M::Int) = UniformScalingMap(J.λ, M)
 LinearMap(f, M::Int; kwargs...) = LinearMap{Float64}(f, M; kwargs...)
 LinearMap(f, M::Int, N::Int; kwargs...) = LinearMap{Float64}(f, M, N; kwargs...)
