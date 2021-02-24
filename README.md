@@ -7,7 +7,7 @@ The only requirement for a `LinearMap` is that it can act on a vector (by multip
 
 | **Documentation**                                                               | **Build Status**                                                                                |
 |:-------------------------------------------------------------------------------:|:-----------------------------------------------------------------------------------------------:|
-| [![stable docs][docs-stable-img]][docs-stable-url] [![dev docs][docs-dev-img]][docs-dev-url] | [![build status][build-img]][build-url] [![coverage][codecov-img]][codecov-url] [![license][license-img]][license-url] |
+| [![stable docs][docs-stable-img]][docs-stable-url] [![dev docs][docs-dev-img]][docs-dev-url] | [![build status][build-img]][build-url] [![coverage][codecov-img]][codecov-url] [![Aqua QA](aqua-img)](aqua-url) [![license][license-img]][license-url] |
 
 ## Installation
 
@@ -38,3 +38,6 @@ julia> import Pkg; Pkg.add("LinearMaps")
 
 [license-img]: http://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat
 [license-url]: LICENSE.md
+
+[aqua-img]: https://img.shields.io/badge/Aqua.jl-%F0%9F%8C%A2-aqua.svg
+[aqua-url]: https://github.com/JuliaTesting/Aqua.jl
