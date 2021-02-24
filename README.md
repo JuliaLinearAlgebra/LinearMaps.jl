@@ -7,7 +7,7 @@ The only requirement for a `LinearMap` is that it can act on a vector (by multip
 
 | **Documentation**                                                               | **Build Status**                                                                                |
 |:-------------------------------------------------------------------------------:|:-----------------------------------------------------------------------------------------------:|
-| [![stable docs][docs-stable-img]][docs-stable-url] [![dev docs][docs-dev-img]][docs-dev-url] | [![build status][build-img]][build-url] [![coverage][codecov-img]][codecov-url] [![Aqua QA](aqua-img)](aqua-url) [![license][license-img]][license-url] |
+| [![stable docs][docs-stable-img]][docs-stable-url] [![dev docs][docs-dev-img]][docs-dev-url] | [![build status][build-img]][build-url] [![coverage][codecov-img]][codecov-url] [![Aqua QA][aqua-img]][aqua-url] [![license][license-img]][license-url] |
 
 ## Installation
 
