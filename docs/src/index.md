@@ -6,7 +6,9 @@
 
 `LinearMaps.jl` is a registered package and can be installed via
 
-    pkg> add LinearMaps
+```julia
+pkg> add LinearMaps
+```
 
 in package mode, to be entered by typing `]` in the Julia REPL.
 
@@ -14,20 +16,25 @@ in package mode, to be entered by typing `]` in the Julia REPL.
 
 Let
 
-    A = LinearMap(rand(10, 10))
-    B = LinearMap(cumsum, reverse∘cumsum∘reverse, 10)
+```julia
+A = LinearMap(rand(10, 10))
+B = LinearMap(cumsum, reverse∘cumsum∘reverse, 10)
+```
 
 be a matrix- and function-based linear map, respectively. Then the following code just works,
 indistinguishably from the case when `A` and `B` are both `AbstractMatrix`-typed objects.
 
-    3.0A + 2B
-    A + I
-    A*B'
-    [A B; B A]
-    kron(A, B)
+```julia
+3.0A + 2B
+A + I
+A*B'
+[A B; B A]
+kron(A, B)
+```
 
 The `LinearMap` type and corresponding methods combine well with the following packages:
 
+* [ArnoldiMethods.jl](https://github.com/haampie/ArnoldiMethod.jl)
 * [Arpack.jl](https://github.com/JuliaLinearAlgebra/Arpack.jl): iterative eigensolver
   `eigs` and SVD `svds`;
 * [IterativeSolvers.jl](https://github.com/JuliaMath/IterativeSolvers.jl): iterative
@@ -38,7 +45,7 @@ The `LinearMap` type and corresponding methods combine well with the following p
 
 ```julia
 using LinearMaps
-import Arpack, IterativeSolvers, KrylovKit, TSVD
+import Arpack, IterativeSolvers, KrylovKit, TSVD, ArnoldiMethod
 
 # Example 1, 1-dimensional Laplacian with periodic boundary conditions
 function leftdiff!(y::AbstractVector, x::AbstractVector) # left difference assuming periodic boundary conditions
@@ -64,11 +71,15 @@ D = LinearMap(leftdiff!, mrightdiff!, 100; ismutating=true) # by default has elt
 Arpack.eigs(D'D; nev=3, which=:SR) # note that D'D is recognized as symmetric => real eigenfact
 Arpack.svds(D; nsv=3)
 
+ArnoldiMethod.partialschur(D'D; nev=3, which=ArnoldiMethod.SR())
+
+KrylovKit.eigsolve(D'D, 100, 3, :SR)
+
 Σ, L = IterativeSolvers.svdl(D; nsv=3)
 
 TSVD.tsvd(D, 3)
 
-# Example 2, 1-dimensional Laplacian
+# Example 2, 3 smallest eigenvalues of 1-dimensional Laplacian
 A = LinearMap(100; issymmetric=true, ismutating=true) do C, B
     C[1] = -2B[1] + B[2]
     for i in 2:length(B)-1
@@ -80,10 +91,15 @@ end
 
 Arpack.eigs(-A; nev=3, which=:SR)
 
+ArnoldiMethod.partialschur(-A; nev=3, which=ArnoldiMethod.SR())
+
+KrylovKit.eigsolve(-A, size(A, 1), 3, :SR)
+
 # Example 3, 2-dimensional Laplacian
 Δ = kronsum(A, A)
 
 Arpack.eigs(Δ; nev=3, which=:LR)
+ArnoldiMethod.partialeigen(ArnoldiMethod.partialschur(Δ; nev=3, which=ArnoldiMethod.LR())[1])
 KrylovKit.eigsolve(x -> Δ*x, size(Δ, 1), 3, :LR)
 ```
 
