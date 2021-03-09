@@ -57,6 +57,11 @@ for (In, Out) in ((AbstractVector, AbstractVecOrMat), (AbstractMatrix, AbstractM
             _scaling!(y, J.λ, x, true, false)
             return y
         end
+        function _unsafe_mul!(y::$Out, J::UniformScalingMap{<:RealOrComplex}, x::$In{<:RealOrComplex},
+                    α::RealOrComplex, β::Number)
+            _scaling!(y, J.λ * α, x, true, β)
+            return y
+        end
         function _unsafe_mul!(y::$Out, J::UniformScalingMap, x::$In,
                     α::Number, β::Number)
             _scaling!(y, J.λ, x, α, β)
