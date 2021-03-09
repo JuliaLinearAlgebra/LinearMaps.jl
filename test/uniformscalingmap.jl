@@ -48,4 +48,8 @@ using Test, LinearMaps, LinearAlgebra, BenchmarkTools
     end
     X = rand(10, 10); Y = similar(X)
     @test mul!(Y, Id, X) == X
+    @test Id*X isa LinearMap
+    @test X*Id isa LinearMap
+    @test Matrix(Id*X) == X
+    @test Matrix(X*Id) == X
 end

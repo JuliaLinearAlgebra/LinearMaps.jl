@@ -39,8 +39,16 @@ Base.:(*)(α::RealOrComplex, J::UniformScalingMap) = UniformScalingMap(α * J.λ
 Base.:(*)(J::UniformScalingMap, α::RealOrComplex) = UniformScalingMap(J.λ * α, size(J))
 
 # multiplication with vector
-Base.:(*)(A::UniformScalingMap, x::AbstractVector) =
-    length(x) == A.M ? A.λ * x : throw(DimensionMismatch("*"))
+Base.:(*)(J::UniformScalingMap, x::AbstractVector) =
+    length(x) == J.M ? J.λ * x : throw(DimensionMismatch("*"))
+# multiplication with matrix
+Base.:(*)(J::UniformScalingMap, B::AbstractMatrix) =
+    size(B, 1) == J.M ? J.λ * LinearMap(B) : throw(DimensionMismatch("*"))
+Base.:(*)(A::AbstractMatrix, J::UniformScalingMap) =
+    size(A, 2) == J.M ? LinearMap(A) * J.λ : throw(DimensionMismatch("*"))
+# disambiguation
+Base.:(*)(xc::LinearAlgebra.AdjointAbsVec, J::UniformScalingMap) = xc * J.λ
+Base.:(*)(xt::LinearAlgebra.TransposeAbsVec, J::UniformScalingMap) = xt * J.λ
 
 # multiplication with vector/matrix
 for (In, Out) in ((AbstractVector, AbstractVecOrMat), (AbstractMatrix, AbstractMatrix))
