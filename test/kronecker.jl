@@ -78,7 +78,7 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
             @test K * v ≈ M * v
             @test Matrix(K) ≈ M
         end
-     end
+    end
 
     @testset "Kronecker sum" begin
         for elty in (Float64, ComplexF64)
