@@ -71,8 +71,11 @@ Base.:(+)(q::Quaternion, z::Complex) = q + quat(z)
     @test length(M.maps) == 3
     @test M.maps[1].λ == γ*β.λ
     @test γ*FillMap(γ, (3, 4)) == FillMap(γ^2, (3, 4)) == FillMap(γ, (3, 4))*γ
-    @test mul!(zero(x), J, x, true, true) == γ * x
-
+    U = LinearMap(quat(1.0)*I, 10)
+    for β in (0, 1, rand())
+        @test mul!(copy(x), J, x, γ, β) == γ * x * γ + x * β
+        @test mul!(copy(x), U, x, γ, β) == x * γ + x * β
+    end
     # exercise non-RealOrComplex scalar operations
     @test Array(γ * (L'*L)) ≈ γ * (A'*A) # CompositeMap
     @test Array((L'*L) * γ) ≈ (A'*A) * γ
