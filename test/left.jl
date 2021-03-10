@@ -71,6 +71,6 @@ end
     @test left_tester(W')
     @test left_tester(transpose(W))
     
-    J = LinearMap(I, 5) # UniformScalingMap
-    @test left_tester(1.0J)
+    J = LinearMap(1.0I, 5) # UniformScalingMap
+    @test left_tester(J)
 end
