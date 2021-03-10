@@ -66,6 +66,18 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
         @test Matrix(@inferred K*K) ≈ kron(A, B)*kron(A, B)
         A = rand(3, 2); B = rand(4, 3)
         @test Matrix(kron(LinearMap(A), B, [A A])*kron(LinearMap(A), B, A')) ≈ kron(A, B, [A A])*kron(A, B, A')
+
+        m = 3
+        A = rand(m, m)
+        S = sparse(I, m, m)
+        J = LinearMap(I, m)
+        v = rand(m^3)
+        for (K, M) in ((⊗(A, J, J), kron(A, S, S)),
+                       (⊗(J, A, J), kron(S, A, S)),
+                       (⊗(J, J, A), kron(S, S, A)))
+            @test K * v ≈ M * v
+            @test Matrix(K) ≈ M
+        end
     end
 
     @testset "Kronecker sum" begin

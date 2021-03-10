@@ -141,7 +141,12 @@ end
     mb, nb = size(B)
     X = reshape(x, (nb, na))
     Y = reshape(y, (mb, ma))
-    if nb*ma < mb*na
+    if B isa UniformScalingMap
+        # the following is (maybe due to the reshape?) faster than
+        # _unsafe_mul!(Y, B * X, At.lmap)
+        _unsafe_mul!(Y, X, At.lmap)
+        lmul!(B.λ, y)
+    elseif nb*ma <= mb*na
         _unsafe_mul!(Y, B, X * At.lmap)
     else
         _unsafe_mul!(Y, Matrix(B*X), At.lmap)
