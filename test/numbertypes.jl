@@ -35,12 +35,12 @@ Base.:(+)(q::Quaternion, z::Complex) = q + quat(z)
         @test mul!(copy(C), transpose(A), M, γ, λ) ≈ transpose(A)*A*γ + C*λ
         @test mul!(copy(C), adjoint(A), M, γ, λ) ≈ A'*A*γ + C*λ
     end
-    @test Array((α * F')') ≈ (α * A')' ≈ A * conj(α)
+    @test Array((α * F')') ≈ (γ * A')' ≈ A * conj(γ)
     @test L * x ≈ A * x
     @test L' * x ≈ A' * x
-    @test α * (L * x) ≈ α * (A * x)
-    @test α * L * x ≈ α * A * x
-    @test L * α * x ≈ A * α * x
+    @test α * (L * x) ≈ γ * (A * x)
+    @test α * L * x ≈ γ * A * x
+    @test L * α * x ≈ A * γ * x
     @test 3L * x ≈ 3A * x
     @test 3L' * x ≈ 3A' * x
     @test λ*L isa LinearMaps.CompositeMap
@@ -48,17 +48,17 @@ Base.:(+)(q::Quaternion, z::Complex) = q + quat(z)
     @test (λ * LinearMap(B)) * γ isa LinearMaps.CompositeMap
     @test λ*L * x ≈ λ*A * x
     @test λ*L' * x ≈ λ*A' * x
-    @test α * (3L * x) ≈ α * (3A * x)
-    @test (@inferred α * 3L) * x ≈ α * 3A * x
-    @test (@inferred 3L * α) * x ≈ 3A * α * x
-    @test (α * L') * x ≈ (α * A') * x
-    @test (α * L')' * x ≈ (α * A')' * x
-    @test (α * L')' * v ≈ (α * A')' * v
-    @test Array(@inferred adjoint(α * L * β)) ≈ conj(β) * A' * conj(α)
-    @test Array(@inferred transpose(α * L * β)) ≈ β * transpose(A) * α
+    @test α * (3L * x) ≈ γ * (3A * x)
+    @test (@inferred α * 3L) * x ≈ γ * 3A * x
+    @test (@inferred 3L * α) * x ≈ 3A * γ * x
+    @test (α * L') * x ≈ (γ * A') * x
+    @test (α * L')' * x ≈ (γ * A')' * x
+    @test (α * L')' * v ≈ (γ * A')' * v
+    @test Array(@inferred adjoint(α * L * β)) ≈ conj(β) * A' * conj(γ)
+    @test Array(@inferred transpose(α * L * β)) ≈ β * transpose(A) * γ
     J = LinearMap(α, 10)
-    @test (β * J) * x ≈ LinearMap(β*α, 10) * x ≈ β*α*x
-    @test (J * β) * x ≈ LinearMap(α*β, 10) * x ≈ α*β*x
+    @test (β * J) * x ≈ LinearMap(β*α, 10) * x ≈ β*γ*x
+    @test (J * β) * x ≈ LinearMap(α*β, 10) * x ≈ γ*β*x
     M = β.λ * (γ * L * L)
     @test M == β * (γ * L * L)
     @test length(M.maps) == 3
@@ -71,7 +71,7 @@ Base.:(+)(q::Quaternion, z::Complex) = q + quat(z)
     @test length(M.maps) == 3
     @test M.maps[1].λ == γ*β.λ
     @test γ*FillMap(γ, (3, 4)) == FillMap(γ^2, (3, 4)) == FillMap(γ, (3, 4))*γ
-    @test mul!(zero(x), α, x, true, true) == γ * x
+    @test mul!(zero(x), J, x, true, true) == γ * x
 
     # exercise non-RealOrComplex scalar operations
     @test Array(γ * (L'*L)) ≈ γ * (A'*A) # CompositeMap
