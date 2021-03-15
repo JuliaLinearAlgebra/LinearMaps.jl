@@ -151,6 +151,24 @@ function _compositemul!(y::AbstractVecOrMat,
     _unsafe_mul!(y, A.maps[2], source)
     return y
 end
+
+function _resize(dest::AbstractVector, sz::Tuple{<:Integer})
+    try
+        resize!(dest, sz[1])
+    catch err
+        if err == ErrorException("cannot resize array with shared data")
+            dest = similar(dest, sz)
+        else
+            rethrow(err)
+        end
+    end
+    dest
+end
+function _resize(dest::AbstractMatrix, sz::Tuple{<:Integer,<:Integer})
+    size(dest) == sz && return dest
+    similar(dest, sz)
+end
+
 function _compositemul!(y::AbstractVecOrMat,
                         A::CompositeMap,
                         x::AbstractVecOrMat,
@@ -159,10 +177,7 @@ function _compositemul!(y::AbstractVecOrMat,
     N = length(A.maps)
     _unsafe_mul!(source, A.maps[1], x)
     for n in 2:N-1
-        sz = (size(A.maps[n],1), size(x)[2:end]...)
-        if size(dest) != sz
-            dest = similar(y, sz)
-        end
+        dest = _resize(dest, (size(A.maps[n],1), size(x)[2:end]...))
         _unsafe_mul!(dest, A.maps[n], source)
         dest, source = source, dest # alternate dest and source
     end
