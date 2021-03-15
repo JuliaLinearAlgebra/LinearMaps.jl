@@ -64,18 +64,18 @@ Base.kron(A::KroneckerMap, B::ScaledMap) = kron(A, B.lmap) * B.λ
 # generic definitions
 Base.kron(A::LinearMap, B::LinearMap, C::LinearMap, Ds::LinearMap...) =
     kron(kron(A, B), C, Ds...)
-Base.kron(A::AbstractMatrix, B::LinearMap) = kron(LinearMap(A), B)
-Base.kron(A::LinearMap, B::AbstractMatrix) = kron(A, LinearMap(B))
+Base.kron(A::AbstractVecOrMat, B::LinearMap) = kron(LinearMap(A), B)
+Base.kron(A::LinearMap, B::AbstractVecOrMat) = kron(A, LinearMap(B))
 # promote AbstractMatrix arguments to LinearMaps, then take LinearMap-Kronecker product
 for k in 3:8 # is 8 sufficient?
-    Is = ntuple(n->:($(Symbol(:A, n))::AbstractMatrix), Val(k-1))
+    Is = ntuple(n->:($(Symbol(:A, n))::AbstractVecOrMat), Val(k-1))
     # yields (:A1, :A2, :A3, ..., :A(k-1))
     L = :($(Symbol(:A, k))::LinearMap)
     # yields :Ak::LinearMap
     mapargs = ntuple(n -> :(LinearMap($(Symbol(:A, n)))), Val(k-1))
     # yields (:LinearMap(A1), :LinearMap(A2), ..., :LinearMap(A(k-1)))
 
-    @eval Base.kron($(Is...), $L, As::MapOrMatrix...) =
+    @eval Base.kron($(Is...), $L, As::MapOrVecOrMat...) =
         kron($(mapargs...), $(Symbol(:A, k)), convert_to_lmaps(As...)...)
 end
 
@@ -153,13 +153,13 @@ end
     elseif nb*ma <= mb*na
         _unsafe_mul!(Y, B, X * At)
     else
-        _unsafe_mul!(Y, Matrix(B*X), transpose(A))
+        _unsafe_mul!(Y, B * X, At)
     end
     return y
 end
 const VectorMap{T} = WrappedMap{T,<:AbstractVector}
 const AdjOrTransVectorMap{T} = WrappedMap{T,<:LinearAlgebra.AdjOrTransAbsVec}
-_kronmul!(y, B::AdjOrTransVectorMap, x, a::VectorMap, _) = mul!(y, a.lmap, first(B * x))
+@inline _kronmul!(y, B::AdjOrTransVectorMap, x, a::VectorMap, _) = mul!(y, a.lmap, B.lmap * x)
 
 #################
 # multiplication with vectors
