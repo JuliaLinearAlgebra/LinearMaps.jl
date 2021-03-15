@@ -71,6 +71,7 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
         A = rand(m, m)
         S = sparse(I, m, m)
         J = LinearMap(I, m)
+        @test kron(J, J) == LinearMap(I, m*m)
         v = rand(m^3)
         for (K, M) in ((⊗(A, J, J), kron(A, S, S)),
                        (⊗(J, A, J), kron(S, A, S)),

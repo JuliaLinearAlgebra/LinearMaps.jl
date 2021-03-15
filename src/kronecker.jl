@@ -56,6 +56,8 @@ Base.kron(A::KroneckerMap, B::KroneckerMap) =
 Base.kron(A::ScaledMap, B::LinearMap) = A.λ * kron(A.lmap, B)
 Base.kron(A::LinearMap, B::ScaledMap) = kron(A, B.lmap) * B.λ
 Base.kron(A::ScaledMap, B::ScaledMap) = (A.λ * B.λ) * kron(A.lmap, B.lmap)
+# reduce UniformScalingMaps
+Base.kron(A::UniformScalingMap, B::UniformScalingMap) = UniformScalingMap(A.λ * B.λ, A.M * B.M)
 # disambiguation
 Base.kron(A::ScaledMap, B::KroneckerMap) = A.λ * kron(A.lmap, B)
 Base.kron(A::KroneckerMap, B::ScaledMap) = kron(A, B.lmap) * B.λ
