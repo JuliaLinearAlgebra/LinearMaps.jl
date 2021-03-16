@@ -129,41 +129,55 @@ LinearAlgebra.adjoint(A::CompositeMap{T}) where {T} =
 # comparison of CompositeMap objects
 Base.:(==)(A::CompositeMap, B::CompositeMap) = (eltype(A) == eltype(B) && A.maps == B.maps)
 
-# multiplication with vectors
+# multiplication with vectors/matrices
 _unsafe_mul!(y::AbstractVecOrMat, A::CompositeMap, x::AbstractVector) =
     _compositemul!(y, A, x)
+_unsafe_mul!(y::AbstractMatrix, A::CompositeMap, x::AbstractMatrix) =
+    _compositemul!(y, A, x)
+
 function _compositemul!(y::AbstractVecOrMat,
                         A::CompositeMap{<:Any,<:Tuple{LinearMap}},
-                        x::AbstractVector,
+                        x::AbstractVecOrMat,
                         source = nothing,
                         dest = nothing)
     return _unsafe_mul!(y, A.maps[1], x)
 end
 function _compositemul!(y::AbstractVecOrMat,
-                        A::CompositeMap{<:Any,<:Tuple{LinearMap,LinearMap}}, x::AbstractVector,
-                        source = similar(y, size(A.maps[1], 1)),
+                        A::CompositeMap{<:Any,<:Tuple{LinearMap,LinearMap}},
+                        x::AbstractVecOrMat,
+                        source = similar(y, (size(A.maps[1],1), size(x)[2:end]...)),
                         dest = nothing)
     _unsafe_mul!(source, A.maps[1], x)
     _unsafe_mul!(y, A.maps[2], source)
     return y
 end
+
+function _resize(dest::AbstractVector, sz::Tuple{<:Integer})
+    try
+        resize!(dest, sz[1])
+    catch err
+        if err == ErrorException("cannot resize array with shared data")
+            dest = similar(dest, sz)
+        else
+            rethrow(err)
+        end
+    end
+    dest
+end
+function _resize(dest::AbstractMatrix, sz::Tuple{<:Integer,<:Integer})
+    size(dest) == sz && return dest
+    similar(dest, sz)
+end
+
 function _compositemul!(y::AbstractVecOrMat,
                         A::CompositeMap,
-                        x::AbstractVector,
-                        source = similar(y, size(A.maps[1], 1)),
-                        dest = similar(y, size(A.maps[2], 1)))
+                        x::AbstractVecOrMat,
+                        source = similar(y, (size(A.maps[1],1), size(x)[2:end]...)),
+                        dest = similar(y, (size(A.maps[2],1), size(x)[2:end]...)))
     N = length(A.maps)
     _unsafe_mul!(source, A.maps[1], x)
     for n in 2:N-1
-        try
-            resize!(dest, size(A.maps[n], 1))
-        catch err
-            if err == ErrorException("cannot resize array with shared data")
-                dest = similar(y, size(A.maps[n], 1))
-            else
-                rethrow(err)
-            end
-        end
+        dest = _resize(dest, (size(A.maps[n],1), size(x)[2:end]...))
         _unsafe_mul!(dest, A.maps[n], source)
         dest, source = source, dest # alternate dest and source
     end
