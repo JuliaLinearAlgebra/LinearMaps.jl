@@ -123,17 +123,20 @@ Base.:(==)(A::KroneckerMap, B::KroneckerMap) = (eltype(A) == eltype(B) && A.maps
         _unsafe_mul!(Y, X, transpose(A))
         lmul!(B.λ, y)
     else
-        mul!(Y, B, transpose(Matrix(A*transpose(X))))
+        temp = similar(Y, (ma, nb))
+        _unsafe_mul!(temp, A, copy(transpose(X)))
+        mul!(Y, B, transpose(temp))
     end
     return y
 end
 @inline function _kronmul!(y, B, x, A::UniformScalingMap, _)
     ma, na = size(A)
     mb, nb = size(B)
+    iszero(A.λ) && return fill!(y, zero(eltype(y)))
     X = reshape(x, (nb, na))
     Y = reshape(y, (mb, ma))
     _unsafe_mul!(Y, B, X)
-    rmul!(y, A.λ)
+    !isone(A.λ) && rmul!(y, A.λ)
     return y
 end
 @inline function _kronmul!(y, B, x, A::MatrixMap, _)
