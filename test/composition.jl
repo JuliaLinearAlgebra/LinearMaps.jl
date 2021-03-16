@@ -127,7 +127,9 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
     L1 = LinearMap(rand(2,3))
     L2 = LinearMap(rand(4,2))
     L3 = LinearMap(rand(3, 4))
-    Ls = L3*L2*L1
+    L4 = LinearMap(rand(5, 3))
+    Ls = L4*L3*L2*L1
     X = rand(size(Ls, 2), 10)
-    @test Matrix(Ls*X) ≈ L3.lmap * L2.lmap * L1.lmap * X
+    Y = similar(X, (size(Ls, 1), size(X, 2)))
+    @test mul!(Y, Ls, X) ≈ L4.lmap * L3.lmap * L2.lmap * L1.lmap * X
 end
