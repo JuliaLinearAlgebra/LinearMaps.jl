@@ -153,7 +153,7 @@ end
     elseif nb*ma <= mb*na
         _unsafe_mul!(Y, B, X * At)
     else
-        _unsafe_mul!(Y, B * X, At)
+        _unsafe_mul!(Y, Matrix(B * X), At)
     end
     return y
 end
