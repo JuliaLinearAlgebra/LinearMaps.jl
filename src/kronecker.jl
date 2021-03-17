@@ -125,7 +125,7 @@ Base.:(==)(A::KroneckerMap, B::KroneckerMap) = (eltype(A) == eltype(B) && A.maps
     else
         temp = similar(Y, (ma, nb))
         _unsafe_mul!(temp, A, copy(transpose(X)))
-        mul!(Y, B, transpose(temp))
+        _unsafe_mul!(Y, B, transpose(temp))
     end
     return y
 end
