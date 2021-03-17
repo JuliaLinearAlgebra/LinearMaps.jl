@@ -69,12 +69,17 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
 
         m = 3
         A = rand(m, m)
+        F = LinearMap(x -> A*x, m, m)
         S = sparse(I, m, m)
         J = LinearMap(I, m)
+        @test kron(J, J) == LinearMap(I, m*m)
         v = rand(m^3)
         for (K, M) in ((⊗(A, J, J), kron(A, S, S)),
                        (⊗(J, A, J), kron(S, A, S)),
-                       (⊗(J, J, A), kron(S, S, A)))
+                       (⊗(J, J, A), kron(S, S, A)),
+                       (⊗(F, J, J), kron(A, S, S)),
+                       (⊗(J, F, J), kron(S, A, S)),
+                       (⊗(J, J, F), kron(S, S, A)))
             @test K * v ≈ M * v
             @test Matrix(K) ≈ M
         end

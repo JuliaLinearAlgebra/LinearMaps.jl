@@ -56,6 +56,8 @@ Base.kron(A::KroneckerMap, B::KroneckerMap) =
 Base.kron(A::ScaledMap, B::LinearMap) = A.λ * kron(A.lmap, B)
 Base.kron(A::LinearMap, B::ScaledMap) = kron(A, B.lmap) * B.λ
 Base.kron(A::ScaledMap, B::ScaledMap) = (A.λ * B.λ) * kron(A.lmap, B.lmap)
+# reduce UniformScalingMaps
+Base.kron(A::UniformScalingMap, B::UniformScalingMap) = UniformScalingMap(A.λ * B.λ, A.M * B.M)
 # disambiguation
 Base.kron(A::ScaledMap, B::KroneckerMap) = A.λ * kron(A.lmap, B)
 Base.kron(A::KroneckerMap, B::ScaledMap) = kron(A, B.lmap) * B.λ
@@ -112,44 +114,46 @@ Base.:(==)(A::KroneckerMap, B::KroneckerMap) = (eltype(A) == eltype(B) && A.maps
 # multiplication helper functions
 #################
 
-@inline function _kronmul!(y, B, x, At, T)
-    na, ma = size(At)
-    mb, nb = size(B)
-    X = reshape(x, (nb, na))
-    v = zeros(T, ma)
-    temp1 = similar(y, na)
-    temp2 = similar(y, nb)
-    @views @inbounds for i in 1:ma
-        v[i] = one(T)
-        _unsafe_mul!(temp1, At, v)
-        _unsafe_mul!(temp2, X, temp1)
-        _unsafe_mul!(y[((i-1)*mb+1):i*mb], B, temp2)
-        v[i] = zero(T)
-    end
-    return y
-end
-@inline function _kronmul!(y, B, x, At::UniformScalingMap, _)
-    na, ma = size(At)
-    mb, nb = size(B)
-    X = reshape(x, (nb, na))
-    Y = reshape(y, (mb, ma))
-    _unsafe_mul!(Y, B, X, At.λ, false)
-    return y
-end
-@inline function _kronmul!(y, B, x, At::MatrixMap, _)
-    na, ma = size(At)
+@inline function _kronmul!(y, B, x, A, T)
+    ma, na = size(A)
     mb, nb = size(B)
     X = reshape(x, (nb, na))
     Y = reshape(y, (mb, ma))
     if B isa UniformScalingMap
-        # the following is (maybe due to the reshape?) faster than
-        # _unsafe_mul!(Y, B * X, At.lmap)
-        _unsafe_mul!(Y, X, At.lmap)
+        _unsafe_mul!(Y, X, transpose(A))
+        lmul!(B.λ, y)
+    else
+        temp = similar(Y, (ma, nb))
+        _unsafe_mul!(temp, A, copy(transpose(X)))
+        _unsafe_mul!(Y, B, transpose(temp))
+    end
+    return y
+end
+@inline function _kronmul!(y, B, x, A::UniformScalingMap, _)
+    ma, na = size(A)
+    mb, nb = size(B)
+    iszero(A.λ) && return fill!(y, zero(eltype(y)))
+    X = reshape(x, (nb, na))
+    Y = reshape(y, (mb, ma))
+    _unsafe_mul!(Y, B, X)
+    !isone(A.λ) && rmul!(y, A.λ)
+    return y
+end
+@inline function _kronmul!(y, B, x, A::MatrixMap, _)
+    ma, na = size(A)
+    mb, nb = size(B)
+    X = reshape(x, (nb, na))
+    Y = reshape(y, (mb, ma))
+    At = transpose(A.lmap)
+    if B isa UniformScalingMap
+        # the following is (perhaps due to the reshape?) faster than
+        # _unsafe_mul!(Y, B * X, At)
+        _unsafe_mul!(Y, X, At)
         lmul!(B.λ, y)
     elseif nb*ma <= mb*na
-        _unsafe_mul!(Y, B, X * At.lmap)
+        _unsafe_mul!(Y, B, X * At)
     else
-        _unsafe_mul!(Y, Matrix(B*X), At.lmap)
+        _unsafe_mul!(Y, Matrix(B*X), At)
     end
     return y
 end
@@ -163,14 +167,14 @@ const KroneckerMap2{T} = KroneckerMap{T, <:Tuple{LinearMap, LinearMap}}
 function _unsafe_mul!(y::AbstractVecOrMat, L::KroneckerMap2, x::AbstractVector)
     require_one_based_indexing(y)
     A, B = L.maps
-    _kronmul!(y, B, x, transpose(A), eltype(L))
+    _kronmul!(y, B, x, A, eltype(L))
     return y
 end
 function _unsafe_mul!(y::AbstractVecOrMat, L::KroneckerMap, x::AbstractVector)
     require_one_based_indexing(y)
     A = first(L.maps)
     B = kron(Base.tail(L.maps)...)
-    _kronmul!(y, B, x, transpose(A), eltype(L))
+    _kronmul!(y, B, x, A, eltype(L))
     return y
 end
 # mixed-product rule, prefer the right if possible
