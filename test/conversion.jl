@@ -10,6 +10,7 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays, Quaternions
     β = rand()
     M = @inferred LinearMap(A)
     N = @inferred LinearMap(M)
+    U = @inferred LinearMap(v)
 
     @test Matrix(M) == A
     @test Array(M) == A
@@ -25,6 +26,8 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays, Quaternions
     @test convert(AbstractMatrix, M') isa Adjoint
     @test convert(Matrix, M*3I) == A*3
     @test convert(Matrix, M+M) == A + A
+    @test all(Matrix(U) .== v)
+    @test convert(Matrix{ComplexF32}, U) isa Matrix{ComplexF32}
 
     # UniformScalingMap
     J = LinearMap(α*I, 10)

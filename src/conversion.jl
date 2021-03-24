@@ -59,8 +59,8 @@ Base.convert(::Type{AbstractMatrix}, J::UniformScalingMap) = Diagonal(fill(J.λ,
 # WrappedMap
 Base.Matrix{T}(A::WrappedMap) where {T} = Matrix{T}(A.lmap)
 Base.convert(::Type{T}, A::WrappedMap) where {T<:Matrix} = convert(T, A.lmap)
-Base.convert(::Type{T}, A::VectorMap) where {T<:Matrix} =
-    copyto!(Matrix{eltype(T)}(undef, size(A)), A.lmap)
+Base.Matrix{T}(A::VectorMap) where {T} = copyto!(Matrix{eltype(T)}(undef, size(A)), A.lmap)
+Base.convert(::Type{T}, A::VectorMap) where {T<:Matrix} = T(A)
 Base.convert(::Type{AbstractMatrix}, A::WrappedMap) = convert(AbstractMatrix, A.lmap)
 SparseArrays.sparse(A::WrappedMap) = sparse(A.lmap)
 Base.convert(::Type{SparseMatrixCSC}, A::WrappedMap) = convert(SparseMatrixCSC, A.lmap)
