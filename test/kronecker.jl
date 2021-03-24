@@ -22,6 +22,10 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
             @test @inferred size(LK, i) == size(K, i)
         end
         @test LK isa LinearMaps.KroneckerMap{ComplexF64}
+        L = ones(3) ⊗ ones(ComplexF64, 4)'
+        v = rand(4)
+        @test Matrix(L) == ones(3,4)
+        @test L*v ≈ fill(sum(v), 3)
 
         for transform in (identity, transpose, adjoint)
             @test Matrix(transform(LK)) ≈ transform(Matrix(LK)) ≈ transform(K)

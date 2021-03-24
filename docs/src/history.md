@@ -1,5 +1,13 @@
 # Version history
 
+## What's new in v3.3
+
+* `AbstractVector`s can now be wrapped by a `LinearMap` just like `AbstractMatrix``
+  typed objects. Upon wrapping, there are not implicitly reshaped to matrices. This
+  feature might be helpful, for instance, in the lazy representation of rank-1
+  operators `kron(LinearMap(u), v') == ⊗(u, v') == u ⊗ v'` for vectors `u` and `v`.
+  The action on vectors,`(u⊗v')*x`, is implemented optimally via `u*(v'x)`.
+
 ## What's new in v3.2
 
 * In-place left-multiplication `mul!(Y, X, A::LinearMap)` is now allowed for

@@ -38,15 +38,15 @@ function rowcolranges(maps, rows)
     rowstart = 1
     for (i, row) in enumerate(rows)
         mapind += 1
-        rowend = rowstart + size(maps[mapind], 1) - 1
+        rowend = rowstart + Int(size(maps[mapind], 1))::Int - 1
         rowranges = Base.setindex(rowranges, rowstart:rowend, i)
         colstart = 1
-        colend = size(maps[mapind], 2)
+        colend = Int(size(maps[mapind], 2))::Int
         colranges = Base.setindex(colranges, colstart:colend, mapind)
         for colind in 2:row
             mapind += 1
             colstart = colend + 1
-            colend += size(maps[mapind], 2)
+            colend += Int(size(maps[mapind], 2))::Int
             colranges = Base.setindex(colranges, colstart:colend, mapind)
         end
         rowstart = rowend + 1
@@ -226,9 +226,7 @@ function check_dim(A, dim, n)
     return nothing
 end
 
-promote_to_lmaps_(n::Int, dim, A::AbstractMatrix) = (check_dim(A, dim, n); LinearMap(A))
-promote_to_lmaps_(n::Int, dim, A::AbstractVector) =
-    (check_dim(A, dim, n); LinearMap(reshape(A, length(A), 1)))
+promote_to_lmaps_(n::Int, dim, A::AbstractVecOrMat) = (check_dim(A, dim, n); LinearMap(A))
 promote_to_lmaps_(n::Int, dim, J::UniformScaling) = UniformScalingMap(J.λ, n)
 promote_to_lmaps_(n::Int, dim, A::LinearMap) = (check_dim(A, dim, n); A)
 promote_to_lmaps(n, k, dim) = ()
