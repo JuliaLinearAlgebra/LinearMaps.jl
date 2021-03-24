@@ -265,7 +265,7 @@ include("show.jl") # show methods for LinearMap objects
     LinearMap(J::UniformScaling, M::Int)::UniformScalingMap
     LinearMap{T=Float64}(f, [fc,], M::Int, N::Int = M; kwargs...)::FunctionMap
 
-Construct a linear map object, either from an existing `LinearMap` or `AbstractMatrix` `A`,
+Construct a linear map object, either from an existing `LinearMap` or `AbstractVecOrMat` `A`,
 with the purpose of redefining its properties via the keyword arguments `kwargs`;
 a `UniformScaling` object `J` with specified (square) dimension `M`; from a `Number`
 object to lazily represent filled matrices; or
