@@ -12,8 +12,8 @@ LinearAlgebra.isposdef(A::IndexableMap) = isposdef(A.lmap)
 
 Base.:(==)(A::IndexableMap, B::IndexableMap) = A.lmap == B.lmap
 
-Base.adjoint(A::IndexableMap) = IndexableMap(adjoint(A.lmap), (i,j) -> conj(A.getind(j,i)))
-Base.transpose(A::IndexableMap) = IndexableMap(transpose(A.lmap), (i,j) -> A.getind(j,i))
+Base.adjoint(A::IndexableMap) = IndexableMap(adjoint(A.lmap), (i,j) -> adjoint(A.getind(j,i)))
+Base.transpose(A::IndexableMap) = IndexableMap(transpose(A.lmap), (i,j) -> transpose(A.getind(j,i)))
 # rewrapping preserves indexability but redefines, e.g., symmetry properties
 LinearMap(A::IndexableMap; getind=nothing, kwargs...) = IndexableMap(LinearMap(A.lmap; kwargs...), getind)
 # addition/subtraction/scalar multiplication preserve indexability
