@@ -84,7 +84,7 @@ using Test, LinearMaps, LinearAlgebra, BenchmarkTools
     
     B = LinearMap(I(2)) # isposdef!
     C = B * B' * B * B * B
-    @test @inferred ispodef(C)
+    @test @inferred isposdef(C)
     
     N = 2^8
     A0 = LinearMap{T}(cumsum, reverse ∘ cumsum ∘ reverse, N) # out-of-place
