@@ -77,11 +77,15 @@ using Test, LinearMaps, LinearAlgebra, BenchmarkTools
     @test mul!(x2, C', y1) == x1
 
     # check scale*conj(scale)
-    A = LinearMap{Float32}(rand(N, 2)) # rank=2 w.p.1
+    A = LinearMap{Float32}(rand(1, 2)) # rank=1 w.p.1
     B = @inferred β * A
     C = @inferred B' * B
-    @test @inferred isposdef(C)
-
+    @test !isposdef(C)
+    
+    B = LinearMap(I(2)) # isposdef!
+    C = B * B' * B * B * B
+    @test @inferred ispodef(C)
+    
     N = 2^8
     A0 = LinearMap{T}(cumsum, reverse ∘ cumsum ∘ reverse, N) # out-of-place
     forw! = cumsum!
