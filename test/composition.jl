@@ -132,4 +132,9 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
     X = rand(size(Ls, 2), 10)
     Y = similar(X, (size(Ls, 1), size(X, 2)))
     @test mul!(Y, Ls, X) ≈ L4.lmap * L3.lmap * L2.lmap * L1.lmap * X
+
+    # test isposdef on a case where sufficient conditions work
+    B = LinearMap([1 0; 0 1]) # isposdef!
+    C = B' * B * B * B * B # no B' at end on purpose
+    @test @inferred isposdef(C)
 end
