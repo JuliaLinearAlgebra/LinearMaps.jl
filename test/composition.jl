@@ -137,4 +137,5 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
     B = LinearMap([1 0; 0 1]) # isposdef!
     C = B' * B * B * B * B # no B' at end on purpose
     @test @inferred isposdef(C)
+    @test @inferred isposdef(B * B) # even case for empty tuple test
 end
