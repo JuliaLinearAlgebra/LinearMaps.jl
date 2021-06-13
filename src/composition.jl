@@ -47,8 +47,7 @@ _isposdef(maps::Tuple{}) = true # empty product is equivalent to "I" which is po
 _isposdef(maps::Tuple{<:LinearMap}) = isposdef(maps[1])
 function _isposdef(maps::Tuple{Vararg{LinearMap}})
     (maps[end] == adjoint(maps[1]) || maps[end] == maps[1]) && 
-    isposdef(maps[1]) && isposdef(maps[end]) &&
-    _isposdef(Base.front(Base.tail(maps)))
+    isposdef(maps[1]) && _isposdef(Base.front(Base.tail(maps)))
 end
 
 # scalar multiplication and division (non-commutative case)
