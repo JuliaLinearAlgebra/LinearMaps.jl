@@ -3,13 +3,13 @@ using Test, LinearMaps, LinearAlgebra
 @testset "wrapped maps" begin
     A = rand(10, 20)
     B = rand(ComplexF64, 10, 20)
-    SA = A'A + I
-    SB = B'B + I
+    SA = Hermitian(A'A + I)
+    SB = Hermitian(B'B + I)
     L = @inferred LinearMap{Float64}(A)
     @test summary(L) == "10×20 LinearMaps.WrappedMap{Float64}"
     @test occursin("10×20 LinearMaps.WrappedMap{Float64}", sprint((t, s) -> show(t, "text/plain", s), L))
-    MA = @inferred LinearMap(SA)
-    MB = @inferred LinearMap(SB)
+    MA = @inferred LinearMap(SA, isposdef=true)
+    MB = @inferred LinearMap(SB, isposdef=true)
     @test eltype(Matrix{Complex{Float32}}(LinearMap(A))) <: Complex
     @test size(L) == size(A)
     @test @inferred !issymmetric(L)
@@ -36,7 +36,7 @@ using Test, LinearMaps, LinearAlgebra
     @test @inferred LinearMap(M')' * v == A * v
     @test @inferred(transpose(transpose(M))) === M
     @test @inferred(adjoint(adjoint(M))) === M
-    Mherm = @inferred LinearMap(A'A)
+    Mherm = @inferred LinearMap(Hermitian(A'A), isposdef=true)
     @test @inferred ishermitian(Mherm)
     @test @inferred !issymmetric(Mherm)
     @test @inferred !issymmetric(transpose(Mherm))
