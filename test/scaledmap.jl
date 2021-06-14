@@ -80,7 +80,7 @@ using Test, LinearMaps, LinearAlgebra, BenchmarkTools
     A = LinearMap{Float32}(rand(N, 2)) # rank=2 w.p.1
     B = @inferred β * A
     C = @inferred B' * B
-    @test @inferred isposdef(C)
+    @test @inferred isposdef(C.λ)
 
     N = 2^8
     A0 = LinearMap{T}(cumsum, reverse ∘ cumsum ∘ reverse, N) # out-of-place

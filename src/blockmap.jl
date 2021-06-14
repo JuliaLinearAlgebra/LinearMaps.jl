@@ -262,7 +262,6 @@ function LinearAlgebra.issymmetric(A::BlockMap)
     return true
 end
 
-LinearAlgebra.ishermitian(A::BlockMap{<:Real}) = issymmetric(A)
 function LinearAlgebra.ishermitian(A::BlockMap)
     isblocksquare(A) || return false
     N = length(A.rows)
@@ -482,7 +481,6 @@ Base.size(A::BlockDiagonalMap) = (last(A.rowranges[end]), last(A.colranges[end])
 MulStyle(A::BlockDiagonalMap) = MulStyle(A.maps...)
 
 LinearAlgebra.issymmetric(A::BlockDiagonalMap) = all(issymmetric, A.maps)
-LinearAlgebra.ishermitian(A::BlockDiagonalMap{<:Real}) = all(issymmetric, A.maps)
 LinearAlgebra.ishermitian(A::BlockDiagonalMap) = all(ishermitian, A.maps)
 
 LinearAlgebra.adjoint(A::BlockDiagonalMap{T}) where {T} =
