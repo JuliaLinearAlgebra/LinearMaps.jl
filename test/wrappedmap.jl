@@ -84,4 +84,16 @@ using Test, LinearMaps, LinearAlgebra
     @test mul!(B, Id, A, true, true) ≈ 2A
     @test mul!(B, A, Id, true, true) == B == 3A
     @test mul!(copy(B), A, LinearMap(Matrix(Id)), true, true) == 4A
+
+    # wrapped vectors viewed as column matrices
+    u = ones(1); U = @inferred LinearMap(u)
+    @test U isa LinearMap{Float64}
+    @test issymmetric(U)
+    @test ishermitian(U)
+    @test isposdef(U)
+    U = @inferred LinearMap(u.*im)
+    @test U isa LinearMap{ComplexF64}
+    @test issymmetric(U)
+    @test !ishermitian(U)
+    @test !isposdef(U)
 end

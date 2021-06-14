@@ -12,9 +12,9 @@ function WrappedMap{T}(lmap::MapOrMatrix;
 end
 WrappedMap(lmap::MapOrMatrix{T}; kwargs...) where {T} = WrappedMap{T}(lmap; kwargs...)
 function WrappedMap{T}(lmap::AbstractVector;
-                        issymmetric::Bool = false,
-                        ishermitian::Bool = false,
-                        isposdef::Bool = false) where {T}
+                        issym::Bool = false,
+                        isherm::Bool = false,
+                        ispd::Bool = false) where {T}
     WrappedMap{T, typeof(lmap)}(lmap,
                                 length(lmap) == 1 && issymmetric(first(lmap)),
                                 length(lmap) == 1 && ishermitian(first(lmap)),
