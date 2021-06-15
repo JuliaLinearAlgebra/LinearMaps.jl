@@ -10,7 +10,6 @@ function WrappedMap{T}(lmap::MapOrMatrix;
                         isposdef::Bool = _isposdef(lmap)) where {T}
     WrappedMap{T, typeof(lmap)}(lmap, issymmetric, ishermitian, isposdef)
 end
-WrappedMap(lmap::MapOrMatrix{T}; kwargs...) where {T} = WrappedMap{T}(lmap; kwargs...)
 function WrappedMap{T}(lmap::AbstractVector;
                         issym::Bool = false,
                         isherm::Bool = false,
@@ -20,7 +19,7 @@ function WrappedMap{T}(lmap::AbstractVector;
                                 length(lmap) == 1 && ishermitian(first(lmap)),
                                 length(lmap) == 1 && isposdef(first(lmap)))
 end
-WrappedMap(lmap::AbstractVector{T}; kwargs...) where {T} = WrappedMap{T}(lmap; kwargs...)
+WrappedMap(lmap::MapOrVecOrMat{T}; kwargs...) where {T} = WrappedMap{T}(lmap; kwargs...)
 
 # cheap symmetry/ checks (usually by type)
 _issymmetric(A::AbstractMatrix) = false
@@ -28,14 +27,12 @@ _issymmetric(A::LinearMap) = issymmetric(A)
 _issymmetric(A::LinearAlgebra.RealHermSymComplexSym) = issymmetric(A)
 _issymmetric(A::SymTridiagonal) = issymmetric(A)
 _issymmetric(A::Diagonal) = issymmetric(A)
-_issymmetric(A::UniformScaling) = issymmetric(A)
 
 _ishermitian(A::AbstractMatrix) = false
 _ishermitian(A::LinearMap) = ishermitian(A)
 _ishermitian(A::LinearAlgebra.RealHermSymComplexHerm) = ishermitian(A)
 _ishermitian(A::SymTridiagonal) = ishermitian(A)
 _ishermitian(A::Diagonal) = ishermitian(A)
-_ishermitian(A::UniformScaling) = ishermitian(A)
 
 _isposdef(A::AbstractMatrix) = false
 _isposdef(A::LinearMap) = isposdef(A)
