@@ -5,7 +5,8 @@ function Base.Matrix{T}(A::LinearMap) where {T}
     v = fill(zero(T), N)
     @inbounds for i in 1:N
         v[i] = one(T)
-        _unsafe_mul!(view(mat, :, i), A, v)
+        # need mul!, e.g., for TransposeMap{<:CustomMap}
+        mul!(view(mat, :, i), A, v)
         v[i] = zero(T)
     end
     return mat
