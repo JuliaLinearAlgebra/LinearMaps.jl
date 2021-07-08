@@ -117,4 +117,5 @@ end
         @test mul!(ones(3), A', x, α, β) == fill(β, 3) + fill(15α, 3)
         @test mul!(ones(3, 2), A', [x x], α, β) == fill(β, 3, 2) + fill(15α, 3, 2)
     end
+    @test Matrix(A') == Matrix(A)'
 end
