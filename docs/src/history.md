@@ -1,5 +1,15 @@
 # Version history
 
+## What's new in v3.4
+
+* In `WrappedMap` constructors, as implicitly called in addition and mutliplication
+  of `LinearMap`s and `AbstractMatrix` objects, (conjugate) symmetry and positive
+  definiteness are only determined for matrix types for which these checks are expected
+  to be very cheap or even known at compile time based on the concrete type. The default
+  for `LinearMap` subtypes is to call, for instance, `issymmetric`, because symmetry
+  properties are either stored or easily obtained from constituting maps. For custom matrix
+  types, define corresponding methods `LinearMaps._issymmetric`, `LinearMaps._ishermitian` and `LinearMaps._isposdef` to hook into the property checking mechanism.
+
 ## What's new in v3.3
 
 * `AbstractVector`s can now be wrapped by a `LinearMap` just like `AbstractMatrix``

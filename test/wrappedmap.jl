@@ -96,4 +96,21 @@ using Test, LinearMaps, LinearAlgebra
     @test issymmetric(U)
     @test !ishermitian(U)
     @test !isposdef(U)
+    # symmetry
+    O4 = ones(4)
+    O3 = ones(3)
+    Z3 = zeros(3)
+    for M in (Bidiagonal(O4, O3, :U),
+              Bidiagonal(O4, Z3, :L),
+              Diagonal(O4),
+              Diagonal(im*O4),
+              SymTridiagonal(O4, O3),
+              Tridiagonal(O3, O4, O3),
+              Tridiagonal(O3, O4, Z3),
+              sparse(Tridiagonal(O3, O4, O3)),
+              sparse(Diagonal(im*O4)),
+            )
+        @test issymmetric(LinearMap(M)) == issymmetric(M)
+        @test ishermitian(LinearMap(M)) == ishermitian(M)
+    end
 end
