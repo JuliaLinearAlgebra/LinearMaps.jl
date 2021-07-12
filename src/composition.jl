@@ -42,7 +42,7 @@ for (f, _f, g) in ((:issymmetric, :_issymmetric, :transpose),
 end
 
 # A * B * A and A * B * A' are positive definite if (sufficient condition) A & B are positive definite
-_isposdef(A::CompositeMap) = _isposdef(A.maps)
+LinearAlgebra.isposdef(A::CompositeMap) = _isposdef(A.maps)
 _isposdef(maps::Tuple{}) = true # empty product is equivalent to "I" which is pos. def.
 _isposdef(maps::Tuple{<:LinearMap}) = isposdef(maps[1])
 function _isposdef(maps::Tuple{Vararg{LinearMap}})
