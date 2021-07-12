@@ -21,24 +21,18 @@ function WrappedMap{T}(lmap::AbstractVector;
 end
 WrappedMap(lmap::MapOrVecOrMat{T}; kwargs...) where {T} = WrappedMap{T}(lmap; kwargs...)
 
-# cheap symmetry/ checks (usually by type)
+# cheap property checks (usually by type)
 _issymmetric(A::AbstractMatrix) = false
 _issymmetric(A::AbstractSparseMatrix) = issymmetric(A)
 _issymmetric(A::LinearMap) = issymmetric(A)
 _issymmetric(A::LinearAlgebra.RealHermSymComplexSym) = issymmetric(A)
-_issymmetric(A::Bidiagonal) = issymmetric(A)
-_issymmetric(A::Diagonal) = issymmetric(A)
-_issymmetric(A::SymTridiagonal) = issymmetric(A)
-_issymmetric(A::Tridiagonal) = issymmetric(A)
+_issymmetric(A::Union{Bidiagonal,Diagonal,SymTridiagonal,Tridiagonal}) = issymmetric(A)
 
 _ishermitian(A::AbstractMatrix) = false
 _ishermitian(A::AbstractSparseMatrix) = ishermitian(A)
 _ishermitian(A::LinearMap) = ishermitian(A)
 _ishermitian(A::LinearAlgebra.RealHermSymComplexHerm) = ishermitian(A)
-_ishermitian(A::Bidiagonal) = ishermitian(A)
-_ishermitian(A::Diagonal) = ishermitian(A)
-_ishermitian(A::SymTridiagonal) = ishermitian(A)
-_ishermitian(A::Tridiagonal) = ishermitian(A)
+_ishermitian(A::Union{Bidiagonal,Diagonal,SymTridiagonal,Tridiagonal}) = ishermitian(A)
 
 _isposdef(A::AbstractMatrix) = false
 _isposdef(A::LinearMap) = isposdef(A)
