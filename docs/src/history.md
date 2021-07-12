@@ -8,7 +8,8 @@
   to be very cheap or even known at compile time based on the concrete type. The default
   for `LinearMap` subtypes is to call, for instance, `issymmetric`, because symmetry
   properties are either stored or easily obtained from constituting maps. For custom matrix
-  types, define corresponding methods `LinearMaps._issymmetric`, `LinearMaps._ishermitian` and `LinearMaps._isposdef` to hook into the property checking mechanism.
+  types, define corresponding methods `LinearMaps._issymmetric`, `LinearMaps._ishermitian`
+  and `LinearMaps._isposdef` to hook into the property checking mechanism.
 
 ## What's new in v3.3
 
