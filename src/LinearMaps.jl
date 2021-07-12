@@ -48,7 +48,7 @@ LinearAlgebra.isposdef(::LinearMap) = false # default assumptions
 
 Base.ndims(::LinearMap) = 2
 Base.size(A::LinearMap, n) =
-    (n==1 || n==2 ? size(A)[n] : error("LinearMap objects have only 2 dimensions"))
+    (n == 1 || n == 2 ? size(A)[n] : error("LinearMap objects have only 2 dimensions"))
 Base.length(A::LinearMap) = size(A)[1] * size(A)[2]
 
 # check dimension consistency for multiplication A*B
@@ -267,24 +267,27 @@ include("show.jl") # show methods for LinearMap objects
 
 Construct a linear map object, either from an existing `LinearMap` or `AbstractVecOrMat` `A`,
 with the purpose of redefining its properties via the keyword arguments `kwargs`;
-a `UniformScaling` object `J` with specified (square) dimension `M`; from a `Number`
-object to lazily represent filled matrices; or
+a `UniformScaling` object `J` with specified (square) dimension `M`; or
 from a function or callable object `f`. In the latter case, one also needs to specify
 the size of the equivalent matrix representation `(M, N)`, i.e., for functions `f` acting
 on length `N` vectors and producing length `M` vectors (with default value `N=M`).
 Preferably, also the `eltype` `T` of the corresponding matrix representation needs to be
-specified, i.e. whether the action of `f` on a vector will be similar to, e.g., multiplying
+specified, i.e., whether the action of `f` on a vector will be similar to, e.g., multiplying
 by numbers of type `T`. If not specified, the devault value `T=Float64` will be assumed.
 Optionally, a corresponding function `fc` can be specified that implements the adjoint
 (=transpose in the real case) of `f`.
 
 The keyword arguments and their default values for the function-based constructor are:
-*   `issymmetric::Bool = false` : whether `A` or `f` acts as a symmetric matrix
-*   `ishermitian::Bool = issymmetric & T<:Real` : whether `A` or `f` acts as a Hermitian
+*   `issymmetric::Bool = false` : whether `A` or `f` act as a symmetric matrix
+*   `ishermitian::Bool = issymmetric & T<:Real` : whether `A` or `f` act as a Hermitian
     matrix
-*   `isposdef::Bool = false` : whether `A` or `f` acts as a positive definite matrix.
+*   `isposdef::Bool = false` : whether `A` or `f` act as a positive definite matrix.
 For existing linear maps or matrices `A`, the default values will be taken by calling
-`issymmetric`, `ishermitian` and `isposdef` on the existing object `A`.
+internal functions `_issymmetric`, `_ishermitian` and `_isposdef` on the existing object `A`.
+These in turn dispatch to (overloads of) `LinearAlgebra`'s `issymmetric`, `ishermitian`,
+and `isposdef` methods whenever these checks are expected to be computationally cheap or even
+known at compile time as for certain structured matrices, but return `false` for generic
+`AbstractMatrix` types.
 
 For the function-based constructor, there is one more keyword argument:
 *   `ismutating::Bool` : flags whether the function acts as a mutating matrix multiplication
