@@ -81,6 +81,8 @@ using Test, LinearMaps, LinearAlgebra, BenchmarkTools
     B = @inferred β * A
     C = @inferred B' * B
     @test !isposdef(C)
+    @test @inferred isposdef(C.λ)
+
     N = 2^8
     A0 = LinearMap{T}(cumsum, reverse ∘ cumsum ∘ reverse, N) # out-of-place
     forw! = cumsum!

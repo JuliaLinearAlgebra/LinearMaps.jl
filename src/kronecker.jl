@@ -102,7 +102,6 @@ Base.:(^)(A::MapOrMatrix, ::KronPower{p}) where {p} =
 Base.size(A::KroneckerMap) = map(*, size.(A.maps)...)
 
 LinearAlgebra.issymmetric(A::KroneckerMap) = all(issymmetric, A.maps)
-LinearAlgebra.ishermitian(A::KroneckerMap{<:Real}) = issymmetric(A)
 LinearAlgebra.ishermitian(A::KroneckerMap) = all(ishermitian, A.maps)
 
 LinearAlgebra.adjoint(A::KroneckerMap) = KroneckerMap{eltype(A)}(map(adjoint, A.maps))
@@ -288,7 +287,6 @@ Base.size(A::KroneckerSumMap, i) = prod(size.(A.maps, i))
 Base.size(A::KroneckerSumMap) = (size(A, 1), size(A, 2))
 
 LinearAlgebra.issymmetric(A::KroneckerSumMap) = all(issymmetric, A.maps)
-LinearAlgebra.ishermitian(A::KroneckerSumMap{<:Real}) = all(issymmetric, A.maps)
 LinearAlgebra.ishermitian(A::KroneckerSumMap) = all(ishermitian, A.maps)
 
 LinearAlgebra.adjoint(A::KroneckerSumMap) =

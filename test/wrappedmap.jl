@@ -3,13 +3,13 @@ using Test, LinearMaps, LinearAlgebra
 @testset "wrapped maps" begin
     A = rand(10, 20)
     B = rand(ComplexF64, 10, 20)
-    SA = A'A + I
-    SB = B'B + I
+    SA = Hermitian(A'A + I)
+    SB = Hermitian(B'B + I)
     L = @inferred LinearMap{Float64}(A)
     @test summary(L) == "10×20 LinearMaps.WrappedMap{Float64}"
     @test occursin("10×20 LinearMaps.WrappedMap{Float64}", sprint((t, s) -> show(t, "text/plain", s), L))
-    MA = @inferred LinearMap(SA)
-    MB = @inferred LinearMap(SB)
+    MA = @inferred LinearMap(SA, isposdef=true)
+    MB = @inferred LinearMap(SB, isposdef=true)
     @test eltype(Matrix{Complex{Float32}}(LinearMap(A))) <: Complex
     @test size(L) == size(A)
     @test @inferred !issymmetric(L)
@@ -36,7 +36,7 @@ using Test, LinearMaps, LinearAlgebra
     @test @inferred LinearMap(M')' * v == A * v
     @test @inferred(transpose(transpose(M))) === M
     @test @inferred(adjoint(adjoint(M))) === M
-    Mherm = @inferred LinearMap(A'A)
+    Mherm = @inferred LinearMap(Hermitian(A'A), isposdef=true)
     @test @inferred ishermitian(Mherm)
     @test @inferred !issymmetric(Mherm)
     @test @inferred !issymmetric(transpose(Mherm))
@@ -84,4 +84,33 @@ using Test, LinearMaps, LinearAlgebra
     @test mul!(B, Id, A, true, true) ≈ 2A
     @test mul!(B, A, Id, true, true) == B == 3A
     @test mul!(copy(B), A, LinearMap(Matrix(Id)), true, true) == 4A
+
+    # wrapped vectors viewed as column matrices
+    u = ones(1); U = @inferred LinearMap(u)
+    @test U isa LinearMap{Float64}
+    @test issymmetric(U)
+    @test ishermitian(U)
+    @test isposdef(U)
+    U = @inferred LinearMap(u.*im)
+    @test U isa LinearMap{ComplexF64}
+    @test issymmetric(U)
+    @test !ishermitian(U)
+    @test !isposdef(U)
+    # symmetry
+    O4 = ones(4)
+    O3 = ones(3)
+    Z3 = zeros(3)
+    for M in (Bidiagonal(O4, O3, :U),
+              Bidiagonal(O4, Z3, :L),
+              Diagonal(O4),
+              Diagonal(im*O4),
+              SymTridiagonal(O4, O3),
+              Tridiagonal(O3, O4, O3),
+              Tridiagonal(O3, O4, Z3),
+              sparse(Tridiagonal(O3, O4, O3)),
+              sparse(Diagonal(im*O4)),
+            )
+        @test issymmetric(LinearMap(M)) == issymmetric(M)
+        @test ishermitian(LinearMap(M)) == ishermitian(M)
+    end
 end
