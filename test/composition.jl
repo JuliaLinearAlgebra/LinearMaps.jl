@@ -134,7 +134,7 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
     @test mul!(Y, Ls, X) ≈ L4.lmap * L3.lmap * L2.lmap * L1.lmap * X
 
     # test isposdef on a case where sufficient conditions work
-    B = LinearMap([1 0; 0 1]) # isposdef!
+    B = LinearMap([1 0; 0 1], isposdef=true) # isposdef!
     C = B' * B * B * B * B # no B' at end on purpose
     @test @inferred isposdef(C)
     @test @inferred isposdef(B * B) # even case for empty tuple test
