@@ -21,8 +21,7 @@ Base.isreal(A::CompositeMap) = all(isreal, A.maps) # sufficient but not necessar
 
 # the following rules are sufficient but not necessary
 for (f, _f, g) in ((:issymmetric, :_issymmetric, :transpose),
-                    (:ishermitian, :_ishermitian, :adjoint),
-                    (:isposdef, :_isposdef, :adjoint))
+                    (:ishermitian, :_ishermitian, :adjoint))
     @eval begin
         LinearAlgebra.$f(A::CompositeMap) = $_f(A.maps)
         $_f(maps::Tuple{}) = true
@@ -40,6 +39,15 @@ for (f, _f, g) in ((:issymmetric, :_issymmetric, :transpose),
             # end
         # end
     end
+end
+
+# A * B * A and A * B * A' are positive definite if (sufficient condition) A & B are positive definite
+LinearAlgebra.isposdef(A::CompositeMap) = _isposdef(A.maps)
+_isposdef(maps::Tuple{}) = true # empty product is equivalent to "I" which is pos. def.
+_isposdef(maps::Tuple{<:LinearMap}) = isposdef(maps[1])
+function _isposdef(maps::Tuple{Vararg{LinearMap}})
+    (maps[end] == adjoint(maps[1]) || maps[end] == maps[1]) && 
+    isposdef(maps[1]) && _isposdef(Base.front(Base.tail(maps)))
 end
 
 # scalar multiplication and division (non-commutative case)
