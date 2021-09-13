@@ -43,6 +43,7 @@ function Base.:(*)(A::FunctionMap, x::AbstractVector)
         A.f(y, x)
     else
         y = A.f(x)
+        length(y) == A.M || throw(DimensionMismatch())
     end
     return y
 end
@@ -56,6 +57,7 @@ function Base.:(*)(A::AdjointFunctionMap, x::AbstractVector)
             Afun.fc(y, x)
         else
             y = Afun.fc(x)
+            length(y) == size(A,1) || throw(DimensionMismatch())
         end
         return y
     elseif issymmetric(Afun) # but !isreal(A), Afun.f can be used
@@ -65,6 +67,7 @@ function Base.:(*)(A::AdjointFunctionMap, x::AbstractVector)
             Afun.f(y, x)
         else
             y = Afun.f(x)
+            length(y) == size(A,1) || throw(DimensionMismatch())
         end
         conj!(y)
         return y
@@ -85,6 +88,7 @@ function Base.:(*)(A::TransposeFunctionMap, x::AbstractVector)
             Afun.fc(y, x)
         else
             y = Afun.fc(x)
+            length(y) == size(A,1) || throw(DimensionMismatch())
         end
         if !isreal(A)
             conj!(y)
@@ -97,6 +101,7 @@ function Base.:(*)(A::TransposeFunctionMap, x::AbstractVector)
             Afun.f(y, x)
         else
             y = Afun.f(x)
+            length(y) == size(A,1) || throw(DimensionMismatch())
         end
         conj!(y)
         return y
