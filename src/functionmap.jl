@@ -37,13 +37,13 @@ const TransposeFunctionMap = TransposeMap{<:Any, <:FunctionMap}
 const AdjointFunctionMap = AdjointMap{<:Any, <:FunctionMap}
 
 function Base.:(*)(A::FunctionMap, x::AbstractVector)
-    length(x) == A.N || throw(DimensionMismatch())
+    length(x) == size(A, 2) || throw(DimensionMismatch())
     if ismutating(A)
-        y = similar(x, promote_type(eltype(A), eltype(x)), A.M)
+        y = similar(x, promote_type(eltype(A), eltype(x)), size(A, 1))
         A.f(y, x)
     else
         y = A.f(x)
-        length(y) == A.M || throw(DimensionMismatch())
+        length(y) == size(A, 1) || throw(DimensionMismatch())
     end
     return y
 end
@@ -57,7 +57,7 @@ function Base.:(*)(A::AdjointFunctionMap, x::AbstractVector)
             Afun.fc(y, x)
         else
             y = Afun.fc(x)
-            length(y) == size(A,1) || throw(DimensionMismatch())
+            length(y) == size(A, 1) || throw(DimensionMismatch())
         end
         return y
     elseif issymmetric(Afun) # but !isreal(A), Afun.f can be used
@@ -67,7 +67,7 @@ function Base.:(*)(A::AdjointFunctionMap, x::AbstractVector)
             Afun.f(y, x)
         else
             y = Afun.f(x)
-            length(y) == size(A,1) || throw(DimensionMismatch())
+            length(y) == size(A, 1) || throw(DimensionMismatch())
         end
         conj!(y)
         return y
@@ -88,7 +88,7 @@ function Base.:(*)(A::TransposeFunctionMap, x::AbstractVector)
             Afun.fc(y, x)
         else
             y = Afun.fc(x)
-            length(y) == size(A,1) || throw(DimensionMismatch())
+            length(y) == size(A, 1) || throw(DimensionMismatch())
         end
         if !isreal(A)
             conj!(y)
@@ -101,7 +101,7 @@ function Base.:(*)(A::TransposeFunctionMap, x::AbstractVector)
             Afun.f(y, x)
         else
             y = Afun.f(x)
-            length(y) == size(A,1) || throw(DimensionMismatch())
+            length(y) == size(A, 1) || throw(DimensionMismatch())
         end
         conj!(y)
         return y
