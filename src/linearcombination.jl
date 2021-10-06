@@ -18,6 +18,7 @@ MulStyle(A::LinearCombination) = MulStyle(A.maps...)
 
 # basic methods
 Base.size(A::LinearCombination) = size(A.maps[1])
+Base.axes(A::LinearMaps.LinearCombination) = axes(A.maps[1])
 # following conditions are sufficient but not necessary
 LinearAlgebra.issymmetric(A::LinearCombination) = all(issymmetric, A.maps)
 LinearAlgebra.ishermitian(A::LinearCombination) = all(ishermitian, A.maps)
