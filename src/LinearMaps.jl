@@ -111,7 +111,9 @@ julia> A(x)
 """
 function Base.:(*)(A::LinearMap, x::AbstractVector)
     check_dim_mul(A, x)
-    return mul!(similar(x, promote_type(eltype(A), eltype(x)), size(A, 1)), A, x)
+    T = promote_type(eltype(A), eltype(x))
+    y = similar(x, T, axes(A)[1])
+    return mul!(y, A, x)
 end
 if VERSION ≥ v"1.3"
     (L::LinearMap)(x::AbstractVector) = L*x
