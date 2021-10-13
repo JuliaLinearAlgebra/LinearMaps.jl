@@ -7,16 +7,19 @@ LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 
 [compat]
+LiftedMaps = "0.2.2"
 julia = "1"
 
 [extras]
 Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
 BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
+BlockArrays = "8e7c35d0-a365-5155-bbbb-fb81a777f24e"
 InteractiveUtils = "b77e0a4c-d291-57a0-90e8-8db25a27a240"
+LiftedMaps = "d22a30c1-52ac-4762-a8c9-5838452405e0"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Quaternions = "94ee1d12-ae83-5a48-8b1c-48b8ff168ae0"
 SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["Aqua", "BenchmarkTools", "InteractiveUtils", "LinearAlgebra", "Quaternions", "SparseArrays", "Test"]
+test = ["Aqua", "BenchmarkTools", "BlockArrays", "InteractiveUtils", "LinearAlgebra", "LiftedMaps", "Quaternions", "SparseArrays", "Test"]
