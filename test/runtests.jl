@@ -35,4 +35,6 @@ include("left.jl")
 
 include("fillmap.jl")
 
-include("nontradaxes.jl")
+if VERSION ≥ v"1.1"
+    include("nontradaxes.jl")
+end
