@@ -5,7 +5,9 @@ const matrixstyle = VERSION ≥ v"1.3.0-alpha.115" ? FiveArg() : ThreeArg()
 
 const testallocs = VERSION ≥ v"1.4-"
 
-Aqua.test_all(LinearMaps)
+@testset "code quality" begin
+    Aqua.test_all(LinearMaps)
+end
 
 include("linearmaps.jl")
 
