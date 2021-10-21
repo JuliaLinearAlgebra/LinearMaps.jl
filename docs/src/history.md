@@ -1,5 +1,14 @@
 # Version history
 
+## What's new in v3.5
+
+* `WrappedMap`, `ScaledMap`, and `LinearCombination`, instead of using the default `axes(A) 
+  = map.(oneto, size(A))`, now forward calls to axes to the underlying wrapped linear map. 
+  This allows allocating operations such as `*` to determine the appropriate storage and axes 
+  type of their outputs. For example, linear maps that wrap `BlockArrays` will, upon
+  multiplicative action, produce a `BlockArrays.PseudoBlockVector` with block structure
+  inherited from the operator's *output* axes `axes(A,1)`.
+
 ## What's new in v3.4
 
 * In `WrappedMap` constructors, as implicitly called in addition and mutliplication
