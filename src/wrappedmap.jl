@@ -59,6 +59,7 @@ Base.:(==)(A::VecOrMatMap, B::VecOrMatMap) =
 # properties
 Base.size(A::WrappedMap) = size(A.lmap)
 Base.size(A::WrappedMap{<:Any,<:AbstractVector}) = (Int(length(A.lmap))::Int, 1)
+Base.axes(A::WrappedMap) = axes(A.lmap)
 LinearAlgebra.issymmetric(A::WrappedMap) = A._issymmetric
 LinearAlgebra.ishermitian(A::WrappedMap) = A._ishermitian
 LinearAlgebra.isposdef(A::WrappedMap) = A._isposdef

@@ -2,10 +2,10 @@ struct LinearCombination{T, As<:LinearMapTuple} <: LinearMap{T}
     maps::As
     function LinearCombination{T, As}(maps::As) where {T, As}
         N = length(maps)
-        sz = size(maps[1])
+        ax = axes(maps[1])
         for n in eachindex(maps)
             A = maps[n]
-            size(A) == sz || throw(DimensionMismatch("LinearCombination"))
+            axes(A) == ax || throw(DimensionMismatch("LinearCombination"))
             @assert promote_type(T, eltype(A)) == T  "eltype $(eltype(A)) cannot be promoted to $T in LinearCombination constructor"
         end
         new{T, As}(maps)
@@ -18,6 +18,7 @@ MulStyle(A::LinearCombination) = MulStyle(A.maps...)
 
 # basic methods
 Base.size(A::LinearCombination) = size(A.maps[1])
+Base.axes(A::LinearMaps.LinearCombination) = axes(A.maps[1])
 # following conditions are sufficient but not necessary
 LinearAlgebra.issymmetric(A::LinearCombination) = all(issymmetric, A.maps)
 LinearAlgebra.ishermitian(A::LinearCombination) = all(ishermitian, A.maps)
