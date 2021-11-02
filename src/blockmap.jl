@@ -24,6 +24,13 @@ BlockMap{T}(maps::As, rows::Rs) where {T, As<:LinearMapTuple, Rs} =
 
 MulStyle(A::BlockMap) = MulStyle(A.maps...)
 
+function _getranges(maps, dim, inds::NTuple{N,Int}=ntuple(identity, Val(length(maps)))) where {N}
+    sizes = ntuple(i -> (@inbounds size(maps[inds[i]], dim)), Val(N))
+    ends = cumsum(sizes)
+    starts = (1, (1 .+ Base.front(ends))...)
+    return UnitRange.(starts, ends)
+end
+
 """
     rowcolranges(maps, rows)
 
@@ -32,24 +39,19 @@ map in `maps`, according to its position in a virtual matrix representation of t
 block linear map obtained from `hvcat(rows, maps...)`.
 """
 function rowcolranges(maps, rows)
-    rowranges = ntuple(n->1:0, Val(length(rows)))
-    colranges = ntuple(n->1:0, Val(length(maps)))
-    mapind = 0
-    rowstart = 1
-    for (i, row) in enumerate(rows)
-        mapind += 1
-        rowend = rowstart + Int(size(maps[mapind], 1))::Int - 1
-        rowranges = Base.setindex(rowranges, rowstart:rowend, i)
-        colstart = 1
-        colend = Int(size(maps[mapind], 2))::Int
-        colranges = Base.setindex(colranges, colstart:colend, mapind)
-        for colind in 2:row
-            mapind += 1
-            colstart = colend + 1
-            colend += Int(size(maps[mapind], 2))::Int
-            colranges = Base.setindex(colranges, colstart:colend, mapind)
-        end
-        rowstart = rowend + 1
+    # find indices of the row-wise first maps
+    firstmapinds = cumsum((1, Base.front(rows)...))
+    # compute rowranges from size(map, 1) of the row-wise first maps
+    rowranges = _getranges(maps, 1, firstmapinds)
+
+    # compute ranges from size(map, 1) as if all in one row
+    temp = _getranges(maps, 2)
+    # introduce "line breaks"
+    colranges = ntuple(Val(length(maps))) do i
+        # for each map find the index of the respective row-wise first map
+        @inbounds firstmapind = firstmapinds[something(findlast(<=(i), firstmapinds), 1)]
+        # shift ranges by the first col-index of the row-wise first map
+        return @inbounds temp[i] .- first(temp[firstmapind]) .+ 1
     end
     return rowranges, colranges
 end
@@ -82,17 +84,13 @@ function Base.hcat(As::Union{LinearMap, UniformScaling, AbstractVecOrMat}...)
     T = promote_type(map(eltype, As)...)
     nbc = length(As)
 
-    nrows = -1
     # find first non-UniformScaling to detect number of rows
-    for A in As
-        if !(A isa UniformScaling)
-            nrows = size(A, 1)
-            break
-        end
-    end
-    @assert nrows != -1
+    j = findfirst(A -> !isa(A, UniformScaling), As)
     # this should not happen, function should only be called with at least one LinearMap
-    return BlockMap{T}(promote_to_lmaps(ntuple(i->nrows, nbc), 1, 1, As...), (nbc,))
+    @assert !isnothing(j)
+    @inbounds nrows = size(As[j], 1)
+    
+    return BlockMap{T}(promote_to_lmaps(ntuple(_ -> nrows, Val(nbc)), 1, 1, As...), (nbc,))
 end
 
 ############
@@ -124,18 +122,14 @@ function Base.vcat(As::Union{LinearMap,UniformScaling,AbstractVecOrMat}...)
     T = promote_type(map(eltype, As)...)
     nbr = length(As)
 
-    ncols = -1
-    # find first non-UniformScaling to detect number of columns
-    for A in As
-        if !(A isa UniformScaling)
-            ncols = size(A, 2)
-            break
-        end
-    end
-    @assert ncols != -1
+    # find first non-UniformScaling to detect number of rows
+    j = findfirst(A -> !isa(A, UniformScaling), As)
     # this should not happen, function should only be called with at least one LinearMap
-    rows = ntuple(i->1, nbr)
-    return BlockMap{T}(promote_to_lmaps(ntuple(i->ncols, nbr), 1, 2, As...), rows)
+    @assert !isnothing(j)
+    @inbounds ncols = size(As[j], 2)
+
+    rows = ntuple(_ -> 1, Val(nbr))
+    return BlockMap{T}(promote_to_lmaps(ntuple(_ -> ncols, Val(nbr)), 1, 2, As...), rows)
 end
 
 ############
