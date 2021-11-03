@@ -8,7 +8,7 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays, BenchmarkTools, Interactive
             v = rand(elty, 10)
             L = @inferred hcat(LinearMap(A11), LinearMap(A12))
             @test occursin("10×$(10+n2) LinearMaps.BlockMap{$elty}", sprint((t, s) -> show(t, "text/plain", s), L))
-            @test @inferred(LinearMaps.MulStyle(L)) === matrixstyle
+            @test @inferred(LinearMaps.MulStyle(L)) === FiveArg()
             @test L isa LinearMaps.BlockMap{elty}
             if elty <: Complex
                 @test_throws ErrorException LinearMaps.BlockMap{Float64}((LinearMap(A11), LinearMap(A12)), (2,))
@@ -54,7 +54,7 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays, BenchmarkTools, Interactive
             L = @inferred vcat(LinearMap(A11), LinearMap(A21))
             @test occursin("30×10 LinearMaps.BlockMap{$elty}", sprint((t, s) -> show(t, "text/plain", s), L))
             @test L isa LinearMaps.BlockMap{elty}
-            @test @inferred(LinearMaps.MulStyle(L)) === matrixstyle
+            @test @inferred(LinearMaps.MulStyle(L)) === FiveArg()
             @test (@which [A11; A21]).module != LinearMaps
             A = [A11; A21]
             x = rand(10)
@@ -84,7 +84,7 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays, BenchmarkTools, Interactive
             @test (@which [A11 A12; A21 A22]).module != LinearMaps
             @inferred hvcat((2,2), LinearMap(A11), LinearMap(A12), LinearMap(A21), LinearMap(A22))
             L = [LinearMap(A11) LinearMap(A12); LinearMap(A21) LinearMap(A22)]
-            @test @inferred(LinearMaps.MulStyle(L)) === matrixstyle
+            @test @inferred(LinearMaps.MulStyle(L)) === FiveArg()
             @test @inferred !issymmetric(L)
             @test @inferred !ishermitian(L)
             x = rand(30)
@@ -142,7 +142,7 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays, BenchmarkTools, Interactive
             A12 = rand(elty, 10, 10)
             A = [I A12; transform(A12) I]
             L = [I LinearMap(A12); transform(LinearMap(A12)) I]
-            @test @inferred(LinearMaps.MulStyle(L)) === matrixstyle
+            @test @inferred(LinearMaps.MulStyle(L)) === FiveArg()
             if elty <: Complex
                 if transform == transpose
                     @test @inferred issymmetric(L)
@@ -201,7 +201,7 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays, BenchmarkTools, Interactive
             @test (@which cat(M1, M2, M3, M2, M1; dims=(1,2))).module != LinearMaps
             x = randn(elty, size(Md, 2))
             Bd = @inferred blockdiag(L1, L2, L3, L2, L1)
-            @test @inferred(LinearMaps.MulStyle(Bd)) === matrixstyle
+            @test @inferred(LinearMaps.MulStyle(Bd)) === FiveArg()
             @test occursin("25×39 LinearMaps.BlockDiagonalMap{$elty}", sprint((t, s) -> show(t, "text/plain", s), Bd))
             @test Matrix(Bd) == Md
             @test convert(AbstractMatrix, Bd) isa SparseMatrixCSC

@@ -24,8 +24,8 @@ BlockMap{T}(maps::As, rows::Rs) where {T, As<:LinearMapTuple, Rs} =
 
 MulStyle(A::BlockMap) = MulStyle(A.maps...)
 
-function _getranges(maps, dim, inds::NTuple{N,Int}=ntuple(identity, Val(length(maps)))) where {N}
-    sizes = ntuple(i -> (@inbounds size(maps[inds[i]], dim)), Val(N))
+function _getranges(maps, dim, inds=ntuple(identity, Val(length(maps))))
+    sizes = ntuple(i -> (@inbounds size(maps[inds[i]], dim))::Int, Val(length(inds)))
     ends = cumsum(sizes)
     starts = (1, (1 .+ Base.front(ends))...)
     return UnitRange.(starts, ends)
@@ -88,7 +88,7 @@ function Base.hcat(As::Union{LinearMap, UniformScaling, AbstractVecOrMat}...)
     j = findfirst(A -> !isa(A, UniformScaling), As)
     # this should not happen, function should only be called with at least one LinearMap
     @assert !isnothing(j)
-    @inbounds nrows = size(As[j], 1)
+    @inbounds nrows = size(As[j], 1)::Int
     
     return BlockMap{T}(promote_to_lmaps(ntuple(_ -> nrows, Val(nbc)), 1, 1, As...), (nbc,))
 end
@@ -126,7 +126,7 @@ function Base.vcat(As::Union{LinearMap,UniformScaling,AbstractVecOrMat}...)
     j = findfirst(A -> !isa(A, UniformScaling), As)
     # this should not happen, function should only be called with at least one LinearMap
     @assert !isnothing(j)
-    @inbounds ncols = size(As[j], 2)
+    @inbounds ncols = size(As[j], 2)::Int
 
     rows = ntuple(_ -> 1, Val(nbr))
     return BlockMap{T}(promote_to_lmaps(ntuple(_ -> ncols, Val(nbr)), 1, 2, As...), rows)
@@ -175,7 +175,7 @@ function Base.hvcat(rows::Tuple{Vararg{Int}},
         ni = -1 # number of rows in this block-row, -1 indicates unknown
         for k in 1:rows[i]
             if !isa(As[j+k], UniformScaling)
-                na = size(As[j+k], 1)
+                na = size(As[j+k], 1)::Int
                 ni >= 0 && ni != na &&
                     throw(DimensionMismatch("mismatch in number of rows"))
                 ni = na
@@ -193,7 +193,7 @@ function Base.hvcat(rows::Tuple{Vararg{Int}},
         nci = 0
         rows[i] > 0 && n[j+1] == -1 && (j += rows[i]; continue)
         for k = 1:rows[i]
-            nci += isa(As[j+k], UniformScaling) ? n[j+k] : size(As[j+k], 2)
+            nci += isa(As[j+k], UniformScaling) ? n[j+k] : size(As[j+k], 2)::Int
         end
         nc >= 0 && nc != nci && throw(DimensionMismatch("mismatch in number of columns"))
         nc = nci
@@ -464,7 +464,7 @@ object among the first 8 arguments.
 """
 Base.cat
 
-Base.size(A::BlockDiagonalMap) = (last(A.rowranges[end]), last(A.colranges[end]))
+Base.size(A::BlockDiagonalMap) = (last(last(A.rowranges)), last(last(A.colranges)))
 
 MulStyle(A::BlockDiagonalMap) = MulStyle(A.maps...)
 
