@@ -406,14 +406,8 @@ struct BlockDiagonalMap{T,
             promote_type(T, TA) == T ||
                 error("eltype $TA cannot be promoted to $T in BlockDiagonalMap constructor")
         end
-        # row ranges
-        inds = vcat(1, size.(maps, 1)...)
-        cumsum!(inds, inds)
-        rowranges = ntuple(i -> inds[i]:inds[i+1]-1, Val(length(maps)))
-        # column ranges
-        inds[2:end] .= size.(maps, 2)
-        cumsum!(inds, inds)
-        colranges = ntuple(i -> inds[i]:inds[i+1]-1, Val(length(maps)))
+        rowranges = _getranges(maps, 1)
+        colranges = _getranges(maps, 2)
         return new{T, As, typeof(rowranges)}(maps, rowranges, colranges)
     end
 end
