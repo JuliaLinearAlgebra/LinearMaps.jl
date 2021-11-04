@@ -41,4 +41,22 @@ using Test, LinearMaps, LinearAlgebra, BlockArrays
     Cu = C*u
     @test axes(C)[1] == ax1
     @test blocklengths(axes(C)[1]) == blocklengths(ax1)
+
+    A = rand(ComplexF64,2,2)
+    B = PseudoBlockMatrix{ComplexF64}(undef, [2,2], [2,2])
+    ax1 = axes(B)[1]
+    ax2 = axes(B)[2]
+    fill!(B,0)
+    B[Block(1),Block(2)] .= A
+    L = LinearMap(B)
+    L2 = L*L
+    B2 = B*B
+    @test axes(L2) == axes(B2)
+    B2 = B*Matrix(B)
+    L2 = L*LinearMap(Matrix(B))
+    @test axes(L2) == axes(B2)
+    u = similar(Array{ComplexF64}, ax2)
+    B2u = B2*u; L2u = L2*u
+    @test axes(B2u)[1] == axes(L2u)[1] == axes(B2)[1] == axes(L2)[1]
+    @test blocklengths(axes(B2u)[1]) == blocklengths(axes(L2u)[1]) == [2,2]
 end

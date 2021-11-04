@@ -17,6 +17,7 @@ CompositeMap{T}(maps::As) where {T, As<:LinearMapTuple} = CompositeMap{T, As}(ma
 
 # basic methods
 Base.size(A::CompositeMap) = (size(A.maps[end], 1), size(A.maps[1], 2))
+Base.axes(A::CompositeMap) = (axes(A.maps[end])[1], axes(A.maps[1])[2])
 Base.isreal(A::CompositeMap) = all(isreal, A.maps) # sufficient but not necessary
 
 # the following rules are sufficient but not necessary
