@@ -30,10 +30,8 @@ using Test, LinearMaps, LinearAlgebra, BenchmarkTools
         Λ = @inferred LinearMap(λ*I, 10)
         x = rand(Float64, sz)
         y = rand(Float64, sz)
-        if testallocs
-            b = @benchmarkable mul!($y, $Λ, $x, $α, $β)
-            @test run(b, samples=3).allocs == 0
-        end
+        b = @benchmarkable mul!($y, $Λ, $x, $α, $β)
+        @test run(b, samples=3).allocs == 0
         y = deepcopy(x)
         @inferred mul!(y, Λ, x, α, β)
         @test y ≈ λ * x * α + β * x

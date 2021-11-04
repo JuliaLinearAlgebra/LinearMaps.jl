@@ -1,7 +1,7 @@
 struct KroneckerMap{T, As<:LinearMapTuple} <: LinearMap{T}
     maps::As
     function KroneckerMap{T}(maps::LinearMapTuple) where {T}
-        for TA in Base.Generator(eltype, maps)
+        for TA in Base.Iterators.map(eltype, maps)
             promote_type(T, TA) == T ||
                 error("eltype $TA cannot be promoted to $T in KroneckerMap constructor")
         end
@@ -221,7 +221,7 @@ struct KroneckerSumMap{T, As<:Tuple{LinearMap, LinearMap}} <: LinearMap{T}
         A1, A2 = maps
         (size(A1, 1) == size(A1, 2) && size(A2, 1) == size(A2, 2)) ||
             throw(ArgumentError("operators need to be square in Kronecker sums"))
-        for TA in Base.Generator(eltype, maps)
+        for TA in Base.Iterators.map(eltype, maps)
             promote_type(T, TA) == T ||
                 error("eltype $TA cannot be promoted to $T in KroneckerSumMap constructor")
         end
