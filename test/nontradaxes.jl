@@ -12,14 +12,15 @@ using Test, LinearMaps, LinearAlgebra, BlockArrays
 
     N = @inferred LinearMap(B)
     @test axes(N) == (ax1,ax2)
+    @test axes(N, 1) == ax1
+    @test axes(N, 2) == ax2
+    @test_throws ErrorException axes(N, 3)
 
     @test eltype(N) == eltype(B)
 
     u = similar(Array{ComplexF64}, ax2)
     v = PseudoBlockVector{ComplexF64}(undef, [3,5])
     w = similar(Array{ComplexF64}, ax1)
-    # v = similar(Array{ComplexF64}, blockedrange([3,5]))
-    # w = similar(Array{ComplexF64}, blockedrange([4,3]))
 
     for i in eachindex(u) u[i] = rand(ComplexF64) end
     for i in eachindex(v) v[i] = rand(ComplexF64) end
