@@ -49,7 +49,9 @@ LinearAlgebra.isposdef(::LinearMap) = false # default assumptions
 Base.ndims(::LinearMap) = 2
 Base.size(A::LinearMap, n) =
     (n == 1 || n == 2 ? size(A)[n] : error("LinearMap objects have only 2 dimensions"))
-Base.length(A::LinearMap) = size(A)[1] * size(A)[2]
+Base.axes(A::LinearMap, n::Integer) =
+    (n == 1 || n == 2 ? axes(A)[n] : error("LinearMap objects have only 2 dimensions"))
+Base.length(A::LinearMap) = prod(size(A))
 
 # check dimension consistency for multiplication A*B
 _iscompatible((A, B)) = size(A, 2) == size(B, 1)
