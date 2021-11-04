@@ -25,7 +25,7 @@ BlockMap{T}(maps::As, rows::Rs) where {T, As<:LinearMapTuple, Rs} =
 MulStyle(A::BlockMap) = MulStyle(A.maps...)
 
 function _getranges(maps, dim, inds=ntuple(identity, Val(length(maps))))
-    sizes = ntuple(i -> (@inbounds size(maps[inds[i]], dim))::Int, Val(length(inds)))
+    sizes = map(i -> size(maps[i], dim)::Int, inds)
     ends = cumsum(sizes)
     starts = (1, (1 .+ Base.front(ends))...)
     return UnitRange.(starts, ends)
@@ -41,14 +41,15 @@ block linear map obtained from `hvcat(rows, maps...)`.
 function rowcolranges(maps, rows)
     # find indices of the row-wise first maps
     firstmapinds = cumsum((1, Base.front(rows)...))
-    # compute rowranges from size(map, 1) of the row-wise first maps
+    # compute rowranges from first dimension of the row-wise first maps
     rowranges = _getranges(maps, 1, firstmapinds)
 
-    # compute ranges from size(map, 1) as if all in one row
+    # compute ranges from second dimension as if all in one row
     temp = _getranges(maps, 2)
     # introduce "line breaks"
     colranges = ntuple(Val(length(maps))) do i
         # for each map find the index of the respective row-wise first map
+        # something-trick just to assure the compiler that the index is an Int
         @inbounds firstmapind = firstmapinds[something(findlast(<=(i), firstmapinds), 1)]
         # shift ranges by the first col-index of the row-wise first map
         return @inbounds temp[i] .- first(temp[firstmapind]) .+ 1

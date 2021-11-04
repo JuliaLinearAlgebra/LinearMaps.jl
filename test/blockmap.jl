@@ -1,4 +1,5 @@
 using Test, LinearMaps, LinearAlgebra, SparseArrays, BenchmarkTools, InteractiveUtils
+using LinearMaps: FiveArg, ThreeArg
 
 @testset "block maps" begin
     @testset "hcat" begin
