@@ -17,7 +17,7 @@ using Test, LinearMaps, LinearAlgebra, BlockArrays
 
     u = similar(Array{ComplexF64}, ax2)
     v = PseudoBlockVector{ComplexF64}(undef, [3,5])
-    w = PseudoBlockVector{ComplexF64}(undef, [4,3])
+    w = similar(Array{ComplexF64}, ax1)
     # v = similar(Array{ComplexF64}, blockedrange([3,5]))
     # w = similar(Array{ComplexF64}, blockedrange([4,3]))
 
@@ -33,6 +33,16 @@ using Test, LinearMaps, LinearAlgebra, BlockArrays
 
     @test axes(Nu)[1] == axes(N)[1] == axes(B)[1]
     @test blocklengths(axes(Nu)[1]) == blocklengths(axes(N)[1]) == blocklengths(axes(B)[1]) == [2,3]
+
+    for trans in (adjoint, transpose)
+        Nt = trans(LinearMap(N))
+        Bt = trans(B)
+        Ntw = Nt*w
+        Btw = Bt*w
+        @test Ntw ≈ Btw
+        @test axes(Ntw)[1] == axes(Nt)[1] == axes(Bt)[1]
+        @test blocklengths(axes(Ntw)[1]) == blocklengths(axes(Nt)[1]) == blocklengths(axes(Bt)[1]) == [3,4]
+    end
 
     C = B + 2N
     @test axes(C) === axes(B) === axes(N)

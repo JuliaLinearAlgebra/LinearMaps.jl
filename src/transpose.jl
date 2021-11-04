@@ -34,6 +34,7 @@ LinearAlgebra.adjoint(A::LinearMap{<:Real}) = transpose(A)
 
 # properties
 Base.size(A::Union{TransposeMap, AdjointMap}) = reverse(size(A.lmap))
+Base.axes(A::Union{TransposeMap, AdjointMap}) = reverse(axes(A.lmap))
 LinearAlgebra.issymmetric(A::Union{TransposeMap, AdjointMap}) = issymmetric(A.lmap)
 LinearAlgebra.ishermitian(A::Union{TransposeMap, AdjointMap}) = ishermitian(A.lmap)
 LinearAlgebra.isposdef(A::Union{TransposeMap, AdjointMap}) = isposdef(A.lmap)
