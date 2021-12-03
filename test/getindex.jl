@@ -18,6 +18,7 @@ function test_getindex(A::LinearMap, M::AbstractMatrix)
     @test A[[2,1],1:3] == M[[2,1],1:3]
     @test A[:,:] == M
     @test A[7] == M[7]
+    @test A[3:7] == M[3:7]
     @test_throws BoundsError A[firstindex(A)-1]
     @test_throws BoundsError A[lastindex(A)+1]
     @test_throws BoundsError A[6,1]
@@ -30,6 +31,7 @@ end
 @testset "getindex" begin
     A = rand(5,5)
     L = LinearMap(A)
+    @test test_getindex(L, A)
     # @btime getindex($A, i) setup=(i = rand(1:9));
     # @btime getindex($L, i) setup=(i = rand(1:9));
     # @btime (getindex($A, i, j)) setup=(i = rand(1:3); j = rand(1:3));

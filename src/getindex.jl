@@ -127,6 +127,6 @@ function basevec(A, i::Integer)
     return x
 end
 
-nogetindex_error() = error("indexing not allowed for LinearMaps; consider setting `LinearMaps.allowgetindex = true`")
+# nogetindex_error() = error("indexing not allowed for LinearMaps; consider setting `LinearMaps.allowgetindex = true`")
 
 # end # module
