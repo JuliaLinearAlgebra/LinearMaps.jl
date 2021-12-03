@@ -38,33 +38,29 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays, BenchmarkTools
     B = rand(ComplexF64, size(A)...)
     M = @inferred LinearMap(A)
     N = @inferred LinearMap(B)
-    @test @inferred(LinearMaps.MulStyle(M)) === matrixstyle
-    @test @inferred(LinearMaps.MulStyle(N)) === matrixstyle
+    @test @inferred(LinearMaps.MulStyle(M)) === FiveArg()
+    @test @inferred(LinearMaps.MulStyle(N)) === FiveArg()
     LC = @inferred M + N
-    @test @inferred(LinearMaps.MulStyle(LC)) === matrixstyle
-    @test @inferred(LinearMaps.MulStyle(LC + I)) === matrixstyle
-    @test @inferred(LinearMaps.MulStyle(LC + 2.0*I)) === matrixstyle
+    @test @inferred(LinearMaps.MulStyle(LC)) === FiveArg()
+    @test @inferred(LinearMaps.MulStyle(LC + I)) === FiveArg()
+    @test @inferred(LinearMaps.MulStyle(LC + 2.0*I)) === FiveArg()
     @test sparse(LC) == Matrix(LC) == A+B
     v = rand(ComplexF64, 10)
     w = similar(v)
     b = @benchmarkable mul!($w, $M, $v)
     @test run(b, samples=3).allocs == 0
-    if VERSION >= v"1.3.0-alpha.115"
-        b = @benchmarkable mul!($w, $LC, $v)
+    b = @benchmarkable mul!($w, $LC, $v)
+    @test run(b, samples=3).allocs == 0
+    for α in (false, true, rand(ComplexF64)), β in (false, true, rand(ComplexF64))
+        b = @benchmarkable mul!($w, $LC, $v, $α, $β)
         @test run(b, samples=3).allocs == 0
-        for α in (false, true, rand(ComplexF64)), β in (false, true, rand(ComplexF64))
-            if testallocs
-                b = @benchmarkable mul!($w, $LC, $v, $α, $β)
-                @test run(b, samples=3).allocs == 0
-                b = @benchmarkable mul!($w, $(I + LC), $v, $α, $β)
-                @test run(b, samples=3).allocs == 0
-                b = @benchmarkable mul!($w, $(LC + I), $v, $α, $β)
-                @test run(b, samples=3).allocs == 0
-            end
-            y = rand(ComplexF64, size(v))
-            @test mul!(copy(y), LC, v, α, β) ≈ Matrix(LC)*v*α + y*β
-            @test mul!(copy(y), LC+I, v, α, β) ≈ Matrix(LC + I)*v*α + y*β
-        end
+        b = @benchmarkable mul!($w, $(I + LC), $v, $α, $β)
+        @test run(b, samples=3).allocs == 0
+        b = @benchmarkable mul!($w, $(LC + I), $v, $α, $β)
+        @test run(b, samples=3).allocs == 0
+        y = rand(ComplexF64, size(v))
+        @test mul!(copy(y), LC, v, α, β) ≈ Matrix(LC)*v*α + y*β
+        @test mul!(copy(y), LC+I, v, α, β) ≈ Matrix(LC + I)*v*α + y*β
     end
     # @test_throws ErrorException LinearMaps.LinearCombination{ComplexF64}((M, N), (1, 2, 3))
     @test @inferred size(3M + 2.0N) == size(A)

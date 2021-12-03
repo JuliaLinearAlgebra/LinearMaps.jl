@@ -8,12 +8,7 @@ using LinearAlgebra
 import LinearAlgebra: mul!
 using SparseArrays
 
-if VERSION < v"1.2-"
-    import Base: has_offset_axes
-    require_one_based_indexing(A...) = !has_offset_axes(A...) || throw(ArgumentError("offset arrays are not supported but got an array with index other than 1"))
-else
-    import Base: require_one_based_indexing
-end
+using Base: require_one_based_indexing
 
 abstract type LinearMap{T} end
 
@@ -33,11 +28,7 @@ MulStyle(::ThreeArg, ::FiveArg) = ThreeArg()
 MulStyle(::FiveArg, ::ThreeArg) = ThreeArg()
 MulStyle(::ThreeArg, ::ThreeArg) = ThreeArg()
 MulStyle(::LinearMap) = ThreeArg() # default
-@static if VERSION ≥ v"1.3.0-alpha.115"
-    MulStyle(::AbstractVecOrMat) = FiveArg()
-else
-    MulStyle(::AbstractVecOrMat) = ThreeArg()
-end
+MulStyle(::AbstractVecOrMat) = FiveArg()
 MulStyle(A::LinearMap, As::LinearMap...) = MulStyle(MulStyle(A), MulStyle(As...))
 
 Base.isreal(A::LinearMap) = eltype(A) <: Real
@@ -117,9 +108,8 @@ function Base.:(*)(A::LinearMap, x::AbstractVector)
     y = similar(x, T, axes(A)[1])
     return mul!(y, A, x)
 end
-if VERSION ≥ v"1.3"
-    (L::LinearMap)(x::AbstractVector) = L*x
-end
+
+(L::LinearMap)(x::AbstractVector) = L*x
 
 """
     mul!(Y::AbstractVecOrMat, A::LinearMap, B::AbstractVector) -> Y
@@ -225,13 +215,9 @@ function mul!(Y::AbstractMatrix, A::LinearMap, X::AbstractMatrix, α::Number, β
 end
 
 function _generic_mapmat_mul!(Y, A, X, α=true, β=false)
-    @views for i in 1:size(X, 2)
-        _unsafe_mul!(Y[:, i], A, X[:, i], α, β)
+    for (Xi, Yi) in zip(eachcol(X), eachcol(Y))
+        mul!(Yi, A, Xi, α, β)
     end
-    # starting from Julia v1.1, we could use the `eachcol` iterator
-    # for (Xi, Yi) in zip(eachcol(X), eachcol(Y))
-    #     mul!(Yi, A, Xi, α, β)
-    # end
     return Y
 end
 
