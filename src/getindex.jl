@@ -3,6 +3,8 @@
 # using ..LinearMaps: LinearMap, AdjointMap, TransposeMap, FillMap, LinearCombination,
 #     ScaledMap, UniformScalingMap, WrappedMap
 
+const Indexer = AbstractVector{<:Integer}
+
 # required in Base.to_indices for [:]-indexing
 Base.eachindex(::IndexLinear, A::LinearMap) = Base.OneTo(length(A))
 Base.lastindex(A::LinearMap) = last(eachindex(IndexLinear(), A))
@@ -37,72 +39,58 @@ function _getindex(A::LinearMap, i::Integer)
     i1, i2 = Base._ind2sub(axes(A), i)
     return _getindex(A, i1, i2)
 end
-_getindex(A::LinearMap, I::AbstractVector{<:Integer}) = [_getindex(A, i) for i in I]
+_getindex(A::LinearMap, I::Indexer) = [_getindex(A, i) for i in I]
 _getindex(A::LinearMap, ::Base.Slice) = vec(Matrix(A))
 
 ########################
 # Cartesian indexing
 ########################
-_getindex(A::LinearMap, i::Integer, j::Integer) =
-    @inbounds _getindex(A, Base.Slice(axes(A)[1]), j)[i]
-function _getindex(A::LinearMap, i::Integer, J::AbstractVector{<:Integer})
+_getindex(A::LinearMap, i::Integer,   j::Integer) = (@inbounds (A*basevec(A, j))[i])
+_getindex(A::LinearMap, I::Indexer,   j::Integer) = (@inbounds (A*basevec(A, j))[I])
+_getindex(A::LinearMap, ::Base.Slice, j::Integer) = A*basevec(A, j)
+function _getindex(A::LinearMap, i::Integer, J::Indexer)
     try
+        # requires adjoint action to be defined
         return @inbounds (basevec(A, i)'A)[J]
     catch
-        x = zeros(eltype(A), size(A, 2))
-        y = similar(x, eltype(A), size(A, 1))
-        r = similar(x, eltype(A), length(J))
-        @inbounds for (ind, j) in enumerate(J)
-            x[j] = one(eltype(A))
-            _unsafe_mul!(y, A, x)
-            r[ind] = y[i]
-            x[j] = zero(eltype(A))
-        end
-        return r
+        return _getrows(A, i, J)
     end
 end
 function _getindex(A::LinearMap, i::Integer, J::Base.Slice)
     try
+        # requires adjoint action to be defined
         return vec(basevec(A, i)'A)
     catch
-        return vec(_getindex(A, i:i, J))
+        return _getrows(A, i, J)
     end
 end
-_getindex(A::LinearMap, I::AbstractVector{<:Integer}, j::Integer) =
-    @inbounds _getindex(A, Base.Slice(axes(A)[1]), j)[I] # = A[:,j][I] w/o bounds check
-_getindex(A::LinearMap, ::Base.Slice, j::Integer) = A*basevec(A, j)
-function _getindex(A::LinearMap, Is::Vararg{AbstractVector{<:Integer},2})
-    shape = Base.index_shape(Is...)
-    dest = zeros(eltype(A), shape)
-    I, J = Is
-    for (ind, ij) in zip(eachindex(dest), Iterators.product(I, J))
-        i, j = ij
-        dest[ind] = _getindex(A, i, j)
+function _getindex(A::LinearMap, I::Indexer, J::Indexer)
+    if length(I) <= length(J)
+        try
+            # requires adjoint action to be defined
+            return vcat(map(i -> (@inbounds (basevec(A, i)'A)[1:1,J]), I)...)
+        catch
+            return _getrows(A, I, J)
+        end
+    else
+        return _getrows(A, I, J)
+    end
+end
+_getrows(A::LinearMap, I, J) = _getrows!(zeros(eltype(A), Base.index_shape(I, J)), A, I, J)
+function _getrows!(dest, A, i, J)
+    x = zeros(eltype(A), size(A, 2))
+    temp = similar(x, eltype(A), size(A, 1))
+    @views @inbounds for (ind, j) in enumerate(J)
+        x[j] = one(eltype(A))
+        _unsafe_mul!(temp, A, x)
+        _copyto!(dest, ind, temp, i)
+        x[j] = zero(eltype(A))
     end
     return dest
 end
-function _getindex(A::LinearMap, I::AbstractVector{<:Integer}, ::Base.Slice)
-    x = zeros(eltype(A), size(A, 2))
-    y = similar(x, eltype(A), size(A, 1))
-    r = similar(x, eltype(A), (length(I), size(A, 2)))
-    @inbounds @views for j in axes(A)[2]
-        x[j] = one(eltype(A))
-        _unsafe_mul!(y, A, x)
-        r[:,j] .= y[I]
-        x[j] = zero(eltype(A))
-    end
-    return r
-end
-function _getindex(A::LinearMap, ::Base.Slice, J::AbstractVector{<:Integer})
-    x = zeros(eltype(A), size(A, 2))
-    y = similar(x, eltype(A), (size(A, 1), length(J)))
-    @inbounds for (i, j) in enumerate(J)
-        x[j] = one(eltype(A))
-        _unsafe_mul!(selectdim(y, 2, i), A, x)
-        x[j] = zero(eltype(A))
-    end
-    return y
-end
+@inline _copyto!(dest, ind, temp, i::Integer) = (@inbounds dest[ind] = temp[i])
+@inline _copyto!(dest, ind, temp, I::Indexer) =
+    (@views @inbounds dest[:,ind] .= temp[I])
 _getindex(A::LinearMap, ::Base.Slice, ::Base.Slice) = Matrix(A)
 
 # specialized methods
