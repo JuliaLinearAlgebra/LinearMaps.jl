@@ -22,29 +22,30 @@ function test_getindex(A::LinearMap, M::AbstractMatrix)
     @test_throws BoundsError A[firstindex(A)-1]
     @test_throws BoundsError A[lastindex(A)+1]
     @test_throws BoundsError A[6,1]
-    @test_throws BoundsError A[1,6]
-    @test_throws BoundsError A[2,1:6]
+    @test_throws BoundsError A[1,7]
+    @test_throws BoundsError A[2,1:7]
     @test_throws BoundsError A[1:6,2]
     return true
 end
 
 @testset "getindex" begin
-    A = rand(5,5)
+    A = rand(4,6)
     L = LinearMap(A)
     @test test_getindex(L, A)
-    # @btime getindex($A, i) setup=(i = rand(1:9));
-    # @btime getindex($L, i) setup=(i = rand(1:9));
-    # @btime (getindex($A, i, j)) setup=(i = rand(1:3); j = rand(1:3));
-    # @btime (getindex($L, i, j)) setup=(i = rand(1:3); j = rand(1:3));
+    # @btime getindex($A, i) setup=(i = rand(1:24));
+    # @btime getindex($L, i) setup=(i = rand(1:24));
+    # @btime (getindex($A, i, j)) setup=(i = rand(1:4); j = rand(1:6));
+    # @btime (getindex($L, i, j)) setup=(i = rand(1:4); j = rand(1:6));
 
     struct TwoMap <: LinearMaps.LinearMap{Float64} end
     Base.size(::TwoMap) = (5,5)
     LinearMaps._getindex(::TwoMap, i::Integer, j::Integer) = 2.0
     LinearMaps._unsafe_mul!(y::AbstractVector, ::TwoMap, x::AbstractVector) = fill!(y, 2.0*sum(x))
 
-    @test test_getindex(TwoMap(), fill(2.0, 5, 5))
+    T = TwoMap()
+    @test test_getindex(TwoMap(), fill(2.0, size(T)))
     Base.adjoint(A::TwoMap) = A
-    @test test_getindex(TwoMap(), fill(2.0, 5, 5))
+    @test test_getindex(TwoMap(), fill(2.0, size(T)))
 
     MA = rand(ComplexF64, 5, 5)
     for FA in (

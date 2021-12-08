@@ -45,52 +45,38 @@ _getindex(A::LinearMap, ::Base.Slice) = vec(Matrix(A))
 ########################
 # Cartesian indexing
 ########################
-_getindex(A::LinearMap, i::Integer,   j::Integer) = (@inbounds (A*basevec(A, j))[i])
-_getindex(A::LinearMap, I::Indexer,   j::Integer) = (@inbounds (A*basevec(A, j))[I])
-_getindex(A::LinearMap, ::Base.Slice, j::Integer) = A*basevec(A, j)
+_getindex(A::LinearMap, i::Union{Integer,Indexer}, j::Integer) = (@inbounds (A*basevec(A, 2, j))[i])
+_getindex(A::LinearMap, ::Base.Slice, j::Integer) = A*basevec(A, 2, j)
 function _getindex(A::LinearMap, i::Integer, J::Indexer)
     try
         # requires adjoint action to be defined
-        return @inbounds (basevec(A, i)'A)[J]
+        return @inbounds (basevec(A, 1, i)'A)[J]
     catch
-        return _getrows(A, i, J)
+        return _fillbycols!(zeros(eltype(A), Base.index_shape(i, J)), A, i, J)
     end
 end
 function _getindex(A::LinearMap, i::Integer, J::Base.Slice)
     try
         # requires adjoint action to be defined
-        return vec(basevec(A, i)'A)
+        return vec(basevec(A, 1, i)'A)
     catch
-        return _getrows(A, i, J)
+        return _fillbycols!(zeros(eltype(A), Base.index_shape(i, J)), A, i, J)
     end
 end
 function _getindex(A::LinearMap, I::Indexer, J::Indexer)
+    dest = zeros(eltype(A), Base.index_shape(I, J))
     if length(I) <= length(J)
         try
             # requires adjoint action to be defined
-            return vcat(map(i -> (@inbounds (basevec(A, i)'A)[1:1,J]), I)...)
+            _fillbyrows!(dest, A, I, J)
         catch
-            return _getrows(A, I, J)
+            _fillbycols!(dest, A, I, J)
         end
     else
-        return _getrows(A, I, J)
-    end
-end
-_getrows(A::LinearMap, I, J) = _getrows!(zeros(eltype(A), Base.index_shape(I, J)), A, I, J)
-function _getrows!(dest, A, i, J)
-    x = zeros(eltype(A), size(A, 2))
-    temp = similar(x, eltype(A), size(A, 1))
-    @views @inbounds for (ind, j) in enumerate(J)
-        x[j] = one(eltype(A))
-        _unsafe_mul!(temp, A, x)
-        _copyto!(dest, ind, temp, i)
-        x[j] = zero(eltype(A))
+        _fillbycols!(dest, A, I, J)
     end
     return dest
 end
-@inline _copyto!(dest, ind, temp, i::Integer) = (@inbounds dest[ind] = temp[i])
-@inline _copyto!(dest, ind, temp, I::Indexer) =
-    (@views @inbounds dest[:,ind] .= temp[I])
 _getindex(A::LinearMap, ::Base.Slice, ::Base.Slice) = Matrix(A)
 
 # specialized methods
@@ -102,11 +88,49 @@ _getindex(A::TransposeMap, i::Integer, j::Integer) = @inbounds transpose(A.lmap[
 _getindex(A::UniformScalingMap, i::Integer, j::Integer) = ifelse(i == j, A.λ, zero(eltype(A)))
 
 # helpers
-function basevec(A, i::Integer)
-    x = zeros(eltype(A), size(A, 2))
+function basevec(A, dim, i::Integer)
+    x = zeros(eltype(A), size(A, dim))
     @inbounds x[i] = one(eltype(A))
     return x
 end
+
+function _fillbyrows!(dest, A, I, J)
+    x = zeros(eltype(A), size(A, 1))
+    temp = similar(x, eltype(A), size(A, 2))
+    @views @inbounds for (ind, i) in enumerate(I)
+        x[i] = one(eltype(A))
+        _unsafe_mul!(temp, A', x)
+        _copyrow!(dest, ind, temp, J)
+        x[i] = zero(eltype(A))
+    end
+    return dest
+end
+function _fillbycols!(dest, A, i, J)
+    x = zeros(eltype(A), size(A, 2))
+    temp = similar(x, eltype(A), size(A, 1))
+    @views @inbounds for (ind, j) in enumerate(J)
+        x[j] = one(eltype(A))
+        _unsafe_mul!(temp, A, x)
+        _copycol!(dest, ind, temp, i)
+        x[j] = zero(eltype(A))
+    end
+    return dest
+end
+function _fillbycols!(dest, A, ::Base.Slice, J)
+    x = zeros(eltype(A), size(A, 2))
+    @views @inbounds for (ind, j) in enumerate(J)
+        x[j] = one(eltype(A))
+        _unsafe_mul!(selectdim(dest, 2, ind), A, x)
+        x[j] = zero(eltype(A))
+    end
+    return dest
+end
+
+@inline _copycol!(dest, ind, temp, i::Integer) = (@inbounds dest[ind] = temp[i])
+@inline _copycol!(dest, ind, temp, I::Indexer) =
+    (@views @inbounds dest[:,ind] .= temp[I])
+@inline _copyrow!(dest, ind, temp, J::Indexer) =
+    (@views @inbounds dest[ind,:] .= adjoint.(temp[J]))
 
 # nogetindex_error() = error("indexing not allowed for LinearMaps; consider setting `LinearMaps.allowgetindex = true`")
 
