@@ -23,6 +23,6 @@ makedocs(
 # See "Hosting Documentation" and deploydocs() in the Documenter manual
 # for more information.
 deploydocs(
-    repo = "github.com/Jutho/LinearMaps.jl.git",
+    repo = "github.com/JuliaLinearAlgebra/LinearMaps.jl.git",
     push_preview=true
 )
