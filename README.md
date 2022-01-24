@@ -25,16 +25,16 @@ julia> import Pkg; Pkg.add("LinearMaps")
 ```
 
 [docs-dev-img]: https://img.shields.io/badge/docs-dev-blue.svg
-[docs-dev-url]: https://jutho.github.io/LinearMaps.jl/dev
+[docs-dev-url]: https://JuliaLinearAlgebra.github.io/LinearMaps.jl/dev
 
 [docs-stable-img]: https://img.shields.io/badge/docs-stable-blue.svg
-[docs-stable-url]: https://jutho.github.io/LinearMaps.jl/stable
+[docs-stable-url]: https://JuliaLinearAlgebra.github.io/LinearMaps.jl/stable
 
-[build-img]: https://github.com/Jutho/LinearMaps.jl/workflows/CI/badge.svg?branch=master
-[build-url]: https://github.com/Jutho/LinearMaps.jl/actions?query=workflow%3ACI+branch%3Amaster
+[build-img]: https://github.com/JuliaLinearAlgebra/LinearMaps.jl/workflows/CI/badge.svg?branch=master
+[build-url]: https://github.com/JuliaLinearAlgebra/LinearMaps.jl/actions?query=workflow%3ACI+branch%3Amaster
 
-[codecov-img]: http://codecov.io/github/Jutho/LinearMaps.jl/coverage.svg?branch=master
-[codecov-url]: http://codecov.io/github/Jutho/LinearMaps.jl?branch=master
+[codecov-img]: http://codecov.io/github/JuliaLinearAlgebra/LinearMaps.jl/coverage.svg?branch=master
+[codecov-url]: http://codecov.io/github/JuliaLinearAlgebra/LinearMaps.jl?branch=master
 
 [license-img]: http://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat
 [license-url]: LICENSE.md
