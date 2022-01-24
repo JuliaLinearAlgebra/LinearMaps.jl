@@ -25,10 +25,10 @@ julia> import Pkg; Pkg.add("LinearMaps")
 ```
 
 [docs-dev-img]: https://img.shields.io/badge/docs-dev-blue.svg
-[docs-dev-url]: https://jutho.github.io/LinearMaps.jl/dev
+[docs-dev-url]: https://JuliaLinearAlgebra.github.io/LinearMaps.jl/dev
 
 [docs-stable-img]: https://img.shields.io/badge/docs-stable-blue.svg
-[docs-stable-url]: https://jutho.github.io/LinearMaps.jl/stable
+[docs-stable-url]: https://JuliaLinearAlgebra.github.io/LinearMaps.jl/stable
 
 [build-img]: https://github.com/Jutho/LinearMaps.jl/workflows/CI/badge.svg?branch=master
 [build-url]: https://github.com/Jutho/LinearMaps.jl/actions?query=workflow%3ACI+branch%3Amaster
