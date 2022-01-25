@@ -100,7 +100,7 @@ function _fillbyrows!(dest, A, I, J)
     @views @inbounds for (ind, i) in enumerate(I)
         x[i] = one(eltype(A))
         _unsafe_mul!(temp, A', x)
-        _copyrow!(dest, ind, temp, J)
+        dest[ind,:] .= adjoint.(temp[J])
         x[i] = zero(eltype(A))
     end
     return dest
@@ -129,8 +129,6 @@ end
 @inline _copycol!(dest, ind, temp, i::Integer) = (@inbounds dest[ind] = temp[i])
 @inline _copycol!(dest, ind, temp, I::Indexer) =
     (@views @inbounds dest[:,ind] .= temp[I])
-@inline _copyrow!(dest, ind, temp, J::Indexer) =
-    (@views @inbounds dest[ind,:] .= adjoint.(temp[J]))
 
 # nogetindex_error() = error("indexing not allowed for LinearMaps; consider setting `LinearMaps.allowgetindex = true`")
 
