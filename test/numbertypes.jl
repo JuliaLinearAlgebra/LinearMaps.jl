@@ -41,6 +41,7 @@ using Test, LinearMaps, LinearAlgebra, Quaternions
     @test λ*L isa LinearMaps.CompositeMap
     @test γ * (λ * LinearMap(B)) isa LinearMaps.CompositeMap
     @test (λ * LinearMap(B)) * γ isa LinearMaps.CompositeMap
+    @test ((L*L)*λ) isa LinearMaps.CompositeMap
     @test λ*L * x ≈ λ*A * x
     @test λ*L' * x ≈ λ*A' * x
     @test α * (3L * x) ≈ γ * (3A * x)
