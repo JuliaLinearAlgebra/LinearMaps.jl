@@ -83,7 +83,7 @@ function Base.:(*)(A::CompositeMap, α::Number)
     end
 end
 # needed for disambiguation
-function Base.:(*)(A::CompositeMap, α::RealOrComplex)
+function Base.:(*)(A::CompositeMap{<:RealOrComplex}, α::RealOrComplex)
     T = Base.promote_op(*, typeof(α), eltype(A))
     return ScaledMap{T}(α, A)
 end
