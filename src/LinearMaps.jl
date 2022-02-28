@@ -16,6 +16,10 @@ const MapOrVecOrMat{T} = Union{LinearMap{T}, AbstractVecOrMat{T}}
 const MapOrMatrix{T} = Union{LinearMap{T}, AbstractMatrix{T}}
 const RealOrComplex = Union{Real, Complex}
 
+const LinearMapTuple = Tuple{Vararg{LinearMap}}
+const LinearMapVector = AbstractVector{<:LinearMap}
+const LinearMapTupleOrVector = Union{LinearMapTuple,LinearMapVector}
+
 Base.eltype(::LinearMap{T}) where {T} = T
 
 abstract type MulStyle end
@@ -68,6 +72,21 @@ convert_to_lmaps() = ()
 convert_to_lmaps(A) = (convert_to_lmaps_(A),)
 @inline convert_to_lmaps(A, B, Cs...) =
     (convert_to_lmaps_(A), convert_to_lmaps_(B), convert_to_lmaps(Cs...)...)
+
+_front(As::Tuple) = Base.front(As)
+_front(As::AbstractVector) = @inbounds @views As[1:end-1]
+_tail(As::Tuple) = Base.tail(As)
+_tail(As::AbstractVector) = @inbounds @views As[2:end]
+
+_combine(A::LinearMap, B::LinearMap) = tuple(A, B)
+_combine(A::LinearMap, Bs::LinearMapTuple) = tuple(A, Bs...)
+_combine(As::LinearMapTuple, B::LinearMap) = tuple(As..., B)
+_combine(As::LinearMapTuple, Bs::LinearMapTuple) = tuple(As..., Bs...)
+_combine(A::LinearMap, Bs::LinearMapVector) = vcat(A, Bs...)
+_combine(As::LinearMapVector, B::LinearMap) = vcat(As..., B)
+_combine(As::LinearMapVector, Bs::LinearMapTuple) = vcat(As..., Bs...)
+_combine(As::LinearMapTuple, Bs::LinearMapVector) = vcat(As..., Bs...)
+_combine(As::LinearMapVector, Bs::LinearMapVector) = vcat(As..., Bs...)
 
 # The (internal) multiplication logic is as follows:
 #  - `*(A, x)` calls `mul!(y, A, x)` for appropriately-sized y
@@ -232,8 +251,6 @@ end
 function _unsafe_mul!(y::AbstractMatrix, A::LinearMap, x::AbstractMatrix, α, β)
     return _generic_mapmat_mul!(y, A, x, α, β)
 end
-
-const LinearMapTuple = Tuple{Vararg{LinearMap}}
 
 include("left.jl") # left multiplication by a transpose or adjoint vector
 include("transpose.jl") # transposing linear maps

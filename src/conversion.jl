@@ -136,7 +136,7 @@ function SparseArrays.sparse(A::BlockMap)
     return hvcat(
         A.rows,
         convert(SparseMatrixCSC, first(A.maps)),
-        convert.(AbstractMatrix, Base.tail(A.maps))...
+        convert.(AbstractArray, _tail(A.maps))...
     )
 end
 Base.Matrix{T}(A::BlockDiagonalMap) where {T} = Base._cat((1,2), convert.(Matrix{T}, A.maps)...)
@@ -152,7 +152,7 @@ Base.convert(::Type{AbstractMatrix}, A::KroneckerMap) =
 function SparseArrays.sparse(A::KroneckerMap)
     return kron(
         convert(SparseMatrixCSC, first(A.maps)),
-        convert.(AbstractMatrix, Base.tail(A.maps))...
+        convert.(AbstractMatrix, _tail(A.maps))...
     )
 end
 
