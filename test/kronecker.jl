@@ -8,6 +8,9 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
         LA = LinearMap(A)
         LB = LinearMap(B)
         LK = @inferred kron(LA, LB)
+        LKv = @inferred LinearMaps.KroneckerMap{ComplexF64}([LA, LB])
+        @test LK * ones(6) ≈ LKv * ones(6)
+        @test LKv.maps isa Vector
         @test kron(LA, 2LB) isa LinearMaps.ScaledMap
         @test kron(3LA, LB) isa LinearMaps.ScaledMap
         @test kron(3LA, 2LB) isa LinearMaps.ScaledMap

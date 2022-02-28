@@ -1,5 +1,4 @@
 using Test, LinearMaps, Aqua
-using LinearMaps: FiveArg, ThreeArg
 
 @testset "code quality" begin
     Aqua.test_all(LinearMaps)

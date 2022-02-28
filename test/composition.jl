@@ -23,9 +23,10 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
     F2 = F*F
     FC2 = FC*FC
     F4 = FC2 * F2
+    F4v = @inferred LinearMaps.CompositeMap{ComplexF64}([FC2, F2])
     @test occursin("10×10 LinearMaps.CompositeMap{$(eltype(F4))}", sprint((t, s) -> show(t, "text/plain", s), F4))
     @test length(F4.maps) == 4
-    @test @inferred F4 * v == @inferred F * (F * (F * (F * v)))
+    @test (@inferred F4 * v) == F4v * v == (@inferred F * (F * (F * (F * v))))
     @test @inferred Matrix(M * transpose(M)) ≈ A * transpose(A)
     @test @inferred !isposdef(M * transpose(M))
     @test @inferred isposdef(LinearMap(M * M', isposdef=true))

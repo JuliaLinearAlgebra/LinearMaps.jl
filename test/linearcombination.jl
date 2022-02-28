@@ -1,4 +1,5 @@
 using Test, LinearMaps, LinearAlgebra, SparseArrays, BenchmarkTools
+using LinearMaps: FiveArg
 
 @testset "linear combinations" begin
     CS! = LinearMap{ComplexF64}(cumsum!,
@@ -9,14 +10,19 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays, BenchmarkTools
     b = @benchmarkable mul!($u, $CS!, $v)
     @test run(b, samples=3).allocs == 0
     n = 10
-    L = sum(fill(CS!, n))
-    M = Matrix(L)
-    @test M == LowerTriangular(fill(n, size(L)))
+    L = @inferred sum(ntuple(_ -> CS!, n))
+    Lv = @inferred LinearMaps.LinearCombination{ComplexF64}(fill(CS!, n))
+    @test L == Lv
+    M, Mv = Matrix.((L, Lv))
+    @test M == Mv == LowerTriangular(fill(n, size(L)))
     @test_throws AssertionError LinearMaps.LinearCombination{Float64}((CS!, CS!))
-    @test occursin("10×10 LinearMaps.LinearCombination{$(eltype(L))}", sprint((t, s) -> show(t, "text/plain", s), L))
-    @test occursin("10×10 LinearMaps.LinearCombination{$(eltype(L))}", sprint((t, s) -> show(t, "text/plain", s), L+CS!))
+    @test occursin("10×10 $LinearMaps.LinearCombination{$(eltype(L))}", sprint((t, s) -> show(t, "text/plain", s), L))
+    @test occursin("10×10 $LinearMaps.LinearCombination{$(eltype(L))}", sprint((t, s) -> show(t, "text/plain", s), L+CS!))
     @test mul!(u, L, v) ≈ n * cumsum(v)
+    @test mul!(u, Lv, v) ≈ n * cumsum(v)
     b = @benchmarkable mul!($u, $L, $v, 2, 2)
+    @test run(b, samples=5).allocs <= 1
+    b = @benchmarkable mul!($u, $Lv, $v, 2, 2)
     @test run(b, samples=5).allocs <= 1
     for α in (false, true, rand(ComplexF64)), β in (false, true, rand(ComplexF64))
         for transform in (identity, adjoint, transpose)

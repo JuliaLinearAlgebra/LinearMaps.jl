@@ -1,5 +1,5 @@
 using Test, LinearMaps, LinearAlgebra, SparseArrays, BenchmarkTools, InteractiveUtils
-using LinearMaps: FiveArg, ThreeArg
+using LinearMaps: FiveArg
 
 @testset "block maps" begin
     @testset "hcat" begin
@@ -8,6 +8,10 @@ using LinearMaps: FiveArg, ThreeArg
             A12 = rand(elty, 10, n2)
             v = rand(elty, 10)
             L = @inferred hcat(LinearMap(A11), LinearMap(A12))
+            @test L.maps isa Tuple
+            Lv = @inferred LinearMaps.BlockMap{elty}([LinearMap(A11), LinearMap(A12)], (2,))
+            @test Lv.maps isa Vector
+            @test L == Lv == LinearMaps.BlockMap([LinearMap(A11), LinearMap(A12)], (2,))
             @test occursin("10×$(10+n2) LinearMaps.BlockMap{$elty}", sprint((t, s) -> show(t, "text/plain", s), L))
             @test @inferred(LinearMaps.MulStyle(L)) === FiveArg()
             @test L isa LinearMaps.BlockMap{elty}
@@ -16,9 +20,9 @@ using LinearMaps: FiveArg, ThreeArg
             end
             A = [A11 A12]
             x = rand(10+n2)
-            @test size(L) == size(A)
-            @test Matrix(L) ≈ A
-            @test L * x ≈ A * x
+            @test size(L) == size(A) == size(Lv)
+            @test Matrix(L) ≈ A ≈ Matrix(Lv)
+            @test L * x ≈ A * x ≈ Lv * x
             L = @inferred hcat(LinearMap(A11), LinearMap(A12), LinearMap(A11))
             A = [A11 A12 A11]
             @test Matrix(L) ≈ A
@@ -53,6 +57,10 @@ using LinearMaps: FiveArg, ThreeArg
             @test Matrix(L) ≈ A11
             A21 = rand(elty, 20, 10)
             L = @inferred vcat(LinearMap(A11), LinearMap(A21))
+            @test L.maps isa Tuple
+            Lv = LinearMaps.BlockMap{elty}([LinearMap(A11), LinearMap(A21)], (1,1))
+            @test Lv.maps isa Vector
+            @test L == Lv
             @test occursin("30×10 LinearMaps.BlockMap{$elty}", sprint((t, s) -> show(t, "text/plain", s), L))
             @test L isa LinearMaps.BlockMap{elty}
             @test @inferred(LinearMaps.MulStyle(L)) === FiveArg()
@@ -60,8 +68,8 @@ using LinearMaps: FiveArg, ThreeArg
             A = [A11; A21]
             x = rand(10)
             @test size(L) == size(A)
-            @test Matrix(L) ≈ A
-            @test L * x ≈ A * x
+            @test Matrix(L) == Matrix(Lv) ==  A
+            @test L * x ≈ Lv * x ≈ A * x
             A = [I; I; I; A11; A11; A11; v v v v v v v v v v]
             @test (@which [I; I; I; A11; A11; A11; v v v v v v v v v v]).module != LinearMaps
             L = @inferred vcat(I, I, I, LinearMap(A11), LinearMap(A11), LinearMap(A11), reduce(hcat, fill(v, 10)))
@@ -85,14 +93,17 @@ using LinearMaps: FiveArg, ThreeArg
             @test (@which [A11 A12; A21 A22]).module != LinearMaps
             @inferred hvcat((2,2), LinearMap(A11), LinearMap(A12), LinearMap(A21), LinearMap(A22))
             L = [LinearMap(A11) LinearMap(A12); LinearMap(A21) LinearMap(A22)]
+            @test L.maps isa Tuple
+            Lv = @inferred LinearMaps.BlockMap{elty}([LinearMap(A11), LinearMap(A12), LinearMap(A21), LinearMap(A22)], (2,2))
+            @test Lv.maps isa Vector
             @test @inferred(LinearMaps.MulStyle(L)) === FiveArg()
             @test @inferred !issymmetric(L)
             @test @inferred !ishermitian(L)
             x = rand(30)
             @test L isa LinearMaps.BlockMap{elty}
             @test size(L) == size(A)
-            @test L * x ≈ A * x
-            @test Matrix(L) == A
+            @test L * x ≈ Lv * x ≈ A * x
+            @test Matrix(L) == Matrix(Lv) == A
             @test convert(AbstractMatrix, L) == A
             A = [I A12; A21 I]
             @test (@which [I A12; A21 I]).module != LinearMaps
@@ -202,6 +213,9 @@ using LinearMaps: FiveArg, ThreeArg
             @test (@which cat(M1, M2, M3, M2, M1; dims=(1,2))).module != LinearMaps
             x = randn(elty, size(Md, 2))
             Bd = @inferred blockdiag(L1, L2, L3, L2, L1)
+            @test Bd.maps isa Tuple
+            Bdv = @inferred LinearMaps.BlockDiagonalMap{elty}([L1, L2, L3, L2, L1])
+            @test Bdv.maps isa Vector
             @test @inferred(LinearMaps.MulStyle(Bd)) === FiveArg()
             @test occursin("25×39 LinearMaps.BlockDiagonalMap{$elty}", sprint((t, s) -> show(t, "text/plain", s), Bd))
             @test Matrix(Bd) == Md
@@ -211,12 +225,12 @@ using LinearMaps: FiveArg, ThreeArg
             @test Matrix(@inferred blockdiag(L1, L2)) == blockdiag(sparse.((M1, M2))...)
             Bd2 = @inferred cat(L1, L2, L3, L2, L1; dims=(1,2))
             @test_throws ArgumentError cat(L1, L2, L3, L2, L1; dims=(2,2))
-            @test Bd == Bd2
+            @test Bd == Bdv == Bd2
             @test Bd == blockdiag(L1, M2, M3, M2, M1)
             @test size(Bd) == (25, 39)
             @test !issymmetric(Bd)
             @test !ishermitian(Bd)
-            @test @inferred Bd * x ≈ Md * x
+            @test (@inferred Bd * x) ≈ Bdv * x ≈ Md * x
             for transform in (identity, adjoint, transpose)
                 @test Matrix(@inferred transform(Bd)) == transform(Md)
                 @test Matrix(@inferred transform(LinearMap(Bd))) == transform(Md)
@@ -224,11 +238,13 @@ using LinearMaps: FiveArg, ThreeArg
             y = randn(elty, size(Md, 1))
             for α in (0, 1, rand(elty)), β in (0, 1, rand(elty))
                 @test mul!(copy(y), Bd, x, α, β) ≈ y*β .+ Md*x*α
+                @test mul!(copy(y), Bdv, x, α, β) ≈ y*β .+ Md*x*α
             end
             X = randn(elty, size(Md, 2), 10)
             Y = randn(elty, size(Md, 1), 10)
             for α in (0, 1, rand(elty)), β in (0, 1, rand(elty))
                 @test mul!(copy(Y), Bd, X, α, β) ≈ Y*β .+ Md*X*α
+                @test mul!(copy(Y), Bdv, X, α, β) ≈ Y*β .+ Md*X*α
             end
         end
     end
