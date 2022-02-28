@@ -33,9 +33,9 @@ for (f, _f, g) in ((:issymmetric, :_issymmetric, :transpose),
             if n == 0
                 return true
             elseif n == 1
-                return $f(maps[1])
+                return ($f(maps[1]))::Bool
             else
-                return maps[end] == $g(maps[1]) && $_f(maps[2:end-1])
+                return ((maps[end] == $g(maps[1]))::Bool && $_f(@views maps[2:end-1]))
             end
         end
         # since the introduction of ScaledMap, the following cases cannot occur

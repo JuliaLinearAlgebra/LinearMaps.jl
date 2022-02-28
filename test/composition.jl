@@ -37,7 +37,9 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
     @test @inferred issymmetric(F'F)
     @test @inferred issymmetric(F'*S*F)
     @test @inferred ishermitian(F'F)
+    @test @inferred ishermitian(LinearMaps.CompositeMap{ComplexF64}([F, F']))
     @test @inferred ishermitian(F'*H*F)
+    @test @inferred ishermitian(LinearMaps.CompositeMap{ComplexF64}([F, H, F']))
     @test @inferred !issymmetric(FC'FC)
     @test @inferred ishermitian(FC'FC)
     @test @inferred ishermitian(FC'*H*FC)
@@ -138,5 +140,7 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
     B = LinearMap([1 0; 0 1], isposdef=true) # isposdef!
     C = B' * B * B * B * B # no B' at end on purpose
     @test @inferred isposdef(C)
+    @test @inferred isposdef(LinearMaps.CompositeMap{Float64}([B, B, B, B, B']))
     @test @inferred isposdef(B * B) # even case for empty tuple test
+    @test @inferred isposdef(LinearMaps.CompositeMap{Float64}([B, B]))
 end

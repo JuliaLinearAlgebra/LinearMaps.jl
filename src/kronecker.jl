@@ -167,9 +167,6 @@ const AdjOrTransVectorMap{T} = WrappedMap{T,<:LinearAlgebra.AdjOrTransAbsVec}
 
 const KroneckerMap2{T} = KroneckerMap{T, <:Tuple{LinearMap, LinearMap}}
 
-_krontail(maps::LinearMapTuple) = kron(Base.tail(maps)...)
-_krontail(maps::LinearMapVector) = kron(_tail(maps))
-
 function _unsafe_mul!(y::AbstractVecOrMat, L::KroneckerMap2, x::AbstractVector)
     require_one_based_indexing(y)
     A, B = L.maps
@@ -183,7 +180,7 @@ function _unsafe_mul!(y::AbstractVecOrMat, L::KroneckerMap, x::AbstractVector)
         @inbounds _kronmul!(y, maps[2], x, maps[1], eltype(L))
     else
         A = first(maps)
-        B = _krontail(maps)
+        B = KroneckerMap{eltype(L)}(_tail(maps))
         _kronmul!(y, B, x, A, eltype(L))
     end
     return y
@@ -196,7 +193,7 @@ function _unsafe_mul!(y::AbstractVecOrMat,
     require_one_based_indexing(y)
     B, A = L.maps
     if length(A.maps) == length(B.maps) && all(_iscompatible, zip(A.maps, B.maps))
-        _unsafe_mul!(y, kron(map(*, A.maps, B.maps)...), x)
+        _unsafe_mul!(y, KroneckerMap{eltype(L)}(map(*, A.maps, B.maps)), x)
     else
         _unsafe_mul!(y, LinearMap(A)*B, x)
     end
@@ -205,7 +202,7 @@ end
 # mixed-product rule, prefer the right if possible
 # (A₁⊗B₁) * (A₂⊗B₂) * ... * (Aᵣ⊗Bᵣ) = (A₁*A₂*...*Aᵣ) ⊗ (B₁*B₂*...*Bᵣ)
 function _unsafe_mul!(y::AbstractVecOrMat,
-                        L::CompositeMap{T, <:Union{Tuple{Vararg{KroneckerMap2}},Vector{<:KroneckerMap2}}},
+                        L::CompositeMap{T, <:Union{Tuple{Vararg{KroneckerMap2}},AbstractVector{<:KroneckerMap2}}},
                         x::AbstractVector) where {T}
     require_one_based_indexing(y)
     As = map(AB -> AB.maps[1], L.maps)
