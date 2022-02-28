@@ -496,7 +496,7 @@ end
 function _blockscaling!(y, A::BlockDiagonalMap, x, α, β)
     maps, yinds, xinds = A.maps, A.rowranges, A.colranges
     # TODO: think about multi-threading here
-    @views for i in eachindex(yinds, maps, xinds)
+    @inbounds for i in eachindex(yinds, maps, xinds)
         _unsafe_mul!(selectdim(y, 1, yinds[i]), maps[i], selectdim(x, 1, xinds[i]), α, β)
     end
     return y
