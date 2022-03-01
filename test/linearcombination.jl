@@ -11,7 +11,9 @@ using LinearMaps: FiveArg
     @test run(b, samples=3).allocs == 0
     n = 10
     L = @inferred sum(ntuple(_ -> CS!, n))
+    @test (@inferred sum(L.maps::LinearMaps.LinearMapTuple)) == L
     Lv = @inferred LinearMaps.LinearCombination{ComplexF64}(fill(CS!, n))
+    @test sum(Lv.maps::LinearMaps.LinearMapVector) == Lv
     @test L == Lv
     M, Mv = Matrix.((L, Lv))
     @test M == Mv == LowerTriangular(fill(n, size(L)))
