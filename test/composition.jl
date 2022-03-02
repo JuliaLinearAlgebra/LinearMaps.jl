@@ -1,4 +1,5 @@
 using Test, LinearMaps, LinearAlgebra, SparseArrays
+using LinearMaps: LinearMapVector, LinearMapTuple
 
 @testset "composition" begin
     F = @inferred LinearMap(cumsum, reverse ∘ cumsum ∘ reverse, 10; ismutating=false)
@@ -58,7 +59,9 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
     R3 = rand(ComplexF64, 10, 10); L3 = LinearMap(R3)
     CompositeR = *(R1, R2, R3)
     CompositeL = prod(LinearMap, [R1, R2, R3])
-    @test @inferred L1 * L2 * L3 == CompositeL
+    @test (@inferred prod([L1, L2, L3])) isa LinearMaps.CompositeMap{<:Any,<:LinearMapVector}
+    @test (@inferred prod((L1, L2, L3))) isa LinearMaps.CompositeMap{<:Any,<:LinearMapTuple}
+    @test (@inferred L1 * L2 * L3) == CompositeL == prod([L1, L2, L3])
     @test Matrix(L1 * L2) ≈ sparse(L1 * L2) ≈ R1 * R2
     @test Matrix(@inferred((α * L1) * (L2 * L3))::LinearMaps.ScaledMap) ≈ α * CompositeR
     @test Matrix(@inferred((L1 * L2) * (L3 * α))::LinearMaps.ScaledMap) ≈ α * CompositeR

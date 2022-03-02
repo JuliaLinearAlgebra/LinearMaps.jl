@@ -1,5 +1,5 @@
 using Test, LinearMaps, LinearAlgebra, SparseArrays, BenchmarkTools
-using LinearMaps: FiveArg
+using LinearMaps: FiveArg, LinearMapTuple, LinearMapVector
 
 @testset "linear combinations" begin
     CS! = LinearMap{ComplexF64}(cumsum!,
@@ -11,15 +11,15 @@ using LinearMaps: FiveArg
     @test run(b, samples=3).allocs == 0
     n = 10
     L = @inferred sum(ntuple(_ -> CS!, n))
-    @test (@inferred sum(L.maps::LinearMaps.LinearMapTuple)) == L
+    @test (@inferred sum(L.maps::LinearMapTuple)) == L
     Lv = @inferred LinearMaps.LinearCombination{ComplexF64}(fill(CS!, n))
-    @test sum(Lv.maps::LinearMaps.LinearMapVector) == Lv
+    @test (@inferred sum(Lv.maps::LinearMapVector)) == Lv
     @test L == Lv
     for sum1 in (CS!, L, Lv), sum2 in (CS!, L, Lv)
         m1 = sum1 == CS! ? 1 : 10
         m2 = sum2 == CS! ? 1 : 10
-        vect = any(x -> isa(x, LinearMaps.LinearCombination{ComplexF64,<:LinearMaps.LinearMapVector}), (sum1, sum2))
-        maptyp = vect ? LinearMaps.LinearMapVector : LinearMaps.LinearMapTuple
+        vect = any(x -> isa(x, LinearMaps.LinearCombination{ComplexF64,<:LinearMapVector}), (sum1, sum2))
+        maptyp = vect ? LinearMapVector : LinearMapTuple
         @test (sum1+sum2) isa LinearMaps.LinearCombination{ComplexF64,<:maptyp}
         @test (sum1+sum2) * v ≈ (m1+m2)*cumsum(v)
     end

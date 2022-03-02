@@ -14,6 +14,11 @@ end
 
 LinearCombination{T}(maps::As) where {T, As} = LinearCombination{T, As}(maps)
 
+Base.mapreduce(::typeof(identity), ::typeof(Base.add_sum), maps::LinearMapTupleOrVector) =
+    LinearCombination{promote_type(map(eltype, maps)...)}(maps)
+Base.mapreduce(::typeof(identity), ::typeof(Base.add_sum), maps::AbstractVector{<:LinearMap{T}}) where {T} =
+    LinearCombination{T}(maps)
+
 MulStyle(A::LinearCombination) = MulStyle(A.maps...)
 
 # basic methods

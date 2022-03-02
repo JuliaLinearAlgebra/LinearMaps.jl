@@ -14,6 +14,11 @@ struct CompositeMap{T, As<:LinearMapTupleOrVector} <: LinearMap{T}
 end
 CompositeMap{T}(maps::As) where {T, As<:LinearMapTupleOrVector} = CompositeMap{T, As}(maps)
 
+Base.mapreduce(::typeof(identity), ::typeof(Base.mul_prod), maps::LinearMapTupleOrVector) =
+    CompositeMap{promote_type(map(eltype, maps)...)}(reverse(maps))
+Base.mapreduce(::typeof(identity), ::typeof(Base.mul_prod), maps::AbstractVector{<:LinearMap{T}}) where {T} =
+    CompositeMap{T}(reverse(maps))
+
 # basic methods
 Base.size(A::CompositeMap) = (size(A.maps[end], 1), size(A.maps[1], 2))
 Base.axes(A::CompositeMap) = (axes(A.maps[end])[1], axes(A.maps[1])[2])
@@ -56,7 +61,7 @@ LinearAlgebra.isposdef(A::CompositeMap) = _isposdef(A.maps)
 _isposdef(maps::Tuple{}) = true # empty product is equivalent to "I" which is pos. def.
 _isposdef(maps::Tuple{<:LinearMap}) = isposdef(maps[1])
 function _isposdef(maps::LinearMapTuple)
-    (maps[end] == adjoint(maps[1]) || maps[end] == maps[1]) && 
+    (maps[end] == adjoint(maps[1]) || maps[end] == maps[1]) &&
         isposdef(maps[1]) && _isposdef(Base.front(Base.tail(maps)))
 end
 function _isposdef(maps::LinearMapVector)
@@ -66,7 +71,7 @@ function _isposdef(maps::LinearMapVector)
     elseif n == 1
         return isposdef(maps[1])
     else
-        return (maps[end] == adjoint(maps[1]) || maps[end] == maps[1]) && 
+        return (maps[end] == adjoint(maps[1]) || maps[end] == maps[1]) &&
             isposdef(maps[1]) && _isposdef(maps[2:end-1])
     end
 end
