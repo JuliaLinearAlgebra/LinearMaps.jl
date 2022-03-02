@@ -15,6 +15,8 @@ using LinearMaps: FiveArg, LinearMapTuple, LinearMapVector
     Lv = @inferred LinearMaps.LinearCombination{ComplexF64}(fill(CS!, n))
     @test (@inferred sum(Lv.maps::LinearMapVector)) == Lv
     @test L == Lv
+    @inferred sum([CS!, LinearMap(randn(eltype(CS!), size(CS!)))])
+    @inferred sum([CS!, LinearMap(randn(real(eltype(CS!)), size(CS!)))])
     for sum1 in (CS!, L, Lv), sum2 in (CS!, L, Lv)
         m1 = sum1 == CS! ? 1 : 10
         m2 = sum2 == CS! ? 1 : 10

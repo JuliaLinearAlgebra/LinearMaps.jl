@@ -56,10 +56,11 @@ using LinearMaps: LinearMapVector, LinearMapTuple
     @test Array(L) ≈ LF
     R1 = rand(ComplexF64, 10, 10); L1 = LinearMap(R1)
     R2 = rand(ComplexF64, 10, 10); L2 = LinearMap(R2)
-    R3 = rand(ComplexF64, 10, 10); L3 = LinearMap(R3)
+    R3 = rand(Float64, 10, 10); L3 = LinearMap(R3)
     CompositeR = *(R1, R2, R3)
     CompositeL = prod(LinearMap, [R1, R2, R3])
     @test (@inferred prod([L1, L2, L3])) isa LinearMaps.CompositeMap{<:Any,<:LinearMapVector}
+    @test prod([L1, L2, L3]) == (@inferred L1 * prod([L2, L3])) == (@inferred prod([L1, L2]) * L3)
     @test (@inferred prod((L1, L2, L3))) isa LinearMaps.CompositeMap{<:Any,<:LinearMapTuple}
     @test (@inferred L1 * L2 * L3) == CompositeL == prod([L1, L2, L3])
     @test Matrix(L1 * L2) ≈ sparse(L1 * L2) ≈ R1 * R2
