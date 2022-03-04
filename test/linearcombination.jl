@@ -17,6 +17,7 @@ using LinearMaps: FiveArg, LinearMapTuple, LinearMapVector
     @test isa((@inferred mean(Lv.maps)),
         LinearMaps.ScaledMap{ComplexF64,Float64,<:LinearMaps.LinearCombination{ComplexF64,<:LinearMapVector}})
     @test (@inferred mean(L.maps)) == (@inferred mean(Lv.maps)) == (@inferred sum(Lv.maps))/n
+    @test (@inferred mean(L)) == (@inferred mean(Lv))
     @test (@inferred mean(x -> x*x, L.maps)) == (@inferred sum(x -> x*x, L.maps))/n
     @test mean(x -> x*x, Lv.maps) == (sum(x -> x*x, Lv.maps))/n
     @test L == Lv
