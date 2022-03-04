@@ -1,12 +1,10 @@
 struct BlockMap{T,
                 As<:LinearMapTupleOrVector,
-                Rs<:Tuple{Vararg{Int}},
-                Rranges<:Vector{UnitRange{Int}},
-                Cranges<:Vector{UnitRange{Int}}} <: LinearMap{T}
+                Rs<:Tuple{Vararg{Int}}} <: LinearMap{T}
     maps::As
     rows::Rs
-    rowranges::Rranges
-    colranges::Cranges
+    rowranges::Vector{UnitRange{Int}}
+    colranges::Vector{UnitRange{Int}}
     function BlockMap{T,As,Rs}(maps::As, rows::Rs) where
                 {T, As<:LinearMapTupleOrVector, Rs<:Tuple{Vararg{Int}}}
         for TA in Base.Generator(eltype, maps)
@@ -14,8 +12,7 @@ struct BlockMap{T,
                 error("eltype $TA cannot be promoted to $T in BlockMap constructor")
         end
         rowranges, colranges = rowcolranges(maps, rows)
-        Rranges, Cranges = typeof(rowranges), typeof(colranges)
-        return new{T, As, Rs, Rranges, Cranges}(maps, rows, rowranges, colranges)
+        return new{T, As, Rs}(maps, rows, rowranges, colranges)
     end
 end
 
@@ -399,12 +396,10 @@ end
 ############
 # BlockDiagonalMap
 ############
-struct BlockDiagonalMap{T,
-                        As<:LinearMapTupleOrVector,
-                        Ranges<:Vector{UnitRange{Int}}} <: LinearMap{T}
+struct BlockDiagonalMap{T, As<:LinearMapTupleOrVector} <: LinearMap{T}
     maps::As
-    rowranges::Ranges
-    colranges::Ranges
+    rowranges::Vector{UnitRange{Int}}
+    colranges::Vector{UnitRange{Int}}
     function BlockDiagonalMap{T, As}(maps::As) where {T, As<:LinearMapTupleOrVector}
         for TA in Base.Generator(eltype, maps)
             promote_type(T, TA) == T ||
@@ -412,7 +407,7 @@ struct BlockDiagonalMap{T,
         end
         rowranges = _getranges(maps, 1)
         colranges = _getranges(maps, 2)
-        return new{T, As, typeof(rowranges)}(maps, rowranges, colranges)
+        return new{T, As}(maps, rowranges, colranges)
     end
 end
 
