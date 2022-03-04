@@ -14,10 +14,18 @@ end
 
 LinearCombination{T}(maps::As) where {T, As} = LinearCombination{T, As}(maps)
 
+# this method avoids the afoldl-mechanism even for LinearMapTuple
 Base.mapreduce(::typeof(identity), ::typeof(Base.add_sum), maps::LinearMapTupleOrVector) =
     LinearCombination{promote_type(map(eltype, maps)...)}(maps)
+# this method is required for type stability in the mixed-map-equal-eltype case
 Base.mapreduce(::typeof(identity), ::typeof(Base.add_sum), maps::AbstractVector{<:LinearMap{T}}) where {T} =
     LinearCombination{T}(maps)
+# the following two methods are needed to make e.g. `mean` work,
+# for which `f` is some sort of promotion function
+Base.mapreduce(f::F, ::typeof(Base.add_sum), maps::LinearMapTupleOrVector) where {F} =
+    LinearCombination{promote_type(map(eltype, maps)...)}(f.(maps))
+Base.mapreduce(f::F, ::typeof(Base.add_sum), maps::AbstractVector{<:LinearMap{T}}) where {F,T} =
+    LinearCombination{T}(f.(maps))
 
 MulStyle(A::LinearCombination) = MulStyle(A.maps...)
 

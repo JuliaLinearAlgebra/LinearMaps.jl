@@ -1,4 +1,4 @@
-using Test, LinearMaps, LinearAlgebra, SparseArrays, BenchmarkTools
+using Test, LinearMaps, LinearAlgebra, SparseArrays, BenchmarkTools, Statistics
 using LinearMaps: FiveArg, LinearMapTuple, LinearMapVector
 
 @testset "linear combinations" begin
@@ -14,10 +14,15 @@ using LinearMaps: FiveArg, LinearMapTuple, LinearMapVector
     @test (@inferred sum(L.maps::LinearMapTuple)) == L
     Lv = @inferred LinearMaps.LinearCombination{ComplexF64}(fill(CS!, n))
     @test (@inferred sum(Lv.maps::LinearMapVector)) == Lv
+    @test isa((@inferred mean(Lv.maps)),
+        LinearMaps.ScaledMap{ComplexF64,Float64,<:LinearMaps.LinearCombination{ComplexF64,<:LinearMapVector}})
+    @test (@inferred mean(x -> x*x, Lv.maps)) == (@inferred sum(x -> x*x, Lv.maps)/n)
     @test L == Lv
     @test isa((@inferred sum([CS!, LinearMap(randn(eltype(CS!), size(CS!)))])),
         LinearMaps.LinearCombination{<:ComplexF64,<:LinearMapVector})
-    @test isa(sum([CS!, LinearMap(randn(real(eltype(CS!)), size(CS!)))]),
+    A = randn(eltype(CS!), size(CS!))
+    @test (@inferred mean([CS!, LinearMap(A)])) == (@inferred sum([CS!, LinearMap(A)])/2)
+    @test isa(sum([CS!, LinearMap(real(A))]),
         LinearMaps.LinearCombination{<:ComplexF64,<:LinearMapVector})
     for sum1 in (CS!, L, Lv), sum2 in (CS!, L, Lv)
         m1 = sum1 == CS! ? 1 : 10
