@@ -16,14 +16,19 @@ using LinearMaps: FiveArg, LinearMapTuple, LinearMapVector
     @test (@inferred sum(Lv.maps::LinearMapVector)) == Lv
     @test isa((@inferred mean(Lv.maps)),
         LinearMaps.ScaledMap{ComplexF64,Float64,<:LinearMaps.LinearCombination{ComplexF64,<:LinearMapVector}})
-    @test (@inferred mean(x -> x*x, Lv.maps)) == (@inferred sum(x -> x*x, Lv.maps)/n)
+    @test (@inferred mean(L.maps)) == (@inferred mean(Lv.maps)) == (@inferred sum(Lv.maps))/n
+    @test (@inferred mean(x -> x*x, L.maps)) == (@inferred sum(x -> x*x, L.maps))/n
+    @test mean(x -> x*x, Lv.maps) == (sum(x -> x*x, Lv.maps))/n
     @test L == Lv
-    @test isa((@inferred sum([CS!, LinearMap(randn(eltype(CS!), size(CS!)))])),
+    A = LinearMap(randn(eltype(CS!), size(CS!)))
+    Ar = LinearMap(real(A.lmap))
+    @test isa((@inferred sum([CS!, A])),
         LinearMaps.LinearCombination{<:ComplexF64,<:LinearMapVector})
-    A = randn(eltype(CS!), size(CS!))
-    @test (@inferred mean([CS!, LinearMap(A)])) == (@inferred sum([CS!, LinearMap(A)])/2)
-    @test isa(sum([CS!, LinearMap(real(A))]),
-        LinearMaps.LinearCombination{<:ComplexF64,<:LinearMapVector})
+    @test (@inferred mean([CS!, A])) == (@inferred sum([CS!, A]))/2
+    @test (@inferred mean([CS!, A])) == (@inferred mean(identity, [CS!, A])) == (@inferred sum([CS!, A]))/2
+    @test isa(sum([CS!, Ar]), LinearMaps.LinearCombination{<:ComplexF64,<:LinearMapVector})
+    @test sum([CS!, Ar])/2 == mean([CS!, Ar])
+    @test sum([CS!, Ar]) == sum(identity, [CS!, Ar])
     for sum1 in (CS!, L, Lv), sum2 in (CS!, L, Lv)
         m1 = sum1 == CS! ? 1 : 10
         m2 = sum2 == CS! ? 1 : 10

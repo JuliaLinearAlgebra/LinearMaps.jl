@@ -8,6 +8,8 @@ using LinearAlgebra
 import LinearAlgebra: mul!
 using SparseArrays
 
+import Statistics: mean
+
 using Base: require_one_based_indexing
 
 abstract type LinearMap{T} end
@@ -21,6 +23,15 @@ const LinearMapVector = AbstractVector{<:LinearMap}
 const LinearMapTupleOrVector = Union{LinearMapTuple,LinearMapVector}
 
 Base.eltype(::LinearMap{T}) where {T} = T
+
+# conversion to LinearMap
+Base.convert(::Type{LinearMap}, A::LinearMap) = A
+Base.convert(::Type{LinearMap}, A::AbstractVecOrMat) = LinearMap(A)
+
+convert_to_lmaps() = ()
+convert_to_lmaps(A) = (convert(LinearMap, A),)
+@inline convert_to_lmaps(A, B, Cs...) =
+    (convert(LinearMap, A), convert(LinearMap, B), convert_to_lmaps(Cs...)...)
 
 abstract type MulStyle end
 
@@ -64,14 +75,6 @@ function check_dim_mul(C, A, B)
         throw(DimensionMismatch("A has size ($mA,$nA), B has size ($mB,$nB), C has size $(size(C))"))
     return nothing
 end
-
-# conversion of AbstractVecOrMat to LinearMap
-convert_to_lmaps_(A::AbstractVecOrMat) = LinearMap(A)
-convert_to_lmaps_(A::LinearMap) = A
-convert_to_lmaps() = ()
-convert_to_lmaps(A) = (convert_to_lmaps_(A),)
-@inline convert_to_lmaps(A, B, Cs...) =
-    (convert_to_lmaps_(A), convert_to_lmaps_(B), convert_to_lmaps(Cs...)...)
 
 _front(As::Tuple) = Base.front(As)
 _front(As::AbstractVector) = @inbounds @views As[1:end-1]
