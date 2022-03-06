@@ -31,6 +31,7 @@ using Test, LinearMaps, LinearAlgebra
         Λ = @inferred LinearMap(λ*I, m)
         x = rand(Float64, sz)
         y = ones(Float64, sz)
+        mul!(y, Λ, x, α, β)
         @test (@allocated mul!(y, Λ, x, α, β)) == 0
         y = copy(x)
         @inferred mul!(y, Λ, x, α, β)
