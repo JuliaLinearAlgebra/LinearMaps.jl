@@ -281,7 +281,11 @@ using LinearMaps: FiveArg
                 if transform != adjoint
                     transL = transform(L)
                     alloc = @allocated similar(v)
-                    @test (@allocated mul!(v, transL, u, α, β)) <= alloc broken = (L == L2 && α != false)
+                    if L == L2 && α != false
+                        @test_broken (@allocated mul!(v, transL, u, α, β)) <= alloc
+                    else
+                        @test (@allocated mul!(v, transL, u, α, β)) <= alloc
+                    end
                 end
             end
         end
