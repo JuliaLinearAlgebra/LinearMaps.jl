@@ -1,5 +1,6 @@
-using BenchmarkTools, LinearAlgebra, LinearMaps, Test
+using LinearAlgebra, LinearMaps, Test
 # using LinearMaps.GetIndex
+# using BenchmarkTools
 
 function test_getindex(A::LinearMap, M::AbstractMatrix)
     @assert size(A) == size(M)
