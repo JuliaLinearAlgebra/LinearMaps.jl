@@ -39,5 +39,5 @@ julia> import Pkg; Pkg.add("LinearMaps")
 [license-img]: http://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat
 [license-url]: LICENSE.md
 
-[aqua-img]: https://img.shields.io/badge/Aqua.jl-%F0%9F%8C%A2-aqua.svg
+[aqua-img]: https://raw.githubusercontent.com/JuliaTesting/Aqua.jl/master/badge.svg
 [aqua-url]: https://github.com/JuliaTesting/Aqua.jl
