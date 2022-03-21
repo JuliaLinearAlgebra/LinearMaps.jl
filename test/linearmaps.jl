@@ -1,4 +1,4 @@
-using Test, LinearMaps, LinearAlgebra, SparseArrays, BenchmarkTools
+using Test, LinearMaps, LinearAlgebra, SparseArrays
 
 @testset "basic functionality" begin
     A = 2 * rand(ComplexF64, (20, 10)) .- 1

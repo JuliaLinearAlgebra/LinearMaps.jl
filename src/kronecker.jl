@@ -1,6 +1,6 @@
-struct KroneckerMap{T, As<:LinearMapTuple} <: LinearMap{T}
+struct KroneckerMap{T, As<:LinearMapTupleOrVector} <: LinearMap{T}
     maps::As
-    function KroneckerMap{T}(maps::LinearMapTuple) where {T}
+    function KroneckerMap{T}(maps::LinearMapTupleOrVector) where {T}
         for TA in Base.Iterators.map(eltype, maps)
             promote_type(T, TA) == T ||
                 error("eltype $TA cannot be promoted to $T in KroneckerMap constructor")
@@ -47,11 +47,11 @@ julia> Matrix(Δ)
 Base.kron(A::LinearMap, B::LinearMap) =
     KroneckerMap{promote_type(eltype(A), eltype(B))}((A, B))
 Base.kron(A::LinearMap, B::KroneckerMap) =
-    KroneckerMap{promote_type(eltype(A), eltype(B))}(tuple(A, B.maps...))
+    KroneckerMap{promote_type(eltype(A), eltype(B))}(_combine(A, B.maps))
 Base.kron(A::KroneckerMap, B::LinearMap) =
-    KroneckerMap{promote_type(eltype(A), eltype(B))}(tuple(A.maps..., B))
+    KroneckerMap{promote_type(eltype(A), eltype(B))}(_combine(A.maps, B))
 Base.kron(A::KroneckerMap, B::KroneckerMap) =
-    KroneckerMap{promote_type(eltype(A), eltype(B))}(tuple(A.maps..., B.maps...))
+    KroneckerMap{promote_type(eltype(A), eltype(B))}(_combine(A.maps, B.maps))
 # hoist out scalings
 Base.kron(A::ScaledMap, B::LinearMap) = A.λ * kron(A.lmap, B)
 Base.kron(A::LinearMap, B::ScaledMap) = kron(A, B.lmap) * B.λ
@@ -97,7 +97,7 @@ Construct a lazy representation of the `k`-th Kronecker power
 ⊗(A, B, Cs...) = kron(convert_to_lmaps(A, B, Cs...)...)
 
 Base.:(^)(A::MapOrMatrix, ::KronPower{p}) where {p} =
-    kron(ntuple(n -> convert_to_lmaps_(A), Val(p))...)
+    kron(ntuple(n -> convert(LinearMap, A), Val(p))...)
 
 Base.size(A::KroneckerMap) = map(*, size.(A.maps)...)
 
@@ -107,7 +107,8 @@ LinearAlgebra.ishermitian(A::KroneckerMap) = all(ishermitian, A.maps)
 LinearAlgebra.adjoint(A::KroneckerMap) = KroneckerMap{eltype(A)}(map(adjoint, A.maps))
 LinearAlgebra.transpose(A::KroneckerMap) = KroneckerMap{eltype(A)}(map(transpose, A.maps))
 
-Base.:(==)(A::KroneckerMap, B::KroneckerMap) = (eltype(A) == eltype(B) && A.maps == B.maps)
+Base.:(==)(A::KroneckerMap, B::KroneckerMap) =
+    (eltype(A) == eltype(B) && all(A.maps .== B.maps))
 
 #################
 # multiplication helper functions
@@ -174,9 +175,14 @@ function _unsafe_mul!(y::AbstractVecOrMat, L::KroneckerMap2, x::AbstractVector)
 end
 function _unsafe_mul!(y::AbstractVecOrMat, L::KroneckerMap, x::AbstractVector)
     require_one_based_indexing(y)
-    A = first(L.maps)
-    B = kron(Base.tail(L.maps)...)
-    _kronmul!(y, B, x, A, eltype(L))
+    maps = L.maps
+    if length(maps) == 2 # reachable only for L.maps::Vector
+        @inbounds _kronmul!(y, maps[2], x, maps[1], eltype(L))
+    else
+        A = first(maps)
+        B = KroneckerMap{eltype(L)}(_tail(maps))
+        _kronmul!(y, B, x, A, eltype(L))
+    end
     return y
 end
 # mixed-product rule, prefer the right if possible
@@ -187,7 +193,7 @@ function _unsafe_mul!(y::AbstractVecOrMat,
     require_one_based_indexing(y)
     B, A = L.maps
     if length(A.maps) == length(B.maps) && all(_iscompatible, zip(A.maps, B.maps))
-        _unsafe_mul!(y, kron(map(*, A.maps, B.maps)...), x)
+        _unsafe_mul!(y, KroneckerMap{eltype(L)}(map(*, A.maps, B.maps)), x)
     else
         _unsafe_mul!(y, LinearMap(A)*B, x)
     end
@@ -196,13 +202,13 @@ end
 # mixed-product rule, prefer the right if possible
 # (A₁⊗B₁) * (A₂⊗B₂) * ... * (Aᵣ⊗Bᵣ) = (A₁*A₂*...*Aᵣ) ⊗ (B₁*B₂*...*Bᵣ)
 function _unsafe_mul!(y::AbstractVecOrMat,
-                        L::CompositeMap{T, <:Tuple{Vararg{KroneckerMap2}}},
+                        L::CompositeMap{T, <:Union{Tuple{Vararg{KroneckerMap2}},AbstractVector{<:KroneckerMap2}}},
                         x::AbstractVector) where {T}
     require_one_based_indexing(y)
     As = map(AB -> AB.maps[1], L.maps)
     Bs = map(AB -> AB.maps[2], L.maps)
-    As1, As2 = Base.front(As), Base.tail(As)
-    Bs1, Bs2 = Base.front(Bs), Base.tail(Bs)
+    As1, As2 = _front(As), _tail(As)
+    Bs1, Bs2 = _front(Bs), _tail(Bs)
     apply = all(_iscompatible, zip(As1, As2)) && all(_iscompatible, zip(Bs1, Bs2))
     if apply
         _unsafe_mul!(y, kron(prod(As), prod(Bs)), x)
@@ -281,7 +287,7 @@ where `A` can be a square `AbstractMatrix` or a `LinearMap`.
 ⊕(a, b, c...) = kronsum(a, b, c...)
 
 Base.:(^)(A::MapOrMatrix, ::KronSumPower{p}) where {p} =
-    kronsum(ntuple(n->convert_to_lmaps_(A), Val(p))...)
+    kronsum(ntuple(n -> convert(LinearMap, A), Val(p))...)
 
 Base.size(A::KroneckerSumMap, i) = prod(size.(A.maps, i))
 Base.size(A::KroneckerSumMap) = (size(A, 1), size(A, 2))
@@ -295,7 +301,7 @@ LinearAlgebra.transpose(A::KroneckerSumMap) =
     KroneckerSumMap{eltype(A)}(map(transpose, A.maps))
 
 Base.:(==)(A::KroneckerSumMap, B::KroneckerSumMap) =
-    (eltype(A) == eltype(B) && A.maps == B.maps)
+    (eltype(A) == eltype(B) && all(A.maps .== B.maps))
 
 function _unsafe_mul!(y::AbstractVecOrMat, L::KroneckerSumMap, x::AbstractVector)
     A, B = L.maps

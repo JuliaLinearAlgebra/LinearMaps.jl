@@ -1,4 +1,4 @@
-using Test, LinearMaps, LinearAlgebra, BenchmarkTools
+using Test, LinearMaps, LinearAlgebra
 
 @testset "scaledmap" begin
     N = 7
@@ -94,7 +94,8 @@ using Test, LinearMaps, LinearAlgebra, BenchmarkTools
     for (A, alloc) in ((A0, 1), (A1, 0), (B0, 1), (B1, 0), (A0', 3), (A1', 0), (B0', 3), (B1', 0))
         x = rand(N)
         y = similar(x)
-        b = @benchmarkable mul!($y, $A, $x)
-        @test run(b, samples = 3).allocs <= alloc
+        allocsize = @allocated similar(y)
+        mul!(y, A, x)
+        @test (@allocated mul!(y, A, x)) == alloc*allocsize
     end
 end

@@ -1,4 +1,5 @@
-using Test, LinearMaps, LinearAlgebra, SparseArrays, BenchmarkTools
+using Test, LinearMaps, LinearAlgebra, SparseArrays, Statistics
+using LinearMaps: FiveArg, LinearMapTuple, LinearMapVector
 
 @testset "linear combinations" begin
     CS! = LinearMap{ComplexF64}(cumsum!,
@@ -6,18 +7,49 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays, BenchmarkTools
                                 ismutating=true)
     v = rand(ComplexF64, 10)
     u = similar(v)
-    b = @benchmarkable mul!($u, $CS!, $v)
-    @test run(b, samples=3).allocs == 0
+    mul!(u, CS!, v)
+    @test (@allocated mul!(u, CS!, v)) == 0
     n = 10
-    L = sum(fill(CS!, n))
-    M = Matrix(L)
-    @test M == LowerTriangular(fill(n, size(L)))
+    L = @inferred sum(ntuple(_ -> CS!, n))
+    @test (@inferred sum(L.maps::LinearMapTuple)) == L
+    Lv = @inferred LinearMaps.LinearCombination{ComplexF64}(fill(CS!, n))
+    @test (@inferred sum(Lv.maps::LinearMapVector)) == Lv
+    @test isa((@inferred mean(Lv.maps)),
+        LinearMaps.ScaledMap{ComplexF64,Float64,<:LinearMaps.LinearCombination{ComplexF64,<:LinearMapVector}})
+    @test (@inferred mean(L.maps)) == (@inferred mean(Lv.maps)) == (@inferred sum(Lv.maps))/n
+    @test (@inferred mean(L)) == (@inferred mean(Lv))
+    @test (@inferred mean(x -> x*x, L.maps)) == (@inferred sum(x -> x*x, L.maps))/n
+    @test mean(x -> x*x, Lv.maps) == (sum(x -> x*x, Lv.maps))/n
+    @test L == Lv
+    A = LinearMap(randn(eltype(CS!), size(CS!)))
+    Ar = LinearMap(real(A.lmap))
+    @test isa((@inferred sum([CS!, A])),
+        LinearMaps.LinearCombination{<:ComplexF64,<:LinearMapVector})
+    @test (@inferred mean([CS!, A])) == (@inferred sum([CS!, A]))/2
+    @test (@inferred mean([CS!, A])) == (@inferred mean(identity, [CS!, A])) == (@inferred sum([CS!, A]))/2
+    @test isa(sum([CS!, Ar]), LinearMaps.LinearCombination{<:ComplexF64,<:LinearMapVector})
+    @test sum([CS!, Ar])/2 == mean([CS!, Ar])
+    @test sum([CS!, Ar]) == sum(identity, [CS!, Ar])
+    for sum1 in (CS!, L, Lv), sum2 in (CS!, L, Lv)
+        m1 = sum1 == CS! ? 1 : 10
+        m2 = sum2 == CS! ? 1 : 10
+        vect = any(x -> isa(x, LinearMaps.LinearCombination{ComplexF64,<:LinearMapVector}), (sum1, sum2))
+        maptyp = vect ? LinearMapVector : LinearMapTuple
+        @test (sum1+sum2) isa LinearMaps.LinearCombination{ComplexF64,<:maptyp}
+        @test (sum1+sum2) * v ≈ (m1+m2)*cumsum(v)
+    end
+    M, Mv = Matrix.((L, Lv))
+    @test M == Mv == LowerTriangular(fill(n, size(L)))
     @test_throws AssertionError LinearMaps.LinearCombination{Float64}((CS!, CS!))
-    @test occursin("10×10 LinearMaps.LinearCombination{$(eltype(L))}", sprint((t, s) -> show(t, "text/plain", s), L))
-    @test occursin("10×10 LinearMaps.LinearCombination{$(eltype(L))}", sprint((t, s) -> show(t, "text/plain", s), L+CS!))
+    @test occursin("10×10 $LinearMaps.LinearCombination{$(eltype(L))}", sprint((t, s) -> show(t, "text/plain", s), L))
+    @test occursin("10×10 $LinearMaps.LinearCombination{$(eltype(L))}", sprint((t, s) -> show(t, "text/plain", s), L+CS!))
     @test mul!(u, L, v) ≈ n * cumsum(v)
-    b = @benchmarkable mul!($u, $L, $v, 2, 2)
-    @test run(b, samples=5).allocs <= 1
+    @test mul!(u, Lv, v) ≈ n * cumsum(v)
+    alloc = @allocated similar(u)
+    mul!(u, L, v, 2, 2)
+    @test (@allocated mul!(u, L, v, 2, 2)) <= alloc
+    mul!(u, Lv, v, 2, 2)
+    @test (@allocated mul!(u, Lv, v, 2, 2)) <= alloc
     for α in (false, true, rand(ComplexF64)), β in (false, true, rand(ComplexF64))
         for transform in (identity, adjoint, transpose)
             @test mul!(copy(u), transform(L), v, α, β) ≈ transform(M)*v*α + u*β
@@ -47,20 +79,21 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays, BenchmarkTools
     @test sparse(LC) == Matrix(LC) == A+B
     v = rand(ComplexF64, 10)
     w = similar(v)
-    b = @benchmarkable mul!($w, $M, $v)
-    @test run(b, samples=3).allocs == 0
-    b = @benchmarkable mul!($w, $LC, $v)
-    @test run(b, samples=3).allocs == 0
+    mul!(w, M, v)
+    @test (@allocated mul!(w, M, v)) == 0
+    mul!(w, LC, v)
+    @test (@allocated mul!(w, LC, v)) == 0
     for α in (false, true, rand(ComplexF64)), β in (false, true, rand(ComplexF64))
-        b = @benchmarkable mul!($w, $LC, $v, $α, $β)
-        @test run(b, samples=3).allocs == 0
-        b = @benchmarkable mul!($w, $(I + LC), $v, $α, $β)
-        @test run(b, samples=3).allocs == 0
-        b = @benchmarkable mul!($w, $(LC + I), $v, $α, $β)
-        @test run(b, samples=3).allocs == 0
         y = rand(ComplexF64, size(v))
-        @test mul!(copy(y), LC, v, α, β) ≈ Matrix(LC)*v*α + y*β
-        @test mul!(copy(y), LC+I, v, α, β) ≈ Matrix(LC + I)*v*α + y*β
+        MC = Matrix(LC)
+        @test mul!(copy(y), LC, v, α, β) ≈ MC*v*α + y*β
+        @test mul!(copy(y), LC+I, v, α, β) ≈ (MC+I)*v*α + y*β
+        @test mul!(copy(y), I+LC, v, α, β) ≈ (I+MC)*v*α + y*β
+        @test (@allocated mul!(w, LC, v, α, β)) == 0
+        ILC = I + LC
+        @test (@allocated mul!(w, ILC, v, α, β)) == 0
+        LCI = LC + I
+        @test (@allocated mul!(w, LCI, v, α, β)) == 0
     end
     # @test_throws ErrorException LinearMaps.LinearCombination{ComplexF64}((M, N), (1, 2, 3))
     @test @inferred size(3M + 2.0N) == size(A)
