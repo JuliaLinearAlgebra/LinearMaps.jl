@@ -6,6 +6,6 @@ LinearMaps = "7a12625a-238d-50fd-b39a-03d52299707e"
 Literate = "98b081ad-f1c9-55d3-8b20-4c87d4299306"
 
 [compat]
-BenchmarkTools = "0.4, 0.5"
-Documenter = "0.25, 0.26"
+BenchmarkTools = "1"
+Documenter = "0.25, 0.26, 0.27"
 Literate = "2"

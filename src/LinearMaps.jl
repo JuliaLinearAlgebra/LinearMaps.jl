@@ -8,12 +8,9 @@ using LinearAlgebra
 import LinearAlgebra: mul!
 using SparseArrays
 
-if VERSION < v"1.2-"
-    import Base: has_offset_axes
-    require_one_based_indexing(A...) = !has_offset_axes(A...) || throw(ArgumentError("offset arrays are not supported but got an array with index other than 1"))
-else
-    import Base: require_one_based_indexing
-end
+import Statistics: mean
+
+using Base: require_one_based_indexing
 
 abstract type LinearMap{T} end
 
@@ -21,7 +18,20 @@ const MapOrVecOrMat{T} = Union{LinearMap{T}, AbstractVecOrMat{T}}
 const MapOrMatrix{T} = Union{LinearMap{T}, AbstractMatrix{T}}
 const RealOrComplex = Union{Real, Complex}
 
+const LinearMapTuple = Tuple{Vararg{LinearMap}}
+const LinearMapVector = AbstractVector{<:LinearMap}
+const LinearMapTupleOrVector = Union{LinearMapTuple,LinearMapVector}
+
 Base.eltype(::LinearMap{T}) where {T} = T
+
+# conversion to LinearMap
+Base.convert(::Type{LinearMap}, A::LinearMap) = A
+Base.convert(::Type{LinearMap}, A::AbstractVecOrMat) = LinearMap(A)
+
+convert_to_lmaps() = ()
+convert_to_lmaps(A) = (convert(LinearMap, A),)
+@inline convert_to_lmaps(A, B, Cs...) =
+    (convert(LinearMap, A), convert(LinearMap, B), convert_to_lmaps(Cs...)...)
 
 abstract type MulStyle end
 
@@ -33,11 +43,7 @@ MulStyle(::ThreeArg, ::FiveArg) = ThreeArg()
 MulStyle(::FiveArg, ::ThreeArg) = ThreeArg()
 MulStyle(::ThreeArg, ::ThreeArg) = ThreeArg()
 MulStyle(::LinearMap) = ThreeArg() # default
-@static if VERSION ≥ v"1.3.0-alpha.115"
-    MulStyle(::AbstractVecOrMat) = FiveArg()
-else
-    MulStyle(::AbstractVecOrMat) = ThreeArg()
-end
+MulStyle(::AbstractVecOrMat) = FiveArg()
 MulStyle(A::LinearMap, As::LinearMap...) = MulStyle(MulStyle(A), MulStyle(As...))
 
 Base.isreal(A::LinearMap) = eltype(A) <: Real
@@ -49,7 +55,9 @@ LinearAlgebra.isposdef(::LinearMap) = false # default assumptions
 Base.ndims(::LinearMap) = 2
 Base.size(A::LinearMap, n) =
     (n == 1 || n == 2 ? size(A)[n] : error("LinearMap objects have only 2 dimensions"))
-Base.length(A::LinearMap) = size(A)[1] * size(A)[2]
+Base.axes(A::LinearMap, n::Integer) =
+    (n == 1 || n == 2 ? axes(A)[n] : error("LinearMap objects have only 2 dimensions"))
+Base.length(A::LinearMap) = prod(size(A))
 
 # check dimension consistency for multiplication A*B
 _iscompatible((A, B)) = size(A, 2) == size(B, 1)
@@ -68,13 +76,20 @@ function check_dim_mul(C, A, B)
     return nothing
 end
 
-# conversion of AbstractVecOrMat to LinearMap
-convert_to_lmaps_(A::AbstractVecOrMat) = LinearMap(A)
-convert_to_lmaps_(A::LinearMap) = A
-convert_to_lmaps() = ()
-convert_to_lmaps(A) = (convert_to_lmaps_(A),)
-@inline convert_to_lmaps(A, B, Cs...) =
-    (convert_to_lmaps_(A), convert_to_lmaps_(B), convert_to_lmaps(Cs...)...)
+_front(As::Tuple) = Base.front(As)
+_front(As::AbstractVector) = @inbounds @views As[1:end-1]
+_tail(As::Tuple) = Base.tail(As)
+_tail(As::AbstractVector) = @inbounds @views As[2:end]
+
+_combine(A::LinearMap, B::LinearMap) = tuple(A, B)
+_combine(A::LinearMap, Bs::LinearMapTuple) = tuple(A, Bs...)
+_combine(As::LinearMapTuple, B::LinearMap) = tuple(As..., B)
+_combine(As::LinearMapTuple, Bs::LinearMapTuple) = tuple(As..., Bs...)
+_combine(A::LinearMap, Bs::LinearMapVector) = Base.vect(A, Bs...)
+_combine(As::LinearMapVector, B::LinearMap) = Base.vect(As..., B)
+_combine(As::LinearMapVector, Bs::LinearMapTuple) = Base.vect(As..., Bs...)
+_combine(As::LinearMapTuple, Bs::LinearMapVector) = Base.vect(As..., Bs...)
+_combine(As::LinearMapVector, Bs::LinearMapVector) = Base.vect(As..., Bs...)
 
 # The (internal) multiplication logic is as follows:
 #  - `*(A, x)` calls `mul!(y, A, x)` for appropriately-sized y
@@ -115,9 +130,8 @@ function Base.:(*)(A::LinearMap, x::AbstractVector)
     y = similar(x, T, axes(A)[1])
     return mul!(y, A, x)
 end
-if VERSION ≥ v"1.3"
-    (L::LinearMap)(x::AbstractVector) = L*x
-end
+
+(L::LinearMap)(x::AbstractVector) = L*x
 
 """
     mul!(Y::AbstractVecOrMat, A::LinearMap, B::AbstractVector) -> Y
@@ -223,13 +237,9 @@ function mul!(Y::AbstractMatrix, A::LinearMap, X::AbstractMatrix, α::Number, β
 end
 
 function _generic_mapmat_mul!(Y, A, X, α=true, β=false)
-    @views for i in 1:size(X, 2)
-        _unsafe_mul!(Y[:, i], A, X[:, i], α, β)
+    for (Xi, Yi) in zip(eachcol(X), eachcol(Y))
+        mul!(Yi, A, Xi, α, β)
     end
-    # starting from Julia v1.1, we could use the `eachcol` iterator
-    # for (Xi, Yi) in zip(eachcol(X), eachcol(Y))
-    #     mul!(Yi, A, Xi, α, β)
-    # end
     return Y
 end
 
@@ -244,8 +254,6 @@ end
 function _unsafe_mul!(y::AbstractMatrix, A::LinearMap, x::AbstractMatrix, α, β)
     return _generic_mapmat_mul!(y, A, x, α, β)
 end
-
-const LinearMapTuple = Tuple{Vararg{LinearMap}}
 
 include("left.jl") # left multiplication by a transpose or adjoint vector
 include("transpose.jl") # transposing linear maps

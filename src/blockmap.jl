@@ -1,28 +1,34 @@
 struct BlockMap{T,
-                As<:LinearMapTuple,
-                Rs<:Tuple{Vararg{Int}},
-                Rranges<:Tuple{Vararg{UnitRange{Int}}},
-                Cranges<:Tuple{Vararg{UnitRange{Int}}}} <: LinearMap{T}
+                As<:LinearMapTupleOrVector,
+                Rs<:Tuple{Vararg{Int}}} <: LinearMap{T}
     maps::As
     rows::Rs
-    rowranges::Rranges
-    colranges::Cranges
+    rowranges::Vector{UnitRange{Int}}
+    colranges::Vector{UnitRange{Int}}
     function BlockMap{T,As,Rs}(maps::As, rows::Rs) where
-                {T, As<:LinearMapTuple, Rs<:Tuple{Vararg{Int}}}
+                {T, As<:LinearMapTupleOrVector, Rs<:Tuple{Vararg{Int}}}
         for TA in Base.Generator(eltype, maps)
             promote_type(T, TA) == T ||
                 error("eltype $TA cannot be promoted to $T in BlockMap constructor")
         end
         rowranges, colranges = rowcolranges(maps, rows)
-        Rranges, Cranges = typeof(rowranges), typeof(colranges)
-        return new{T, As, Rs, Rranges, Cranges}(maps, rows, rowranges, colranges)
+        return new{T, As, Rs}(maps, rows, rowranges, colranges)
     end
 end
 
-BlockMap{T}(maps::As, rows::Rs) where {T, As<:LinearMapTuple, Rs} =
+BlockMap{T}(maps::As, rows::Rs) where {T, As<:LinearMapTupleOrVector, Rs} =
     BlockMap{T, As, Rs}(maps, rows)
+BlockMap(maps::As, rows::Rs) where {As<:LinearMapTupleOrVector, Rs} =
+    BlockMap{promote_type(map(eltype, maps)...), As, Rs}(maps, rows)
 
 MulStyle(A::BlockMap) = MulStyle(A.maps...)
+
+function _getranges(maps, dim, inds=1:length(maps))
+    ends = map(i -> size(maps[i], dim)::Int, inds)
+    cumsum!(ends, ends)
+    starts = vcat(1, 1 .+ @views ends[1:end-1])
+    return UnitRange.(starts, ends)
+end
 
 """
     rowcolranges(maps, rows)
@@ -32,24 +38,21 @@ map in `maps`, according to its position in a virtual matrix representation of t
 block linear map obtained from `hvcat(rows, maps...)`.
 """
 function rowcolranges(maps, rows)
-    rowranges = ntuple(n->1:0, Val(length(rows)))
-    colranges = ntuple(n->1:0, Val(length(maps)))
-    mapind = 0
-    rowstart = 1
-    for (i, row) in enumerate(rows)
-        mapind += 1
-        rowend = rowstart + Int(size(maps[mapind], 1))::Int - 1
-        rowranges = Base.setindex(rowranges, rowstart:rowend, i)
-        colstart = 1
-        colend = Int(size(maps[mapind], 2))::Int
-        colranges = Base.setindex(colranges, colstart:colend, mapind)
-        for colind in 2:row
-            mapind += 1
-            colstart = colend + 1
-            colend += Int(size(maps[mapind], 2))::Int
-            colranges = Base.setindex(colranges, colstart:colend, mapind)
-        end
-        rowstart = rowend + 1
+    # find indices of the row-wise first maps
+    firstmapinds = vcat(1, Base.front(rows)...)
+    cumsum!(firstmapinds, firstmapinds)
+    # compute rowranges from first dimension of the row-wise first maps
+    rowranges = _getranges(maps, 1, firstmapinds)
+
+    # compute ranges from second dimension as if all in one row
+    temp = _getranges(maps, 2)
+    # introduce "line breaks"
+    colranges = map(1:length(maps)) do i
+        # for each map find the index of the respective row-wise first map
+        # something-trick just to assure the compiler that the index is an Int
+        @inbounds firstmapind = firstmapinds[something(findlast(<=(i), firstmapinds), 1)]
+        # shift ranges by the first col-index of the row-wise first map
+        return @inbounds temp[i] .- first(temp[firstmapind]) .+ 1
     end
     return rowranges, colranges
 end
@@ -82,17 +85,13 @@ function Base.hcat(As::Union{LinearMap, UniformScaling, AbstractVecOrMat}...)
     T = promote_type(map(eltype, As)...)
     nbc = length(As)
 
-    nrows = -1
     # find first non-UniformScaling to detect number of rows
-    for A in As
-        if !(A isa UniformScaling)
-            nrows = size(A, 1)
-            break
-        end
-    end
-    @assert nrows != -1
+    j = findfirst(A -> !isa(A, UniformScaling), As)
     # this should not happen, function should only be called with at least one LinearMap
-    return BlockMap{T}(promote_to_lmaps(ntuple(i->nrows, nbc), 1, 1, As...), (nbc,))
+    @assert !isnothing(j)
+    @inbounds nrows = size(As[j], 1)::Int
+    
+    return BlockMap{T}(promote_to_lmaps(ntuple(_ -> nrows, Val(nbc)), 1, 1, As...), (nbc,))
 end
 
 ############
@@ -124,18 +123,14 @@ function Base.vcat(As::Union{LinearMap,UniformScaling,AbstractVecOrMat}...)
     T = promote_type(map(eltype, As)...)
     nbr = length(As)
 
-    ncols = -1
-    # find first non-UniformScaling to detect number of columns
-    for A in As
-        if !(A isa UniformScaling)
-            ncols = size(A, 2)
-            break
-        end
-    end
-    @assert ncols != -1
+    # find first non-UniformScaling to detect number of rows
+    j = findfirst(A -> !isa(A, UniformScaling), As)
     # this should not happen, function should only be called with at least one LinearMap
-    rows = ntuple(i->1, nbr)
-    return BlockMap{T}(promote_to_lmaps(ntuple(i->ncols, nbr), 1, 2, As...), rows)
+    @assert !isnothing(j)
+    @inbounds ncols = size(As[j], 2)::Int
+
+    rows = ntuple(_ -> 1, Val(nbr))
+    return BlockMap{T}(promote_to_lmaps(ntuple(_ -> ncols, Val(nbr)), 1, 2, As...), rows)
 end
 
 ############
@@ -181,7 +176,7 @@ function Base.hvcat(rows::Tuple{Vararg{Int}},
         ni = -1 # number of rows in this block-row, -1 indicates unknown
         for k in 1:rows[i]
             if !isa(As[j+k], UniformScaling)
-                na = size(As[j+k], 1)
+                na = size(As[j+k], 1)::Int
                 ni >= 0 && ni != na &&
                     throw(DimensionMismatch("mismatch in number of rows"))
                 ni = na
@@ -199,7 +194,7 @@ function Base.hvcat(rows::Tuple{Vararg{Int}},
         nci = 0
         rows[i] > 0 && n[j+1] == -1 && (j += rows[i]; continue)
         for k = 1:rows[i]
-            nci += isa(As[j+k], UniformScaling) ? n[j+k] : size(As[j+k], 2)
+            nci += isa(As[j+k], UniformScaling) ? n[j+k] : size(As[j+k], 2)::Int
         end
         nc >= 0 && nc != nci && throw(DimensionMismatch("mismatch in number of columns"))
         nc = nci
@@ -282,7 +277,7 @@ end
 ############
 
 Base.:(==)(A::BlockMap, B::BlockMap) =
-    (eltype(A) == eltype(B) && A.maps == B.maps && A.rows == B.rows)
+    (eltype(A) == eltype(B) && all(A.maps .== B.maps) && all(A.rows .== B.rows))
 
 ############
 # multiplication helper functions
@@ -355,9 +350,9 @@ function _transblockmul!(y, A::BlockMap, x, α, β, transform)
         # subsequent block rows of A (block columns of A'),
         # add results to corresponding parts of y
         # TODO: think about multithreading
-        for (row, xi) in zip(Base.tail(rows), Base.tail(xinds))
-            xrow = selectdim(x, 1, xi)
-            for _ in 1:row
+        @inbounds for i in 2:length(rows)
+            xrow = selectdim(x, 1, xinds[i])
+            for _ in 1:rows[i]
                 mapind +=1
                 yrow = selectdim(y, 1, yinds[mapind])
                 _unsafe_mul!(yrow, transform(maps[mapind]), xrow, α, true)
@@ -401,30 +396,22 @@ end
 ############
 # BlockDiagonalMap
 ############
-struct BlockDiagonalMap{T,
-                        As<:LinearMapTuple,
-                        Ranges<:Tuple{Vararg{UnitRange{Int}}}} <: LinearMap{T}
+struct BlockDiagonalMap{T, As<:LinearMapTupleOrVector} <: LinearMap{T}
     maps::As
-    rowranges::Ranges
-    colranges::Ranges
-    function BlockDiagonalMap{T, As}(maps::As) where {T, As<:LinearMapTuple}
+    rowranges::Vector{UnitRange{Int}}
+    colranges::Vector{UnitRange{Int}}
+    function BlockDiagonalMap{T, As}(maps::As) where {T, As<:LinearMapTupleOrVector}
         for TA in Base.Generator(eltype, maps)
             promote_type(T, TA) == T ||
                 error("eltype $TA cannot be promoted to $T in BlockDiagonalMap constructor")
         end
-        # row ranges
-        inds = vcat(1, size.(maps, 1)...)
-        cumsum!(inds, inds)
-        rowranges = ntuple(i -> inds[i]:inds[i+1]-1, Val(length(maps)))
-        # column ranges
-        inds[2:end] .= size.(maps, 2)
-        cumsum!(inds, inds)
-        colranges = ntuple(i -> inds[i]:inds[i+1]-1, Val(length(maps)))
-        return new{T, As, typeof(rowranges)}(maps, rowranges, colranges)
+        rowranges = _getranges(maps, 1)
+        colranges = _getranges(maps, 2)
+        return new{T, As}(maps, rowranges, colranges)
     end
 end
 
-BlockDiagonalMap{T}(maps::As) where {T, As<:LinearMapTuple} =
+BlockDiagonalMap{T}(maps::As) where {T, As<:LinearMapTupleOrVector} =
     BlockDiagonalMap{T,As}(maps)
 BlockDiagonalMap(maps::LinearMap...) =
     BlockDiagonalMap{promote_type(map(eltype, maps)...)}(maps)
@@ -476,7 +463,7 @@ object among the first 8 arguments.
 """
 Base.cat
 
-Base.size(A::BlockDiagonalMap) = (last(A.rowranges[end]), last(A.colranges[end]))
+Base.size(A::BlockDiagonalMap) = (last(last(A.rowranges)), last(last(A.colranges)))
 
 MulStyle(A::BlockDiagonalMap) = MulStyle(A.maps...)
 
@@ -489,7 +476,7 @@ LinearAlgebra.transpose(A::BlockDiagonalMap{T}) where {T} =
     BlockDiagonalMap{T}(map(transpose, A.maps))
 
 Base.:(==)(A::BlockDiagonalMap, B::BlockDiagonalMap) =
-    (eltype(A) == eltype(B) && A.maps == B.maps)
+    (eltype(A) == eltype(B) && all(A.maps .== B.maps))
 
 for (In, Out) in ((AbstractVector, AbstractVecOrMat), (AbstractMatrix, AbstractMatrix))
     @eval begin
@@ -507,7 +494,7 @@ end
 function _blockscaling!(y, A::BlockDiagonalMap, x, α, β)
     maps, yinds, xinds = A.maps, A.rowranges, A.colranges
     # TODO: think about multi-threading here
-    @views for i in eachindex(yinds, maps, xinds)
+    @inbounds for i in 1:length(maps)
         _unsafe_mul!(selectdim(y, 1, yinds[i]), maps[i], selectdim(x, 1, xinds[i]), α, β)
     end
     return y

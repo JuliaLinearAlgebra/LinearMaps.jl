@@ -1,4 +1,4 @@
-using Test, LinearMaps, LinearAlgebra, BenchmarkTools
+using Test, LinearMaps, LinearAlgebra
 
 @testset "function maps" begin
     N = 100
@@ -71,10 +71,12 @@ using Test, LinearMaps, LinearAlgebra, BenchmarkTools
     @test @inferred mul!(similar(v), transpose(CS), v) == reverse!(cumsum(reverse(v)))
     @test @inferred mul!(similar(v), adjoint(CS), v) == reverse!(cumsum(reverse(v)))
     u = similar(v)
-    b = @benchmarkable mul!($u, $(3*CS!), $v)
-    @test run(b, samples=3).allocs == 0
-    b = @benchmarkable mul!($u, $(3*CS!'), $v)
-    @test run(b, samples=3).allocs == 0
+    CS!3 = 3*CS!
+    mul!(u, CS!3, v)
+    @test (@allocated mul!(u, CS!3, v)) == 0
+    CS!3t = 3*CS!'
+    mul!(u, CS!3t, v)
+    @test (@allocated mul!(u, CS!3t, v)) == 0
     u = rand(ComplexF64, 10)
     v = rand(ComplexF64, 10)
     for α in (false, true, rand(ComplexF64)), β in (false, true, rand(ComplexF64))
@@ -83,8 +85,9 @@ using Test, LinearMaps, LinearAlgebra, BenchmarkTools
             @test mul!(copy(v), transform(LinearMap(CS!)), u, α, β) ≈ transform(M)*u*α + v*β
             @test mul!(copy(v), LinearMap(transform(CS!)), u, α, β) ≈ transform(M)*u*α + v*β
             if transform != transpose
-                bm = @benchmarkable mul!($(copy(v)), $(transform(CS!)), $u, $α, $β)
-                @test run(bm, samples=3).allocs <= 1
+                transCS! = transform(CS!)
+                alloc = @allocated similar(v)
+                @test (@allocated mul!(v, transCS!, u, α, β)) <= alloc
             end
         end
     end

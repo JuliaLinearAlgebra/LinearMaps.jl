@@ -1,4 +1,4 @@
-using Test, LinearMaps, LinearAlgebra, SparseArrays, BenchmarkTools
+using Test, LinearMaps, LinearAlgebra, SparseArrays
 
 @testset "basic functionality" begin
     A = 2 * rand(ComplexF64, (20, 10)) .- 1
@@ -61,9 +61,7 @@ LinearAlgebra.mul!(y::AbstractVector, A::Union{SimpleFunctionMap,SimpleComplexFu
     α = rand(ComplexF64); β = rand(ComplexF64)
     v = rand(ComplexF64, 10); V = rand(ComplexF64, 10, 3)
     w = rand(ComplexF64, 10); W = rand(ComplexF64, 10, 3)
-    if VERSION ≥ v"1.3"
-        F(v) == F*v
-    end    
+    F(v) == F*v
     @test mul!(w, F, v) === w == F * v
     @test_throws ErrorException F' * v
     @test_throws ErrorException transpose(F) * v

@@ -1,13 +1,24 @@
 # Version history
 
+## What's new in v3.6
+
+* Support for Julia versions below v1.6 has been dropped.
+* `Block[Diagonal]Map`, `CompositeMap`, `KroneckerMap` and `LinearCombination` type objects
+  can now be backed by a `Vector` of `LinearMap`-type elements. This can be beneficial in
+  cases where these higher-order `LinearMap`s are constructed from many maps where a tuple
+  backend may get inefficient or impose hard work for the compiler at construction.
+  The default behavior, however, does not change, and construction of vector-based
+  `LinearMap`s requires usage of the unexported constructors ("expert usage").
+
 ## What's new in v3.5
 
-* `WrappedMap`, `ScaledMap`, and `LinearCombination`, instead of using the default `axes(A) 
-  = map(oneto, size(A))`, now forward calls to `axes` to the underlying wrapped linear map. 
-  This allows allocating operations such as `*` to determine the appropriate storage and axes 
-  type of their outputs. For example, linear maps that wrap `BlockArrays` will, upon
-  multiplicative action, produce a `BlockArrays.PseudoBlockVector` with block structure
-  inherited from the operator's *output* axes `axes(A,1)`.
+* `WrappedMap`, `ScaledMap`, `LinearCombination`, `AdjointMap`, `TransposeMap` and
+  `CompositeMap`, instead of using the default `axes(A) = map(oneto, size(A))`, now forward
+  calls to `axes` to the underlying wrapped linear map. This allows allocating operations
+  such as `*` to determine the appropriate storage and axes type of their outputs.
+  For example, linear maps that wrap `BlockArrays` will, upon multiplicative action,
+  produce a `BlockArrays.PseudoBlockVector` with block structure inherited from the
+  operator's *output* axes `axes(A,1)`.
 
 ## What's new in v3.4
 
@@ -23,7 +34,7 @@
 ## What's new in v3.3
 
 * `AbstractVector`s can now be wrapped by a `LinearMap` just like `AbstractMatrix``
-  typed objects. Upon wrapping, there are not implicitly reshaped to matrices. This
+  typed objects. Upon wrapping, they are not implicitly reshaped to matrices. This
   feature might be helpful, for instance, in the lazy representation of rank-1
   operators `kron(LinearMap(u), v') == ⊗(u, v') == u ⊗ v'` for vectors `u` and `v`.
   The action on vectors,`(u⊗v')*x`, is implemented optimally via `u*(v'x)`.

@@ -1,22 +1,27 @@
-struct CompositeMap{T, As<:LinearMapTuple} <: LinearMap{T}
+struct CompositeMap{T, As<:LinearMapTupleOrVector} <: LinearMap{T}
     maps::As # stored in order of application to vector
     function CompositeMap{T, As}(maps::As) where {T, As}
         N = length(maps)
         for n in 2:N
             check_dim_mul(maps[n], maps[n-1])
         end
-        for TA in Base.Generator(eltype, maps)
-            # like lazy map; could use Base.Iterators.map in Julia >= 1.6
+        for TA in Base.Iterators.map(eltype, maps)
             promote_type(T, TA) == T ||
                 error("eltype $TA cannot be promoted to $T in CompositeMap constructor")
         end
         new{T, As}(maps)
     end
 end
-CompositeMap{T}(maps::As) where {T, As<:LinearMapTuple} = CompositeMap{T, As}(maps)
+CompositeMap{T}(maps::As) where {T, As<:LinearMapTupleOrVector} = CompositeMap{T, As}(maps)
+
+Base.mapreduce(::typeof(identity), ::typeof(Base.mul_prod), maps::LinearMapTupleOrVector) =
+    CompositeMap{promote_type(map(eltype, maps)...)}(reverse(maps))
+Base.mapreduce(::typeof(identity), ::typeof(Base.mul_prod), maps::AbstractVector{<:LinearMap{T}}) where {T} =
+    CompositeMap{T}(reverse(maps))
 
 # basic methods
 Base.size(A::CompositeMap) = (size(A.maps[end], 1), size(A.maps[1], 2))
+Base.axes(A::CompositeMap) = (axes(A.maps[end])[1], axes(A.maps[1])[2])
 Base.isreal(A::CompositeMap) = all(isreal, A.maps) # sufficient but not necessary
 
 # the following rules are sufficient but not necessary
@@ -26,8 +31,18 @@ for (f, _f, g) in ((:issymmetric, :_issymmetric, :transpose),
         LinearAlgebra.$f(A::CompositeMap) = $_f(A.maps)
         $_f(maps::Tuple{}) = true
         $_f(maps::Tuple{<:LinearMap}) = $f(maps[1])
-        $_f(maps::Tuple{Vararg{LinearMap}}) =
+        $_f(maps::LinearMapTuple) =
             maps[end] == $g(maps[1]) && $_f(Base.front(Base.tail(maps)))
+        function $_f(maps::LinearMapVector)
+            n = length(maps)
+            if n == 0
+                return true
+            elseif n == 1
+                return ($f(maps[1]))::Bool
+            else
+                return ((maps[end] == $g(maps[1]))::Bool && $_f(@views maps[2:end-1]))
+            end
+        end
         # since the introduction of ScaledMap, the following cases cannot occur
         # function $_f(maps::Tuple{Vararg{LinearMap}}) # length(maps) >= 2
             # if maps[1] isa UniformScalingMap{<:RealOrComplex}
@@ -45,45 +60,56 @@ end
 LinearAlgebra.isposdef(A::CompositeMap) = _isposdef(A.maps)
 _isposdef(maps::Tuple{}) = true # empty product is equivalent to "I" which is pos. def.
 _isposdef(maps::Tuple{<:LinearMap}) = isposdef(maps[1])
-function _isposdef(maps::Tuple{Vararg{LinearMap}})
-    (maps[end] == adjoint(maps[1]) || maps[end] == maps[1]) && 
-    isposdef(maps[1]) && _isposdef(Base.front(Base.tail(maps)))
+function _isposdef(maps::LinearMapTuple)
+    (maps[end] == adjoint(maps[1]) || maps[end] == maps[1]) &&
+        isposdef(maps[1]) && _isposdef(Base.front(Base.tail(maps)))
+end
+function _isposdef(maps::LinearMapVector)
+    n = length(maps)
+    if n == 0
+        return true
+    elseif n == 1
+        return isposdef(maps[1])
+    else
+        return (maps[end] == adjoint(maps[1]) || maps[end] == maps[1]) &&
+            isposdef(maps[1]) && _isposdef(maps[2:end-1])
+    end
 end
 
 # scalar multiplication and division (non-commutative case)
 function Base.:(*)(α::Number, A::LinearMap)
     T = promote_type(typeof(α), eltype(A))
-    return CompositeMap{T}(tuple(A, UniformScalingMap(α, size(A, 1))))
+    return CompositeMap{T}(_combine(A, UniformScalingMap(α, size(A, 1))))
 end
 function Base.:(*)(α::Number, A::CompositeMap)
     T = promote_type(typeof(α), eltype(A))
     Alast = last(A.maps)
     if Alast isa UniformScalingMap
-        return CompositeMap{T}(tuple(Base.front(A.maps)..., α * Alast))
+        return CompositeMap{T}(_combine(_front(A.maps), α * Alast))
     else
-        return CompositeMap{T}(tuple(A.maps..., UniformScalingMap(α, size(A, 1))))
+        return CompositeMap{T}(_combine(A.maps, UniformScalingMap(α, size(A, 1))))
     end
 end
 # needed for disambiguation
-function Base.:(*)(α::RealOrComplex, A::CompositeMap)
+function Base.:(*)(α::RealOrComplex, A::CompositeMap{<:RealOrComplex})
     T = Base.promote_op(*, typeof(α), eltype(A))
     return ScaledMap{T}(α, A)
 end
 function Base.:(*)(A::LinearMap, α::Number)
     T = promote_type(typeof(α), eltype(A))
-    return CompositeMap{T}(tuple(UniformScalingMap(α, size(A, 2)), A))
+    return CompositeMap{T}(_combine(UniformScalingMap(α, size(A, 2)), A))
 end
 function Base.:(*)(A::CompositeMap, α::Number)
     T = promote_type(typeof(α), eltype(A))
     Afirst = first(A.maps)
     if Afirst isa UniformScalingMap
-        return CompositeMap{T}(tuple(Afirst * α, Base.tail(A.maps)...))
+        return CompositeMap{T}(_combine(Afirst * α, _tail(A.maps)))
     else
-        return CompositeMap{T}(tuple(UniformScalingMap(α, size(A, 2)), A.maps...))
+        return CompositeMap{T}(_combine(UniformScalingMap(α, size(A, 2)), A.maps))
     end
 end
 # needed for disambiguation
-function Base.:(*)(A::CompositeMap, α::RealOrComplex)
+function Base.:(*)(A::CompositeMap{<:RealOrComplex}, α::RealOrComplex)
     T = Base.promote_op(*, typeof(α), eltype(A))
     return ScaledMap{T}(α, A)
 end
@@ -110,19 +136,19 @@ julia> LinearMap(ones(Int, 3, 3)) * CS * I * rand(3, 3);
 """
 function Base.:(*)(A₁::LinearMap, A₂::LinearMap)
     T = promote_type(eltype(A₁), eltype(A₂))
-    return CompositeMap{T}(tuple(A₂, A₁))
+    return CompositeMap{T}(_combine(A₂, A₁))
 end
 function Base.:(*)(A₁::LinearMap, A₂::CompositeMap)
     T = promote_type(eltype(A₁), eltype(A₂))
-    return CompositeMap{T}(tuple(A₂.maps..., A₁))
+    return CompositeMap{T}(_combine(A₂.maps, A₁))
 end
 function Base.:(*)(A₁::CompositeMap, A₂::LinearMap)
     T = promote_type(eltype(A₁), eltype(A₂))
-    return CompositeMap{T}(tuple(A₂, A₁.maps...))
+    return CompositeMap{T}(_combine(A₂, A₁.maps))
 end
 function Base.:(*)(A₁::CompositeMap, A₂::CompositeMap)
     T = promote_type(eltype(A₁), eltype(A₂))
-    return CompositeMap{T}(tuple(A₂.maps..., A₁.maps...))
+    return CompositeMap{T}(_combine(A₂.maps, A₁.maps))
 end
 # needed for disambiguation
 Base.:(*)(A₁::ScaledMap, A₂::CompositeMap) = A₁.λ * (A₁.lmap * A₂)
@@ -135,7 +161,8 @@ LinearAlgebra.adjoint(A::CompositeMap{T}) where {T} =
     CompositeMap{T}(map(adjoint, reverse(A.maps)))
 
 # comparison of CompositeMap objects
-Base.:(==)(A::CompositeMap, B::CompositeMap) = (eltype(A) == eltype(B) && A.maps == B.maps)
+Base.:(==)(A::CompositeMap, B::CompositeMap) =
+    (eltype(A) == eltype(B) && all(A.maps .== B.maps))
 
 # multiplication with vectors/matrices
 _unsafe_mul!(y::AbstractVecOrMat, A::CompositeMap, x::AbstractVector) =

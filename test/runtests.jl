@@ -1,11 +1,8 @@
 using Test, LinearMaps, Aqua
-import LinearMaps: FiveArg, ThreeArg
 
-const matrixstyle = VERSION ≥ v"1.3.0-alpha.115" ? FiveArg() : ThreeArg()
-
-const testallocs = VERSION ≥ v"1.4-"
-
-Aqua.test_all(LinearMaps)
+@testset "code quality" begin
+    Aqua.test_all(LinearMaps)
+end
 
 include("linearmaps.jl")
 
@@ -35,6 +32,4 @@ include("left.jl")
 
 include("fillmap.jl")
 
-if VERSION ≥ v"1.1"
-    include("nontradaxes.jl")
-end
+include("nontradaxes.jl")

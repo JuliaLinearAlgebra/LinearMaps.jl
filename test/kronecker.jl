@@ -8,6 +8,11 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
         LA = LinearMap(A)
         LB = LinearMap(B)
         LK = @inferred kron(LA, LB)
+        LKv = @inferred LinearMaps.KroneckerMap{ComplexF64}([LA, LB])
+        @test LK * ones(6) ≈ LKv * ones(6)
+        @test LKv.maps isa Vector
+        LKv = LinearMaps.KroneckerMap{ComplexF64}([LA, LB, LA])
+        @test kron(A, B, A) * ones(18) ≈ LKv * ones(18)
         @test kron(LA, 2LB) isa LinearMaps.ScaledMap
         @test kron(3LA, LB) isa LinearMaps.ScaledMap
         @test kron(3LA, 2LB) isa LinearMaps.ScaledMap
@@ -63,6 +68,8 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
         @test @inferred ishermitian(kron(LA'LA, LB'LB))
         # use mixed-product rule
         K = kron(LA, LB) * kron(LA, LB) * kron(LA, LB)
+        Kv = LinearMaps.CompositeMap{ComplexF64}(fill(LA ⊗ LB, 3))
+        @test kron(A, B)^3 * ones(6) ≈ Kv * ones(6)
         @test Matrix(K) ≈ kron(A, B)^3
         # example that doesn't use mixed-product rule
         A = rand(3, 2); B = rand(2, 3)
