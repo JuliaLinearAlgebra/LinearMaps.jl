@@ -110,6 +110,9 @@ end
 
 mul!(X::AbstractMatrix, Y::AbstractMatrix, A::VecOrMatMap, α::Number, β::Number) =
     mul!(X, Y, A.lmap, α, β)
+mul!(X::AbstractMatrix, s::Number, A::VecOrMatMap, α::Number, β::Number) =
+    mul!(X, s, A.lmap, α, β)
+
 # the following 2 methods are needed for disambiguation with left-multiplication
 function mul!(Y::AbstractMatrix{<:RealOrComplex}, X::AbstractMatrix{<:RealOrComplex}, A::VecOrMatMap{<:RealOrComplex},
                 α::RealOrComplex, β::RealOrComplex)
