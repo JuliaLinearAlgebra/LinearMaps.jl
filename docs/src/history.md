@@ -8,7 +8,9 @@
   cases where these higher-order `LinearMap`s are constructed from many maps where a tuple
   backend may get inefficient or impose hard work for the compiler at construction.
   The default behavior, however, does not change, and construction of vector-based
-  `LinearMap`s requires usage of the unexported constructors ("expert usage").
+  `LinearMap`s requires usage of the unexported constructors ("expert usage"), except for
+  constructions like `sum([A, B, C])` or `prod([A, B, C])` (`== C*B*A`), where `A`, `B` and
+  `C` are of some `LinearMap` type.
 
 ## What's new in v3.5
 

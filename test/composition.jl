@@ -148,4 +148,11 @@ using LinearMaps: LinearMapVector, LinearMapTuple
     @test @inferred isposdef(LinearMaps.CompositeMap{Float64}([B, B, B, B, B']))
     @test @inferred isposdef(B * B) # even case for empty tuple test
     @test @inferred isposdef(LinearMaps.CompositeMap{Float64}([B, B]))
+
+    M = LinearMap(cumsum, 3)
+    for i in 1:4
+        P = prod(fill(M, i))
+        @test P isa LinearMaps.CompositeMap{<:Any,<:LinearMapVector}
+        @test P * ones(3) == (LowerTriangular(ones(3,3))^i) * ones(3)
+    end
 end
