@@ -64,3 +64,6 @@ for (In, Out) in ((AbstractVector, AbstractVecOrMat),
         end
     end
 end
+
+mul!(Y::AbstractMatrix, c::Number, X::ScaledMap, a::Number, b::Number) =
+    mul!(Y, c, X.lmap, a*X.λ, b)
