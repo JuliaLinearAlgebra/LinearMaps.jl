@@ -73,10 +73,12 @@ for (T, t) in ((AdjointMap, adjoint), (TransposeMap, transpose))
 end
 
 # LinearCombination
-function Base.Matrix{T}(ΣA::LinearCombination{<:Any, <:Tuple{Vararg{VecOrMatMap}}}) where {T}
-    maps = ΣA.maps
-    mats = map(A->getfield(A, :lmap), maps)
-    return Matrix{T}(sum(mats))
+function Base.Matrix{T}(ΣA::LinearCombination) where {T}
+    M = zeros(T, axes(ΣA))
+    for map in ΣA.maps
+        _unsafe_mul!(M, map, one(T), one(T), one(T))
+    end
+    return M
 end
 function SparseArrays.sparse(ΣA::LinearCombination{<:Any, <:Tuple{Vararg{VecOrMatMap}}})
     maps = ΣA.maps

@@ -63,6 +63,9 @@ _unsafe_mul!(y::AbstractVecOrMat, A::TransposeMap, x::AbstractVector, α::Number
 _unsafe_mul!(y::AbstractMatrix, A::TransposeMap, x::AbstractMatrix, α::Number, β::Number) =
     issymmetric(A.lmap) ?
         _unsafe_mul!(y, A.lmap, x, α, β) : _generic_mapmat_mul!(y, A, x, α, β)
+_unsafe_mul!(y::AbstractMatrix, A::TransposeMap, x::Number, α::Number, β::Number) =
+    issymmetric(A.lmap) ?
+        _unsafe_mul!(y, A.lmap, x, α, β) : _generic_mapnum_mul!(y, A, x, α, β)
 # # AdjointMap
 _unsafe_mul!(y::AbstractVecOrMat, A::AdjointMap, x::AbstractVector) =
     ishermitian(A.lmap) ?
@@ -76,6 +79,9 @@ _unsafe_mul!(y::AbstractVecOrMat, A::AdjointMap, x::AbstractVector, α::Number, 
 _unsafe_mul!(y::AbstractMatrix, A::AdjointMap, x::AbstractMatrix, α::Number, β::Number) =
     ishermitian(A.lmap) ?
         _unsafe_mul!(y, A.lmap, x, α, β) : _generic_mapmat_mul!(y, A, x, α, β)
+_unsafe_mul!(y::AbstractMatrix, A::AdjointMap, x::Number, α::Number, β::Number) =
+    ishermitian(A.lmap) ?
+        _unsafe_mul!(y, A.lmap, x, α, β) : _generic_mapnum_mul!(y, A, x, α, β)
 
 # # ConjugateMap
 const ConjugateMap = AdjointMap{<:Any, <:TransposeMap}

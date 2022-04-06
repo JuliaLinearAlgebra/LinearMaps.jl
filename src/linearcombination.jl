@@ -112,6 +112,13 @@ for (In, Out) in ((AbstractVector, AbstractVecOrMat), (AbstractMatrix, AbstractM
     end
 end
 
+function _unsafe_mul!(M::AbstractMatrix, L::LinearCombination, s::RealOrComplex, a::RealOrComplex, b::RealOrComplex)
+    for map in L.maps
+        _unsafe_mul!(M, map, s, a, b)
+    end
+    return M
+end
+
 _mul!(::FiveArg, y, A::LinearCombination, x, α) = __mul!(y, _tail(A.maps), x, α, nothing)
 _mul!(::ThreeArg, y, A::LinearCombination, x, α) = __mul!(y, _tail(A.maps), x, α, similar(y))
 

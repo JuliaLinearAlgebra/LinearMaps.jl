@@ -65,5 +65,5 @@ for (In, Out) in ((AbstractVector, AbstractVecOrMat),
     end
 end
 
-mul!(Y::AbstractMatrix, c::Number, X::ScaledMap, a::Number, b::Number) =
-    mul!(Y, c, X.lmap, a*X.λ, b)
+_unsafe_mul!(Y::AbstractMatrix, X::ScaledMap, c::RealOrComplex, a::RealOrComplex, b::RealOrComplex) =
+    _unsafe_mul!(Y, X.lmap, X.λ*c, a, b)

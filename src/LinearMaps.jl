@@ -163,6 +163,13 @@ function mul!(y::AbstractVecOrMat, A::LinearMap, x::AbstractVector)
     return _unsafe_mul!(y, A, x)
 end
 
+function mul!(y::AbstractVecOrMat, A::LinearMap, s::Number)
+    size(y) == size(A) ||     
+        throw(
+            DimensionMismatch("y has size $(size(y)), A has size $(size(A)), s has size $(size(s))"))
+    return _unsafe_mul!(y, A, s)
+end
+
 """
     mul!(C::AbstractVecOrMat, A::LinearMap, B::AbstractVector, α, β) -> C
     mul!(C::AbstractMatrix, A::LinearMap, B::AbstractMatrix, α, β) -> C
@@ -196,6 +203,11 @@ julia> C
 function mul!(y::AbstractVecOrMat, A::LinearMap, x::AbstractVector, α::Number, β::Number)
     check_dim_mul(y, A, x)
     return _unsafe_mul!(y, A, x, α, β)
+end
+
+function mul!(y::AbstractVecOrMat, A::LinearMap, s::Number, α::Number, β::Number)
+    check_dim_mul(y, A)
+    return _unsafe_mul!(y, A, s, α, β)
 end
 
 function _generic_mapvec_mul!(y, A, x, α, β)
@@ -239,6 +251,18 @@ end
 function _generic_mapmat_mul!(Y, A, X, α=true, β=false)
     for (Xi, Yi) in zip(eachcol(X), eachcol(Y))
         mul!(Yi, A, Xi, α, β)
+    end
+    return Y
+end
+
+function _generic_mapnum_mul!(Y, A, s, α=true, β=false)
+    T = typeof(s)
+    ax2 = axes(A,2)
+    xi = zeros(T,ax2)
+    for (i,Yi) in zip(ax2, eachcol(Y))
+        fill!(xi, zero(T))
+        xi[i] = s
+        mul!(Yi, A, xi, α, β)
     end
     return Y
 end

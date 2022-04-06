@@ -218,6 +218,13 @@ function _unsafe_mul!(y::AbstractVecOrMat,
     return y
 end
 
+function _unsafe_mul!(M::AbstractMatrix, L::KroneckerMap, s::RealOrComplex, α=true, β=false)
+    LA = Matrix(L)
+    rmul!(M, β)
+    M .+= LA .* s .* α
+    return M
+end
+
 ###############
 # KroneckerSumMap
 ###############
