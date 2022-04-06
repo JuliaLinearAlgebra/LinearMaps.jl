@@ -10,6 +10,8 @@ using SparseArrays
 
 import Statistics: mean
 
+import ChainRulesCore: rrule, frule, unthunk, @thunk, NoTangent
+
 using Base: require_one_based_indexing
 
 abstract type LinearMap{T} end
@@ -344,6 +346,7 @@ include("embeddedmap.jl") # embedded linear maps
 include("conversion.jl") # conversion of linear maps to matrices
 include("show.jl") # show methods for LinearMap objects
 include("getindex.jl") # getindex functionality
+include("chainrules.jl") # AD rules through ChainRulesCore
 
 """
     LinearMap(A::LinearMap; kwargs...)::WrappedMap
