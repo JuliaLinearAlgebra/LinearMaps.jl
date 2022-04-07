@@ -1,6 +1,8 @@
 # Matrix: create matrix representation of LinearMap
 function Base.Matrix{T}(A::LinearMap) where {T}
-    mat = zeros(T, axes(A))
+    # M, N = size(A)
+    # mat = Matrix{T}(undef, (M, N))
+    mat = zeros(T, size(A))
     _unsafe_mul!(mat, A, one(T), one(T), one(T))
     return mat
 end
