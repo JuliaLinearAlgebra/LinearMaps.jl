@@ -206,7 +206,9 @@ function mul!(y::AbstractVecOrMat, A::LinearMap, x::AbstractVector, α::Number, 
 end
 
 function mul!(y::AbstractVecOrMat, A::LinearMap, s::Number, α::Number, β::Number)
-    check_dim_mul(y, A)
+    size(y) == size(A) ||     
+        throw(
+            DimensionMismatch("y has size $(size(y)), A has size $(size(A)), s has size $(size(s))"))
     return _unsafe_mul!(y, A, s, α, β)
 end
 
