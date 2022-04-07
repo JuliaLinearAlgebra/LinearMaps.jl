@@ -10,7 +10,8 @@ using SparseArrays
 
 import Statistics: mean
 
-import ChainRulesCore: rrule, frule, unthunk, @thunk, NoTangent
+using ChainRulesCore
+import ChainRulesCore: rrule
 
 using Base: require_one_based_indexing
 
