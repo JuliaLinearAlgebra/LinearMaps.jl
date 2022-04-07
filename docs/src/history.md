@@ -1,5 +1,14 @@
 # Version history
 
+## What's new in v3.7
+* `mul!(M::AbstractMatrix,A::LinearMap,s::Number,a,b)` methods are provided, mimicking
+  similar methods in `Base.LinearAlgebra`. This version allows for the memory efficient
+  implementation of in-place addition and conversion of a `LinearMap` to `Matrix`.
+  Efficient specialisation for `WrappedMap`, `ScaledMap`, and `LinearCombination` are
+  provided. If users supply this method for their custom maps, conversion to `Matrix` will
+  benefit from this method. If no specialisation is supplied, a generic fallback is used
+  that is based on feeding the canonical basis of unit vectors to the linear map.
+
 ## What's new in v3.6
 
 * Support for Julia versions below v1.6 has been dropped.
