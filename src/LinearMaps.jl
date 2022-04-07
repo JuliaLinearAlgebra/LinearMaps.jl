@@ -259,10 +259,10 @@ function _generic_mapnum_mul!(Y, A, s, α=true, β=false)
     T = typeof(s)
     ax2 = axes(A,2)
     xi = zeros(T,ax2)
-    for (i,Yi) in zip(ax2, eachcol(Y))
-        fill!(xi, zero(T))
+    @inbounds for (i,Yi) in zip(ax2, eachcol(Y))
         xi[i] = s
         mul!(Yi, A, xi, α, β)
+        xi[i] = zero(T)
     end
     return Y
 end
@@ -277,6 +277,9 @@ function _unsafe_mul!(y::AbstractMatrix, A::LinearMap, x::AbstractMatrix)
 end
 function _unsafe_mul!(y::AbstractMatrix, A::LinearMap, x::AbstractMatrix, α, β)
     return _generic_mapmat_mul!(y, A, x, α, β)
+end
+function _unsafe_mul!(Y::AbstractMatrix, A::LinearMap, s::Number, α=true, β=true)
+    return _generic_mapnum_mul!(Y, A, s, α, β)
 end
 
 include("left.jl") # left multiplication by a transpose or adjoint vector

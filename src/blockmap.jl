@@ -393,7 +393,7 @@ for (In, Out) in ((AbstractVector, AbstractVecOrMat), (AbstractMatrix, AbstractM
     end
 end
 
-function _unsafe_mul!(M::AbstractMatrix, A::BlockMap, s::RealOrComplex, α::Number, β::Number)
+function _unsafe_mul!(M::AbstractMatrix, A::BlockMap, s::Number, α::Number, β::Number)
     require_one_based_indexing(M, s)
     return _blockmul!(M, A, s, α, β)
 end

@@ -170,12 +170,6 @@ _unsafe_mul!(y::AbstractVecOrMat, A::CompositeMap, x::AbstractVector) =
 _unsafe_mul!(y::AbstractMatrix, A::CompositeMap, x::AbstractMatrix) =
     _compositemul!(y, A, x)
 
-# multiplication with scalars
-function _unsafe_mul!(M::AbstractMatrix, C::CompositeMap, s::Number, α::Number, β::Number)
-    A = CompositeMap{eltype(C)}(C.maps[2:end])
-    B = C.maps[1]
-    _unsafe_mul!(M, A, Matrix(B), s*α, β)
-end
 
 function _compositemul!(y::AbstractVecOrMat,
                         A::CompositeMap{<:Any,<:Tuple{LinearMap}},

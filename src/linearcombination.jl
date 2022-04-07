@@ -112,9 +112,11 @@ for (In, Out) in ((AbstractVector, AbstractVecOrMat), (AbstractMatrix, AbstractM
     end
 end
 
-function _unsafe_mul!(M::AbstractMatrix, L::LinearCombination, s::RealOrComplex, a::RealOrComplex, b::RealOrComplex)
+function _unsafe_mul!(M::AbstractMatrix, L::LinearCombination, s::Number, a::Number, b::Number)
+    u = one(eltype(L))
+    rmul!(M, b)
     for map in L.maps
-        _unsafe_mul!(M, map, s, a, b)
+        _unsafe_mul!(M, map, s, a, u)
     end
     return M
 end

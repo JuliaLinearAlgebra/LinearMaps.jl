@@ -115,14 +115,14 @@ function _unsafe_mul!(y::AbstractVecOrMat, A::FunctionMap, x::AbstractVector)
     return y
 end
 
-function _unsafe_mul!(M::AbstractMatrix, L::FunctionMap, s::Number)
-    M .+= Matrix(L)*s
-end
+# function _unsafe_mul!(M::AbstractMatrix, L::FunctionMap, s::Number)
+#     M .+= Matrix(L)*s
+# end
 
-function _unsafe_mul!(M::AbstractMatrix, L::FunctionMap, s::Number, α::Number, β::Number)
-    M .*= β
-    M .+= Matrix(L)*s*α
-end
+# function _unsafe_mul!(M::AbstractMatrix, L::FunctionMap, s::Number, α::Number, β::Number)
+#     M .*= β
+#     M .+= Matrix(L)*s*α
+# end
 
 function _unsafe_mul!(y::AbstractVecOrMat, At::TransposeFunctionMap, x::AbstractVector)
     A = At.lmap

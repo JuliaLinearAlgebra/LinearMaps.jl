@@ -1,14 +1,7 @@
 # Matrix: create matrix representation of LinearMap
 function Base.Matrix{T}(A::LinearMap) where {T}
-    M, N = size(A)
-    mat = Matrix{T}(undef, (M, N))
-    v = fill(zero(T), N)
-    @inbounds for i in 1:N
-        v[i] = one(T)
-        # need mul!, e.g., for TransposeMap{<:CustomMap}
-        mul!(view(mat, :, i), A, v)
-        v[i] = zero(T)
-    end
+    mat = zeros(T, axes(A))
+    _unsafe_mul!(mat, A, one(T), one(T), one(T))
     return mat
 end
 Base.Matrix(A::LinearMap{T}) where {T} = Matrix{T}(A)
@@ -48,13 +41,10 @@ SparseArrays.SparseMatrixCSC(A::LinearMap) = sparse(A)
 # special cases
 
 # ScaledMap
-Base.Matrix{T}(A::ScaledMap{<:Any, <:Any, <:VecOrMatMap}) where {T} =
-    convert(Matrix{T}, A.λ * A.lmap.lmap)
 SparseArrays.sparse(A::ScaledMap{<:Any, <:Any, <:VecOrMatMap}) =
     A.λ * sparse(A.lmap.lmap)
 
 # UniformScalingMap
-Base.Matrix{T}(J::UniformScalingMap) where {T} = Matrix{T}(J.λ*I, size(J))
 Base.convert(::Type{AbstractMatrix}, J::UniformScalingMap) = Diagonal(fill(J.λ, J.M))
 
 # WrappedMap
@@ -73,13 +63,6 @@ for (T, t) in ((AdjointMap, adjoint), (TransposeMap, transpose))
 end
 
 # LinearCombination
-function Base.Matrix{T}(ΣA::LinearCombination) where {T}
-    M = zeros(T, axes(ΣA))
-    for map in ΣA.maps
-        _unsafe_mul!(M, map, one(T), one(T), one(T))
-    end
-    return M
-end
 function SparseArrays.sparse(ΣA::LinearCombination{<:Any, <:Tuple{Vararg{VecOrMatMap}}})
     maps = ΣA.maps
     mats = map(A->getfield(A, :lmap), maps)
