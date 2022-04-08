@@ -18,25 +18,27 @@ IndexMap(map::LinearMap{T}, dims::Dims{2}; offset::Dims{2}) where {T} =
 IndexMap(map::LinearMap, dims::Dims{2}, rows::AbstractVector{Int}, cols::AbstractVector{Int}) =
     IndexMap{eltype(map)}(map, dims, rows, cols)
 
-Base.reverse(A::LinearMap; dims=:) = _reverse(A, dims)
-function _reverse(A, dims::Integer)
-    if dims == 1
-        return IndexMap(A, size(A), reverse(axes(A, 1)), axes(A, 2))
-    elseif dims == 2
-        return IndexMap(A, size(A), axes(A, 1), reverse(axes(A, 2)))
-    else
-        throw(ArgumentError("invalid dims argument to reverse, should be 1 or 2, got $dims"))
+@static if VERSION >= v"1.8-"
+    Base.reverse(A::LinearMap; dims=:) = _reverse(A, dims)
+    function _reverse(A, dims::Integer)
+        if dims == 1
+            return IndexMap(A, size(A), reverse(axes(A, 1)), axes(A, 2))
+        elseif dims == 2
+            return IndexMap(A, size(A), axes(A, 1), reverse(axes(A, 2)))
+        else
+            throw(ArgumentError("invalid dims argument to reverse, should be 1 or 2, got $dims"))
+        end
     end
-end
-_reverse(A, ::Colon) = IndexMap(A, size(A), map(reverse, axes(A))...)
-_reverse(A, dims::NTuple{1,Integer}) = _reverse(A, first(dims))
-function _reverse(A, dims::NTuple{M,Integer}) where {M}
-    dimrev = ntuple(k -> k in dims, 2)
-    if 2 < M || M != sum(dimrev)
-        throw(ArgumentError("invalid dimensions $dims in reverse!"))
+    _reverse(A, ::Colon) = IndexMap(A, size(A), map(reverse, axes(A))...)
+    _reverse(A, dims::NTuple{1,Integer}) = _reverse(A, first(dims))
+    function _reverse(A, dims::NTuple{M,Integer}) where {M}
+        dimrev = ntuple(k -> k in dims, 2)
+        if 2 < M || M != sum(dimrev)
+            throw(ArgumentError("invalid dimensions $dims in reverse!"))
+        end
+        ax = ntuple(k -> dimrev[k] ? reverse(axes(A, k)) : axes(A, k), 2)
+        return IndexMap(A, size(A), ax...)
     end
-    ax = ntuple(k -> dimrev[k] ? reverse(axes(A, k)) : axes(A, k), 2)
-    return IndexMap(A, size(A), ax...)
 end
 
 function check_index(index::AbstractVector{Int}, dimA::Int, dimB::Int)
