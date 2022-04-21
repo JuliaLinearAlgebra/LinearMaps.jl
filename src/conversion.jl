@@ -1,16 +1,22 @@
 # Matrix: create matrix representation of LinearMap
 function Base.Matrix{T}(A::LinearMap) where {T}
-    # M, N = size(A)
-    # mat = Matrix{T}(undef, (M, N))
     mat = zeros(T, size(A))
-    _unsafe_mul!(mat, A, one(T), one(T), one(T))
-    return mat
+    mul!(mat, A, one(T), one(T), one(T))
 end
+
+function Base.AbstractMatrix{T}(A::LinearMap) where {T}
+    mat = zeros(T, axes(A))
+    mul!(mat, A, one(T), one(T), one(T))
+end
+
 Base.Matrix(A::LinearMap{T}) where {T} = Matrix{T}(A)
+Base.AbstractMatrix(A::LinearMap{T}) where {T} = AbstractMatrix{T}(A)
+
 Base.Array(A::LinearMap) = Matrix(A)
 Base.convert(::Type{T}, A::LinearMap) where {T<:Matrix} = T(A)
 Base.convert(::Type{Array}, A::LinearMap) = convert(Matrix, A)
-Base.convert(::Type{AbstractMatrix}, A::LinearMap) = convert(Matrix, A)
+# Base.convert(::Type{AbstractMatrix}, A::LinearMap) = convert(Matrix, A)
+Base.convert(::Type{AbstractMatrix}, A::LinearMap) = AbstractMatrix(A)
 Base.convert(::Type{AbstractArray}, A::LinearMap) = convert(AbstractMatrix, A)
 
 # sparse: create sparse matrix representation of LinearMap
