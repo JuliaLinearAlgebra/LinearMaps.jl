@@ -24,6 +24,8 @@ LinearAlgebra.issymmetric(A::ScaledMap) = issymmetric(A.lmap)
 LinearAlgebra.ishermitian(A::ScaledMap) = isreal(A.λ) && ishermitian(A.lmap)
 LinearAlgebra.isposdef(A::ScaledMap) = isposdef(A.λ) && isposdef(A.lmap)
 
+MulStyle(A::ScaledMap) = MulStyle(A.lmap)
+
 Base.transpose(A::ScaledMap) = A.λ * transpose(A.lmap)
 Base.adjoint(A::ScaledMap) = conj(A.λ) * adjoint(A.lmap)
 
