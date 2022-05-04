@@ -21,10 +21,9 @@ using Test, LinearMaps, LinearAlgebra
     L = 0.5A! + 0.5A! + 1.0A!
     @test LinearMaps.MulStyle(L) === LinearMaps.ThreeArg()
     L*x; y = similar(x)
-    @test mul!(y, L, x) == 2cumsum(x)
-    @test (@allocated mul!(y, L, x)) <= 2sizeof(y)
+    @test mul!(y, L, x) ≈ 2cumsum(x)
     LM = 0.5LinearMap(AM) + 0.5LinearMap(AM) + 1.0LinearMap(AM)
-    @test LM*x == 2cumsum(x)
+    @test LM*x ≈ 2cumsum(x)
     @test LinearMaps.MulStyle(LM) === LinearMaps.FiveArg()
     @test iszero(@allocated mul!(y, LM, x))
 
