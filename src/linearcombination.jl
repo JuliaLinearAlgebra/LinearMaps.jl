@@ -114,7 +114,7 @@ end
 
 function _unsafe_mul!(M::AbstractMatrix, L::LinearCombination, s::Number, a::Number, b::Number)
     u = one(eltype(L))
-    rmul!(M, b)
+    LinearAlgebra._rmul_or_fill!(M, b)
     for map in L.maps
         _unsafe_mul!(M, map, s, a, u)
     end

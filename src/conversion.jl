@@ -1,12 +1,12 @@
 # Matrix: create matrix representation of LinearMap
 function Base.Matrix{T}(A::LinearMap) where {T}
-    mat = zeros(T, size(A))
-    mul!(mat, A, one(T), one(T), one(T))
+    mat = Matrix{T}(undef, size(A))
+    mul!(mat, A, one(T), true, false)
 end
 
 function Base.AbstractMatrix{T}(A::LinearMap) where {T}
-    mat = zeros(T, axes(A))
-    mul!(mat, A, one(T), one(T), one(T))
+    mat = similar(Array{T}, axes(A))
+    mul!(mat, A, one(T), true, false)
 end
 
 Base.Matrix(A::LinearMap{T}) where {T} = Matrix{T}(A)
