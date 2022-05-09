@@ -29,10 +29,12 @@ end
 Base.size(A::MyFillMap) = A.size
 
 # By a couple of defaults provided for all subtypes of `LinearMap`, we only need to define
-# a `LinearAlgebra.mul!` method to have minimal, operational type.
+# a `LinearMaps._unsafe_mul!` method to have minimal, operational type. The function `_unsafe_mul!`
+# is called by `LinearAlgebra.mul!`, constructors, and conversions and only needs to be concerned
+# with the bare computing kernel. Dimension checking is done on the level of `mul!` etc. Factoring
+# out dimension checking is done to minimise overhead caused by repetivite checking.
 
-function LinearAlgebra.mul!(y::AbstractVecOrMat, A::MyFillMap, x::AbstractVector)
-    LinearMaps.check_dim_mul(y, A, x)
+function LinearMaps._unsafe_mul!(y::AbstractVecOrMat, A::MyFillMap, x::AbstractVector)
     return fill!(y, iszero(A.λ) ? zero(eltype(y)) : A.λ*sum(x))
 end
 
@@ -84,7 +86,7 @@ using BenchmarkTools
 
 LinearMaps.MulStyle(A::MyFillMap) = FiveArg()
 
-function LinearAlgebra.mul!(
+function LinearMaps._unsafe_mul!(
     y::AbstractVecOrMat,
     A::MyFillMap,
     x::AbstractVector,
@@ -154,7 +156,7 @@ try MyFillMap(5.0, (3, 4))' * ones(3) catch e println(e) end
 # The first option is to write `LinearAlgebra.mul!` methods for the corresponding wrapped
 # map types; for instance,
 
-function LinearAlgebra.mul!(
+function LinearMaps._unsafe_mul!(
     y::AbstractVecOrMat,
     transA::LinearMaps.TransposeMap{<:Any,<:MyFillMap},
     x::AbstractVector
