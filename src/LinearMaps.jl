@@ -166,7 +166,7 @@ end
 function mul!(y::AbstractVecOrMat, A::LinearMap, s::Number)
     size(y) == size(A) ||     
         throw(
-            DimensionMismatch("y has size $(size(y)), A has size $(size(A)), s has size $(size(s))"))
+            DimensionMismatch("y has size $(size(y)), A has size $(size(A))."))
     return _unsafe_mul!(y, A, s)
 end
 
@@ -208,7 +208,7 @@ end
 function mul!(y::AbstractVecOrMat, A::LinearMap, s::Number, α::Number, β::Number)
     size(y) == size(A) ||     
         throw(
-            DimensionMismatch("y has size $(size(y)), A has size $(size(A)), s has size $(size(s))"))
+            DimensionMismatch("y has size $(size(y)), A has size $(size(A))."))
     return _unsafe_mul!(y, A, s, α, β)
 end
 
@@ -257,7 +257,19 @@ function _generic_mapmat_mul!(Y, A, X, α=true, β=false)
     return Y
 end
 
-function _generic_mapnum_mul!(Y, A, s, α=true, β=false)
+function _generic_mapnum_mul!(Y, A, s)
+    T = typeof(s)
+    ax1, ax2 = axes(A)
+    xi = zeros(T,ax2)
+    @inbounds for (i,Yi) in zip(ax2, eachcol(Y))
+        xi[i] = s
+        mul!(Yi, A, xi)
+        xi[i] = zero(T)
+    end
+    return Y
+end
+
+function _generic_mapnum_mul!(Y, A, s, α, β)
     T = typeof(s)
     ax2 = axes(A,2)
     xi = zeros(T,ax2)

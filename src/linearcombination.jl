@@ -112,6 +112,12 @@ for (In, Out) in ((AbstractVector, AbstractVecOrMat), (AbstractMatrix, AbstractM
     end
 end
 
+function _unsafe_mul!(M::AbstractMatrix, L::LinearCombination, s::Number)
+    _unsafe_mul!(M, first(L.maps), s)
+    _mul!(MulStyle(L), M, L, s, true)
+    return M
+end
+
 function _unsafe_mul!(M::AbstractMatrix, L::LinearCombination, s::Number, a::Number, b::Number)
     u = one(eltype(L))
     LinearAlgebra._rmul_or_fill!(M, b)
