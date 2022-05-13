@@ -32,7 +32,7 @@ Base.size(A::MyFillMap) = A.size
 # a `LinearMaps._unsafe_mul!` method to have minimal, operational type. The function `_unsafe_mul!`
 # is called by `LinearAlgebra.mul!`, constructors, and conversions and only needs to be concerned
 # with the bare computing kernel. Dimension checking is done on the level of `mul!` etc. Factoring
-# out dimension checking is done to minimise overhead caused by repetivite checking.
+# out dimension checking is done to minimise overhead caused by repetitive checking.
 
 function LinearMaps._unsafe_mul!(y::AbstractVecOrMat, A::MyFillMap, x::AbstractVector)
     return fill!(y, iszero(A.λ) ? zero(eltype(y)) : A.λ*sum(x))
