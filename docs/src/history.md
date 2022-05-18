@@ -2,7 +2,7 @@
 
 ## What's new in v3.7
 
-* A new map type called `IndexMap` is introduced. It is a wrapper of a "small" `LinearMap`
+* A new map type called `EmbeddedMap` is introduced. It is a wrapper of a "small" `LinearMap`
   (or a suitably converted `AbstractVecOrMat`) embedded into a "larger" zero map. Hence,
   the "small" map acts only on a subset of the coordinates and maps to another subset of
   the coordinates of the "large" map. The large map `L` can therefore be imagined as the

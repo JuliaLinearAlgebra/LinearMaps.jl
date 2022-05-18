@@ -275,8 +275,8 @@ include("show.jl") # show methods for LinearMap objects
     LinearMap(A::AbstractVecOrMat; kwargs...)::WrappedMap
     LinearMap(J::UniformScaling, M::Int)::UniformScalingMap
     LinearMap{T=Float64}(f, [fc,], M::Int, N::Int = M; kwargs...)::FunctionMap
-    LinearMap(A::MapOrVecOrMat, dims::Dims{2}, index::NTuple{2, AbstractVector{Int}})::IndexMap
-    LinearMap(A::MapOrVecOrMat, dims::Dims{2}; offset::Dims{2})::IndexMap
+    LinearMap(A::MapOrVecOrMat, dims::Dims{2}, index::NTuple{2, AbstractVector{Int}})::EmbeddedMap
+    LinearMap(A::MapOrVecOrMat, dims::Dims{2}; offset::Dims{2})::EmbeddedMap
 
 Construct a linear map object, either
 
@@ -314,7 +314,7 @@ For the function-based constructor, there is one more keyword argument:
     The default value is guessed by looking at the number of arguments of the first
     occurrence of `f` in the method table.
 
-For the `IndexMap` constructors, `dims` specifies the total dimensions of the map. The
+For the `EmbeddedMap` constructors, `dims` specifies the total dimensions of the map. The
 `index` argument specifies two collections of indices `inds1` and `inds2`, such that for
 the big zero map `L` (thought of as a matrix), one has `L[inds1,inds2] == A`. In other
 words, `inds1` specifies the output indices, `inds2` specifies the input indices.
@@ -329,9 +329,9 @@ LinearMap(f, fc, M::Int; kwargs...) = LinearMap{Float64}(f, fc, M; kwargs...)
 LinearMap(f, fc, M::Int, N::Int; kwargs...) = LinearMap{Float64}(f, fc, M, N; kwargs...)
 
 LinearMap(A::MapOrVecOrMat, dims::Dims{2}, index::NTuple{2, AbstractVector{Int}}) =
-    IndexMap(convert(LinearMap, A), dims, index[1], index[2])
+    EmbeddedMap(convert(LinearMap, A), dims, index[1], index[2])
 LinearMap(A::MapOrVecOrMat, dims::Dims{2}; offset::Dims{2}) =
-    IndexMap(convert(LinearMap, A), dims; offset=offset)
+    EmbeddedMap(convert(LinearMap, A), dims; offset=offset)
 
 LinearMap{T}(A::MapOrVecOrMat; kwargs...) where {T} = WrappedMap{T}(A; kwargs...)
 LinearMap{T}(f, args...; kwargs...) where {T} = FunctionMap{T}(f, args...; kwargs...)
