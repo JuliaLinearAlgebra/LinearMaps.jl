@@ -1,6 +1,6 @@
 using Test, LinearMaps, LinearAlgebra, SparseArrays
 
-@testset "indexmap" begin
+@testset "embeddedmap" begin
     m = 6; n = 5
     M = 10(1:m) .+ (1:n)'; L = LinearMap(M)
     offset = (3,4)

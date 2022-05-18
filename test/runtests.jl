@@ -34,4 +34,4 @@ include("fillmap.jl")
 
 include("nontradaxes.jl")
 
-include("indexmap.jl")
+include("embeddedmap.jl")
