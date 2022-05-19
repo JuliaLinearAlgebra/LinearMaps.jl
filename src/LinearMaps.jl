@@ -266,6 +266,7 @@ include("functionmap.jl") # using a function as linear map
 include("blockmap.jl") # block linear maps
 include("kronecker.jl") # Kronecker product of linear maps
 include("fillmap.jl") # linear maps representing constantly filled matrices
+include("embeddedmap.jl") # embedded linear maps
 include("conversion.jl") # conversion of linear maps to matrices
 include("show.jl") # show methods for LinearMap objects
 
@@ -274,12 +275,19 @@ include("show.jl") # show methods for LinearMap objects
     LinearMap(A::AbstractVecOrMat; kwargs...)::WrappedMap
     LinearMap(J::UniformScaling, M::Int)::UniformScalingMap
     LinearMap{T=Float64}(f, [fc,], M::Int, N::Int = M; kwargs...)::FunctionMap
+    LinearMap(A::MapOrVecOrMat, dims::Dims{2}, index::NTuple{2, AbstractVector{Int}})::EmbeddedMap
+    LinearMap(A::MapOrVecOrMat, dims::Dims{2}; offset::Dims{2})::EmbeddedMap
 
-Construct a linear map object, either from an existing `LinearMap` or `AbstractVecOrMat` `A`,
-with the purpose of redefining its properties via the keyword arguments `kwargs`;
-a `UniformScaling` object `J` with specified (square) dimension `M`; or
-from a function or callable object `f`. In the latter case, one also needs to specify
-the size of the equivalent matrix representation `(M, N)`, i.e., for functions `f` acting
+Construct a linear map object, either
+
+1. from an existing `LinearMap` or `AbstractVecOrMat` `A`, with the purpose of redefining
+  its properties via the keyword arguments `kwargs`;
+2. a `UniformScaling` object `J` with specified (square) dimension `M`;
+3. from a function or callable object `f`;
+4. from an existing `LinearMap` or `AbstractVecOrMat` `A`, embedded in a larger zero map.
+
+In the case of item 3, one also needs to specify the size of the equivalent matrix
+representation `(M, N)`, i.e., for functions `f` acting
 on length `N` vectors and producing length `M` vectors (with default value `N=M`).
 Preferably, also the `eltype` `T` of the corresponding matrix representation needs to be
 specified, i.e., whether the action of `f` on a vector will be similar to, e.g., multiplying
@@ -305,6 +313,13 @@ For the function-based constructor, there is one more keyword argument:
     or as a normal matrix multiplication that is called as `y=f(x)` (in case of `false`).
     The default value is guessed by looking at the number of arguments of the first
     occurrence of `f` in the method table.
+
+For the `EmbeddedMap` constructors, `dims` specifies the total dimensions of the map. The
+`index` argument specifies two collections of indices `inds1` and `inds2`, such that for
+the big zero map `L` (thought of as a matrix), one has `L[inds1,inds2] == A`. In other
+words, `inds1` specifies the output indices, `inds2` specifies the input indices.
+Alternatively, `A` may be shifted by `offset`, such that (thinking in terms of matrices
+again) `L[offset[1] .+ axes(A, 1), offset[2] .+ axes(A, 2)] == A`.
 """
 LinearMap(A::MapOrVecOrMat; kwargs...) = WrappedMap(A; kwargs...)
 LinearMap(J::UniformScaling, M::Int) = UniformScalingMap(J.λ, M)
@@ -313,7 +328,12 @@ LinearMap(f, M::Int, N::Int; kwargs...) = LinearMap{Float64}(f, M, N; kwargs...)
 LinearMap(f, fc, M::Int; kwargs...) = LinearMap{Float64}(f, fc, M; kwargs...)
 LinearMap(f, fc, M::Int, N::Int; kwargs...) = LinearMap{Float64}(f, fc, M, N; kwargs...)
 
-LinearMap{T}(A::MapOrMatrix; kwargs...) where {T} = WrappedMap{T}(A; kwargs...)
+LinearMap(A::MapOrVecOrMat, dims::Dims{2}, index::NTuple{2, AbstractVector{Int}}) =
+    EmbeddedMap(convert(LinearMap, A), dims, index[1], index[2])
+LinearMap(A::MapOrVecOrMat, dims::Dims{2}; offset::Dims{2}) =
+    EmbeddedMap(convert(LinearMap, A), dims; offset=offset)
+
+LinearMap{T}(A::MapOrVecOrMat; kwargs...) where {T} = WrappedMap{T}(A; kwargs...)
 LinearMap{T}(f, args...; kwargs...) where {T} = FunctionMap{T}(f, args...; kwargs...)
 
 end # module
