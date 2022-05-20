@@ -5,10 +5,25 @@
   similar methods in `Base.LinearAlgebra`. This version allows for the memory efficient
   implementation of in-place addition and conversion of a `LinearMap` to `Matrix`.
   Efficient specialisations for `WrappedMap`, `ScaledMap`, and `LinearCombination` are
-  provided. If users supply this method for their custom maps, conversion to `Matrix` will
-  benefit from this supplied efficient implementation. If no specialisation is supplied, a
-  generic fallback is used that is based on feeding the canonical basis of unit vectors to
-  the linear map.
+  provided. If users supply the corresponding `_unsafe_mul!` method for their custom maps,
+  conversion, construction, and inplace addition will benefit from this supplied efficient
+  implementation. If no specialisation is supplied, a generic fallback is used that is based
+  on feeding the canonical basis of unit vectors to the linear map.
+
+* A new map type called `EmbeddedMap` is introduced. It is a wrapper of a "small" `LinearMap`
+  (or a suitably converted `AbstractVecOrMat`) embedded into a "larger" zero map. Hence,
+  the "small" map acts only on a subset of the coordinates and maps to another subset of
+  the coordinates of the "large" map. The large map `L` can therefore be imagined as the
+  composition of a sampling/projection map `P`, of the small map `A`, and of an embedding
+  map `E`: `L = E ⋅ A ⋅ P`. It is implemented, however, by acting on a view of the vector
+  `x` and storing the result into a view of the result vector `y`. Such maps can be
+  constructed by the new methods:
+  * `LinearMap(A::MapOrVecOrMat, dims::Dims{2}, index::NTuple{2, AbstractVector{Int}})`,
+    where `dims` is the dimensions of the "large" map and index is a tuple of the `x`- and
+    `y`-indices that interact with `A`, respectively;
+  * `LinearMap(A::MapOrVecOrMat, dims::Dims{2}; offset::Dims{2})`, where the keyword
+    argument `offset` determines the dimension of a virtual upper-left zero block, to which
+    `A` gets (virtually) diagonally appended.
 
 ## What's new in v3.6
 
