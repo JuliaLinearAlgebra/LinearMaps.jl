@@ -24,6 +24,19 @@
   * `LinearMap(A::MapOrVecOrMat, dims::Dims{2}; offset::Dims{2})`, where the keyword
     argument `offset` determines the dimension of a virtual upper-left zero block, to which
     `A` gets (virtually) diagonally appended.
+* An often requested new feature has been added: indexing/slicing any `LinearMap` object via
+  `Base.getindex` overloads. Linear, Cartesian (both with two `Integer` indices and
+  (vectors of) `CartesianIndex{2}`), colon, and logical indexing as well as slicing all
+  work generically on any `LinearMap` subtype. For performance reasons, some slicing
+  operations require the adjoint operation of the `LinearMap` type to be defined, or will
+  fail otherwise. Important note: `LinearMap` objects are meant to model objects that act
+  on vectors efficiently, and are in general *not* backed up by storage-like types like
+  `Array`s. Therefore, indexing and/or slicing of `LinearMap`s is likely to be slow,
+  and it may require the (repeated) allocation of canonical unit vectors. As a consequence,
+  generic algorithms relying heavily on indexing and/or slicing are likely to work much
+  worse than expected for `AbstractArray`s. To avoid repeated indexing operations which
+  may involve redundant computations, it is strongly recommended to consider `convert`ing
+  `LinearMap`-typed objects to `Matrix` or `SparseMatrixCSC` first.
 
 ## What's new in v3.6
 
