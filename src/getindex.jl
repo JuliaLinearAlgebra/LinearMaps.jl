@@ -5,6 +5,7 @@
 
 const Indexer = AbstractVector{<:Integer}
 
+Base.IndexStyle(::LinearMap) = IndexCartesian()
 # required in Base.to_indices for [:]-indexing
 Base.eachindex(::IndexLinear, A::LinearMap) = Base.OneTo(length(A))
 Base.lastindex(A::LinearMap) = last(eachindex(IndexLinear(), A))
@@ -19,6 +20,10 @@ function Base.checkbounds(A::LinearMap, i)
     Base.checkindex(Bool, Base.OneTo(length(A)), i) || throw(BoundsError(A, i))
     nothing
 end
+# checkbounds in indexing via CartesianIndex
+Base.checkbounds(A::LinearMap, i::Union{CartesianIndex{2}, AbstractVecOrMat{CartesianIndex{2}}}) =
+    Base.checkbounds_indices(Bool, axes(A), (i,))
+Base.checkbounds(A::LinearMap, I::AbstractArray{Bool,2}) = axes(A) == axes(I)
 
 # main entry point
 function Base.getindex(A::LinearMap, I...)
@@ -41,6 +46,7 @@ function _getindex(A::LinearMap, i::Integer)
 end
 _getindex(A::LinearMap, I::Indexer) = [_getindex(A, i) for i in I]
 _getindex(A::LinearMap, ::Base.Slice) = vec(Matrix(A))
+_getindex(A::LinearMap, I::Vector{CartesianIndex{2}}) = [(@inbounds A[i]) for i in I]
 
 ########################
 # Cartesian indexing
@@ -129,6 +135,31 @@ end
 @inline _copycol!(dest, ind, temp, i::Integer) = (@inbounds dest[ind] = temp[i])
 @inline _copycol!(dest, ind, temp, I::Indexer) =
     (@views @inbounds dest[:,ind] .= temp[I])
+
+# diagonal indexing
+function LinearAlgebra.diagind(A::LinearMap, k::Integer=0)
+    require_one_based_indexing(A)
+    diagind(size(A,1), size(A,2), k)
+end
+
+LinearAlgebra.diag(A::LinearMap, k::Integer=0) = A[diagind(A,k)]
+
+# logical indexing
+Base.getindex(A::LinearMap, mask::AbstractVecOrMat{Bool}) = A[findall(mask)]
+Base.getindex(A::LinearMap, i, mask::AbstractVector{Bool}) = A[i, findall(mask)]
+Base.getindex(A::LinearMap, mask::AbstractVector{Bool}, j) = A[findall(mask), j]
+Base.getindex(A::LinearMap, im::AbstractVector{Bool}, jm::AbstractVector{Bool}) =
+    A[findall(im), findall(jm)]
+# disambiguation
+for typ in (:WrappedMap, :ScaledMap)
+    @eval begin
+        Base.getindex(A::$typ, mask::AbstractVecOrMat{Bool}) = A[findall(mask)]
+        Base.getindex(A::$typ, i, mask::AbstractVector{Bool}) = A[i, findall(mask)]
+        Base.getindex(A::$typ, mask::AbstractVector{Bool}, j) = A[findall(mask), j]
+        Base.getindex(A::$typ, im::AbstractVector{Bool}, jm::AbstractVector{Bool}) =
+            A[findall(im), findall(jm)]       
+    end
+end
 
 # nogetindex_error() = error("indexing not allowed for LinearMaps; consider setting `LinearMaps.allowgetindex = true`")
 

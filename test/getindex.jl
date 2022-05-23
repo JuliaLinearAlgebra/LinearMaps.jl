@@ -4,6 +4,7 @@ using LinearAlgebra, LinearMaps, Test
 
 function test_getindex(A::LinearMap, M::AbstractMatrix)
     @assert size(A) == size(M)
+    mask = rand(Bool, size(A))
     @test all((A[i,j] == M[i,j] for i in axes(A, 1), j in axes(A, 2)))
     @test all((A[i] == M[i] for i in 1:length(A)))
     @test A[1,1] == M[1,1]
@@ -20,6 +21,10 @@ function test_getindex(A::LinearMap, M::AbstractMatrix)
     @test A[:,:] == M
     @test A[7] == M[7]
     @test A[3:7] == M[3:7]
+    @test (lastindex(A, 1), lastindex(A, 2)) == size(A)
+    @test diagind(A) == diagind(M)
+    for k in -1:1; @test diag(A, k) == diag(M, k) end
+    @test A[mask] == M[mask]
     @test_throws BoundsError A[firstindex(A)-1]
     @test_throws BoundsError A[lastindex(A)+1]
     @test_throws BoundsError A[6,1]
@@ -30,9 +35,9 @@ function test_getindex(A::LinearMap, M::AbstractMatrix)
 end
 
 @testset "getindex" begin
-    A = rand(4,6)
-    L = LinearMap(A)
-    @test test_getindex(L, A)
+    M = rand(4,6)
+    A = LinearMap(M)
+    @test test_getindex(A, M)
     # @btime getindex($A, i) setup=(i = rand(1:24));
     # @btime getindex($L, i) setup=(i = rand(1:24));
     # @btime (getindex($A, i, j)) setup=(i = rand(1:4); j = rand(1:6));
