@@ -28,7 +28,7 @@ function SparseArrays.sparse(A::LinearMap{T}) where {T}
     v = fill(zero(T), N)
     Av = Vector{T}(undef, M)
 
-    @inbounds for i in 1:N
+    @inbounds for i in eachindex(v, colptr)
         v[i] = one(T)
         _unsafe_mul!(Av, A, v)
         js = findall(!iszero, Av)
