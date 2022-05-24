@@ -23,7 +23,8 @@ end
 # checkbounds in indexing via CartesianIndex
 Base.checkbounds(A::LinearMap, i::Union{CartesianIndex{2}, AbstractVecOrMat{CartesianIndex{2}}}) =
     Base.checkbounds_indices(Bool, axes(A), (i,))
-Base.checkbounds(A::LinearMap, I::AbstractArray{Bool,2}) = axes(A) == axes(I)
+Base.checkbounds(A::LinearMap, I::AbstractMatrix{Bool}) =
+    axes(A) == axes(I) || Base.throw_boundserror(A, I)
 
 # main entry point
 function Base.getindex(A::LinearMap, I...)
@@ -47,6 +48,7 @@ end
 _getindex(A::LinearMap, I::Indexer) = [_getindex(A, i) for i in I]
 _getindex(A::LinearMap, ::Base.Slice) = vec(Matrix(A))
 _getindex(A::LinearMap, I::Vector{CartesianIndex{2}}) = [(@inbounds A[i]) for i in I]
+_getindex(A::LinearMap, I::Base.LogicalIndex) = [(@inbounds A[i]) for i in I]
 
 ########################
 # Cartesian indexing
@@ -103,7 +105,7 @@ end
 function _fillbyrows!(dest, A, I, J)
     x = zeros(eltype(A), size(A, 1))
     temp = similar(x, eltype(A), size(A, 2))
-    @views @inbounds for (di, i) in zip(eachcol(dest), I)
+    @views @inbounds for (di, i) in zip(eachrow(dest), I)
         x[i] = one(eltype(A))
         _unsafe_mul!(temp, A', x)
         di .= adjoint.(temp[J])
@@ -143,23 +145,6 @@ function LinearAlgebra.diagind(A::LinearMap, k::Integer=0)
 end
 
 LinearAlgebra.diag(A::LinearMap, k::Integer=0) = A[diagind(A,k)]
-
-# logical indexing
-Base.getindex(A::LinearMap, mask::AbstractVecOrMat{Bool}) = A[findall(mask)]
-Base.getindex(A::LinearMap, i, mask::AbstractVector{Bool}) = A[i, findall(mask)]
-Base.getindex(A::LinearMap, mask::AbstractVector{Bool}, j) = A[findall(mask), j]
-Base.getindex(A::LinearMap, im::AbstractVector{Bool}, jm::AbstractVector{Bool}) =
-    A[findall(im), findall(jm)]
-# disambiguation
-for typ in (:WrappedMap, :ScaledMap)
-    @eval begin
-        Base.getindex(A::$typ, mask::AbstractVecOrMat{Bool}) = A[findall(mask)]
-        Base.getindex(A::$typ, i, mask::AbstractVector{Bool}) = A[i, findall(mask)]
-        Base.getindex(A::$typ, mask::AbstractVector{Bool}, j) = A[findall(mask), j]
-        Base.getindex(A::$typ, im::AbstractVector{Bool}, jm::AbstractVector{Bool}) =
-            A[findall(im), findall(jm)]       
-    end
-end
 
 # nogetindex_error() = error("indexing not allowed for LinearMaps; consider setting `LinearMaps.allowgetindex = true`")
 
