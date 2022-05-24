@@ -1,8 +1,3 @@
-# module GetIndex
-
-# using ..LinearMaps: LinearMap, AdjointMap, TransposeMap, FillMap, LinearCombination,
-#     ScaledMap, UniformScalingMap, WrappedMap
-
 const Indexer = AbstractVector{<:Integer}
 
 Base.IndexStyle(::LinearMap) = IndexCartesian()
@@ -22,9 +17,9 @@ function Base.checkbounds(A::LinearMap, i)
 end
 # checkbounds in indexing via CartesianIndex
 Base.checkbounds(A::LinearMap, i::Union{CartesianIndex{2}, AbstractVecOrMat{CartesianIndex{2}}}) =
-    Base.checkbounds_indices(Bool, axes(A), (i,))
+    Base.checkbounds_indices(Bool, axes(A), (i,)) || throw(BoundsError(A, i))
 Base.checkbounds(A::LinearMap, I::AbstractMatrix{Bool}) =
-    axes(A) == axes(I) || Base.throw_boundserror(A, I)
+    axes(A) == axes(I) || throw(BoundsError(A, I))
 
 # main entry point
 function Base.getindex(A::LinearMap, I...)
@@ -134,7 +129,8 @@ function _fillbycols!(dest, A, ::Base.Slice, J)
     return dest
 end
 
-@inline _copycol!(dest, ind, temp, i::Integer) = (@inbounds dest[ind] = temp[i])
+# needed only if we accept the try-catch blocks above
+# @inline _copycol!(dest, ind, temp, i::Integer) = (@inbounds dest[ind] = temp[i])
 @inline _copycol!(dest, ind, temp, I::Indexer) =
     (@views @inbounds dest[:,ind] .= temp[I])
 
@@ -145,7 +141,3 @@ function LinearAlgebra.diagind(A::LinearMap, k::Integer=0)
 end
 
 LinearAlgebra.diag(A::LinearMap, k::Integer=0) = A[diagind(A,k)]
-
-# nogetindex_error() = error("indexing not allowed for LinearMaps; consider setting `LinearMaps.allowgetindex = true`")
-
-# end # module
