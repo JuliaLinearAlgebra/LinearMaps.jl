@@ -54,30 +54,30 @@ _getindex(A::LinearMap, I::Vector{CartesianIndex{2}}) = [(@inbounds A[i]) for i 
 _getindex(A::LinearMap, i::Union{Integer,Indexer}, j::Integer) = (@inbounds (A*basevec(A, 2, j))[i])
 _getindex(A::LinearMap, ::Base.Slice, j::Integer) = A*basevec(A, 2, j)
 function _getindex(A::LinearMap, i::Integer, J::Indexer)
-    try
+    # try
         # requires adjoint action to be defined
         return @inbounds (basevec(A, 1, i)'A)[J]
-    catch
-        return _fillbycols!(zeros(eltype(A), Base.index_shape(i, J)), A, i, J)
-    end
+    # catch
+    #     return _fillbycols!(zeros(eltype(A), Base.index_shape(i, J)), A, i, J)
+    # end
 end
 function _getindex(A::LinearMap, i::Integer, J::Base.Slice)
-    try
+    # try
         # requires adjoint action to be defined
         return vec(basevec(A, 1, i)'A)
-    catch
-        return _fillbycols!(zeros(eltype(A), Base.index_shape(i, J)), A, i, J)
-    end
+    # catch
+    #     return _fillbycols!(zeros(eltype(A), Base.index_shape(i, J)), A, i, J)
+    # end
 end
 function _getindex(A::LinearMap, I::Indexer, J::Indexer)
     dest = zeros(eltype(A), Base.index_shape(I, J))
     if length(I) <= length(J)
-        try
+        # try
             # requires adjoint action to be defined
             _fillbyrows!(dest, A, I, J)
-        catch
-            _fillbycols!(dest, A, I, J)
-        end
+        # catch
+        #     _fillbycols!(dest, A, I, J)
+        # end
     else
         _fillbycols!(dest, A, I, J)
     end
@@ -103,10 +103,10 @@ end
 function _fillbyrows!(dest, A, I, J)
     x = zeros(eltype(A), size(A, 1))
     temp = similar(x, eltype(A), size(A, 2))
-    @views @inbounds for (ind, i) in enumerate(I)
+    @views @inbounds for (di, i) in zip(eachcol(dest), I)
         x[i] = one(eltype(A))
         _unsafe_mul!(temp, A', x)
-        dest[ind,:] .= adjoint.(temp[J])
+        di .= adjoint.(temp[J])
         x[i] = zero(eltype(A))
     end
     return dest
