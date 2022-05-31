@@ -71,22 +71,18 @@ for (T, t) in ((AdjointMap, adjoint), (TransposeMap, transpose))
 end
 
 # LinearCombination
-function Base.Matrix{T}(ΣA::LinearCombination{<:Any, <:Tuple{Vararg{VecOrMatMap}}}) where {T}
-    mats = map(A->getfield(A, :lmap), ΣA.maps)
-    return convert(Matrix{T}, sum(mats))
-end
 function SparseArrays.sparse(ΣA::LinearCombination{<:Any, <:Tuple{Vararg{VecOrMatMap}}})
     mats = map(A->getfield(A, :lmap), ΣA.maps)
-    return convert(SparseMatrixCSC, sum(mats))
+    return sum(sparse, mats)
 end
 
 # CompositeMap
 function Base.Matrix{T}(AB::CompositeMap{<:Any, <:Tuple{VecOrMatMap, LinearMap}}) where {T}
     B, A = AB.maps
     require_one_based_indexing(B)
-    Y = Matrix{eltype(AB)}(undef, size(AB))
-    @views for i in 1:size(Y, 2)
-        _unsafe_mul!(Y[:, i], A, B.lmap[:, i])
+    Y = Matrix{T}(undef, size(AB))
+    for (yi, bi) in zip(eachcol(Y), eachcol(B.lmap))
+        _unsafe_mul!(yi, A, bi)
     end
     return Y
 end
@@ -101,27 +97,27 @@ for ((TA, fieldA), (TB, fieldB)) in (((VecOrMatMap, :lmap), (VecOrMatMap, :lmap)
 end
 function Base.Matrix{T}(AB::CompositeMap{<:Any, <:Tuple{VecOrMatMap, VecOrMatMap}}) where {T}
     B, A = AB.maps
-    return convert(Matrix{T}, A.lmap*B.lmap)
+    return mul!(Matrix{T}(undef, size(AB)), A.lmap, B.lmap)
 end
 function SparseArrays.sparse(AB::CompositeMap{<:Any, <:Tuple{VecOrMatMap, VecOrMatMap}})
     B, A = AB.maps
-    return convert(SparseMatrixCSC, A.lmap*B.lmap)
+    return sparse(A.lmap)*sparse(B.lmap)
 end
 function Base.Matrix{T}(λA::CompositeMap{<:Any, <:Tuple{VecOrMatMap, UniformScalingMap}}) where {T}
     A, J = λA.maps
-    return convert(Matrix{T}, J.λ*A.lmap)
+    return mul!(Matrix{T}(undef, size(λA)), J.λ, A.lmap)
 end
 function SparseArrays.sparse(λA::CompositeMap{<:Any, <:Tuple{VecOrMatMap, UniformScalingMap}})
     A, J = λA.maps
-    return convert(SparseMatrixCSC, J.λ*A.lmap)
+    return J.λ*sparse(A.lmap)
 end
 function Base.Matrix{T}(Aλ::CompositeMap{<:Any, <:Tuple{UniformScalingMap, VecOrMatMap}}) where {T}
     J, A = Aλ.maps
-    return convert(Matrix{T}, A.lmap*J.λ)
+    return mul!(Matrix{T}(undef, size(Aλ)), A.lmap, J.λ)
 end
 function SparseArrays.sparse(Aλ::CompositeMap{<:Any, <:Tuple{UniformScalingMap, VecOrMatMap}})
     J, A = Aλ.maps
-    return convert(SparseMatrixCSC, A.lmap*J.λ)
+    return sparse(A.lmap)*J.λ
 end
 
 # BlockMap & BlockDiagonalMap
