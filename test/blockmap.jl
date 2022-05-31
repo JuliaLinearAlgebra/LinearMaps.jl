@@ -23,7 +23,7 @@ using LinearMaps: FiveArg
             A = [A11 A12]
             x = rand(n+n2)
             @test size(L) == size(A) == size(Lv)
-            @test Matrix(L) == A == Matrix(Lv)
+            @test Matrix(L) == A == Matrix(Lv) == mul!(copy(A), L, 1, true, false)
             @test L * x ≈ A * x ≈ Lv * x
             L = @inferred hcat(LinearMap(A11), LinearMap(A12), LinearMap(A11))
             A = [A11 A12 A11]
@@ -187,6 +187,7 @@ using LinearMaps: FiveArg
             Lt = @inferred transform(LinearMap(L))
             @test Lt * x ≈ transform(A) * x
             @test Matrix(Lt) == Matrix(transform(A))
+            @test mul!(copy(transform(A)), Lt, 1, true, true) == 2transform(A)
             A21 = rand(elty, 10, 10)
             A = [I A12; A21 I]
             L = [I LinearMap(A12); LinearMap(A21) I]

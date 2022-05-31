@@ -77,6 +77,7 @@ LinearAlgebra.mul!(y::AbstractVector, A::Union{SimpleFunctionMap,SimpleComplexFu
     @test mul!(copy(W), F, V) ≈ L*V
     @test mul!(copy(W), F, V, α, β) ≈ L*V*α + W*β
     @test mul!(copy(W), F, V, 0, β) ≈ W*β
+    @test mul!(copy(FM), F, 1, true, true) == 2FM
 
     Fs = sparse(F)
     @test SparseMatrixCSC(F) == Fs == L

@@ -13,7 +13,7 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
     @test !(transpose(CS) == adjoint(CS))
     @test !(adjoint(CS) == transpose(CS))
     M = Matrix(CS)
-    @test M == LowerTriangular(ones(10,10))
+    @test M == LowerTriangular(ones(10,10)) == mul!(copy(M), CS, 1, true, false)
     x = rand(ComplexF64, 10); w = rand(ComplexF64, 10)
     X = rand(ComplexF64, 10, 3); W = rand(ComplexF64, 10, 3)
     α, β = rand(ComplexF64, 2)
@@ -32,8 +32,10 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
         @test transform2(transform1(CS)) * x ≈ transform2(transform1(M))*x
         @test mul!(copy(w), transform2(transform1(CS)), x) ≈ transform2(transform1(M))*x
         @test mul!(copy(W), transform2(transform1(CS)), X) ≈ transform2(transform1(M))*X
+        @test mul!(copy(w), transform2(transform1(CS)), 2) ≈ transform2(transform1(M))*2
         @test mul!(copy(w), transform2(transform1(CS)), x, α, β) ≈ transform2(transform1(M))*x*α + w*β
         @test mul!(copy(W), transform2(transform1(CS)), X, α, β) ≈ transform2(transform1(M))*X*α + W*β
+        @test mul!(copy(w), transform2(transform1(CS)), 2, α, β) ≈ transform2(transform1(M))*2*α + w*β
     end
 
     id = @inferred LinearMap(identity, identity, 10; issymmetric=true, ishermitian=true, isposdef=true)
