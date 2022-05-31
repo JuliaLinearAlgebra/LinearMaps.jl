@@ -170,7 +170,6 @@ _unsafe_mul!(y::AbstractVecOrMat, A::CompositeMap, x::AbstractVector) =
 _unsafe_mul!(y::AbstractMatrix, A::CompositeMap, x::AbstractMatrix) =
     _compositemul!(y, A, x)
 
-
 function _compositemul!(y::AbstractVecOrMat,
                         A::CompositeMap{<:Any,<:Tuple{LinearMap}},
                         x::AbstractVecOrMat,

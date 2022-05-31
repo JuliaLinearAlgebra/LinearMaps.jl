@@ -283,6 +283,9 @@ Base.:(==)(A::BlockMap, B::BlockMap) =
 # multiplication helper functions
 ############
 
+@inline _selectdim(x, i, inds) = selectdim(x, i, inds)
+@inline _selectdim(x::Number, _, _) = x
+
 function _blockmul!(y, A::BlockMap, x, α, β)
     if iszero(α)
         iszero(β) && return fill!(y, zero(eltype(y)))
@@ -302,10 +305,10 @@ function ___blockmul!(y, A, x, α, β, ::Nothing)
     for (row, yi) in zip(rows, yinds)
         yrow = selectdim(y, 1, yi)
         mapind += 1
-        _unsafe_mul!(yrow, maps[mapind], selectdim(x, 1, xinds[mapind]), α, β)
+        _unsafe_mul!(yrow, maps[mapind], _selectdim(x, 1, xinds[mapind]), α, β)
         for _ in 2:row
             mapind += 1
-            _unsafe_mul!(yrow, maps[mapind], selectdim(x, 1, xinds[mapind]), α, true)
+            _unsafe_mul!(yrow, maps[mapind], _selectdim(x, 1, xinds[mapind]), α, true)
         end
     end
     return y
@@ -317,7 +320,7 @@ function ___blockmul!(y, A, x, α, β, z)
         yrow = selectdim(y, 1, yi)
         zrow = selectdim(z, 1, yi)
         mapind += 1
-        xrow = selectdim(x, 1, xinds[mapind])
+        xrow = _selectdim(x, 1, xinds[mapind])
         if MulStyle(maps[mapind]) === ThreeArg() && !iszero(β)
             !isone(β) && rmul!(yrow, β)
             muladd!(ThreeArg(), yrow, maps[mapind], xrow, α, zrow)
@@ -326,7 +329,7 @@ function ___blockmul!(y, A, x, α, β, z)
         end
         for _ in 2:row
             mapind +=1
-            xrow = selectdim(x, 1, xinds[mapind])
+            xrow = _selectdim(x, 1, xinds[mapind])
             muladd!(MulStyle(maps[mapind]), yrow, maps[mapind], xrow, α, zrow)
         end
     end
@@ -341,7 +344,7 @@ function _transblockmul!(y, A::BlockMap, x, α, β, transform)
         return rmul!(y, β)
     else
         # first block row (rowind = 1) of A, meaning first block column of A', fill all of y
-        xrow = selectdim(x, 1, first(xinds))
+        xrow = _selectdim(x, 1, first(xinds))
         for rowind in 1:first(rows)
             yrow = selectdim(y, 1, yinds[rowind])
             _unsafe_mul!(yrow, transform(maps[rowind]), xrow, α, β)
@@ -351,7 +354,7 @@ function _transblockmul!(y, A::BlockMap, x, α, β, transform)
         # add results to corresponding parts of y
         # TODO: think about multithreading
         @inbounds for i in 2:length(rows)
-            xrow = selectdim(x, 1, xinds[i])
+            xrow = _selectdim(x, 1, xinds[i])
             for _ in 1:rows[i]
                 mapind +=1
                 yrow = selectdim(y, 1, yinds[mapind])
@@ -366,7 +369,7 @@ end
 # multiplication with vectors & matrices
 ############
 
-for (In, Out) in ((AbstractVector, AbstractVecOrMat), (AbstractMatrix, AbstractMatrix))
+for (In, Out) in ((AbstractVector, AbstractVecOrMat, Number), (AbstractMatrix, AbstractMatrix, AbstractMatrix))
     @eval begin
         function _unsafe_mul!(y::$Out, A::BlockMap, x::$In)
             require_one_based_indexing(y, x)
@@ -391,11 +394,6 @@ for (In, Out) in ((AbstractVector, AbstractVecOrMat), (AbstractMatrix, AbstractM
             end
         end
     end
-end
-
-function _unsafe_mul!(M::AbstractMatrix, A::BlockMap, s::Number, α::Number, β::Number)
-    require_one_based_indexing(M, s)
-    return _blockmul!(M, A, s, α, β)
 end
 
 ############
@@ -483,7 +481,7 @@ LinearAlgebra.transpose(A::BlockDiagonalMap{T}) where {T} =
 Base.:(==)(A::BlockDiagonalMap, B::BlockDiagonalMap) =
     (eltype(A) == eltype(B) && all(A.maps .== B.maps))
 
-for (In, Out) in ((AbstractVector, AbstractVecOrMat), (AbstractMatrix, AbstractMatrix))
+for (In, Out) in ((AbstractVector, AbstractVecOrMat, Number), (AbstractMatrix, AbstractMatrix, AbstractMatrix))
     @eval begin
         function _unsafe_mul!(y::$Out, A::BlockDiagonalMap, x::$In)
             require_one_based_indexing(y, x)
@@ -500,7 +498,7 @@ function _blockscaling!(y, A::BlockDiagonalMap, x, α, β)
     maps, yinds, xinds = A.maps, A.rowranges, A.colranges
     # TODO: think about multi-threading here
     @inbounds for i in 1:length(maps)
-        _unsafe_mul!(selectdim(y, 1, yinds[i]), maps[i], selectdim(x, 1, xinds[i]), α, β)
+        _unsafe_mul!(selectdim(y, 1, yinds[i]), maps[i], _selectdim(x, 1, xinds[i]), α, β)
     end
     return y
 end
