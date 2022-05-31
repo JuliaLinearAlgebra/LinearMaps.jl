@@ -29,10 +29,11 @@ end
 Base.size(A::MyFillMap) = A.size
 
 # By a couple of defaults provided for all subtypes of `LinearMap`, we only need to define
-# a `LinearMaps._unsafe_mul!` method to have minimal, operational type. The function `_unsafe_mul!`
-# is called by `LinearAlgebra.mul!`, constructors, and conversions and only needs to be concerned
-# with the bare computing kernel. Dimension checking is done on the level of `mul!` etc. Factoring
-# out dimension checking is done to minimise overhead caused by repetitive checking.
+# a `LinearMaps._unsafe_mul!` method to have a minimal, operational type. The (internal)
+# function `_unsafe_mul!` is called by `LinearAlgebra.mul!`, constructors, and conversions
+# and only needs to be concerned with the bare computing kernel. Dimension checking is done
+# on the level of `mul!` etc. Factoring out dimension checking is done to minimise overhead
+# caused by repetitive checking.
 
 function LinearMaps._unsafe_mul!(y::AbstractVecOrMat, A::MyFillMap, x::AbstractVector)
     return fill!(y, iszero(A.λ) ? zero(eltype(y)) : A.λ*sum(x))
@@ -128,7 +129,7 @@ typeof(A')
 try A'x catch e println(e) end
 
 # If the operator is symmetric or Hermitian, the transpose and the adjoint, respectively,
-# of the linear map `A` is given by `A` itself. So let's define corresponding checks.
+# of the linear map `A` is given by `A` itself. So let us define corresponding checks.
 
 LinearAlgebra.issymmetric(A::MyFillMap) = A.size[1] == A.size[2]
 LinearAlgebra.ishermitian(A::MyFillMap) = isreal(A.λ) && A.size[1] == A.size[2]
@@ -161,16 +162,29 @@ function LinearMaps._unsafe_mul!(
     transA::LinearMaps.TransposeMap{<:Any,<:MyFillMap},
     x::AbstractVector
 )
-    LinearMaps.check_dim_mul(y, transA, x)
     λ = transA.lmap.λ
     return fill!(y, iszero(λ) ? zero(eltype(y)) : transpose(λ)*sum(x))
 end
+
+# Now, the adjoint multiplication works.
+
+MyFillMap(5.0, (3, 4))' * ones(3)
 
 # If you have set the `MulStyle` trait to `FiveArg()`, you should provide a corresponding
 # 5-arg `mul!` method for `LinearMaps.TransposeMap{<:Any,<:MyFillMap}` and
 # `LinearMaps.AdjointMap{<:Any,<:MyFillMap}`.
 
 # ### Path 2: Invariant `LinearMap` subtypes
+
+# Before we start, let us delete the previously defined method to make sure we use the
+# following definitions.
+
+Base.delete_method(
+    first(methods(
+        LinearMaps._unsafe_mul!,
+        (AbstractVecOrMat, LinearMaps.TransposeMap{<:Any,<:MyFillMap}, AbstractVector))
+    )
+)
 
 # The seconnd option is when your class of linear maps that are modelled by your custom
 # `LinearMap` subtype are invariant under taking adjoints and transposes.
