@@ -35,7 +35,7 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
         @test mul!(copy(M), transform2(transform1(CS)), 2) ≈ transform2(transform1(M))*2
         @test mul!(copy(w), transform2(transform1(CS)), x, α, β) ≈ transform2(transform1(M))*x*α + w*β
         @test mul!(copy(W), transform2(transform1(CS)), X, α, β) ≈ transform2(transform1(M))*X*α + W*β
-        @test mul!(copy(M), transform2(transform1(CS)), 2, α, β) ≈ transform2(transform1(M))*2*α + w*β
+        @test mul!(copy(M), transform2(transform1(CS)), 2, α, β) ≈ transform2(transform1(M))*2*α + M*β
     end
 
     id = @inferred LinearMap(identity, identity, 10; issymmetric=true, ishermitian=true, isposdef=true)
