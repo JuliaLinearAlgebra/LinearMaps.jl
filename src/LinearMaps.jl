@@ -205,7 +205,7 @@ function mul!(y::AbstractVecOrMat, A::LinearMap, x::AbstractVector, α::Number, 
     return _unsafe_mul!(y, A, x, α, β)
 end
 
-function mul!(y::AbstractVecOrMat, A::LinearMap, s::Number, α::Number, β::Number)
+function mul!(y::AbstractMatrix, A::LinearMap, s::Number, α::Number, β::Number)
     size(y) == size(A) ||     
         throw(
             DimensionMismatch("y has size $(size(y)), A has size $(size(A))."))
@@ -289,10 +289,13 @@ end
 function _unsafe_mul!(y::AbstractMatrix, A::LinearMap, x::AbstractMatrix)
     return _generic_mapmat_mul!(y, A, x)
 end
-function _unsafe_mul!(y::AbstractMatrix, A::LinearMap, x::AbstractMatrix, α, β)
+function _unsafe_mul!(y::AbstractMatrix, A::LinearMap, x::AbstractMatrix, α::Number, β::Number)
     return _generic_mapmat_mul!(y, A, x, α, β)
 end
-function _unsafe_mul!(Y::AbstractMatrix, A::LinearMap, s::Number, α=true, β=false)
+function _unsafe_mul!(Y::AbstractMatrix, A::LinearMap, s::Number)
+    return _generic_mapnum_mul!(Y, A, s)
+end
+function _unsafe_mul!(Y::AbstractMatrix, A::LinearMap, s::Number, α::Number, β::Number)
     return _generic_mapnum_mul!(Y, A, s, α, β)
 end
 

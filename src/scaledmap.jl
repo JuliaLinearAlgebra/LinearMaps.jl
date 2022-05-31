@@ -69,5 +69,5 @@ end
 
 _unsafe_mul!(Y::AbstractMatrix, X::ScaledMap, c::Number) =
     _unsafe_mul!(Y, X.lmap, X.λ*c)
-_unsafe_mul!(Y::AbstractMatrix, X::ScaledMap, c::Number, a::Number, b::Number) =
-    _unsafe_mul!(Y, X.lmap, X.λ*c, a, b)
+_unsafe_mul!(Y::AbstractMatrix, X::ScaledMap, c::Number, α::Number, β::Number) =
+    _unsafe_mul!(Y, X.lmap, X.λ*c, α, β)

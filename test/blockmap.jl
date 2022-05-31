@@ -27,7 +27,7 @@ using LinearMaps: FiveArg
             @test L * x ≈ A * x ≈ Lv * x
             L = @inferred hcat(LinearMap(A11), LinearMap(A12), LinearMap(A11))
             A = [A11 A12 A11]
-            @test Matrix(L) == A
+            @test Matrix(L) == A == mul!(copy(A), L, 1, true, false)
             A = [I I I A11 A11 A11 a]
             @test (@which [A11 A11 A11]).module != LinearMaps
             @test (@which [I I I A11 A11 A11]).module != LinearMaps
@@ -72,7 +72,8 @@ using LinearMaps: FiveArg
             A = [A11; A21]
             x = rand(elty, n)
             @test size(L) == size(A)
-            @test Matrix(L) == Matrix(Lv) ==  A
+            @test Matrix(L) == A == mul!(copy(A), L, 1, true, false)
+            @test Matrix(Lv) == A == mul!(copy(A), Lv, 1, true, false)
             @test L * x ≈ Lv * x ≈ A * x
             A = [I; I; I; A11; A11; A11; reduce(hcat, fill(v, n))]
             @test (@which [I; I; I; A11; A11; A11; v v v v v v v v v v]).module != LinearMaps

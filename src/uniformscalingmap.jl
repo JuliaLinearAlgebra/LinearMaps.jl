@@ -70,18 +70,10 @@ for (In, Out) in ((AbstractVector, AbstractVecOrMat), (AbstractMatrix, AbstractM
     end
 end
 
-function _unsafe_mul!(M::AbstractMatrix, L::UniformScalingMap, s::Number)
-    LinearAlgebra._rmul_or_fill!(M, false)
-    c = L.λ * s
-    for (i,j) in zip(axes(L)...)
-        M[i,j] += c
-    end
-    return M
-end
-
-function _unsafe_mul!(M::AbstractMatrix, L::UniformScalingMap, s::Number, a::Number, b::Number)
-    LinearAlgebra._rmul_or_fill!(M,b)
-    c = L.λ * s * a
+function _unsafe_mul!(M::AbstractMatrix, L::UniformScalingMap, s::Number,
+            α::Number=true, β::Number=false)
+    LinearAlgebra._rmul_or_fill!(M, β)
+    c = L.λ * s * α
     for (i,j) in zip(axes(L)...)
         M[i,j] += c
     end
