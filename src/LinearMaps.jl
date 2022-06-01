@@ -283,21 +283,15 @@ end
 
 _unsafe_mul!(y, A::MapOrVecOrMat, x) = mul!(y, A, x)
 _unsafe_mul!(y, A::AbstractVecOrMat, x, α, β) = mul!(y, A, x, α, β)
-function _unsafe_mul!(y::AbstractVecOrMat, A::LinearMap, x::AbstractVector, α, β)
-    return _generic_mapvec_mul!(y, A, x, α, β)
-end
-function _unsafe_mul!(y::AbstractMatrix, A::LinearMap, x::AbstractMatrix)
-    return _generic_mapmat_mul!(y, A, x)
-end
-function _unsafe_mul!(y::AbstractMatrix, A::LinearMap, x::AbstractMatrix, α::Number, β::Number)
-    return _generic_mapmat_mul!(y, A, x, α, β)
-end
-function _unsafe_mul!(Y::AbstractMatrix, A::LinearMap, s::Number)
-    return _generic_mapnum_mul!(Y, A, s)
-end
-function _unsafe_mul!(Y::AbstractMatrix, A::LinearMap, s::Number, α::Number, β::Number)
-    return _generic_mapnum_mul!(Y, A, s, α, β)
-end
+_unsafe_mul!(y::AbstractVecOrMat, A::LinearMap, x::AbstractVector, α, β) =
+    _generic_mapvec_mul!(y, A, x, α, β)
+_unsafe_mul!(y::AbstractMatrix, A::LinearMap, x::AbstractMatrix) =
+    _generic_mapmat_mul!(y, A, x)
+_unsafe_mul!(y::AbstractMatrix, A::LinearMap, x::AbstractMatrix, α::Number, β::Number) =
+    _generic_mapmat_mul!(y, A, x, α, β)
+_unsafe_mul!(Y::AbstractMatrix, A::LinearMap, s::Number) = _generic_mapnum_mul!(Y, A, s)
+_unsafe_mul!(Y::AbstractMatrix, A::LinearMap, s::Number, α::Number, β::Number) =
+    _generic_mapnum_mul!(Y, A, s, α, β)
 
 include("left.jl") # left multiplication by a transpose or adjoint vector
 include("transpose.jl") # transposing linear maps
