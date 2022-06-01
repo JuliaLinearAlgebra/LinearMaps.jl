@@ -121,9 +121,6 @@ function SparseArrays.sparse(Aλ::CompositeMap{<:Any, <:Tuple{UniformScalingMap,
 end
 
 # BlockMap & BlockDiagonalMap
-Base.Matrix{T}(A::BlockMap) where {T} = hvcat(A.rows, convert.(Matrix{T}, A.maps)...)
-Base.convert(::Type{AbstractMatrix}, A::BlockMap) =
-    hvcat(A.rows, convert.(AbstractMatrix, A.maps)...)
 function SparseArrays.sparse(A::BlockMap)
     return hvcat(
         A.rows,
@@ -131,7 +128,6 @@ function SparseArrays.sparse(A::BlockMap)
         convert.(AbstractArray, _tail(A.maps))...
     )
 end
-Base.Matrix{T}(A::BlockDiagonalMap) where {T} = Base._cat((1,2), convert.(Matrix{T}, A.maps)...)
 Base.convert(::Type{AbstractMatrix}, A::BlockDiagonalMap) = sparse(A)
 function SparseArrays.sparse(A::BlockDiagonalMap)
     return blockdiag(convert.(SparseMatrixCSC, A.maps)...)
