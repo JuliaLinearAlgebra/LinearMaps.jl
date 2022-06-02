@@ -27,7 +27,7 @@ using LinearMaps: FiveArg
             @test L * x ≈ A * x ≈ Lv * x
             L = @inferred hcat(LinearMap(A11), LinearMap(A12), LinearMap(A11))
             A = [A11 A12 A11]
-            @test Matrix(L) == A == mul!(copy(A), L, 1, true, false)
+            @test Matrix(L) == A == mul!(zero(A), L, 1, true, false)
             A = [I I I A11 A11 A11 a]
             @test (@which [A11 A11 A11]).module != LinearMaps
             @test (@which [I I I A11 A11 A11]).module != LinearMaps
@@ -110,7 +110,10 @@ using LinearMaps: FiveArg
             @test L isa LinearMaps.BlockMap{elty}
             @test size(L) == size(A)
             @test L * x ≈ Lv * x ≈ A * x
-            @test Matrix(L) == Matrix(Lv) == A
+            @test Matrix(L) == Matrix(Lv) == A == mul!(zero(A), L, 1)
+            for α in (false, rand()), β in (false, rand())
+                @test mul!(copy(A), L, 2, α, β) ≈ A*(2α + β)
+            end
             @test convert(AbstractMatrix, L) == A
             A = [I A12; A21 I]
             @test (@which [I A12; A21 I]).module != LinearMaps
@@ -178,6 +181,9 @@ using LinearMaps: FiveArg
             @test size(L) == size(A)
             @test L * x ≈ A * x
             @test Matrix(L) == A
+            for α in (false, rand()), β in (false, rand())
+                @test mul!(copy(A), L, 2, α, β) ≈ A*(2α + β)
+            end
             @test convert(AbstractMatrix, L) == A
             @test sparse(L) == sparse(A)
             Lt = @inferred transform(L)
@@ -212,10 +218,10 @@ using LinearMaps: FiveArg
             M2 = randn(elty, m, n+2); L2 = LinearMap(M2)
             M3 = randn(elty, m, n+3); L3 = LinearMap(M3)
 
-            # Md = diag(M1, M2, M3, M2, M1) # unsupported so use sparse:
             if elty <: Complex
                 @test_throws ErrorException LinearMaps.BlockDiagonalMap{Float64}((L1, L2, L3, L2, L1))
             end
+            # Md = diag(M1, M2, M3, M2, M1) # unsupported so use sparse:
             Md = Matrix(blockdiag(sparse.((M1, M2, M3, M2, M1))...))
             @test (@which blockdiag(sparse.((M1, M2, M3, M2, M1))...)).module != LinearMaps
             @test (@which cat(M1, M2, M3, M2, M1; dims=(1,2))).module != LinearMaps
@@ -226,7 +232,10 @@ using LinearMaps: FiveArg
             @test Bdv.maps isa Vector
             @test @inferred(LinearMaps.MulStyle(Bd)) === FiveArg()
             @test occursin("$(5m)×$(5n+9) LinearMaps.BlockDiagonalMap{$elty}", sprint((t, s) -> show(t, "text/plain", s), Bd))
-            @test Matrix(Bd) == Md
+            @test Matrix(Bd) == Md == mul!(zero(Md), Bd, 1)
+            for α in (false, rand()), β in (false, rand())
+                @test mul!(copy(Md), Bd, 2, α, β) ≈ Md*(2α + β)
+            end
             @test convert(AbstractMatrix, Bd) isa SparseMatrixCSC
             @test sparse(Bd) == Md
             @test Matrix(@inferred blockdiag(L1)) == M1

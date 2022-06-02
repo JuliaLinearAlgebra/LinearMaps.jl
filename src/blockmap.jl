@@ -585,10 +585,10 @@ function _blockscaling!(y, A, x::Number)
 end
 function _blockscaling!(y, A, x::Number, α, β)
     maps, yinds, xinds = A.maps, A.rowranges, A.colranges
-    fill!(y, zero(eltype(y)))
+    LinearAlgebra._rmul_or_fill!(y, β)
     # TODO: think about multi-threading here
     @inbounds for (yind, map, xind) in zip(yinds, maps, xinds)
-        _unsafe_mul!(view(y, yind, xind), map, x, α, β)
+        _unsafe_mul!(view(y, yind, xind), map, x, α, true)
     end
     return y
 end
