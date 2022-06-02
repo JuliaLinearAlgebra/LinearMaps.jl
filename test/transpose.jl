@@ -26,7 +26,7 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
         @test mul!(copy(w), transform(CS), x, α, β) ≈ transform(M)*x*α + w*β
         @test mul!(copy(W), transform(CS), X, α, β) ≈ transform(M)*X*α + W*β
     end
-    for transform1 in (adjoint, transpose), transform2 in (adjoint, transpose)
+    for transform1 in (adjoint, transpose), transform2 in (identity, adjoint, transpose)
         @test transform1(transform1(CS)) === CS
         @test transform2(transform1(transform2(CS))) === transform1(CS)
         @test transform2(transform1(CS)) * x ≈ transform2(transform1(M))*x
@@ -35,7 +35,7 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
         @test mul!(copy(M), transform2(transform1(CS)), 2) ≈ transform2(transform1(M))*2
         @test mul!(copy(w), transform2(transform1(CS)), x, α, β) ≈ transform2(transform1(M))*x*α + w*β
         @test mul!(copy(W), transform2(transform1(CS)), X, α, β) ≈ transform2(transform1(M))*X*α + W*β
-        @test mul!(copy(M), transform2(transform1(CS)), 2, α, β) ≈ transform2(transform1(M))*2*α + M*β
+        @test mul!(copy(M), transform2(transform1(CS)), 2, α, β) ≈ transform2(transform1(M))*(2*α) + M*β
     end
 
     id = @inferred LinearMap(identity, identity, 10; issymmetric=true, ishermitian=true, isposdef=true)
