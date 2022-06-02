@@ -292,18 +292,11 @@ function _blockmul!(y, A, x, α, β)
     return __blockmul!(MulStyle(A), y, A, x, α, β)
 end
 
-# provide one global intermediate storage vector if necessary
-__blockmul!(::FiveArg, y, A, x, α, β)  = ___blockmul!(y, A, x, α, β, nothing)
-__blockmul!(::ThreeArg, y, A, x, α, β) = ___blockmul!(y, A, x, α, β, similar(y))
-
-function ___blockmul!(y, A, x::Number, α, β, _)
+__blockmul!(::MulStyle, y, A, x::Number, α, β)  = ___blockmul!(y, A, x, α, β)
+function ___blockmul!(y, A, x::Number, α, β)
     maps, rows, yinds, xinds = A.maps, A.rows, A.rowranges, A.colranges
     mapind = 0
-    if iszero(α)
-        iszero(β) && return fill!(y, zero(eltype(y)))
-        isone(β) && return y
-        return rmul!(y, β)
-    elseif iszero(β)
+    if iszero(β)
         s = x*α
         for (row, yi) in zip(rows, yinds)
             mapind += 1
@@ -325,6 +318,10 @@ function ___blockmul!(y, A, x::Number, α, β, _)
     end
     return y
 end
+
+# provide one global intermediate storage vector if necessary
+__blockmul!(::FiveArg, y, A, x::AbstractVecOrMat, α, β)  = ___blockmul!(y, A, x, α, β, nothing)
+__blockmul!(::ThreeArg, y, A, x::AbstractVecOrMat, α, β) = ___blockmul!(y, A, x, α, β, similar(y))
 function ___blockmul!(y, A, x::AbstractVecOrMat, α, β, ::Nothing)
     maps, rows, yinds, xinds = A.maps, A.rows, A.rowranges, A.colranges
     mapind = 0
@@ -362,13 +359,18 @@ function ___blockmul!(y, A, x::AbstractVecOrMat, α, β, z)
     return y
 end
 
-function _transblockmul!(y, A, x::Number, α, β, transform)
-    maps, rows, xinds, yinds = A.maps, A.rows, A.rowranges, A.colranges
+function _transblockmul!(y, A, x, α, β, transform)
     if iszero(α)
         iszero(β) && return fill!(y, zero(eltype(y)))
         isone(β) && return y
         return rmul!(y, β)
-    elseif iszero(β)
+    else
+        return __transblockmul!(y, A, x, α, β, transform)
+    end
+end
+function __transblockmul!(y, A, x::Number, α, β, transform)
+    maps, rows, xinds, yinds = A.maps, A.rows, A.rowranges, A.colranges
+    if iszero(β)
         s = x*α
         # first block row (rowind = 1) of A, meaning first block column of A', fill all of y
         for rowind in 1:first(rows)
@@ -398,30 +400,24 @@ function _transblockmul!(y, A, x::Number, α, β, transform)
     end
     return y
 end
-function _transblockmul!(y, A, x, α, β, transform)
+function __transblockmul!(y, A, x, α, β, transform)
     maps, rows, xinds, yinds = A.maps, A.rows, A.rowranges, A.colranges
-    if iszero(α)
-        iszero(β) && return fill!(y, zero(eltype(y)))
-        isone(β) && return y
-        return rmul!(y, β)
-    else
-        # first block row (rowind = 1) of A, meaning first block column of A', fill all of y
-        xrow = selectdim(x, 1, first(xinds))
-        for rowind in 1:first(rows)
-            yrow = selectdim(y, 1, yinds[rowind])
-            _unsafe_mul!(yrow, transform(maps[rowind]), xrow, α, β)
-        end
-        mapind = first(rows)
-        # subsequent block rows of A (block columns of A'),
-        # add results to corresponding parts of y
-        # TODO: think about multithreading
-        @inbounds for i in 2:length(rows)
-            xrow = selectdim(x, 1, xinds[i])
-            for _ in 1:rows[i]
-                mapind +=1
-                yrow = selectdim(y, 1, yinds[mapind])
-                _unsafe_mul!(yrow, transform(maps[mapind]), xrow, α, true)
-            end
+    # first block row (rowind = 1) of A, meaning first block column of A', fill all of y
+    xrow = selectdim(x, 1, first(xinds))
+    for rowind in 1:first(rows)
+        yrow = selectdim(y, 1, yinds[rowind])
+        _unsafe_mul!(yrow, transform(maps[rowind]), xrow, α, β)
+    end
+    mapind = first(rows)
+    # subsequent block rows of A (block columns of A'),
+    # add results to corresponding parts of y
+    # TODO: think about multithreading
+    @inbounds for i in 2:length(rows)
+        xrow = selectdim(x, 1, xinds[i])
+        for _ in 1:rows[i]
+            mapind +=1
+            yrow = selectdim(y, 1, yinds[mapind])
+            _unsafe_mul!(yrow, transform(maps[mapind]), xrow, α, true)
         end
     end
     return y

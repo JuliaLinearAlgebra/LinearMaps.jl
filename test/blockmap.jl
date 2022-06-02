@@ -111,7 +111,7 @@ using LinearMaps: FiveArg
             @test size(L) == size(A)
             @test L * x ≈ Lv * x ≈ A * x
             @test Matrix(L) == Matrix(Lv) == A == mul!(zero(A), L, 1)
-            for α in (false, rand()), β in (false, rand())
+            for α in (false, 1, rand()), β in (false, 1, rand())
                 @test mul!(copy(A), L, 2, α, β) ≈ A*(2α + β)
             end
             @test convert(AbstractMatrix, L) == A
@@ -181,9 +181,6 @@ using LinearMaps: FiveArg
             @test size(L) == size(A)
             @test L * x ≈ A * x
             @test Matrix(L) == A
-            for α in (false, rand()), β in (false, rand())
-                @test mul!(copy(A), L, 2, α, β) ≈ A*(2α + β)
-            end
             @test convert(AbstractMatrix, L) == A
             @test sparse(L) == sparse(A)
             Lt = @inferred transform(L)
@@ -194,7 +191,9 @@ using LinearMaps: FiveArg
             Lt = @inferred transform(LinearMap(L))
             @test Lt * x ≈ transform(A) * x
             @test Matrix(Lt) == Matrix(transform(A))
-            @test mul!(copy(transform(A)), Lt, 1, true, true) == 2transform(A)
+            for α in (false, 1, rand()), β in (false, 1, rand())
+                @test mul!(copy(transform(A)), Lt, 2, α, β) ≈ transform(A)*(2α + β)
+            end
             A21 = rand(elty, 10, 10)
             A = [I A12; A21 I]
             L = [I LinearMap(A12); LinearMap(A21) I]
