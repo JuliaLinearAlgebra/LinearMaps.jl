@@ -395,7 +395,7 @@ function __transblockmul!(y, A, x::Number, α, β, transform)
         @inbounds for i in 2:length(rows), _ in 1:rows[i]
             mapind +=1
             ytile = view(y, yinds[mapind], xinds[i])
-            _unsafe_mul!(ytile, transform(maps[mapind]), x, α, true)
+            _unsafe_mul!(ytile, transform(maps[mapind]), x, α, β)
         end
     end
     return y

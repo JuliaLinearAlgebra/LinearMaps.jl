@@ -188,12 +188,12 @@ using LinearMaps: FiveArg
             @test Lt * x ≈ transform(A) * x
             @test convert(AbstractMatrix, Lt) == transform(A)
             @test sparse(transform(L)) == transform(A)
-            Lt = @inferred transform(LinearMap(L))
-            @test Lt * x ≈ transform(A) * x
-            @test Matrix(Lt) == Matrix(transform(A))
             for α in (false, 1, rand()), β in (false, 1, rand())
                 @test mul!(copy(transform(A)), Lt, 2, α, β) ≈ transform(A)*(2α + β)
             end
+            Lt = @inferred transform(LinearMap(L))
+            @test Lt * x ≈ transform(A) * x
+            @test Matrix(Lt) == Matrix(transform(A))
             A21 = rand(elty, 10, 10)
             A = [I A12; A21 I]
             L = [I LinearMap(A12); LinearMap(A21) I]
