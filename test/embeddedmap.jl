@@ -9,7 +9,8 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
         zeros(size(M,1), offset[2]) M]
     BL = @inferred LinearMap(L, size(BM); offset=offset)
     s1, s2 = size(BM)
-    @test (@inferred Matrix(BL)) == BM
+    @test (@inferred Matrix(BL)) == BM == mul!(zero(BM), BL, 1)
+    @test mul!(copy(BM), BL, 2, true, true) == 3BM
     @test (@inferred Matrix(BL')) == BM'
     @test (@inferred Matrix(transpose(BL))) == transpose(BM)
 

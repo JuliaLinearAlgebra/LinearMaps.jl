@@ -50,4 +50,6 @@ using Test, LinearMaps, LinearAlgebra
     @test X*Id isa LinearMap
     @test Matrix(Id*X) == X
     @test Matrix(X*Id) == X
+    @test Matrix(Id + X) == I + X
+    @test Matrix(X + Id) == X + I
 end

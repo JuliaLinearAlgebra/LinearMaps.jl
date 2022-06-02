@@ -70,6 +70,16 @@ for (In, Out) in ((AbstractVector, AbstractVecOrMat), (AbstractMatrix, AbstractM
     end
 end
 
+function _unsafe_mul!(M::AbstractMatrix, L::UniformScalingMap, s::Number,
+            α::Number=true, β::Number=false)
+    LinearAlgebra._rmul_or_fill!(M, β)
+    c = L.λ * s * α
+    for (i,j) in zip(axes(L)...)
+        M[i,j] += c
+    end
+    return M
+end
+
 function _scaling!(y, λ, x, α, β)
     if (iszero(α) || iszero(λ))
         iszero(β) && return fill!(y, zero(eltype(y)))

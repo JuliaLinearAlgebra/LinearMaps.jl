@@ -81,3 +81,14 @@ for (In, Out) in ((AbstractVector, AbstractVecOrMat), (AbstractMatrix, AbstractM
         return y
     end
 end
+
+function _unsafe_mul!(Y::AbstractMatrix, A::EmbeddedMap, x::Number)
+    fill!(Y, zero(eltype(Y)))
+    _unsafe_mul!(view(Y, A.rows, A.cols), A.lmap, x)
+    return Y
+end
+function _unsafe_mul!(Y::AbstractMatrix, A::EmbeddedMap, x::Number, α::Number, β::Number)
+    LinearAlgebra._rmul_or_fill!(Y, β)
+    _unsafe_mul!(view(Y, A.rows, A.cols), A.lmap, x, α, !iszero(β))
+    return Y
+end

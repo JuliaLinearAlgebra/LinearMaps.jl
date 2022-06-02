@@ -1,6 +1,14 @@
 # Version history
 
 ## What's new in v3.7
+* `mul!(M::AbstractMatrix, A::LinearMap, s::Number, a, b)` methods are provided, mimicking
+  similar methods in `Base.LinearAlgebra`. This version allows for the memory efficient
+  implementation of in-place addition and conversion of a `LinearMap` to `Matrix`.
+  Efficient specialisations for `WrappedMap`, `ScaledMap`, and `LinearCombination` are
+  provided. If users supply the corresponding `_unsafe_mul!` method for their custom maps,
+  conversion, construction, and inplace addition will benefit from this supplied efficient
+  implementation. If no specialisation is supplied, a generic fallback is used that is based
+  on feeding the canonical basis of unit vectors to the linear map.
 
 * A new map type called `EmbeddedMap` is introduced. It is a wrapper of a "small" `LinearMap`
   (or a suitably converted `AbstractVecOrMat`) embedded into a "larger" zero map. Hence,

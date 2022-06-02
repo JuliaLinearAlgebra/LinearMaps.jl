@@ -283,7 +283,7 @@ Base.:(==)(A::BlockMap, B::BlockMap) =
 # multiplication helper functions
 ############
 
-function _blockmul!(y, A::BlockMap, x, α, β)
+function _blockmul!(y, A, x, α, β)
     if iszero(α)
         iszero(β) && return fill!(y, zero(eltype(y)))
         isone(β) && return y
@@ -292,11 +292,37 @@ function _blockmul!(y, A::BlockMap, x, α, β)
     return __blockmul!(MulStyle(A), y, A, x, α, β)
 end
 
-# provide one global intermediate storage vector if necessary
-__blockmul!(::FiveArg, y, A, x, α, β)  = ___blockmul!(y, A, x, α, β, nothing)
-__blockmul!(::ThreeArg, y, A, x, α, β) = ___blockmul!(y, A, x, α, β, similar(y))
+__blockmul!(::MulStyle, y, A, x::Number, α, β)  = ___blockmul!(y, A, x, α, β)
+function ___blockmul!(y, A, x::Number, α, β)
+    maps, rows, yinds, xinds = A.maps, A.rows, A.rowranges, A.colranges
+    mapind = 0
+    if iszero(β)
+        s = x*α
+        for (row, yi) in zip(rows, yinds)
+            mapind += 1
+            _unsafe_mul!(view(y, yi, xinds[mapind]), maps[mapind], s)
+            for _ in 2:row
+                mapind += 1
+                _unsafe_mul!(view(y, yi, xinds[mapind]), maps[mapind], s)
+            end
+        end
+    else
+        for (row, yi) in zip(rows, yinds)
+            mapind += 1
+            _unsafe_mul!(view(y, yi, xinds[mapind]), maps[mapind], x, α, β)
+            for _ in 2:row
+                mapind += 1
+                _unsafe_mul!(view(y, yi, xinds[mapind]), maps[mapind], x, α, β)
+            end
+        end
+    end
+    return y
+end
 
-function ___blockmul!(y, A, x, α, β, ::Nothing)
+# provide one global intermediate storage vector if necessary
+__blockmul!(::FiveArg, y, A, x::AbstractVecOrMat, α, β)  = ___blockmul!(y, A, x, α, β, nothing)
+__blockmul!(::ThreeArg, y, A, x::AbstractVecOrMat, α, β) = ___blockmul!(y, A, x, α, β, similar(y))
+function ___blockmul!(y, A, x::AbstractVecOrMat, α, β, ::Nothing)
     maps, rows, yinds, xinds = A.maps, A.rows, A.rowranges, A.colranges
     mapind = 0
     for (row, yi) in zip(rows, yinds)
@@ -310,7 +336,7 @@ function ___blockmul!(y, A, x, α, β, ::Nothing)
     end
     return y
 end
-function ___blockmul!(y, A, x, α, β, z)
+function ___blockmul!(y, A, x::AbstractVecOrMat, α, β, z)
     maps, rows, yinds, xinds = A.maps, A.rows, A.rowranges, A.colranges
     mapind = 0
     for (row, yi) in zip(rows, yinds)
@@ -333,30 +359,65 @@ function ___blockmul!(y, A, x, α, β, z)
     return y
 end
 
-function _transblockmul!(y, A::BlockMap, x, α, β, transform)
-    maps, rows, xinds, yinds = A.maps, A.rows, A.rowranges, A.colranges
+function _transblockmul!(y, A, x, α, β, transform)
     if iszero(α)
         iszero(β) && return fill!(y, zero(eltype(y)))
         isone(β) && return y
         return rmul!(y, β)
     else
+        return __transblockmul!(y, A, x, α, β, transform)
+    end
+end
+function __transblockmul!(y, A, x::Number, α, β, transform)
+    maps, rows, xinds, yinds = A.maps, A.rows, A.rowranges, A.colranges
+    if iszero(β)
+        s = x*α
         # first block row (rowind = 1) of A, meaning first block column of A', fill all of y
-        xrow = selectdim(x, 1, first(xinds))
         for rowind in 1:first(rows)
-            yrow = selectdim(y, 1, yinds[rowind])
-            _unsafe_mul!(yrow, transform(maps[rowind]), xrow, α, β)
+            _unsafe_mul!(view(y, yinds[rowind], first(xinds)), transform(maps[rowind]), s)
+        end
+        mapind = first(rows)
+        # subsequent block rows of A (block columns of A')
+        @inbounds for i in 2:length(rows), _ in 1:rows[i]
+            mapind +=1
+            _unsafe_mul!(view(y, yinds[mapind], xinds[i]), transform(maps[mapind]), s)
+        end
+    else
+        # first block row (rowind = 1) of A, meaning first block column of A', fill all of y
+        for rowind in 1:first(rows)
+            ytile = view(y, yinds[rowind], first(xinds))
+            _unsafe_mul!(ytile, transform(maps[rowind]), x, α, β)
         end
         mapind = first(rows)
         # subsequent block rows of A (block columns of A'),
         # add results to corresponding parts of y
         # TODO: think about multithreading
-        @inbounds for i in 2:length(rows)
-            xrow = selectdim(x, 1, xinds[i])
-            for _ in 1:rows[i]
-                mapind +=1
-                yrow = selectdim(y, 1, yinds[mapind])
-                _unsafe_mul!(yrow, transform(maps[mapind]), xrow, α, true)
-            end
+        @inbounds for i in 2:length(rows), _ in 1:rows[i]
+            mapind +=1
+            ytile = view(y, yinds[mapind], xinds[i])
+            _unsafe_mul!(ytile, transform(maps[mapind]), x, α, β)
+        end
+    end
+    return y
+end
+function __transblockmul!(y, A, x, α, β, transform)
+    maps, rows, xinds, yinds = A.maps, A.rows, A.rowranges, A.colranges
+    # first block row (rowind = 1) of A, meaning first block column of A', fill all of y
+    xrow = selectdim(x, 1, first(xinds))
+    for rowind in 1:first(rows)
+        yrow = selectdim(y, 1, yinds[rowind])
+        _unsafe_mul!(yrow, transform(maps[rowind]), xrow, α, β)
+    end
+    mapind = first(rows)
+    # subsequent block rows of A (block columns of A'),
+    # add results to corresponding parts of y
+    # TODO: think about multithreading
+    @inbounds for i in 2:length(rows)
+        xrow = selectdim(x, 1, xinds[i])
+        for _ in 1:rows[i]
+            mapind +=1
+            yrow = selectdim(y, 1, yinds[mapind])
+            _unsafe_mul!(yrow, transform(maps[mapind]), xrow, α, true)
         end
     end
     return y
@@ -389,6 +450,24 @@ for (In, Out) in ((AbstractVector, AbstractVecOrMat), (AbstractMatrix, AbstractM
                 require_one_based_indexing(y, x)
                 return _transblockmul!(y, wrapA.lmap, x, α, β, $transform)
             end
+        end
+    end
+end
+
+############
+# multiplication with a scalar
+############
+
+function _unsafe_mul!(Y::AbstractMatrix, A::BlockMap, s::Number, α::Number=true, β::Number=false)
+    require_one_based_indexing(Y, s)
+    return _blockmul!(Y, A, s, α, β)
+end
+for (MT, transform) in ((:TransposeMap, :transpose), (:AdjointMap, :adjoint))
+    @eval begin
+        function _unsafe_mul!(Y::AbstractMatrix, wrapA::$MT{<:Any, <:BlockMap}, s::Number, 
+                    α::Number=true, β::Number=false)
+            require_one_based_indexing(Y)
+            return _transblockmul!(Y, wrapA.lmap, s, α, β, $transform)
         end
     end
 end
@@ -478,11 +557,11 @@ LinearAlgebra.transpose(A::BlockDiagonalMap{T}) where {T} =
 Base.:(==)(A::BlockDiagonalMap, B::BlockDiagonalMap) =
     (eltype(A) == eltype(B) && all(A.maps .== B.maps))
 
-for (In, Out) in ((AbstractVector, AbstractVecOrMat), (AbstractMatrix, AbstractMatrix))
+for (In, Out) in ((AbstractVector, AbstractVecOrMat), (AbstractMatrix, AbstractMatrix), (Number, AbstractMatrix))
     @eval begin
         function _unsafe_mul!(y::$Out, A::BlockDiagonalMap, x::$In)
             require_one_based_indexing(y, x)
-            return _blockscaling!(y, A, x, true, false)
+            return _blockscaling!(y, A, x)
         end
         function _unsafe_mul!(y::$Out, A::BlockDiagonalMap, x::$In, α::Number, β::Number)
             require_one_based_indexing(y, x)
@@ -491,11 +570,38 @@ for (In, Out) in ((AbstractVector, AbstractVecOrMat), (AbstractMatrix, AbstractM
     end
 end
 
-function _blockscaling!(y, A::BlockDiagonalMap, x, α, β)
+function _blockscaling!(y, A, x::Number)
+    maps, yinds, xinds = A.maps, A.rowranges, A.colranges
+    fill!(y, zero(eltype(y)))
+    # TODO: think about multi-threading here
+    @inbounds for (yind, map, xind) in zip(yinds, maps, xinds)
+        _unsafe_mul!(view(y, yind, xind), map, x)
+    end
+    return y
+end
+function _blockscaling!(y, A, x::Number, α, β)
+    maps, yinds, xinds = A.maps, A.rowranges, A.colranges
+    LinearAlgebra._rmul_or_fill!(y, β)
+    # TODO: think about multi-threading here
+    @inbounds for (yind, map, xind) in zip(yinds, maps, xinds)
+        _unsafe_mul!(view(y, yind, xind), map, x, α, true)
+    end
+    return y
+end
+
+function _blockscaling!(y, A, x)
     maps, yinds, xinds = A.maps, A.rowranges, A.colranges
     # TODO: think about multi-threading here
-    @inbounds for i in 1:length(maps)
-        _unsafe_mul!(selectdim(y, 1, yinds[i]), maps[i], selectdim(x, 1, xinds[i]), α, β)
+    @inbounds for (yind, map, xind) in zip(yinds, maps, xinds)
+        _unsafe_mul!(selectdim(y, 1, yind), map, selectdim(x, 1, xind))
+    end
+    return y
+end
+function _blockscaling!(y, A, x, α, β)
+    maps, yinds, xinds = A.maps, A.rowranges, A.colranges
+    # TODO: think about multi-threading here
+    @inbounds for (yind, map, xind) in zip(yinds, maps, xinds)
+        _unsafe_mul!(selectdim(y, 1, yind), map, selectdim(x, 1, xind), α, β)
     end
     return y
 end
