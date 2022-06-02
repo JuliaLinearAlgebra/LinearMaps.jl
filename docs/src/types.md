@@ -103,6 +103,8 @@ Base.:*(::AbstractMatrix,::LinearMap)
 LinearAlgebra.mul!(::AbstractVecOrMat,::LinearMap,::AbstractVector)
 LinearAlgebra.mul!(::AbstractVecOrMat,::LinearMap,::AbstractVector,::Number,::Number)
 LinearAlgebra.mul!(::AbstractMatrix,::AbstractMatrix,::LinearMap)
+LinearAlgebra.mul!(::AbstractVecOrMat,::LinearMap,::Number)
+LinearAlgebra.mul!(::AbstractVecOrMat,::LinearMap,::Number,::Number,::Number)
 *(::LinearAlgebra.AdjointAbsVec,::LinearMap)
 *(::LinearAlgebra.TransposeAbsVec,::LinearMap)
 ```
