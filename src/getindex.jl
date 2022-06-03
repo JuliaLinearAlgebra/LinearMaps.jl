@@ -48,12 +48,12 @@ _getindex(A::LinearMap, I::Base.LogicalIndex) = [(@inbounds A[i]) for i in I]
 ########################
 # Cartesian indexing
 ########################
-_getindex(A::LinearMap, i::Union{Integer,Indexer}, j::Integer) = (@inbounds (A*basevec(A, 2, j))[i])
-_getindex(A::LinearMap, ::Base.Slice, j::Integer) = A*basevec(A, 2, j)
+_getindex(A::LinearMap, i::Union{Integer,Indexer}, j::Integer) = (@inbounds (A*unitvec(A, 2, j))[i])
+_getindex(A::LinearMap, ::Base.Slice, j::Integer) = A*unitvec(A, 2, j)
 function _getindex(A::LinearMap, i::Integer, J::Indexer)
     # try
         # requires adjoint action to be defined
-        return @inbounds (basevec(A, 1, i)'A)[J]
+        return @inbounds (unitvec(A, 1, i)'A)[J]
     # catch
     #     return _fillbycols!(zeros(eltype(A), Base.index_shape(i, J)), A, i, J)
     # end
@@ -61,7 +61,7 @@ end
 function _getindex(A::LinearMap, i::Integer, J::Base.Slice)
     # try
         # requires adjoint action to be defined
-        return vec(basevec(A, 1, i)'A)
+        return vec(unitvec(A, 1, i)'A)
     # catch
     #     return _fillbycols!(zeros(eltype(A), Base.index_shape(i, J)), A, i, J)
     # end
@@ -91,7 +91,7 @@ _getindex(A::TransposeMap, i::Integer, j::Integer) = @inbounds transpose(A.lmap[
 _getindex(A::UniformScalingMap, i::Integer, j::Integer) = ifelse(i == j, A.λ, zero(eltype(A)))
 
 # helpers
-function basevec(A, dim, i::Integer)
+function unitvec(A, dim, i::Integer)
     x = zeros(eltype(A), size(A, dim))
     @inbounds x[i] = one(eltype(A))
     return x
