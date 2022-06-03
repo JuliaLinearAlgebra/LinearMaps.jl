@@ -84,9 +84,7 @@ for (In, Out) in ((AbstractVector, AbstractVecOrMat), (AbstractMatrix, AbstractM
         end
     end
 end
-function _unsafe_mul!(y::AbstractMatrix, Ac::ConjugateMap, x::Number)
-    return _conjmul!(y, Ac.lmap.lmap, x)
-end
+_unsafe_mul!(y::AbstractMatrix, Ac::ConjugateMap, x::Number) = _conjmul!(y, Ac.lmap.lmap, x)
 
 # multiplication helper function
 _conjmul!(y, A, x) = conj!(_unsafe_mul!(y, A, conj(x)))
