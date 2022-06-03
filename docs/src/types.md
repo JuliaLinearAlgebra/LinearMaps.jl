@@ -92,6 +92,10 @@ Type for lazily representing constantly filled matrices.
 LinearMaps.FillMap
 ```
 
+### `EmbeddedMap``
+
+Type for representing linear maps that are embedded in larger zero maps.
+
 ## Methods
 
 ### Multiplication methods
