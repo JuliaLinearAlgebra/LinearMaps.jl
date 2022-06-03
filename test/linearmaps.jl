@@ -63,9 +63,9 @@ end
     w = rand(ComplexF64, 10); W = rand(ComplexF64, 10, 3)
     F(v) == F*v
     @test mul!(w, F, v) === w == F * v
-    @test_throws ErrorException F' * v
+    @test_throws ErrorException("transpose not implemented for "*sprint((t, s) -> show(t, "text/plain", s), F)) F' * v
     @test_throws ErrorException transpose(F) * v
-    @test_throws ErrorException mul!(w, adjoint(FC), v)
+    @test_throws ErrorException("adjoint not implemented for "*sprint((t, s) -> show(t, "text/plain", s), FC)) mul!(w, adjoint(FC), v)
     @test_throws ErrorException mul!(w, transpose(F), v)
     FM = convert(AbstractMatrix, F)
     L = LowerTriangular(ones(10, 10))

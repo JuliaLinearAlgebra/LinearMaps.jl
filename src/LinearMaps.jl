@@ -258,16 +258,16 @@ end
 _unsafe_mul!(y, A::MapOrVecOrMat, x) = mul!(y, A, x)
 _unsafe_mul!(y, A::AbstractVecOrMat, x, α, β) = mul!(y, A, x, α, β)
 _unsafe_mul!(y::AbstractVecOrMat, A::LinearMap, x::AbstractVector, α, β) =
-    _generic_mapvec_mul!(y, A, x, α, β)
+    _generic_map_mul!(y, A, x, α, β)
 _unsafe_mul!(y::AbstractMatrix, A::LinearMap, x::AbstractMatrix) =
-    _generic_mapmat_mul!(y, A, x)
+    _generic_map_mul!(y, A, x)
 _unsafe_mul!(y::AbstractMatrix, A::LinearMap, x::AbstractMatrix, α::Number, β::Number) =
-    _generic_mapmat_mul!(y, A, x, α, β)
-_unsafe_mul!(Y::AbstractMatrix, A::LinearMap, s::Number) = _generic_mapnum_mul!(Y, A, s)
+    _generic_map_mul!(y, A, x, α, β)
+_unsafe_mul!(Y::AbstractMatrix, A::LinearMap, s::Number) = _generic_map_mul!(Y, A, s)
 _unsafe_mul!(Y::AbstractMatrix, A::LinearMap, s::Number, α::Number, β::Number) =
-    _generic_mapnum_mul!(Y, A, s, α, β)
+    _generic_map_mul!(Y, A, s, α, β)
 
-function _generic_mapvec_mul!(y, A, x, α, β)
+function _generic_map_mul!(y, A, x::AbstractVector, α, β)
     # this function needs to call mul! for, e.g.,  AdjointMap{...,<:CustomMap}
     if isone(α)
         iszero(β) && return mul!(y, A, x)
@@ -294,21 +294,19 @@ function _generic_mapvec_mul!(y, A, x, α, β)
         return y
     end
 end
-
-function _generic_mapmat_mul!(Y, A, X)
+function _generic_map_mul!(Y, A, X::AbstractMatrix)
     for (Xi, Yi) in zip(eachcol(X), eachcol(Y))
         mul!(Yi, A, Xi)
     end
     return Y
 end
-function _generic_mapmat_mul!(Y, A, X, α, β)
+function _generic_map_mul!(Y, A, X::AbstractMatrix, α, β)
     for (Xi, Yi) in zip(eachcol(X), eachcol(Y))
         mul!(Yi, A, Xi, α, β)
     end
     return Y
 end
-
-function _generic_mapnum_mul!(Y, A, s)
+function _generic_map_mul!(Y, A, s::Number)
     T = promote_type(eltype(A), typeof(s))
     ax2 = axes(A)[2]
     xi = zeros(T, ax2)
@@ -319,7 +317,7 @@ function _generic_mapnum_mul!(Y, A, s)
     end
     return Y
 end
-function _generic_mapnum_mul!(Y, A, s, α, β)
+function _generic_map_mul!(Y, A, s::Number, α, β)
     T = promote_type(eltype(A), typeof(s))
     ax2 = axes(A)[2]
     xi = zeros(T, ax2)
