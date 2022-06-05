@@ -33,10 +33,10 @@
   on vectors efficiently, and are in general *not* backed up by storage-like types like
   `Array`s. Therefore, indexing and/or slicing of `LinearMap`s is likely to be slow,
   and it may require the (repeated) allocation of canonical unit vectors. As a consequence,
-  generic algorithms relying heavily on indexing and/or slicing are likely to work much
-  worse than expected for `AbstractArray`s. To avoid repeated indexing operations which
+  generic algorithms relying heavily on indexing and/or slicing are likely to run much
+  slower than expected for `AbstractArray`s. To avoid repeated indexing operations which
   may involve redundant computations, it is strongly recommended to consider `convert`ing
-  `LinearMap`-typed objects to `Matrix` or `SparseMatrixCSC` first.
+  `LinearMap`-typed objects to `Matrix` or `SparseMatrixCSC` first, if memory permits.
 
 ## What's new in v3.6
 
