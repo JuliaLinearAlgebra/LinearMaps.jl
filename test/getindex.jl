@@ -4,6 +4,7 @@ using LinearMaps: VecOrMatMap, ScaledMap
 
 function test_getindex(A::LinearMap, M::AbstractMatrix)
     @assert size(A) == size(M)
+    mask = rand(Bool, size(A))
     imask = rand(Bool, size(A, 1))
     jmask = rand(Bool, size(A, 2))
     @test A[:] == M[:]
@@ -13,25 +14,37 @@ function test_getindex(A::LinearMap, M::AbstractMatrix)
     @test A[:,1:4] == M[:,1:4]
     @test (lastindex(A, 1), lastindex(A, 2)) == size(A)
     if A isa VecOrMatMap || A isa ScaledMap{<:Any,<:Any,<:VecOrMatMap}
+        @test A[1,1] == M[1,1]
         @test A[1,1:3] == M[1,1:3]
         @test A[1:3,1] == M[1:3,1]
         @test A[2:end,1] == M[2:end,1]
         @test A[1:2,1:3] == M[1:2,1:3]
         @test A[[2,1],1:3] == M[[2,1],1:3]
         @test A[:,:] == M
+        @test A[7] == M[7]
+        @test A[3:7] == M[3:7]
+        @test A[mask] == M[mask]
+        @test A[findall(mask)] == M[findall(mask)]
+        @test A[CartesianIndex(1,1)] == M[CartesianIndex(1,1)]
         @test A[imask, 1] == M[imask, 1]
         @test A[1, jmask] == M[1, jmask]
         @test A[imask, jmask] == M[imask, jmask]
     else
-        @test_throws ErrorException A[1,1:3] == M[1,1:3]
-        @test_throws ErrorException A[1:3,1] == M[1:3,1]
-        @test_throws ErrorException A[2:end,1] == M[2:end,1]
-        @test_throws ErrorException A[1:2,1:3] == M[1:2,1:3]
-        @test_throws ErrorException A[[2,1],1:3] == M[[2,1],1:3]
-        @test_throws ErrorException A[:,:] == M
-        @test_throws ErrorException A[imask, 1] == M[imask, 1]
-        @test_throws ErrorException A[1, jmask] == M[1, jmask]
-        @test_throws ErrorException A[imask, jmask] == M[imask, jmask]
+        @test_throws ErrorException A[1,1]
+        @test_throws ErrorException A[1,1:3]
+        @test_throws ErrorException A[1:3,1]
+        @test_throws ErrorException A[2:end,1]
+        @test_throws ErrorException A[1:2,1:3]
+        @test_throws ErrorException A[[2,1],1:3]
+        @test_throws ErrorException A[:,:]
+        @test_throws ErrorException A[7]
+        @test_throws ErrorException A[3:7]
+        @test_throws ErrorException A[mask]
+        @test_throws ErrorException A[findall(mask)]
+        @test_throws ErrorException A[CartesianIndex(1,1)]
+        @test_throws ErrorException A[imask, 1]
+        @test_throws ErrorException A[1, jmask]
+        @test_throws ErrorException A[imask, jmask]
     end
     @test_throws BoundsError A[6,1]
     @test_throws BoundsError A[1,7]
@@ -56,7 +69,6 @@ end
     struct TwoMap <: LinearMaps.LinearMap{Float64} end
     Base.size(::TwoMap) = (5,5)
     Base.transpose(A::TwoMap) = A
-    LinearMaps._getindex(::TwoMap, i::Integer, j::Integer) = 2.0
     LinearMaps._unsafe_mul!(y::AbstractVector, ::TwoMap, x::AbstractVector) = fill!(y, 2.0*sum(x))
 
     T = TwoMap()
