@@ -40,25 +40,26 @@ _getindex(A::LinearMap, ::Base.Slice) = vec(Matrix(A))
 ########################
 _getindex(A::LinearMap, i::Integer, j::Integer) =
     error("scalar indexing of LinearMaps is not supported, consider using A[:,j][i] instead")
-_getindex(A::LinearMap, I::Indexer, j::Integer) = (@inbounds (A*unitvec(A, 2, j))[I])
+_getindex(A::LinearMap, I::Indexer, j::Integer) =
+    error("partial vertical slicing of LinearMaps is not supported, consider using A[:,j][I] instead")
 _getindex(A::LinearMap, ::Base.Slice, j::Integer) = A*unitvec(A, 2, j)
-function _getindex(A::LinearMap, i::Integer, J::Indexer)
-    try
-        # requires adjoint action to be defined
-        return @inbounds (unitvec(A, 1, i)'A)[J]
-    catch
-        error("efficient horizontal slicing A[$i,$J] requires the adjoint of $(typeof(A)) to be defined")
-    end
-end
+_getindex(A::LinearMap, i::Integer, J::Indexer) =
+    error("partial horizontal slicing of LinearMaps is not supported, consider using A[i,:][J] instead")
 function _getindex(A::LinearMap, i::Integer, J::Base.Slice)
     try
         # requires adjoint action to be defined
         return vec(unitvec(A, 1, i)'A)
     catch
-        error("efficient horizontal slicing A[$i,:] requires the adjoint of $(typeof(A)) to be defined")
+        error("horizontal slicing A[$i,:] requires the adjoint of $(typeof(A)) to be defined")
     end
 end
-function _getindex(A::LinearMap, I::Indexer, J::Indexer)
+_getindex(A::LinearMap, I::Indexer, J::Indexer) =
+    error("partial two-dimensional slicing of LinearMaps is not supported, consider using A[:,J][I] or A[I,:][J] instead")
+_getindex(A::LinearMap, ::Base.Slice, ::Base.Slice) =
+    error("two-dimensional slicing of LinearMaps is not supported, consider using Matrix(A) or convert(Matrix, A)") 
+_getindex(A::LinearMap, I::Base.Slice, J::Indexer) = __getindex(A, I, J)
+_getindex(A::LinearMap, I::Indexer, J::Base.Slice) = __getindex(A, I, J)
+function __getindex(A, I, J)
     dest = zeros(eltype(A), Base.index_shape(I, J))
     # choose whichever requires less map applications
     if length(I) <= length(J)
@@ -66,14 +67,13 @@ function _getindex(A::LinearMap, I::Indexer, J::Indexer)
             # requires adjoint action to be defined
             _fillbyrows!(dest, A, I, J)
         catch
-            error("efficient horizontal slicing A[I,J] with length(I) <= length(J) requires the adjoint of $(typeof(A)) to be defined")
+            error("wide slicing A[I,J] with length(I) <= length(J) requires the adjoint of $(typeof(A)) to be defined")
         end
     else
         _fillbycols!(dest, A, I, J)
     end
     return dest
 end
-_getindex(A::LinearMap, ::Base.Slice, ::Base.Slice) = Matrix(A)
 
 # helpers
 function unitvec(A, dim, i)
