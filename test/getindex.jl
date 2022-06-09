@@ -1,5 +1,4 @@
 using LinearAlgebra, LinearMaps, Test
-# using LinearMaps.GetIndex
 # using BenchmarkTools
 
 function test_getindex(A::LinearMap, M::AbstractMatrix)
@@ -7,9 +6,6 @@ function test_getindex(A::LinearMap, M::AbstractMatrix)
     mask = rand(Bool, size(A))
     imask = rand(Bool, size(A, 1))
     jmask = rand(Bool, size(A, 2))
-    @test all((A[i,j] == M[i,j] for i in axes(A, 1), j in axes(A, 2)))
-    @test all((A[i] == M[i] for i in 1:length(A)))
-    @test A[1,1] == M[1,1]
     @test A[:] == M[:]
     @test A[1,:] == M[1,:]
     @test A[:,1] == M[:,1]
@@ -21,19 +17,10 @@ function test_getindex(A::LinearMap, M::AbstractMatrix)
     @test A[1:2,1:3] == M[1:2,1:3]
     @test A[[2,1],1:3] == M[[2,1],1:3]
     @test A[:,:] == M
-    @test A[7] == M[7]
-    @test A[3:7] == M[3:7]
     @test (lastindex(A, 1), lastindex(A, 2)) == size(A)
-    @test diagind(A) == diagind(M)
-    for k in -1:1; @test diag(A, k) == diag(M, k) end
-    @test A[mask] == M[mask]
-    @test A[findall(mask)] == M[findall(mask)]
-    @test A[CartesianIndex(1,1)] == M[CartesianIndex(1,1)]
     @test A[imask, 1] == M[imask, 1]
     @test A[1, jmask] == M[1, jmask]
     @test A[imask, jmask] == M[imask, jmask]
-    @test_throws BoundsError A[firstindex(A)-1]
-    @test_throws BoundsError A[lastindex(A)+1]
     @test_throws BoundsError A[6,1]
     @test_throws BoundsError A[1,7]
     @test_throws BoundsError A[2,1:7]
@@ -41,7 +28,6 @@ function test_getindex(A::LinearMap, M::AbstractMatrix)
     @test_throws BoundsError A[ones(Bool, 2, 2)]
     @test_throws BoundsError A[[true, true], 1]
     @test_throws BoundsError A[1, [true, true]]
-    @test_throws BoundsError A[CartesianIndex(0,1)]
     return true
 end
 
@@ -49,10 +35,10 @@ end
     M = rand(4,6)
     A = LinearMap(M)
     test_getindex(A, M)
+    # @btime getindex($M, i) setup=(i = rand(1:24));
     # @btime getindex($A, i) setup=(i = rand(1:24));
-    # @btime getindex($L, i) setup=(i = rand(1:24));
+    # @btime (getindex($M, i, j)) setup=(i = rand(1:4); j = rand(1:6));
     # @btime (getindex($A, i, j)) setup=(i = rand(1:4); j = rand(1:6));
-    # @btime (getindex($L, i, j)) setup=(i = rand(1:4); j = rand(1:6));
 
     struct TwoMap <: LinearMaps.LinearMap{Float64} end
     Base.size(::TwoMap) = (5,5)
@@ -65,7 +51,9 @@ end
 
     MA = rand(ComplexF64, 5, 5)
     FA = LinearMap{ComplexF64}((y, x) -> mul!(y, MA, x), (y, x) -> mul!(y, MA', x), 5, 5)
+    F = LinearMap{ComplexF64}(x -> MA*x, y -> MA'y, 5, 5)
     test_getindex(FA, MA)
+    test_getindex(F, MA)
     test_getindex(3FA, 3MA)
     test_getindex(FA + FA, 2MA)
     test_getindex(transpose(FA), transpose(MA))
