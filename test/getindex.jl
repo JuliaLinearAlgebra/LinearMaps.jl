@@ -11,6 +11,8 @@ function test_getindex(A::LinearMap, M::AbstractMatrix)
     @test A[:,1] == M[:,1]
     @test A[1:4,:] == M[1:4,:]
     @test A[:,1:4] == M[:,1:4]
+    @test A[[2,1],:] == M[[2,1],:]
+    @test A[:,[2,1]] == M[:,[2,1]]
     @test A[:,:] == M
     @test (lastindex(A, 1), lastindex(A, 2)) == size(A)
     if A isa VecOrMatMap || A isa ScaledMap{<:Any,<:Any,<:VecOrMatMap}
@@ -46,10 +48,10 @@ function test_getindex(A::LinearMap, M::AbstractMatrix)
         @test_throws ErrorException A[1, jmask]
         @test_throws ErrorException A[imask, jmask]
     end
-    @test_throws BoundsError A[6,1]
-    @test_throws BoundsError A[1,7]
-    @test_throws BoundsError A[2,1:7]
-    @test_throws BoundsError A[1:6,2]
+    @test_throws BoundsError A[lastindex(A,1)+1,1]
+    @test_throws BoundsError A[1,lastindex(A,2)+1]
+    @test_throws BoundsError A[2,1:lastindex(A,2)+1]
+    @test_throws BoundsError A[1:lastindex(A,1)+1,2]
     @test_throws BoundsError A[ones(Bool, 2, 2)]
     @test_throws BoundsError A[[true, true], 1]
     @test_throws BoundsError A[1, [true, true]]
@@ -79,6 +81,8 @@ end
     FA = LinearMap{ComplexF64}((y, x) -> mul!(y, MA, x), (y, x) -> mul!(y, MA', x), 5, 5)
     F = LinearMap{ComplexF64}(x -> MA*x, y -> MA'y, 5, 5)
     test_getindex(FA, MA)
+    test_getindex([FA FA], [MA MA])
+    test_getindex([FA; FA], [MA; MA])
     test_getindex(F, MA)
     test_getindex(3FA, 3MA)
     test_getindex(FA + FA, 2MA)
