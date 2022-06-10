@@ -33,7 +33,6 @@ Base.@propagate_inbounds Base.getindex(A::WrappedMap, I...) = A.lmap[I...]
 # linear indexing
 ########################
 _getindex(A::LinearMap, _) = error("linear indexing of LinearMaps is not supported")
-_getindex(A::LinearMap, ::Base.Slice) = vec(Matrix(A))
 
 ########################
 # Cartesian indexing
@@ -55,8 +54,7 @@ function _getindex(A::LinearMap, i::Integer, J::Base.Slice)
 end
 _getindex(A::LinearMap, I::Indexer, J::Indexer) =
     error("partial two-dimensional slicing of LinearMaps is not supported, consider using A[:,J][I] or A[I,:][J] instead")
-_getindex(A::LinearMap, ::Base.Slice, ::Base.Slice) =
-    error("two-dimensional slicing of LinearMaps is not supported, consider using Matrix(A) or convert(Matrix, A)") 
+_getindex(A::LinearMap, ::Base.Slice, ::Base.Slice) = convert(AbstractMatrix, A)
 _getindex(A::LinearMap, I::Base.Slice, J::Indexer) = __getindex(A, I, J)
 _getindex(A::LinearMap, I::Indexer, J::Base.Slice) = __getindex(A, I, J)
 function __getindex(A, I, J)

@@ -26,9 +26,10 @@
     `A` gets (virtually) diagonally appended.
 * An often requested new feature has been added: slicing (i.e., non-scalar indexing) any
   `LinearMap` object via `Base.getindex` overloads. Note, however, that only rather
-  efficient slicing operations are implemented: `A[:,j]`, `A[:,J]`, `A[I,J]`, and `A[:,:]`,
+  efficient complete slicing operations are implemented: `A[:,j]`, `A[:,J]`, and `A[:,:]`,
   where `j::Integer` and `J` is either of type `AbstractVector{<:Integer>}` or an
-  `AbstractVector{Bool}` of appropriate length ("logical slicing").
+  `AbstractVector{Bool}` of appropriate length ("logical slicing"). Partial slicing
+  operations such as `A[I,j]` and `A[I,J]` where `I` is as `J` above are disallowed.
 
   Scalar indexing `A[i::Integer,j::Integer]` as well as other indexing operations that fall
   back on scalar indexing such as logical indexing by some `AbstractMatrix{Bool}`, or

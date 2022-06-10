@@ -7,20 +7,20 @@ function test_getindex(A::LinearMap, M::AbstractMatrix)
     mask = rand(Bool, size(A))
     imask = rand(Bool, size(A, 1))
     jmask = rand(Bool, size(A, 2))
-    @test A[:] == M[:]
     @test A[1,:] == M[1,:]
     @test A[:,1] == M[:,1]
     @test A[1:4,:] == M[1:4,:]
     @test A[:,1:4] == M[:,1:4]
+    @test A[:,:] == M
     @test (lastindex(A, 1), lastindex(A, 2)) == size(A)
     if A isa VecOrMatMap || A isa ScaledMap{<:Any,<:Any,<:VecOrMatMap}
+        @test A[:] == M[:]
         @test A[1,1] == M[1,1]
         @test A[1,1:3] == M[1,1:3]
         @test A[1:3,1] == M[1:3,1]
         @test A[2:end,1] == M[2:end,1]
         @test A[1:2,1:3] == M[1:2,1:3]
         @test A[[2,1],1:3] == M[[2,1],1:3]
-        @test A[:,:] == M
         @test A[7] == M[7]
         @test A[3:7] == M[3:7]
         @test A[mask] == M[mask]
@@ -30,13 +30,13 @@ function test_getindex(A::LinearMap, M::AbstractMatrix)
         @test A[1, jmask] == M[1, jmask]
         @test A[imask, jmask] == M[imask, jmask]
     else
+        @test_throws ErrorException A[:]
         @test_throws ErrorException A[1,1]
         @test_throws ErrorException A[1,1:3]
         @test_throws ErrorException A[1:3,1]
         @test_throws ErrorException A[2:end,1]
         @test_throws ErrorException A[1:2,1:3]
         @test_throws ErrorException A[[2,1],1:3]
-        @test_throws ErrorException A[:,:]
         @test_throws ErrorException A[7]
         @test_throws ErrorException A[3:7]
         @test_throws ErrorException A[mask]
@@ -68,10 +68,11 @@ end
 
     struct TwoMap <: LinearMaps.LinearMap{Float64} end
     Base.size(::TwoMap) = (5,5)
-    Base.transpose(A::TwoMap) = A
     LinearMaps._unsafe_mul!(y::AbstractVector, ::TwoMap, x::AbstractVector) = fill!(y, 2.0*sum(x))
-
     T = TwoMap()
+    @test_throws ErrorException T[1,:]
+
+    Base.transpose(A::TwoMap) = A
     test_getindex(TwoMap(), fill(2.0, size(T)))
 
     MA = rand(ComplexF64, 5, 5)
