@@ -9,7 +9,7 @@ function test_getindex(A::LinearMap, M::AbstractMatrix)
     jmask = rand(Bool, size(A, 2))
     @test A[1,:] == M[1,:]
     @test A[:,1] == M[:,1]
-    @test A[1:4,:] == M[1:4,:]
+    @test A[1:lastindex(A,1)-2,:] == M[1:lastindex(A,1)-2,:]
     @test A[:,1:4] == M[:,1:4]
     @test A[[2,1],:] == M[[2,1],:]
     @test A[:,[2,1]] == M[:,[2,1]]

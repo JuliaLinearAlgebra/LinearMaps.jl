@@ -1,10 +1,10 @@
 const Indexer = AbstractVector{<:Integer}
 
 Base.IndexStyle(::LinearMap) = IndexCartesian()
-# required in Base.to_indices for [:]-indexing
+# required in Base.to_indices for [:]-indexing (only size check)
 Base.eachindex(::IndexLinear, A::LinearMap) = Base.OneTo(length(A))
-Base.lastindex(A::LinearMap) = last(eachindex(IndexLinear(), A))
-Base.firstindex(A::LinearMap) = first(eachindex(IndexLinear(), A))
+# Base.lastindex(A::LinearMap) = last(eachindex(IndexLinear(), A))
+# Base.firstindex(A::LinearMap) = first(eachindex(IndexLinear(), A))
 
 function Base.checkbounds(A::LinearMap, i, j)
     Base.checkbounds_indices(Bool, axes(A), (i, j)) || throw(BoundsError(A, (i, j)))
@@ -35,15 +35,18 @@ Base.@propagate_inbounds Base.getindex(A::WrappedMap, I...) = A.lmap[I...]
 _getindex(A::LinearMap, _) = error("linear indexing of LinearMaps is not supported")
 
 ########################
-# Cartesian indexing
+# Cartesian indexing (partial slicing is not supported)
 ########################
 _getindex(A::LinearMap, i::Integer, j::Integer) =
     error("scalar indexing of LinearMaps is not supported, consider using A[:,j][i] instead")
 _getindex(A::LinearMap, I::Indexer, j::Integer) =
     error("partial vertical slicing of LinearMaps is not supported, consider using A[:,j][I] instead")
-_getindex(A::LinearMap, ::Base.Slice, j::Integer) = A*unitvec(A, 2, j)
 _getindex(A::LinearMap, i::Integer, J::Indexer) =
     error("partial horizontal slicing of LinearMaps is not supported, consider using A[i,:][J] instead")
+_getindex(A::LinearMap, I::Indexer, J::Indexer) =
+    error("partial two-dimensional slicing of LinearMaps is not supported, consider using A[:,J][I] or A[I,:][J] instead")
+
+_getindex(A::LinearMap, ::Base.Slice, j::Integer) = A*unitvec(A, 2, j)
 function _getindex(A::LinearMap, i::Integer, J::Base.Slice)
     try
         # requires adjoint action to be defined
@@ -52,8 +55,6 @@ function _getindex(A::LinearMap, i::Integer, J::Base.Slice)
         error("horizontal slicing A[$i,:] requires the adjoint of $(typeof(A)) to be defined")
     end
 end
-_getindex(A::LinearMap, I::Indexer, J::Indexer) =
-    error("partial two-dimensional slicing of LinearMaps is not supported, consider using A[:,J][I] or A[I,:][J] instead")
 _getindex(A::LinearMap, ::Base.Slice, ::Base.Slice) = convert(AbstractMatrix, A)
 _getindex(A::LinearMap, I::Base.Slice, J::Indexer) = __getindex(A, I, J)
 _getindex(A::LinearMap, I::Indexer, J::Base.Slice) = __getindex(A, I, J)
