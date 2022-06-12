@@ -345,6 +345,7 @@ include("fillmap.jl") # linear maps representing constantly filled matrices
 include("embeddedmap.jl") # embedded linear maps
 include("conversion.jl") # conversion of linear maps to matrices
 include("show.jl") # show methods for LinearMap objects
+include("getindex.jl") # getindex functionality
 
 """
     LinearMap(A::LinearMap; kwargs...)::WrappedMap

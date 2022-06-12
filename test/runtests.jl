@@ -35,3 +35,5 @@ include("fillmap.jl")
 include("nontradaxes.jl")
 
 include("embeddedmap.jl")
+
+include("getindex.jl")

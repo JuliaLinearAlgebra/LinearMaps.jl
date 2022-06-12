@@ -1,6 +1,7 @@
 # Version history
 
 ## What's new in v3.7
+
 * `mul!(M::AbstractMatrix, A::LinearMap, s::Number, a, b)` methods are provided, mimicking
   similar methods in `Base.LinearAlgebra`. This version allows for the memory efficient
   implementation of in-place addition and conversion of a `LinearMap` to `Matrix`.
@@ -9,7 +10,6 @@
   conversion, construction, and inplace addition will benefit from this supplied efficient
   implementation. If no specialisation is supplied, a generic fallback is used that is based
   on feeding the canonical basis of unit vectors to the linear map.
-
 * A new map type called `EmbeddedMap` is introduced. It is a wrapper of a "small" `LinearMap`
   (or a suitably converted `AbstractVecOrMat`) embedded into a "larger" zero map. Hence,
   the "small" map acts only on a subset of the coordinates and maps to another subset of
@@ -24,6 +24,31 @@
   * `LinearMap(A::MapOrVecOrMat, dims::Dims{2}; offset::Dims{2})`, where the keyword
     argument `offset` determines the dimension of a virtual upper-left zero block, to which
     `A` gets (virtually) diagonally appended.
+* An often requested new feature has been added: slicing (i.e., non-scalar indexing) any
+  `LinearMap` object via `Base.getindex` overloads. Note, however, that only rather
+  efficient complete slicing operations are implemented: `A[:,j]`, `A[:,J]`, and `A[:,:]`,
+  where `j::Integer` and `J` is either of type `AbstractVector{<:Integer>}` or an
+  `AbstractVector{Bool}` of appropriate length ("logical slicing"). Partial slicing
+  operations such as `A[I,j]` and `A[I,J]` where `I` is as `J` above are disallowed.
+
+  Scalar indexing `A[i::Integer,j::Integer]` as well as other indexing operations that fall
+  back on scalar indexing such as logical indexing by some `AbstractMatrix{Bool}`, or
+  indexing by vectors of (linear or Cartesian) indices are not supported; as an exception,
+  `getindex` calls on wrapped `AbstractVecOrMat`s is forwarded to corresponding `getindex`
+  methods from `Base` and therefore allow any type of usual indexing/slicing.
+  If scalar indexing is really required, consider using `A[:,j][i]` which is as efficient
+  as a reasonable generic implementation for `LinearMap`s can be.
+
+  Furthermore, (predominantly) horizontal slicing operations require the adjoint operation
+  of the `LinearMap` type to be defined, or will fail otherwise. Important note:
+  `LinearMap` objects are meant to model objects that act on vectors efficiently, and are
+  in general *not* backed up by storage-like types like `Array`s. Therefore, slicing of
+  `LinearMap`s is potentially slow, and it may require the (repeated) allocation of
+  standard unit vectors. As a consequence, generic algorithms relying heavily on indexing
+  and/or slicing are likely to run much slower than expected for `AbstractArray`s. To avoid
+  repeated indexing operations which may involve redundant computations, it is strongly
+  recommended to consider `convert`ing `LinearMap`-typed objects to `Matrix` or
+  `SparseMatrixCSC` first, if memory permits.
 
 ## What's new in v3.6
 
