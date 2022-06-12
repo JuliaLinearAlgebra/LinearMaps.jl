@@ -92,7 +92,7 @@ Type for lazily representing constantly filled matrices.
 LinearMaps.FillMap
 ```
 
-### `EmbeddedMap``
+### `EmbeddedMap`
 
 Type for representing linear maps that are embedded in larger zero maps.
 
@@ -108,7 +108,7 @@ LinearAlgebra.mul!(::AbstractVecOrMat,::LinearMap,::AbstractVector)
 LinearAlgebra.mul!(::AbstractVecOrMat,::LinearMap,::AbstractVector,::Number,::Number)
 LinearAlgebra.mul!(::AbstractMatrix,::AbstractMatrix,::LinearMap)
 LinearAlgebra.mul!(::AbstractVecOrMat,::LinearMap,::Number)
-LinearAlgebra.mul!(::AbstractVecOrMat,::LinearMap,::Number,::Number,::Number)
+LinearAlgebra.mul!(::AbstractMatrix,::LinearMap,::Number,::Number,::Number)
 *(::LinearAlgebra.AdjointAbsVec,::LinearMap)
 *(::LinearAlgebra.TransposeAbsVec,::LinearMap)
 ```

@@ -107,7 +107,7 @@ In Julia v1.3 and above, the last line can be simplified to
 
 ```julia
 KrylovKit.eigsolve(Δ, size(Δ, 1), 3, :LR)
-````
+```
 
 leveraging the fact that objects of type `L <: LinearMap` are callable.
 

@@ -150,12 +150,13 @@ transpose(A)*x
 
 try MyFillMap(5.0, (3, 4))' * ones(3) catch e println(e) end
 
-# which require explicit adjoint/transpose handling, for which there exist two *distinct* paths.
+# which require explicit adjoint/transpose handling, for which there exist two *distinct*
+# paths.
 
 # ### Path 1: Generic, non-invariant `LinearMap` subtypes
 
-# The first option is to write `LinearAlgebra.mul!` methods for the corresponding wrapped
-# map types; for instance,
+# The first option is to write `LinearMaps._unsafe_mul!` methods for the corresponding
+# wrapped map types; for instance,
 
 function LinearMaps._unsafe_mul!(
     y::AbstractVecOrMat,
