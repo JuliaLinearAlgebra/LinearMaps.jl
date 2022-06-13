@@ -50,8 +50,8 @@ import Arpack, IterativeSolvers, KrylovKit, TSVD, ArnoldiMethod
 # Example 1, 1-dimensional Laplacian with periodic boundary conditions
 function leftdiff!(y::AbstractVector, x::AbstractVector) # left difference assuming periodic boundary conditions
     N = length(x)
-    length(y) == N || throw(DimensionMismatch())
-    @inbounds for i=1:N
+    axes(y) == axes(x) || throw(DimensionMismatch())
+    @inbounds for i in eachindex(x, y)
         y[i] = x[i] - x[mod1(i-1, N)]
     end
     return y
@@ -59,8 +59,8 @@ end
 
 function mrightdiff!(y::AbstractVector, x::AbstractVector) # minus right difference
     N = length(x)
-    length(y) == N || throw(DimensionMismatch())
-    @inbounds for i=1:N
+    axes(y) == axes(x) || throw(DimensionMismatch())
+    @inbounds for i in eachindex(x, y)
         y[i] = x[i] - x[mod1(i+1, N)]
     end
     return y
@@ -107,7 +107,7 @@ In Julia v1.3 and above, the last line can be simplified to
 
 ```julia
 KrylovKit.eigsolve(Δ, size(Δ, 1), 3, :LR)
-````
+```
 
 leveraging the fact that objects of type `L <: LinearMap` are callable.
 

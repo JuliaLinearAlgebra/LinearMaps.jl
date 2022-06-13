@@ -73,7 +73,7 @@ mul!(ones(3,3), A, reshape(collect(1:9), 3, 3), 2, 2)
 using BenchmarkTools
 
 @benchmark mul!($(zeros(3)), $A, $x)
- 
+
 #-
 
 @benchmark mul!($(zeros(3)), $A, $x, $(rand()), $(rand()))
@@ -150,12 +150,13 @@ transpose(A)*x
 
 try MyFillMap(5.0, (3, 4))' * ones(3) catch e println(e) end
 
-# which require explicit adjoint/transpose handling, for which there exist two *distinct* paths.
+# which require explicit adjoint/transpose handling, for which there exist two *distinct*
+# paths.
 
 # ### Path 1: Generic, non-invariant `LinearMap` subtypes
 
-# The first option is to write `LinearAlgebra.mul!` methods for the corresponding wrapped
-# map types; for instance,
+# The first option is to write `LinearMaps._unsafe_mul!` methods for the corresponding
+# wrapped map types; for instance,
 
 function LinearMaps._unsafe_mul!(
     y::AbstractVecOrMat,
@@ -228,3 +229,56 @@ mul!(similar(x)', x', A)
 # corresponding 5-arg `mul!` methods. This may seem like a lot of methods to
 # be implemented, but note that adding such methods is only necessary/recommended
 # for performance.
+
+# ## Computing a matrix representation
+
+# In some cases, it might be necessary to compute a matrix representation of a `LinearMap`.
+# This is essentially done via the
+# `[LinearMaps._unsafe_mul!(::Matrix,::LinearMap,::Number)]`(@ref) method, for which a
+# generic fallback exists: it applies the `LinearMap` successively to the standard unit
+# vectors.
+
+F = MyFillMap(5, (100,100))
+M = Matrix{eltype(F)}(undef, size(F))
+@benchmark Matrix($F)
+
+#-
+
+@benchmark LinearMaps._unsafe_mul!($(Matrix{Int}(undef, (100,100))), $(MyFillMap(5, (100,100))), true)
+
+# If a more performant implementation exists, it is recommended to overwrite this method,
+# for instance (as before, size checks need not be included here since they are handled by
+# the corresponding `LinearAlgebra.mul!` method):
+
+LinearMaps._unsafe_mul!(M::AbstractMatrix, A::MyFillMap, s::Number) = fill!(M, A.λ*s)
+@benchmark Matrix($F)
+
+#-
+
+@benchmark LinearMaps._unsafe_mul!($(Matrix{Int}(undef, (100,100))), $(MyFillMap(5, (100,100))), true)
+
+# As one can see, the above runtimes are dominated by the allocation of the output matrix,
+# but still overwriting the multiplication kernel yields a speed-up of about factor 3 for
+# the matrix filling part.
+
+# ## Slicing
+
+# As usual, generic fallbacks for `LinearMap` slicing exist and are handled by the following
+# method hierarchy, where at least one of `I` and `J` has to be a `Colon`:
+#
+#     Base.getindex(::LinearMap, I, J)
+#     -> LinearMaps._getindex(::LinearMap, I, J)
+#
+# The method `Base.getindex` checks the validity of the the requested indices and calls
+# `LinearMaps._getindex`, which should be overloaded for custom `LinearMap`s subtypes.
+# For instance:
+
+@benchmark F[1,:]
+
+#-
+
+LinearMaps._getindex(A::MyFillMap, ::Integer, J::Base.Slice) = fill(A.λ, axes(J))
+@benchmark F[1,:]
+
+# Note that in `Base.getindex` `Colon`s are converted to `Base.Slice` via
+# `Base.to_indices`, thus the dispatch must be on `Base.Slice` rather than on `Colon`.

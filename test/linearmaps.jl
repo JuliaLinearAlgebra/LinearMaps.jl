@@ -33,20 +33,20 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
     end
 end
 
-# new type
-struct SimpleFunctionMap <: LinearMap{Float64}
-    f::Function
-    N::Int
-end
-struct SimpleComplexFunctionMap <: LinearMap{Complex{Float64}}
-    f::Function
-    N::Int
-end
-Base.size(A::Union{SimpleFunctionMap,SimpleComplexFunctionMap}) = (A.N, A.N)
-Base.:(*)(A::Union{SimpleFunctionMap,SimpleComplexFunctionMap}, v::AbstractVector) = A.f(v)
-LinearAlgebra.mul!(y::AbstractVector, A::Union{SimpleFunctionMap,SimpleComplexFunctionMap}, x::AbstractVector) = copyto!(y, *(A, x))
-
 @testset "new LinearMap type" begin
+    # new type
+    struct SimpleFunctionMap <: LinearMap{Float64}
+        f::Function
+        N::Int
+    end
+    struct SimpleComplexFunctionMap <: LinearMap{Complex{Float64}}
+        f::Function
+        N::Int
+    end
+    Base.size(A::Union{SimpleFunctionMap,SimpleComplexFunctionMap}) = (A.N, A.N)
+    Base.:(*)(A::Union{SimpleFunctionMap,SimpleComplexFunctionMap}, v::AbstractVector) = A.f(v)
+    LinearAlgebra.mul!(y::AbstractVector, A::Union{SimpleFunctionMap,SimpleComplexFunctionMap}, x::AbstractVector) = copyto!(y, *(A, x))
+
     F = SimpleFunctionMap(cumsum, 10)
     FC = SimpleComplexFunctionMap(cumsum, 10)
     @test @inferred ndims(F) == 2
@@ -63,9 +63,9 @@ LinearAlgebra.mul!(y::AbstractVector, A::Union{SimpleFunctionMap,SimpleComplexFu
     w = rand(ComplexF64, 10); W = rand(ComplexF64, 10, 3)
     F(v) == F*v
     @test mul!(w, F, v) === w == F * v
-    @test_throws ErrorException F' * v
+    @test_throws ErrorException("transpose not implemented for "*sprint((t, s) -> show(t, "text/plain", s), F)) F' * v
     @test_throws ErrorException transpose(F) * v
-    @test_throws ErrorException mul!(w, adjoint(FC), v)
+    @test_throws ErrorException("adjoint not implemented for "*sprint((t, s) -> show(t, "text/plain", s), FC)) mul!(w, adjoint(FC), v)
     @test_throws ErrorException mul!(w, transpose(F), v)
     FM = convert(AbstractMatrix, F)
     L = LowerTriangular(ones(10, 10))
@@ -84,27 +84,27 @@ LinearAlgebra.mul!(y::AbstractVector, A::Union{SimpleFunctionMap,SimpleComplexFu
     @test Fs isa SparseMatrixCSC
 end
 
-struct MyFillMap{T} <: LinearMaps.LinearMap{T}
-    λ::T
-    size::Dims{2}
-    function MyFillMap(λ::T, dims::Dims{2}) where {T}
-        all(d -> d >= 0, dims) || throw(ArgumentError("dims of MyFillMap must be non-negative"))
-        promote_type(T, typeof(λ)) == T || throw(InexactError())
-        return new{T}(λ, dims)
-    end
-end
-Base.size(A::MyFillMap) = A.size
-function LinearAlgebra.mul!(y::AbstractVecOrMat, A::MyFillMap, x::AbstractVector)
-    LinearMaps.check_dim_mul(y, A, x)
-    return fill!(y, iszero(A.λ) ? zero(eltype(y)) : A.λ*sum(x))
-end
-function LinearAlgebra.mul!(y::AbstractVecOrMat, transA::LinearMaps.TransposeMap{<:Any,<:MyFillMap}, x::AbstractVector)
-    LinearMaps.check_dim_mul(y, transA, x)
-    λ = transA.lmap.λ
-    return fill!(y, iszero(λ) ? zero(eltype(y)) : transpose(λ)*sum(x))
-end
-
 @testset "transpose of new LinearMap type" begin
+    struct MyFillMap{T} <: LinearMaps.LinearMap{T}
+        λ::T
+        size::Dims{2}
+        function MyFillMap(λ::T, dims::Dims{2}) where {T}
+            all(d -> d >= 0, dims) || throw(ArgumentError("dims of MyFillMap must be non-negative"))
+            promote_type(T, typeof(λ)) == T || throw(InexactError())
+            return new{T}(λ, dims)
+        end
+    end
+    Base.size(A::MyFillMap) = A.size
+    function LinearAlgebra.mul!(y::AbstractVecOrMat, A::MyFillMap, x::AbstractVector)
+        LinearMaps.check_dim_mul(y, A, x)
+        return fill!(y, iszero(A.λ) ? zero(eltype(y)) : A.λ*sum(x))
+    end
+    function LinearAlgebra.mul!(y::AbstractVecOrMat, transA::LinearMaps.TransposeMap{<:Any,<:MyFillMap}, x::AbstractVector)
+        LinearMaps.check_dim_mul(y, transA, x)
+        λ = transA.lmap.λ
+        return fill!(y, iszero(λ) ? zero(eltype(y)) : transpose(λ)*sum(x))
+    end
+
     A = MyFillMap(5.0, (3, 3))
     x = ones(3)
     @test A * x == fill(15.0, 3)

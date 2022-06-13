@@ -26,7 +26,7 @@ MulStyle(A::BlockMap) = MulStyle(A.maps...)
 function _getranges(maps, dim, inds=1:length(maps))
     ends = map(i -> size(maps[i], dim)::Int, inds)
     cumsum!(ends, ends)
-    starts = vcat(1, 1 .+ @views ends[1:end-1])
+    starts = vcat(1, 1 .+ @views ends[firstindex(ends):lastindex(ends)-1])
     return UnitRange.(starts, ends)
 end
 
@@ -172,7 +172,7 @@ function Base.hvcat(rows::Tuple{Vararg{Int}},
         throw(ArgumentError("mismatch between row sizes and number of arguments"))
     n = fill(-1, length(As))
     j = 0
-    for i in 1:nr # infer UniformScaling sizes from row counts, if possible:
+    for i in eachindex(rows) # infer UniformScaling sizes from row counts, if possible:
         ni = -1 # number of rows in this block-row, -1 indicates unknown
         for k in 1:rows[i]
             if !isa(As[j+k], UniformScaling)
@@ -190,10 +190,10 @@ function Base.hvcat(rows::Tuple{Vararg{Int}},
     # check for consistent total column number
     nc = -1
     j = 0
-    for i in 1:nr
+    for i in eachindex(rows)
         nci = 0
         rows[i] > 0 && n[j+1] == -1 && (j += rows[i]; continue)
-        for k = 1:rows[i]
+        for k in 1:rows[i]
             nci += isa(As[j+k], UniformScaling) ? n[j+k] : size(As[j+k], 2)::Int
         end
         nc >= 0 && nc != nci && throw(DimensionMismatch("mismatch in number of columns"))
@@ -202,11 +202,11 @@ function Base.hvcat(rows::Tuple{Vararg{Int}},
     end
     nc == -1 && throw(ArgumentError("sizes of UniformScalings could not be inferred"))
     j = 0
-    for i in 1:nr
+    for i in eachindex(rows)
         if rows[i] > 0 && n[j+1] == -1 # this row consists entirely of UniformScalings
             nci, r = divrem(nc, rows[i])
             r != 0 && throw(DimensionMismatch("indivisible UniformScaling sizes"))
-            for k = 1:rows[i]
+            for k in 1:rows[i]
                 n[j+k] = nci
             end
         end
