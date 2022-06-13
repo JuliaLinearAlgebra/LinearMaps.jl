@@ -73,7 +73,7 @@ mul!(ones(3,3), A, reshape(collect(1:9), 3, 3), 2, 2)
 using BenchmarkTools
 
 @benchmark mul!($(zeros(3)), $A, $x)
- 
+
 #-
 
 @benchmark mul!($(zeros(3)), $A, $x, $(rand()), $(rand()))
@@ -241,6 +241,9 @@ mul!(similar(x)', x', A)
 F = MyFillMap(5, (100,100))
 M = Matrix{eltype(F)}(undef, size(F))
 @benchmark Matrix($F)
+
+#-
+
 @benchmark LinearMaps._unsafe_mul!($(Matrix{Int}(undef, (100,100))), $(MyFillMap(5, (100,100))), true)
 
 # If a more performant implementation exists, it is recommended to overwrite this method,
@@ -249,6 +252,9 @@ M = Matrix{eltype(F)}(undef, size(F))
 
 LinearMaps._unsafe_mul!(M::AbstractMatrix, A::MyFillMap, s::Number) = fill!(M, A.λ*s)
 @benchmark Matrix($F)
+
+#-
+
 @benchmark LinearMaps._unsafe_mul!($(Matrix{Int}(undef, (100,100))), $(MyFillMap(5, (100,100))), true)
 
 # As one can see, the above runtimes are dominated by the allocation of the output matrix,
@@ -259,15 +265,17 @@ LinearMaps._unsafe_mul!(M::AbstractMatrix, A::MyFillMap, s::Number) = fill!(M, A
 
 # As usual, generic fallbacks for `LinearMap` slicing exist and are handled by the following
 # method hierarchy, where at least one of `I` and `J` has to be a `Colon`:
-# 
+#
 #     Base.getindex(::LinearMap, I, J)
 #     -> LinearMaps._getindex(::LinearMap, I, J)
-# 
+#
 # The method `Base.getindex` checks the validity of the the requested indices and calls
 # `LinearMaps._getindex`, which should be overloaded for custom `LinearMap`s subtypes.
 # For instance:
 
 @benchmark F[1,:]
+
+#-
 
 LinearMaps._getindex(A::MyFillMap, ::Integer, J::Base.Slice) = fill(A.λ, axes(J))
 @benchmark F[1,:]

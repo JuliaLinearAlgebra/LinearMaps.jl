@@ -143,3 +143,13 @@ as in the usual matrix case: `transpose(A) * x` and `mul!(y, A', x)`, for instan
   purposes or if you want to have the explicit sparse matrix representation of
   a linear map for which you only have a function definition (e.g. to be able
   to use its `transpose` or `adjoint`).
+
+### Slicing methods
+
+Complete slicing, i.e., `A[:,j]`, `A[:,J]`, `A[i,:]`, `A[I,:]` and `A[:,:]` for `i`, `j`
+`Integer` and `I,J` `AbstractVector{<:Integer}` is generically available for any
+`A::LinearMap` subtype via application of `A` (or `A'` for (predominantly) horizontal
+slicing) to standard unit vectors of appropriate length. By complete slicing we refer
+two-dimensional Cartesian indexing where at least one of the "indices" is a colon. This is
+facilitated by overloads of `Base.getindex`. Partial slicing à la `A[I,J]` and scalar or
+linear indexing are _not_ supported for performance reasons.
