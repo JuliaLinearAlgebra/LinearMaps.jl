@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Custom maps · LinearMaps.jl</title><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.044/juliamono.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.11/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">LinearMaps.jl</a></span></div><form class="docs-search" action="../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><a class="tocitem" href="../../history/">Version history</a></li><li><a class="tocitem" href="../../types/">Types and methods</a></li><li class="is-active"><a class="tocitem" href>Custom maps</a><ul class="internal"><li><a class="tocitem" href="#Basics"><span>Basics</span></a></li><li><a class="tocitem" href="#Multiply-and-add-and-the-MulStyle-trait"><span>Multiply-and-add and the <code>MulStyle</code> trait</span></a></li><li><a class="tocitem" href="#Adjoints-and-transposes"><span>Adjoints and transposes</span></a></li><li><a class="tocitem" href="#Application-to-matrices"><span>Application to matrices</span></a></li><li><a class="tocitem" href="#Computing-a-matrix-representation"><span>Computing a matrix representation</span></a></li><li><a class="tocitem" href="#Slicing"><span>Slicing</span></a></li></ul></li><li><a class="tocitem" href="../../related/">Related packages</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Custom maps</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Custom maps</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/JuliaLinearAlgebra/LinearMaps.jl/blob/master/docs/src/custom.jl" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Defining-custom-LinearMap-types"><a class="docs-heading-anchor" href="#Defining-custom-LinearMap-types">Defining custom <code>LinearMap</code> types</a><a id="Defining-custom-LinearMap-types-1"></a><a class="docs-heading-anchor-permalink" href="#Defining-custom-LinearMap-types" title="Permalink"></a></h1><p>In this section, we want to demonstrate on a simple, actually built-in, linear map type how to define custom <code>LinearMap</code> subtypes. First of all, <code>LinearMap{T}</code> is an extendable abstract type, where <code>T</code> denotes the <code>eltype</code>.</p><h2 id="Basics"><a class="docs-heading-anchor" href="#Basics">Basics</a><a id="Basics-1"></a><a class="docs-heading-anchor-permalink" href="#Basics" title="Permalink"></a></h2><p>As an example, we want to define a map type whose objects correspond to lazy analogues of <code>fill</code>ed matrices. Naturally, we need to store the filled value <code>λ</code> and the <code>size</code> of the linear map.</p><pre><code class="language-julia hljs">using LinearMaps, LinearAlgebra
+
+struct MyFillMap{T} &lt;: LinearMaps.LinearMap{T}
+    λ::T
+    size::Dims{2}
+    function MyFillMap(λ::T, dims::Dims{2}) where {T}
+        all(≥(0), dims) || throw(ArgumentError(&quot;dims of MyFillMap must be non-negative&quot;))
+        promote_type(T, typeof(λ)) == T || throw(InexactError())
+        return new{T}(λ, dims)
+    end
+end</code></pre><p>By default, for any <code>A::MyFillMap{T}</code>, <code>eltype(A)</code> returns <code>T</code>. Upon application to a vector <code>x</code> and/or interaction with other <code>LinearMap</code> objects, we need to check consistent sizes.</p><pre><code class="language-julia hljs">Base.size(A::MyFillMap) = A.size</code></pre><p>By a couple of defaults provided for all subtypes of <code>LinearMap</code>, we only need to define a <code>LinearMaps._unsafe_mul!</code> method to have a minimal, operational type. The (internal) function <code>_unsafe_mul!</code> is called by <code>LinearAlgebra.mul!</code>, constructors, and conversions and only needs to be concerned with the bare computing kernel. Dimension checking is done on the level of <code>mul!</code> etc. Factoring out dimension checking is done to minimise overhead caused by repetitive checking.</p><pre><code class="language-julia hljs">function LinearMaps._unsafe_mul!(y::AbstractVecOrMat, A::MyFillMap, x::AbstractVector)
+    return fill!(y, iszero(A.λ) ? zero(eltype(y)) : A.λ*sum(x))
+end</code></pre><p>Again, due to generic fallbacks the following now &quot;just work&quot;:</p><ul><li>out-of-place multiplication <code>A*x</code>,</li><li>in-place multiplication with vectors <code>mul!(y, A, x)</code>,</li><li>in-place multiply-and-add with vectors <code>mul!(y, A, x, α, β)</code>,</li><li>in-place multiplication and multiply-and-add with matrices <code>mul!(Y, A, X, α, β)</code>,</li><li>conversion to a (sparse) matrix <code>Matrix(A)</code> and <code>sparse(A)</code>.</li></ul><pre><code class="language-julia hljs">A = MyFillMap(5.0, (3, 3)); x = ones(3); sum(x)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">3.0</code></pre><pre><code class="language-julia hljs">A * x</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">3-element Vector{Float64}:
+ 15.0
+ 15.0
+ 15.0</code></pre><pre><code class="language-julia hljs">mul!(zeros(3), A, x)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">3-element Vector{Float64}:
+ 15.0
+ 15.0
+ 15.0</code></pre><pre><code class="language-julia hljs">mul!(ones(3), A, x, 2, 2)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">3-element Vector{Float64}:
+ 32.0
+ 32.0
+ 32.0</code></pre><pre><code class="language-julia hljs">mul!(ones(3,3), A, reshape(collect(1:9), 3, 3), 2, 2)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">3×3 Matrix{Float64}:
+ 62.0  152.0  242.0
+ 62.0  152.0  242.0
+ 62.0  152.0  242.0</code></pre><h2 id="Multiply-and-add-and-the-MulStyle-trait"><a class="docs-heading-anchor" href="#Multiply-and-add-and-the-MulStyle-trait">Multiply-and-add and the <code>MulStyle</code> trait</a><a id="Multiply-and-add-and-the-MulStyle-trait-1"></a><a class="docs-heading-anchor-permalink" href="#Multiply-and-add-and-the-MulStyle-trait" title="Permalink"></a></h2><p>While the above function calls work out of the box due to generic fallbacks, the latter may be suboptimally implemented for your custom map type. Let&#39;s see some benchmarks.</p><pre><code class="language-julia hljs">using BenchmarkTools
+
+@benchmark mul!($(zeros(3)), $A, $x)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">BenchmarkTools.Trial: 10000 samples with 999 evaluations.
+ Range (min … max):  8.808 ns … 33.734 ns  ┊ GC (min … max): 0.00% … 0.00%
+ Time  (median):     8.909 ns              ┊ GC (median):    0.00%
+ Time  (mean ± σ):   9.040 ns ±  0.548 ns  ┊ GC (mean ± σ):  0.00% ± 0.00%
+
+  ▆ █  ▄  ▃  ▂ ▅  ▂       ▂          ▁          ▁            ▁
+  █▁█▁▁█▁▁█▁▁█▁█▁▁█▁▁█▁▁▆▁█▁▁█▁▁▄▁▁▆▁█▁▁█▁▁▄▁▁▅▁█▁▁█▁▁▄▁▁▃▁▇ █
+  8.81 ns      Histogram: log(frequency) by time     10.9 ns &lt;
+
+ Memory estimate: 0 bytes, allocs estimate: 0.</code></pre><pre><code class="language-julia hljs">@benchmark mul!($(zeros(3)), $A, $x, $(rand()), $(rand()))</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">BenchmarkTools.Trial: 10000 samples with 985 evaluations.
+ Range (min … max):  52.690 ns …   3.026 μs  ┊ GC (min … max): 0.00% … 96.55%
+ Time  (median):     56.751 ns               ┊ GC (median):    0.00%
+ Time  (mean ± σ):   63.303 ns ± 117.050 ns  ┊ GC (mean ± σ):  7.53% ±  3.99%
+
+  ▁▄▆▇▇█▇▆▄▃▂▂                                          ▁▁▂▁▁▁ ▂
+  ██████████████▇▆▆▇██▇▇▆▇▅▆▄▅▁▃▄▃▃▁▃▃▁▃▃▁▁▁▁▃▁▃▁▁▁▃▁▁▄▆██████ █
+  52.7 ns       Histogram: log(frequency) by time      96.3 ns &lt;
+
+ Memory estimate: 80 bytes, allocs estimate: 1.</code></pre><p>The second benchmark indicates the allocation of an intermediate vector <code>z</code> which stores the result of <code>A*x</code> before it gets scaled and added to (the scaled) <code>y = zeros(3)</code>. For that reason, it is beneficial to provide a custom &quot;5-arg <code>mul!</code>&quot; if you can avoid the allocation of an intermediate vector. To indicate that there exists an allocation-free implementation, you should set the <code>MulStyle</code> trait, whose default is <code>ThreeArg()</code>.</p><pre><code class="language-julia hljs">LinearMaps.MulStyle(A::MyFillMap) = FiveArg()
+
+function LinearMaps._unsafe_mul!(
+    y::AbstractVecOrMat,
+    A::MyFillMap,
+    x::AbstractVector,
+    α::Number,
+    β::Number
+)
+    if iszero(α)
+        !isone(β) &amp;&amp; rmul!(y, β)
+        return y
+    else
+        temp = A.λ * sum(x) * α
+        if iszero(β)
+            y .= temp
+        elseif isone(β)
+            y .+= temp
+        else
+            y .= y .* β .+ temp
+        end
+    end
+    return y
+end</code></pre><p>With this function at hand, let&#39;s redo the benchmark.</p><pre><code class="language-julia hljs">@benchmark mul!($(zeros(3)), $A, $x, $(rand()), $(rand()))</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">BenchmarkTools.Trial: 10000 samples with 999 evaluations.
+ Range (min … max):  10.810 ns … 38.839 ns  ┊ GC (min … max): 0.00% … 0.00%
+ Time  (median):     10.911 ns              ┊ GC (median):    0.00%
+ Time  (mean ± σ):   10.917 ns ±  0.476 ns  ┊ GC (mean ± σ):  0.00% ± 0.00%
+
+                               █                               
+  ▅▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁█▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▂ ▂
+  10.8 ns         Histogram: frequency by time          11 ns &lt;
+
+ Memory estimate: 0 bytes, allocs estimate: 0.</code></pre><p>There you go, the allocation is gone and the computation time is significantly reduced.</p><h2 id="Adjoints-and-transposes"><a class="docs-heading-anchor" href="#Adjoints-and-transposes">Adjoints and transposes</a><a id="Adjoints-and-transposes-1"></a><a class="docs-heading-anchor-permalink" href="#Adjoints-and-transposes" title="Permalink"></a></h2><p>Generically, taking the transpose (or the adjoint) of a (real, resp.) map wraps the linear map by a <code>TransposeMap</code>, taking the adjoint of a complex map wraps it by an <code>AdjointMap</code>.</p><pre><code class="language-julia hljs">typeof(A&#39;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">LinearMaps.TransposeMap{Float64, Main.MyFillMap{Float64}}</code></pre><p>Not surprisingly, without further definitions, multiplying <code>A&#39;</code> by <code>x</code> yields an error.</p><pre><code class="language-julia hljs">try A&#39;x catch e println(e) end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">ErrorException(&quot;transpose not implemented for 3×3 Main.MyFillMap{Float64}&quot;)</code></pre><p>If the operator is symmetric or Hermitian, the transpose and the adjoint, respectively, of the linear map <code>A</code> is given by <code>A</code> itself. So let us define corresponding checks.</p><pre><code class="language-julia hljs">LinearAlgebra.issymmetric(A::MyFillMap) = A.size[1] == A.size[2]
+LinearAlgebra.ishermitian(A::MyFillMap) = isreal(A.λ) &amp;&amp; A.size[1] == A.size[2]
+LinearAlgebra.isposdef(A::MyFillMap) = (size(A, 1) == size(A, 2) == 1 &amp;&amp; isposdef(A.λ))
+Base.:(==)(A::MyFillMap, B::MyFillMap) = A.λ == B.λ &amp;&amp; A.size == B.size</code></pre><p>These are used, for instance, in checking symmetry or positive definiteness of higher-order <code>LinearMap</code>s, like products or linear combinations of linear maps, or signal to iterative eigenproblem solvers that real eigenvalues are to be computed. Without these definitions, the first three functions would return <code>false</code> (by default), and the last one would fall back to <code>===</code>.</p><p>With this at hand, we note that <code>A</code> above is symmetric, and we can compute</p><pre><code class="language-julia hljs">transpose(A)*x</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">3-element Vector{Float64}:
+ 15.0
+ 15.0
+ 15.0</code></pre><p>This, however, does not work for nonsquare maps</p><pre><code class="language-julia hljs">try MyFillMap(5.0, (3, 4))&#39; * ones(3) catch e println(e) end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">ErrorException(&quot;transpose not implemented for 3×4 Main.MyFillMap{Float64}&quot;)</code></pre><p>which require explicit adjoint/transpose handling, for which there exist two <em>distinct</em> paths.</p><h3 id="Path-1:-Generic,-non-invariant-LinearMap-subtypes"><a class="docs-heading-anchor" href="#Path-1:-Generic,-non-invariant-LinearMap-subtypes">Path 1: Generic, non-invariant <code>LinearMap</code> subtypes</a><a id="Path-1:-Generic,-non-invariant-LinearMap-subtypes-1"></a><a class="docs-heading-anchor-permalink" href="#Path-1:-Generic,-non-invariant-LinearMap-subtypes" title="Permalink"></a></h3><p>The first option is to write <code>LinearMaps._unsafe_mul!</code> methods for the corresponding wrapped map types; for instance,</p><pre><code class="language-julia hljs">function LinearMaps._unsafe_mul!(
+    y::AbstractVecOrMat,
+    transA::LinearMaps.TransposeMap{&lt;:Any,&lt;:MyFillMap},
+    x::AbstractVector
+)
+    λ = transA.lmap.λ
+    return fill!(y, iszero(λ) ? zero(eltype(y)) : transpose(λ)*sum(x))
+end</code></pre><p>Now, the adjoint multiplication works.</p><pre><code class="language-julia hljs">MyFillMap(5.0, (3, 4))&#39; * ones(3)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">4-element Vector{Float64}:
+ 15.0
+ 15.0
+ 15.0
+ 15.0</code></pre><p>If you have set the <code>MulStyle</code> trait to <code>FiveArg()</code>, you should provide a corresponding 5-arg <code>mul!</code> method for <code>LinearMaps.TransposeMap{&lt;:Any,&lt;:MyFillMap}</code> and <code>LinearMaps.AdjointMap{&lt;:Any,&lt;:MyFillMap}</code>.</p><h3 id="Path-2:-Invariant-LinearMap-subtypes"><a class="docs-heading-anchor" href="#Path-2:-Invariant-LinearMap-subtypes">Path 2: Invariant <code>LinearMap</code> subtypes</a><a id="Path-2:-Invariant-LinearMap-subtypes-1"></a><a class="docs-heading-anchor-permalink" href="#Path-2:-Invariant-LinearMap-subtypes" title="Permalink"></a></h3><p>Before we start, let us delete the previously defined method to make sure we use the following definitions.</p><pre><code class="language-julia hljs">Base.delete_method(
+    first(methods(
+        LinearMaps._unsafe_mul!,
+        (AbstractVecOrMat, LinearMaps.TransposeMap{&lt;:Any,&lt;:MyFillMap}, AbstractVector))
+    )
+)</code></pre><p>The seconnd option is when your class of linear maps that are modelled by your custom <code>LinearMap</code> subtype are invariant under taking adjoints and transposes.</p><pre><code class="language-julia hljs">LinearAlgebra.adjoint(A::MyFillMap) = MyFillMap(adjoint(A.λ), reverse(A.size))
+LinearAlgebra.transpose(A::MyFillMap) = MyFillMap(transpose(A.λ), reverse(A.size))</code></pre><p>With such invariant definitions, i.e., the adjoint/transpose of a <code>MyFillMap</code> is again a <code>MyFillMap</code>, no further method definitions are required, and the entire functionality listed above just works for adjoints/transposes of your custom map type.</p><pre><code class="language-julia hljs">mul!(ones(3), A&#39;, x, 2, 2)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">3-element Vector{Float64}:
+ 32.0
+ 32.0
+ 32.0</code></pre><pre><code class="language-julia hljs">MyFillMap(5.0, (3, 4))&#39; * ones(3)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">4-element Vector{Float64}:
+ 15.0
+ 15.0
+ 15.0
+ 15.0</code></pre><p>Now that we have defined the action of adjoints/transposes, the following right action on vectors is automatically defined:</p><pre><code class="language-julia hljs">ones(3)&#39; * MyFillMap(5.0, (3, 4))</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">1×4 adjoint(::Vector{Float64}) with eltype Float64:
+ 15.0  15.0  15.0  15.0</code></pre><p>and <code>transpose(x) * A</code> correspondingly, as well as in-place multiplication</p><pre><code class="language-julia hljs">mul!(similar(x)&#39;, x&#39;, A)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">1×3 adjoint(::Vector{Float64}) with eltype Float64:
+ 15.0  15.0  15.0</code></pre><p>and <code>mul!(transpose(y), transpose(x), A)</code>.</p><h2 id="Application-to-matrices"><a class="docs-heading-anchor" href="#Application-to-matrices">Application to matrices</a><a id="Application-to-matrices-1"></a><a class="docs-heading-anchor-permalink" href="#Application-to-matrices" title="Permalink"></a></h2><p>By default, applying a <code>LinearMap</code> <code>A</code> to a matrix <code>X</code> via <code>A*X</code> does <em>not</em> apply <code>A</code> to each column of <code>X</code> viewed as a vector, but interprets <code>X</code> as a linear map, wraps it as such and returns <code>(A*X)::CompositeMap</code>. Calling the in-place multiplication function <code>mul!(Y, A, X)</code> for matrices, however, does compute the columnwise action of <code>A</code> on <code>X</code> and stores the result in <code>Y</code>. In case there is a more efficient implementation for the matrix application, you can provide <code>mul!</code> methods with signature <code>mul!(Y::AbstractMatrix, A::MyFillMap, X::AbstractMatrix)</code>, and, depending on the chosen path to handle adjoints/transposes, corresponding methods for wrapped maps of type <code>AdjointMap</code> or <code>TransposeMap</code>, plus potentially corresponding 5-arg <code>mul!</code> methods. This may seem like a lot of methods to be implemented, but note that adding such methods is only necessary/recommended for performance.</p><h2 id="Computing-a-matrix-representation"><a class="docs-heading-anchor" href="#Computing-a-matrix-representation">Computing a matrix representation</a><a id="Computing-a-matrix-representation-1"></a><a class="docs-heading-anchor-permalink" href="#Computing-a-matrix-representation" title="Permalink"></a></h2><p>In some cases, it might be necessary to compute a matrix representation of a <code>LinearMap</code>. This is essentially done via the <code>[LinearMaps._unsafe_mul!(::Matrix,::LinearMap,::Number)]</code>(@ref) method, for which a generic fallback exists: it applies the <code>LinearMap</code> successively to the standard unit vectors.</p><pre><code class="language-julia hljs">F = MyFillMap(5, (100,100))
+M = Matrix{eltype(F)}(undef, size(F))
+@benchmark Matrix($F)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">BenchmarkTools.Trial: 10000 samples with 4 evaluations.
+ Range (min … max):   5.500 μs … 313.750 μs  ┊ GC (min … max):  0.00% … 90.88%
+ Time  (median):      7.875 μs               ┊ GC (median):     0.00%
+ Time  (mean ± σ):   10.440 μs ±  18.935 μs  ┊ GC (mean ± σ):  14.03% ±  7.79%
+
+   ▂▆██▆▂▂▂▁                                             ▁ ▁   ▂
+  ▇█████████▇▆▆▆▄▄▄▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▄▄▁▁▁▁▁▁▁▄▄▅▄▄▆█████▇ █
+  5.5 μs        Histogram: log(frequency) by time      41.1 μs &lt;
+
+ Memory estimate: 79.05 KiB, allocs estimate: 3.</code></pre><pre><code class="language-julia hljs">@benchmark LinearMaps._unsafe_mul!($(Matrix{Int}(undef, (100,100))), $(MyFillMap(5, (100,100))), true)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">BenchmarkTools.Trial: 10000 samples with 7 evaluations.
+ Range (min … max):  4.014 μs … 240.457 μs  ┊ GC (min … max): 0.00% … 97.36%
+ Time  (median):     4.371 μs               ┊ GC (median):    0.00%
+ Time  (mean ± σ):   4.437 μs ±   2.376 μs  ┊ GC (mean ± σ):  0.53% ±  0.97%
+
+      █▂▁▁          █              ▁▁▁▅                        
+  ▁▂▃▅████▇▇▂▂▂▂▂▃▅▆██▆▆▆▂▂▂▁▂▂▂▃▇▇████▅▃▃▄▂▂▂▂▄▂▂▂▂▁▁▁▁▁▁▁▁▁ ▃
+  4.01 μs         Histogram: frequency by time        5.04 μs &lt;
+
+ Memory estimate: 896 bytes, allocs estimate: 1.</code></pre><p>If a more performant implementation exists, it is recommended to overwrite this method, for instance (as before, size checks need not be included here since they are handled by the corresponding <code>LinearAlgebra.mul!</code> method):</p><pre><code class="language-julia hljs">LinearMaps._unsafe_mul!(M::AbstractMatrix, A::MyFillMap, s::Number) = fill!(M, A.λ*s)
+@benchmark Matrix($F)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">BenchmarkTools.Trial: 10000 samples with 6 evaluations.
+ Range (min … max):  4.983 μs … 208.483 μs  ┊ GC (min … max):  0.00% … 87.88%
+ Time  (median):     6.683 μs               ┊ GC (median):     0.00%
+ Time  (mean ± σ):   8.365 μs ±  14.913 μs  ┊ GC (mean ± σ):  17.74% ±  9.56%
+
+  █▅                                                          ▁
+  ███▄▁▁▁▁▁▁▁▃▁▁█▄▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▃▄ █
+  4.98 μs      Histogram: log(frequency) by time       136 μs &lt;
+
+ Memory estimate: 78.17 KiB, allocs estimate: 2.</code></pre><pre><code class="language-julia hljs">@benchmark LinearMaps._unsafe_mul!($(Matrix{Int}(undef, (100,100))), $(MyFillMap(5, (100,100))), true)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">BenchmarkTools.Trial: 10000 samples with 10 evaluations.
+ Range (min … max):  1.620 μs …  6.930 μs  ┊ GC (min … max): 0.00% … 0.00%
+ Time  (median):     1.710 μs              ┊ GC (median):    0.00%
+ Time  (mean ± σ):   1.716 μs ± 78.851 ns  ┊ GC (mean ± σ):  0.00% ± 0.00%
+
+                ▂  ▄  ▆  █  ▇ ▆  ▅  ▃  ▁                      
+  ▂▁▂▁▁▃▁▁▅▁▁▇▁▁█▁▁█▁▁█▁▁█▁▁█▁█▁▁█▁▁█▁▁█▁▁▇▁▁▅▁▁▅▁▁▄▁▁▃▁▁▂▁▂ ▃
+  1.62 μs        Histogram: frequency by time        1.82 μs &lt;
+
+ Memory estimate: 0 bytes, allocs estimate: 0.</code></pre><p>As one can see, the above runtimes are dominated by the allocation of the output matrix, but still overwriting the multiplication kernel yields a speed-up of about factor 3 for the matrix filling part.</p><h2 id="Slicing"><a class="docs-heading-anchor" href="#Slicing">Slicing</a><a id="Slicing-1"></a><a class="docs-heading-anchor-permalink" href="#Slicing" title="Permalink"></a></h2><p>As usual, generic fallbacks for <code>LinearMap</code> slicing exist and are handled by the following method hierarchy, where at least one of <code>I</code> and <code>J</code> has to be a <code>Colon</code>:</p><pre><code class="nohighlight hljs">Base.getindex(::LinearMap, I, J)
+-&gt; LinearMaps._getindex(::LinearMap, I, J)</code></pre><p>The method <code>Base.getindex</code> checks the validity of the the requested indices and calls <code>LinearMaps._getindex</code>, which should be overloaded for custom <code>LinearMap</code>s subtypes. For instance:</p><pre><code class="language-julia hljs">@benchmark F[1,:]</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">BenchmarkTools.Trial: 10000 samples with 159 evaluations.
+ Range (min … max):  668.553 ns …   9.496 μs  ┊ GC (min … max): 0.00% … 87.34%
+ Time  (median):     710.057 ns               ┊ GC (median):    0.00%
+ Time  (mean ± σ):   775.138 ns ± 651.712 ns  ┊ GC (mean ± σ):  6.23% ±  6.85%
+
+  ▃▆██▇▅▃▂▂▁▁                                                ▁▁ ▂
+  ████████████▇▅▄▅▄▁▃▁▃▅▃▁▄▃▃▃▄▃▃▃▁▃▁▄▄▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▄▇██ █
+  669 ns        Histogram: log(frequency) by time       1.44 μs &lt;
+
+ Memory estimate: 1.77 KiB, allocs estimate: 3.</code></pre><pre><code class="language-julia hljs">LinearMaps._getindex(A::MyFillMap, ::Integer, J::Base.Slice) = fill(A.λ, axes(J))
+@benchmark F[1,:]</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">BenchmarkTools.Trial: 10000 samples with 199 evaluations.
+ Range (min … max):  427.136 ns …   7.308 μs  ┊ GC (min … max): 0.00% … 88.52%
+ Time  (median):     442.206 ns               ┊ GC (median):    0.00%
+ Time  (mean ± σ):   478.070 ns ± 399.569 ns  ┊ GC (mean ± σ):  5.05% ±  5.70%
+
+  ▅██▅▂▁   ▁▁                                                ▁▁ ▂
+  ██████▇▆████▆▆▅▃▄▃▁▄▃▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▇███ █
+  427 ns        Histogram: log(frequency) by time        857 ns &lt;
+
+ Memory estimate: 912 bytes, allocs estimate: 2.</code></pre><p>Note that in <code>Base.getindex</code> <code>Colon</code>s are converted to <code>Base.Slice</code> via <code>Base.to_indices</code>, thus the dispatch must be on <code>Base.Slice</code> rather than on <code>Colon</code>.</p><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../types/">« Types and methods</a><a class="docs-footer-nextpage" href="../../related/">Related packages »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.19 on <span class="colophon-date" title="Tuesday 21 June 2022 07:47">Tuesday 21 June 2022</span>. Using Julia version 1.7.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
