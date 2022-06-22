@@ -12,7 +12,7 @@ function FunctionMap{T}(f::F1, fc::F2, M::Int, N::Int;
     ismutating::Bool  = _ismutating(f),
     issymmetric::Bool = false,
     ishermitian::Bool = (T<:Real && issymmetric),
-    isposdef::Bool    = false) where {T, F1, F2}
+    isposdef::Bool    = false) where {T, F1 <: Function, F2 <: Function}
     FunctionMap{T, F1, F2}(f, fc, M, N, ismutating, issymmetric, ishermitian, isposdef)
 end
 
