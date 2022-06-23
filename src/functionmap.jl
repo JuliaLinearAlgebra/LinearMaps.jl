@@ -110,12 +110,12 @@ function Base.:(*)(A::TransposeFunctionMap, x::AbstractVector)
     end
 end
 
-function _unsafe_mul!(y::AbstractVecOrMat, A::FunctionMap, x::AbstractVector)
+function _unsafe_mul!(y, A::FunctionMap, x::AbstractVector)
     ismutating(A) ? A.f(y, x) : copyto!(y, A.f(x))
     return y
 end
 
-function _unsafe_mul!(y::AbstractVecOrMat, At::TransposeFunctionMap, x::AbstractVector)
+function _unsafe_mul!(y, At::TransposeFunctionMap, x::AbstractVector)
     A = At.lmap
     (issymmetric(A) || (isreal(A) && ishermitian(A))) && return _unsafe_mul!(y, A, x)
     if A.fc !== nothing
@@ -136,7 +136,7 @@ function _unsafe_mul!(y::AbstractVecOrMat, At::TransposeFunctionMap, x::Abstract
     end
 end
 
-function _unsafe_mul!(y::AbstractVecOrMat, Ac::AdjointFunctionMap, x::AbstractVector)
+function _unsafe_mul!(y, Ac::AdjointFunctionMap, x::AbstractVector)
     A = Ac.lmap
     ishermitian(A) && return _unsafe_mul!(y, A, x)
     if A.fc !== nothing

@@ -81,13 +81,13 @@ LinearAlgebra.adjoint(A::LinearCombination) =
     LinearCombination{eltype(A)}(map(adjoint, A.maps))
 
 # multiplication with vectors & matrices
-for (In, Out) in ((AbstractVector, AbstractVecOrMat), (AbstractMatrix, AbstractMatrix))
-    @eval function _unsafe_mul!(y::$Out, A::LinearCombination, x::$In)
+for In in (AbstractVector, AbstractMatrix)
+    @eval function _unsafe_mul!(y, A::LinearCombination, x::$In)
         _unsafe_mul!(y, first(A.maps), x)
         _mul!(MulStyle(A), y, A, x, true)
         return y
     end
-    @eval function _unsafe_mul!(y::$Out, A::LinearCombination, x::$In, α::Number, β::Number)
+    @eval function _unsafe_mul!(y, A::LinearCombination, x::$In, α, β)
         if iszero(α) # trivial cases
             iszero(β) && return fill!(y, zero(eltype(y)))
             isone(β) && return y
@@ -112,13 +112,13 @@ for (In, Out) in ((AbstractVector, AbstractVecOrMat), (AbstractMatrix, AbstractM
     end
 end
 
-function _unsafe_mul!(M::AbstractMatrix, L::LinearCombination, s::Number)
+function _unsafe_mul!(M, L::LinearCombination, s::Number)
     _unsafe_mul!(M, first(L.maps), s)
     _mul!(MulStyle(L), M, L, s, true)
     return M
 end
 
-function _unsafe_mul!(M::AbstractMatrix, L::LinearCombination, s::Number, α::Number, β::Number)
+function _unsafe_mul!(M, L::LinearCombination, s::Number, α, β)
     LinearAlgebra._rmul_or_fill!(M, β)
     for map in L.maps
         _unsafe_mul!(M, map, s, α, true)

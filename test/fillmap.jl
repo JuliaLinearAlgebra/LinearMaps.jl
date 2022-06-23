@@ -16,6 +16,9 @@ using LinearMaps, LinearAlgebra, Test
         @test size(L) == (M, N)
         @test adjoint(L) == FillMap(adjoint(λ), (3,2))
         @test transpose(L) == FillMap(λ, (3,2))
+        @test !issymmetric(L)
+        @test !ishermitian(L)
+        @test !isposdef(L)
         @test Matrix(L) == A == mul!(copy(A), L, 1) == mul!(copy(A), L, 1, true, false)
         @test mul!(copy(1A), L, 2, true, true) == 3A
         @test L * x ≈ A * x

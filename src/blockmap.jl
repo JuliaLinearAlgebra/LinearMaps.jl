@@ -427,13 +427,13 @@ end
 # multiplication with vectors & matrices
 ############
 
-for (In, Out) in ((AbstractVector, AbstractVecOrMat), (AbstractMatrix, AbstractMatrix))
+for In in (AbstractVector, AbstractMatrix)
     @eval begin
-        function _unsafe_mul!(y::$Out, A::BlockMap, x::$In)
+        function _unsafe_mul!(y, A::BlockMap, x::$In)
             require_one_based_indexing(y, x)
             return _blockmul!(y, A, x, true, false)
         end
-        function _unsafe_mul!(y::$Out, A::BlockMap, x::$In, α::Number, β::Number)
+        function _unsafe_mul!(y, A::BlockMap, x::$In, α, β)
             require_one_based_indexing(y, x)
             return _blockmul!(y, A, x, α, β)
         end
@@ -442,11 +442,11 @@ for (In, Out) in ((AbstractVector, AbstractVecOrMat), (AbstractMatrix, AbstractM
     for (MT, transform) in ((:TransposeMap, :transpose), (:AdjointMap, :adjoint))
         @eval begin
             MapType = $MT{<:Any, <:BlockMap}
-            function _unsafe_mul!(y::$Out, wrapA::MapType, x::$In)
+            function _unsafe_mul!(y, wrapA::MapType, x::$In)
                 require_one_based_indexing(y, x)
                 return _transblockmul!(y, wrapA.lmap, x, true, false, $transform)
             end
-            function _unsafe_mul!(y::$Out, wrapA::MapType, x::$In, α::Number, β::Number)
+            function _unsafe_mul!(y, wrapA::MapType, x::$In, α, β)
                 require_one_based_indexing(y, x)
                 return _transblockmul!(y, wrapA.lmap, x, α, β, $transform)
             end
@@ -458,14 +458,13 @@ end
 # multiplication with a scalar
 ############
 
-function _unsafe_mul!(Y::AbstractMatrix, A::BlockMap, s::Number, α::Number=true, β::Number=false)
+function _unsafe_mul!(Y, A::BlockMap, s::Number, α=true, β=false)
     require_one_based_indexing(Y, s)
     return _blockmul!(Y, A, s, α, β)
 end
 for (MT, transform) in ((:TransposeMap, :transpose), (:AdjointMap, :adjoint))
     @eval begin
-        function _unsafe_mul!(Y::AbstractMatrix, wrapA::$MT{<:Any, <:BlockMap}, s::Number, 
-                    α::Number=true, β::Number=false)
+        function _unsafe_mul!(Y, wrapA::$MT{<:Any, <:BlockMap}, s::Number, α=true, β=false)
             require_one_based_indexing(Y)
             return _transblockmul!(Y, wrapA.lmap, s, α, β, $transform)
         end
@@ -557,13 +556,13 @@ LinearAlgebra.transpose(A::BlockDiagonalMap{T}) where {T} =
 Base.:(==)(A::BlockDiagonalMap, B::BlockDiagonalMap) =
     (eltype(A) == eltype(B) && all(A.maps .== B.maps))
 
-for (In, Out) in ((AbstractVector, AbstractVecOrMat), (AbstractMatrix, AbstractMatrix), (Number, AbstractMatrix))
+for In in (AbstractVector, AbstractMatrix, Number)
     @eval begin
-        function _unsafe_mul!(y::$Out, A::BlockDiagonalMap, x::$In)
+        function _unsafe_mul!(y, A::BlockDiagonalMap, x::$In)
             require_one_based_indexing(y, x)
             return _blockscaling!(y, A, x)
         end
-        function _unsafe_mul!(y::$Out, A::BlockDiagonalMap, x::$In, α::Number, β::Number)
+        function _unsafe_mul!(y, A::BlockDiagonalMap, x::$In, α, β)
             require_one_based_indexing(y, x)
             return _blockscaling!(y, A, x, α, β)
         end

@@ -49,11 +49,11 @@ LinearAlgebra.ishermitian(imap::InverseMap) = ishermitian(imap.A)
 LinearAlgebra.isposdef(imap::InverseMap) = isposdef(imap.A)
 
 # Two separate methods to deal with method ambiguities
-function _unsafe_mul!(y::AbstractVector, imap::InverseMap, x::AbstractVector)
+function _unsafe_mul!(y, imap::InverseMap, x::AbstractVector)
     imap.ldiv!(y, imap.A, x)
     return y
 end
-function _unsafe_mul!(y::AbstractMatrix, imap::InverseMap, x::AbstractMatrix)
+function _unsafe_mul!(y, imap::InverseMap, x::AbstractMatrix)
     imap.ldiv!(y, imap.A, x)
     return y
 end

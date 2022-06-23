@@ -116,7 +116,7 @@
   For custom `LinearMap` subtypes, there are now two options:
   1. In case your type is invariant under adjoint/transposition (i.e.,
      `adjoint(L::MyLinearMap)::MyLinearMap` similar to, for instance,
-     `LinearCombination`s or `CompositeMap`s, `At_mul_B!` and `Ac_mul_B!` do
+     `LinearCombination`s or `CompositeMap`s), `At_mul_B!` and `Ac_mul_B!` do
      not require any replacement! Rather, multiplication by `L'` is, in this case,
      handled by `mul!(y, L::MyLinearMap, x[, α, β])`.
   2. Otherwise, you will need to define `mul!` methods with the signature
