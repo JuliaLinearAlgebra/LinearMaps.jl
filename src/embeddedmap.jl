@@ -69,25 +69,25 @@ Base.:(==)(A::EmbeddedMap, B::EmbeddedMap) =
 LinearAlgebra.adjoint(A::EmbeddedMap) = EmbeddedMap(adjoint(A.lmap), reverse(A.dims), A.cols, A.rows)
 LinearAlgebra.transpose(A::EmbeddedMap) = EmbeddedMap(transpose(A.lmap), reverse(A.dims), A.cols, A.rows)
 
-for (In, Out) in ((AbstractVector, AbstractVecOrMat), (AbstractMatrix, AbstractMatrix))
-    @eval function _unsafe_mul!(y::$Out, A::EmbeddedMap, x::$In)
+for In in (AbstractVector, AbstractMatrix)
+    @eval function _unsafe_mul!(y, A::EmbeddedMap, x::$In)
         fill!(y, zero(eltype(y)))
         _unsafe_mul!(selectdim(y, 1, A.rows), A.lmap, selectdim(x, 1, A.cols))
         return y
     end
-    @eval function _unsafe_mul!(y::$Out, A::EmbeddedMap, x::$In, alpha::Number, beta::Number)
-        LinearAlgebra._rmul_or_fill!(y, beta)
-        _unsafe_mul!(selectdim(y, 1, A.rows), A.lmap, selectdim(x, 1, A.cols), alpha, !iszero(beta))
+    @eval function _unsafe_mul!(y, A::EmbeddedMap, x::$In, α, β)
+        LinearAlgebra._rmul_or_fill!(y, β)
+        _unsafe_mul!(selectdim(y, 1, A.rows), A.lmap, selectdim(x, 1, A.cols), α, !iszero(β))
         return y
     end
 end
 
-function _unsafe_mul!(Y::AbstractMatrix, A::EmbeddedMap, x::Number)
+function _unsafe_mul!(Y, A::EmbeddedMap, x::Number)
     fill!(Y, zero(eltype(Y)))
     _unsafe_mul!(view(Y, A.rows, A.cols), A.lmap, x)
     return Y
 end
-function _unsafe_mul!(Y::AbstractMatrix, A::EmbeddedMap, x::Number, α::Number, β::Number)
+function _unsafe_mul!(Y, A::EmbeddedMap, x::Number, α, β)
     LinearAlgebra._rmul_or_fill!(Y, β)
     _unsafe_mul!(view(Y, A.rows, A.cols), A.lmap, x, α, !iszero(β))
     return Y

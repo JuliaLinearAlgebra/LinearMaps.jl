@@ -65,16 +65,16 @@ LinearAlgebra.ishermitian(A::WrappedMap) = A._ishermitian
 LinearAlgebra.isposdef(A::WrappedMap) = A._isposdef
 
 # multiplication with vectors & matrices
-for (In, Out) in ((AbstractVector, AbstractVecOrMat), (AbstractMatrix, AbstractMatrix))
+for In in (AbstractVector, AbstractMatrix)
     @eval begin
-        _unsafe_mul!(y::$Out, A::WrappedMap, x::$In) = _unsafe_mul!(y, A.lmap, x)
-        function _unsafe_mul!(y::$Out, At::TransposeMap{<:Any,<:WrappedMap}, x::$In)
+        _unsafe_mul!(y, A::WrappedMap, x::$In) = _unsafe_mul!(y, A.lmap, x)
+        function _unsafe_mul!(y, At::TransposeMap{<:Any,<:WrappedMap}, x::$In)
             A = At.lmap
             return (issymmetric(A) || (isreal(A) && ishermitian(A))) ?
                 _unsafe_mul!(y, A.lmap, x) :
                 _unsafe_mul!(y, transpose(A.lmap), x)
         end
-        function _unsafe_mul!(y::$Out, Ac::AdjointMap{<:Any,<:WrappedMap}, x::$In)
+        function _unsafe_mul!(y, Ac::AdjointMap{<:Any,<:WrappedMap}, x::$In)
             A = Ac.lmap
             return ishermitian(A) ?
                 _unsafe_mul!(y, A.lmap, x) :
@@ -83,23 +83,18 @@ for (In, Out) in ((AbstractVector, AbstractVecOrMat), (AbstractMatrix, AbstractM
     end
 end
 
-mul!(Y::AbstractMatrix, X::AbstractMatrix, A::VecOrMatMap) = mul!(Y, X, A.lmap)
-# the following method is needed for disambiguation with left-multiplication
-mul!(Y::AbstractMatrix, X::TransposeAbsVecOrMat, A::VecOrMatMap) = mul!(Y, X, A.lmap)
-
-for (In, Out) in ((AbstractVector, AbstractVecOrMat), (AbstractMatrix, AbstractMatrix))
+for In in (AbstractVector, AbstractMatrix)
     @eval begin
-        function _unsafe_mul!(y::$Out, A::WrappedMap, x::$In, α::Number, β::Number)
+        function _unsafe_mul!(y, A::WrappedMap, x::$In, α, β)
             return _unsafe_mul!(y, A.lmap, x, α, β)
         end
-        function _unsafe_mul!(y::$Out, At::TransposeMap{<:Any,<:WrappedMap}, x::$In,
-                                α::Number, β::Number)
+        function _unsafe_mul!(y, At::TransposeMap{<:Any,<:WrappedMap}, x::$In, α, β)
             A = At.lmap
             return (issymmetric(A) || (isreal(A) && ishermitian(A))) ?
                 _unsafe_mul!(y, A.lmap, x, α, β) :
                 _unsafe_mul!(y, transpose(A.lmap), x, α, β)
         end
-        function _unsafe_mul!(y::$Out, Ac::AdjointMap{<:Any,<:WrappedMap}, x::$In, α::Number, β::Number)
+        function _unsafe_mul!(y, Ac::AdjointMap{<:Any,<:WrappedMap}, x::$In, α, β)
             A = Ac.lmap
             return ishermitian(A) ?
                 _unsafe_mul!(y, A.lmap, x, α, β) :
@@ -108,22 +103,8 @@ for (In, Out) in ((AbstractVector, AbstractVecOrMat), (AbstractMatrix, AbstractM
     end
 end
 
-mul!(X::AbstractMatrix, Y::AbstractMatrix, A::VecOrMatMap, α::Number, β::Number) =
-    mul!(X, Y, A.lmap, α, β)
-
-_unsafe_mul!(Y::AbstractMatrix, A::VecOrMatMap, s::Number) = _unsafe_mul!(Y, A.lmap, s)
-_unsafe_mul!(Y::AbstractMatrix, A::VecOrMatMap, s::Number, α::Number, β::Number) =
-    _unsafe_mul!(Y, A.lmap, s, α, β)
-
-# the following 2 methods are needed for disambiguation with left-multiplication
-function mul!(Y::AbstractMatrix{<:RealOrComplex}, X::AbstractMatrix{<:RealOrComplex}, A::VecOrMatMap{<:RealOrComplex},
-                α::RealOrComplex, β::RealOrComplex)
-    return mul!(Y, X, A.lmap, α, β)
-end
-function mul!(Y::AbstractMatrix{<:RealOrComplex}, X::TransposeAbsVecOrMat{<:RealOrComplex}, A::VecOrMatMap{<:RealOrComplex},
-                α::RealOrComplex, β::RealOrComplex)
-    return mul!(Y, X, A.lmap, α, β)
-end
+_unsafe_mul!(Y, A::VecOrMatMap, s::Number) = _unsafe_mul!(Y, A.lmap, s)
+_unsafe_mul!(Y, A::VecOrMatMap, s::Number, α, β) = _unsafe_mul!(Y, A.lmap, s, α, β)
 
 # combine LinearMap and Matrix objects: linear combinations and map composition
 Base.:(+)(A₁::LinearMap, A₂::AbstractMatrix) = +(A₁, WrappedMap(A₂))

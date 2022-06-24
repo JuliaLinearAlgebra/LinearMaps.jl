@@ -50,24 +50,17 @@ Base.:(*)(A::ScaledMap, B::LinearMap) = A.λ * (A.lmap * B)
 Base.:(*)(A::LinearMap, B::ScaledMap) = (A * B.lmap) * B.λ
 
 # multiplication with vectors/matrices
-for (In, Out) in ((AbstractVector, AbstractVecOrMat),
-                  (AbstractMatrix, AbstractMatrix))
+for In in (AbstractVector, AbstractMatrix)
     @eval begin
         # commutative case
-        function _unsafe_mul!(y::$Out, A::ScaledMap, x::$In{<:RealOrComplex})
-            return _unsafe_mul!(y, A.lmap, x, A.λ, false)
-        end
-        function _unsafe_mul!(y::$Out, A::ScaledMap, x::$In{<:RealOrComplex}, α::Number, β::Number)
-            return _unsafe_mul!(y, A.lmap, x, A.λ * α, β)
-        end
+        _unsafe_mul!(y, A::ScaledMap, x::$In{<:RealOrComplex}) =
+            _unsafe_mul!(y, A.lmap, x, A.λ, false)
+        _unsafe_mul!(y, A::ScaledMap, x::$In{<:RealOrComplex}, α, β) =
+            _unsafe_mul!(y, A.lmap, x, A.λ * α, β)
         # non-commutative case
-        function _unsafe_mul!(y::$Out, A::ScaledMap, x::$In)
-            return lmul!(A.λ, _unsafe_mul!(y, A.lmap, x))
-        end
+        _unsafe_mul!(y, A::ScaledMap, x::$In) = lmul!(A.λ, _unsafe_mul!(y, A.lmap, x))
     end
 end
 
-_unsafe_mul!(Y::AbstractMatrix, X::ScaledMap, c::Number) =
-    _unsafe_mul!(Y, X.lmap, X.λ*c)
-_unsafe_mul!(Y::AbstractMatrix, X::ScaledMap, c::Number, α::Number, β::Number) =
-    _unsafe_mul!(Y, X.lmap, X.λ*c, α, β)
+_unsafe_mul!(Y, X::ScaledMap, c::Number) = _unsafe_mul!(Y, X.lmap, X.λ*c)
+_unsafe_mul!(Y, X::ScaledMap, c::Number, α, β) = _unsafe_mul!(Y, X.lmap, X.λ*c, α, β)
