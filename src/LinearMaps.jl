@@ -3,6 +3,7 @@ module LinearMaps
 export LinearMap
 export ⊗, kronsum, ⊕
 export FillMap
+export InverseMap
 
 using LinearAlgebra
 import LinearAlgebra: mul!
@@ -344,6 +345,7 @@ include("embeddedmap.jl") # embedded linear maps
 include("conversion.jl") # conversion of linear maps to matrices
 include("show.jl") # show methods for LinearMap objects
 include("getindex.jl") # getindex functionality
+include("inversemap.jl")
 
 """
     LinearMap(A::LinearMap; kwargs...)::WrappedMap

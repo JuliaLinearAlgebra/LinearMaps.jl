@@ -96,6 +96,15 @@ LinearMaps.FillMap
 
 Type for representing linear maps that are embedded in larger zero maps.
 
+
+### `InverseMap`
+
+Type for lazy inverse of another linear map.
+
+```@docs
+LinearMaps.InverseMap
+```
+
 ## Methods
 
 ### Multiplication methods
