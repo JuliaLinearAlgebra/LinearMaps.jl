@@ -1,7 +1,7 @@
 module LinearMaps
 
 export LinearMap
-export ⊗, kronsum, ⊕
+export ⊗, squarekron, kronsum, ⊕, sumkronsum
 export FillMap
 export InverseMap
 
@@ -77,6 +77,8 @@ function check_dim_mul(C, A, B)
         throw(DimensionMismatch("A has size ($mA,$nA), B has size ($mB,$nB), C has size $(size(C))"))
     return nothing
 end
+
+_issquare(A) = size(A, 1) == size(A, 2)
 
 _front(As::Tuple) = Base.front(As)
 _front(As::AbstractVector) = @inbounds @views As[begin:end-1]
@@ -331,7 +333,7 @@ end
 
 include("transpose.jl") # transposing linear maps
 include("wrappedmap.jl") # wrap a matrix of linear map in a new type, thereby allowing to alter its properties
-include("left.jl") # left multiplication by a transpose or adjoint vector
+include("left.jl") # left multiplication by a matrix/transpose or adjoint vector
 include("uniformscalingmap.jl") # the uniform scaling map, to be able to make linear combinations of LinearMap objects and multiples of I
 include("linearcombination.jl") # defining linear combinations of linear maps
 include("scaledmap.jl") # multiply by a (real or complex) scalar

@@ -8,6 +8,11 @@
   argument to the constructor (see the docstring for details). Note that `A` must be
   compatible with the solver: `A` can, for example, be a factorization, or another
   `LinearMap` in combination with an iterative solver.
+* New constructors for lazy representations of Kronecker products ([`squarekron`](@ref))
+  and sums ([`sumkronsum`](@ref)) for _square_ factors and summands, respectively, are
+  introduced. They target cases with 3 or more factors/summands, and benchmarking intended
+  use cases for comparison with `KroneckerMap` (constructed via [`Base.kron`](@ref)) and
+  `KroneckerSumMap` (constructed via [`kronsum`](@ref)) is recommended.
 
 ## What's new in v3.7
 

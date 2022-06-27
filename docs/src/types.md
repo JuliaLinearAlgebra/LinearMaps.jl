@@ -72,6 +72,16 @@ kronsum
 LinearMaps.:⊕
 ```
 
+There exist alternative constructors of Kronecker products and sums for square factors and
+summands, respectively. These are designed for cases of 3 or more arguments, and
+benchmarking intended use cases for comparison with `KroneckerMap` and `KroneckerSumMap`
+is recommended.
+
+```@docs
+squarekron
+sumkronsum
+```
+
 ### `BlockMap` and `BlockDiagonalMap`
 
 Types for representing block (diagonal) maps lazily.
