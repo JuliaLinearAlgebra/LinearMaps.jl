@@ -398,7 +398,7 @@ end
 
 Construct a lazy representation of the `k`-th Kronecker sum power `A^⊕(k) = A ⊕ A ⊕ ... ⊕ A`,
 where `A` can be a square `AbstractMatrix` or a `LinearMap`. This calls [`sumkronsum`](@ref)
-on the `k`-tuple `(A, ..., A)`.
+on the `k`-tuple `(A, ..., A)` for `k ≥ 3`.
 
 # Example
 ```jldoctest

@@ -28,7 +28,12 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
             @test @inferred size(LK, i) == size(K, i)
         end
         C = randn(3, 4); D = randn(6, 5); v = ones(size(C, 2) * size(D, 2))
-        for (L, M) in ((kron(LinearMap(C), D), kron(C, D)), (kron(LinearMap(D), C), kron(D, C)))
+        for (L, M) in (
+            (kron(LinearMap(C), D), kron(C, D)),
+            (kron(LinearMap(LinearMap(C)), D), kron(C, D)),
+            (kron(LinearMap(D), C), kron(D, C)),
+            (kron(LinearMap(LinearMap(D)), C), kron(D, C))
+            )
             @test Matrix(L) ≈ M
             @test L * v ≈ M * v
         end
@@ -123,6 +128,7 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
             @test Matrix(transform(LinearMap(kronsum(LA, LB)))) ≈ Matrix(transform(KS)) ≈ transform(KSmat)
         end
         @test @inferred(kronsum(A, A, LB)) == @inferred(⊕(A, A, B))
+        @test Matrix(@inferred LA^⊕(2)) == Matrix(@inferred A^⊕(2)) ≈ Matrix(kronsum(LA, A))
         @test Matrix(@inferred LA^⊕(3)) == Matrix(@inferred A^⊕(3)) ≈ Matrix(kronsum(LA, A, A))
         @test @inferred(kronsum(LA, LA, LB)) == @inferred(kronsum(LA, kronsum(LA, LB))) == @inferred(kronsum(A, A, B))
         @test Matrix(@inferred kronsum(A, B, A, B, A, B)) ≈ Matrix(@inferred kronsum(LA, LB, LA, LB, LA, LB))
