@@ -413,8 +413,10 @@ julia> Matrix([1 0; 0 1]^⊕(2))
 
 ⊕(a, b, c...) = kronsum(a, b, c...)
 
+Base.:(^)(A::MapOrMatrix, ::KronSumPower{2}) =
+    kronsum(convert(LinearMap, A), convert(LinearMap, A))
 Base.:(^)(A::MapOrMatrix, ::KronSumPower{p}) where {p} =
-    sumkronsum(ntuple(n -> convert(LinearMap, A), Val(p))...)
+    sumkronsum(ntuple(_ -> convert(LinearMap, A), Val(p))...)
 
 Base.size(A::KroneckerSumMap, i) = prod(size.(A.maps, i))
 Base.size(A::KroneckerSumMap) = (size(A, 1), size(A, 2))

@@ -27,6 +27,11 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
         for i in (1, 2)
             @test @inferred size(LK, i) == size(K, i)
         end
+        C = randn(3, 4); D = randn(6, 5); v = ones(size(C, 2) * size(D, 2))
+        for (L, M) in ((kron(LinearMap(C), D), kron(C, D)), (kron(LinearMap(D), C), kron(D, C)))
+            @test Matrix(L) ≈ M
+            @test L * v ≈ M * v
+        end
         L = ones(3) ⊗ ones(ComplexF64, 4)'
         v = rand(4)
         @test Matrix(L) == ones(3,4)
@@ -104,11 +109,13 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
         LA = LinearMap(A)
         LB = LinearMap(B)
         KS = @inferred kronsum(LA, B)
+        KS2 = @inferred sumkronsum(LA, B)
         @test occursin("6×6 LinearMaps.KroneckerSumMap{Float64}", sprint((t, s) -> show(t, "text/plain", s), KS))
         @test_throws ArgumentError kronsum(LA, [B B]) # non-square map
         KSmat = kron(A, Matrix(I, 2, 2)) + kron(Matrix(I, 3, 3), B)
-        @test Matrix(KS) ≈ Matrix(kron(A, LinearMap(I, 2)) + kron(LinearMap(I, 3), B))
-        @test KS * ones(size(KS, 2)) ≈ KSmat * ones(size(KS, 2))
+        @test Matrix(KS) ≈ Matrix(KS2) ≈ Matrix(kron(A, LinearMap(I, 2)) + kron(LinearMap(I, 3), B))
+        v = ones(size(KS, 2))
+        @test KS * v ≈ KS2 * v ≈ KSmat * v
         @test size(KS) == size(kron(A, Matrix(I, 2, 2)))
         for transform in (identity, transpose, adjoint)
             @test Matrix(transform(KS)) ≈ transform(Matrix(KS)) ≈ transform(KSmat)

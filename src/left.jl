@@ -72,7 +72,7 @@ function _unsafe_mul!(X, Y::TransposeAbsVecOrMat, A::LinearMap)
     return X
 end
 # unwrap WrappedMaps
-_unsafe_mul!(X, Y::AbstractMatrix, A::WrappedMap) = mul!(X, Y, A.lmap)
+_unsafe_mul!(X, Y::AbstractMatrix, A::WrappedMap) = _unsafe_mul!(X, Y, A.lmap)
 # disambiguation
 _unsafe_mul!(X, Y::TransposeAbsVecOrMat, A::WrappedMap) = _unsafe_mul!(X, Y, A.lmap)
 
