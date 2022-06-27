@@ -95,7 +95,7 @@ Kronecker product of the identity operators may be combined to larger identity o
 ``I_{1:i-1}`` and ``I_{i+1:n}``, which yields
 
 ```math
-\\bigotimes_{i=1}^n A_i = \\prod_{i=1}^n I_{1:i-1} \\otimes A_i \\otimes I_{i+1:n}
+\bigotimes_{i=1}^n A_i = \prod_{i=1}^n I_{1:i-1} \otimes A_i \otimes I_{i+1:n}
 ```
 
 i.e., a `CompositeMap` where each factor is a Kronecker product consisting of three maps:
