@@ -153,48 +153,46 @@ Base.:(==)(A::KroneckerMap, B::KroneckerMap) =
 # multiplication helper functions
 #################
 
-@inline function _kronmul!(Y, B, X, A)
+@inline function _kronmul!(Y, B, X, A, cache)
     # minimize intermediate memory allocation
     if size(B, 2) * size(A, 1) <= size(B, 1) * size(A, 2)
-        temp = similar(Y, (size(B, 2), size(A, 1) ))
-        _unsafe_mul!(temp, X, transpose(A))
-        _unsafe_mul!(Y, B, temp)
+        _unsafe_mul!(cache, X, transpose(A))
+        _unsafe_mul!(Y, B, cache)
     else
-        temp = similar(Y, (size(B, 1), size(A, 2)))
-        _unsafe_mul!(temp, B, X)
-        _unsafe_mul!(Y, temp, transpose(A))
+        _unsafe_mul!(cache, B, X)
+        _unsafe_mul!(Y, cache, transpose(A))
     end
     return Y
 end
-@inline function _kronmul!(Y, B::UniformScalingMap, X, A)
+@inline function _kronmul!(Y, B::UniformScalingMap, X, A, _)
     _unsafe_mul!(Y, X, transpose(A))
     !isone(B.λ) && lmul!(B.λ, Y)
     return Y
 end
-@inline function _kronmul!(Y, B, X, A::UniformScalingMap)
+@inline function _kronmul!(Y, B, X, A::UniformScalingMap, _)
     _unsafe_mul!(Y, B, X)
     !isone(A.λ) && rmul!(Y, A.λ)
     return Y
 end
 # disambiguation (cannot occur)
-@inline function _kronmul!(Y, B::UniformScalingMap, X, A::UniformScalingMap)
+@inline function _kronmul!(Y, B::UniformScalingMap, X, A::UniformScalingMap, _)
     mul!(parent(Y), A.λ * B.λ, parent(X))
     return Y
 end
-@inline function _kronmul!(Y, B, X, A::VecOrMatMap)
-    At = transpose(A.lmap)
-    if size(B, 2) * size(A, 1) <= size(B, 1) * size(A, 2)
-        _unsafe_mul!(Y, B, X * At)
-    else
-        _unsafe_mul!(Y, Matrix(B * X), At)
-    end
-    return Y
-end
-@inline function _kronmul!(Y, B::UniformScalingMap, X, A::VecOrMatMap)
-    _unsafe_mul!(Y, X, transpose(A.lmap))
-    !isone(B.λ) && lmul!(B.λ, Y)
-    return Y
-end
+# @inline function _kronmul!(Y, B, X, A::VecOrMatMap)
+#     At = transpose(A.lmap)
+#     if size(B, 2) * size(A, 1) <= size(B, 1) * size(A, 2)
+#         _unsafe_mul!(Y, B, X * At)
+#     else
+#         _unsafe_mul!(Y, Matrix(B * X), At)
+#     end
+#     return Y
+# end
+# @inline function _kronmul!(Y, B::UniformScalingMap, X, A::VecOrMatMap)
+#     _unsafe_mul!(Y, X, transpose(A.lmap))
+#     !isone(B.λ) && lmul!(B.λ, Y)
+#     return Y
+# end
 
 const VectorMap{T} = WrappedMap{T,<:AbstractVector}
 const AdjOrTransVectorMap{T} = WrappedMap{T,<:LinearAlgebra.AdjOrTransAbsVec}
@@ -205,21 +203,21 @@ const AdjOrTransVectorMap{T} = WrappedMap{T,<:LinearAlgebra.AdjOrTransAbsVec}
 
 const KroneckerMap2{T} = KroneckerMap{T, <:Tuple{LinearMap, LinearMap}}
 const OuterProductMap{T} = KroneckerMap{T, <:Tuple{VectorMap, AdjOrTransVectorMap}}
-function _unsafe_mul!(y, L::OuterProductMap, x::AbstractVector)
+function _unsafe_mul!(y, L::OuterProductMap, x::AbstractVector; cache=nothing)
     a, bt = L.maps
     mul!(y, a.lmap, bt.lmap * x)
 end
-function _unsafe_mul!(y, L::KroneckerMap2, x::AbstractVector)
+function _unsafe_mul!(y, L::KroneckerMap2, x::AbstractVector; cache=create_cache(L, x))
     require_one_based_indexing(y)
     A, B = L.maps
     ma, na = size(A)
     mb, nb = size(B)
     X = reshape(x, (nb, na))
     Y = reshape(y, (mb, ma))
-    _kronmul!(Y, B, X, A)
+    _kronmul!(Y, B, X, A, cache)
     return y
 end
-function _unsafe_mul!(y, L::KroneckerMap, x::AbstractVector)
+function _unsafe_mul!(y, L::KroneckerMap, x::AbstractVector; cache=create_cache(L, x))
     require_one_based_indexing(y)
     maps = L.maps
     if length(maps) == 2 # reachable only for L.maps::Vector
@@ -228,7 +226,7 @@ function _unsafe_mul!(y, L::KroneckerMap, x::AbstractVector)
         mb, nb = size(B)
         X = reshape(x, (nb, na))
         Y = reshape(y, (mb, ma))
-        _kronmul!(Y, B, X, A)
+        _kronmul!(Y, B, X, A, cache)
     else
         A = first(maps)
         B = KroneckerMap{eltype(L)}(_tail(maps))
@@ -236,7 +234,7 @@ function _unsafe_mul!(y, L::KroneckerMap, x::AbstractVector)
         mb, nb = size(B)
         X = reshape(x, (nb, na))
         Y = reshape(y, (mb, ma))
-        _kronmul!(Y, B, X, A)
+        _kronmul!(Y, B, X, A, cache)
     end
     return y
 end
@@ -272,6 +270,52 @@ function _unsafe_mul!(y,
     end
     return y
 end
+
+#################
+# multiplication with matrices
+#################
+
+_create_cache(::UniformScalingMap, ::LinearMap, X) = nothing
+_create_cache(::LinearMap, ::UniformScalingMap, X) = nothing
+_create_cache(::VectorMap{T}, B::AdjOrTransVectorMap{S}, X) where {T,S} =
+    LinearAlgebra.wrapperop(B.lmap)(similar(X, promote_type(T, S), size(X, 2)))
+function _create_cache(A::LinearMap, B::LinearMap, X)
+    if size(B, 2) * size(A, 1) <= size(B, 1) * size(A, 2)
+        cache = similar(X, promote_type(eltype(A), eltype(B), eltype(X)), (size(B, 2), size(A, 1)))
+    else
+        cache = similar(X, promote_type(eltype(A), eltype(B), eltype(X)), (size(B, 1), size(A, 2)))
+    end
+    return cache
+end
+create_cache(K::KroneckerMap2, X) = _create_cache(first(K.maps), last(K.maps), X)
+function create_cache(K::KroneckerMap, X)
+    maps = K.maps
+    if length(maps) == 2
+        A, B = maps
+        cache = _create_cache(A, B, X)
+    else
+        A = first(maps)
+        B = KroneckerMap{eltype(K)}(_tail(maps))
+        cache = _create_cache(A, B, X)
+    end
+    return cache
+end
+
+function _unsafe_mul!(Y, K::KroneckerMap, X::AbstractMatrix; cache=create_cache(K, X))
+    Xcol = eachcol(X)
+    z = similar(first(Xcol))
+    for (Xi, Yi) in zip(Xcol, eachcol(Y))
+        copyto!(z, Xi)
+        _unsafe_mul!(Yi, K, z, cache=cache)
+    end
+    return Y
+end
+function _unsafe_mul!(y, K::OuterProductMap, X::AbstractMatrix; cache=create_cache(K, X))
+    a, bt = K.maps
+    mul!(cache, bt.lmap, X)
+    mul!(y, a.lmap, cache)
+end
+
 
 ###############
 # KroneckerSumMap
