@@ -5,6 +5,7 @@ IterativeSolvers = "42fd0dbc-a981-5370-80f2-aaf504508153"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 LinearMaps = "7a12625a-238d-50fd-b39a-03d52299707e"
 Literate = "98b081ad-f1c9-55d3-8b20-4c87d4299306"
+Preconditioners = "af69fa37-3177-5a40-98ee-561f696e4fcd"
 
 [compat]
 BenchmarkTools = "1"
