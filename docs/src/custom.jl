@@ -35,7 +35,13 @@ Base.size(A::MyFillMap) = A.size
 # on the level of `mul!` etc. Factoring out dimension checking is done to minimise overhead
 # caused by repetitive checking.
 
-function LinearMaps._unsafe_mul!(y::AbstractVecOrMat, A::MyFillMap, x::AbstractVector)
+# !!! note
+#     Multiple dispatch at the `_unsafe_mul!` level happens via the second (the map type)
+#     and the third arguments (`AbstractVector` or `AbstractMatrix`, see the
+#     [Application to matrices](@ref) section below). For that reason, the output argument
+#     can remain type-unbound.
+
+function LinearMaps._unsafe_mul!(y, A::MyFillMap, x::AbstractVector)
     return fill!(y, iszero(A.λ) ? zero(eltype(y)) : A.λ*sum(x))
 end
 
@@ -45,7 +51,8 @@ end
 # * in-place multiplication with vectors `mul!(y, A, x)`,
 # * in-place multiply-and-add with vectors `mul!(y, A, x, α, β)`,
 # * in-place multiplication and multiply-and-add with matrices `mul!(Y, A, X, α, β)`,
-# * conversion to a (sparse) matrix `Matrix(A)` and `sparse(A)`.
+# * conversion to a (sparse) matrix `Matrix(A)` and `sparse(A)`,
+# * complete slicing of columns (and rows if the adjoint action is defined).
 
 A = MyFillMap(5.0, (3, 3)); x = ones(3); sum(x)
 
@@ -80,20 +87,14 @@ using BenchmarkTools
 
 # The second benchmark indicates the allocation of an intermediate vector `z`
 # which stores the result of `A*x` before it gets scaled and added to (the scaled)
-# `y = zeros(3)`. For that reason, it is beneficial to provide a custom "5-arg `mul!`"
-# if you can avoid the allocation of an intermediate vector. To indicate that there
-# exists an allocation-free implementation, you should set the `MulStyle` trait,
-# whose default is `ThreeArg()`.
+# `y = zeros(3)`. For that reason, it is beneficial to provide a custom "5-arg
+# `_unsafe_mul!`" if you can avoid the allocation of an intermediate vector. To indicate
+# that there exists an allocation-free implementation of multiply-and-add, you should set
+# the `MulStyle` trait, whose default is `ThreeArg()`, to `FiveArg()`.
 
 LinearMaps.MulStyle(A::MyFillMap) = FiveArg()
 
-function LinearMaps._unsafe_mul!(
-    y::AbstractVecOrMat,
-    A::MyFillMap,
-    x::AbstractVector,
-    α::Number,
-    β::Number
-)
+function LinearMaps._unsafe_mul!(y, A::MyFillMap, x::AbstractVector, α, β)
     if iszero(α)
         !isone(β) && rmul!(y, β)
         return y
@@ -159,7 +160,7 @@ try MyFillMap(5.0, (3, 4))' * ones(3) catch e println(e) end
 # wrapped map types; for instance,
 
 function LinearMaps._unsafe_mul!(
-    y::AbstractVecOrMat,
+    y,
     transA::LinearMaps.TransposeMap{<:Any,<:MyFillMap},
     x::AbstractVector
 )
@@ -183,7 +184,7 @@ MyFillMap(5.0, (3, 4))' * ones(3)
 Base.delete_method(
     first(methods(
         LinearMaps._unsafe_mul!,
-        (AbstractVecOrMat, LinearMaps.TransposeMap{<:Any,<:MyFillMap}, AbstractVector))
+        (Any, LinearMaps.TransposeMap{<:Any,<:MyFillMap}, AbstractVector))
     )
 )
 
@@ -222,13 +223,13 @@ mul!(similar(x)', x', A)
 # Calling the in-place multiplication function `mul!(Y, A, X)` for matrices,
 # however, does compute the columnwise action of `A` on `X` and stores the
 # result in `Y`. In case there is a more efficient implementation for the
-# matrix application, you can provide `mul!` methods with signature
-# `mul!(Y::AbstractMatrix, A::MyFillMap, X::AbstractMatrix)`, and, depending
+# matrix application, you can provide `_unsafe_mul!` methods with signature
+# `_unsafe_mul!(Y, A::MyFillMap, X::AbstractMatrix)`, and, depending
 # on the chosen path to handle adjoints/transposes, corresponding methods
 # for wrapped maps of type `AdjointMap` or `TransposeMap`, plus potentially
 # corresponding 5-arg `mul!` methods. This may seem like a lot of methods to
 # be implemented, but note that adding such methods is only necessary/recommended
-# for performance.
+# for increased performance.
 
 # ## Computing a matrix representation
 
@@ -250,7 +251,7 @@ M = Matrix{eltype(F)}(undef, size(F))
 # for instance (as before, size checks need not be included here since they are handled by
 # the corresponding `LinearAlgebra.mul!` method):
 
-LinearMaps._unsafe_mul!(M::AbstractMatrix, A::MyFillMap, s::Number) = fill!(M, A.λ*s)
+LinearMaps._unsafe_mul!(M, A::MyFillMap, s::Number) = fill!(M, A.λ*s)
 @benchmark Matrix($F)
 
 #-

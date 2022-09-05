@@ -72,6 +72,16 @@ kronsum
 LinearMaps.:⊕
 ```
 
+There exist alternative constructors of Kronecker products and sums for square factors and
+summands, respectively. These are designed for cases of 3 or more arguments, and
+benchmarking intended use cases for comparison with `KroneckerMap` and `KroneckerSumMap`
+is recommended.
+
+```@docs
+squarekron
+sumkronsum
+```
+
 ### `BlockMap` and `BlockDiagonalMap`
 
 Types for representing block (diagonal) maps lazily.
@@ -96,6 +106,15 @@ LinearMaps.FillMap
 
 Type for representing linear maps that are embedded in larger zero maps.
 
+
+### `InverseMap`
+
+Type for lazy inverse of another linear map.
+
+```@docs
+LinearMaps.InverseMap
+```
+
 ## Methods
 
 ### Multiplication methods
@@ -107,6 +126,7 @@ Base.:*(::AbstractMatrix,::LinearMap)
 LinearAlgebra.mul!(::AbstractVecOrMat,::LinearMap,::AbstractVector)
 LinearAlgebra.mul!(::AbstractVecOrMat,::LinearMap,::AbstractVector,::Number,::Number)
 LinearAlgebra.mul!(::AbstractMatrix,::AbstractMatrix,::LinearMap)
+LinearAlgebra.mul!(::AbstractMatrix,::AbstractMatrix,::LinearMap,::Number,::Number)
 LinearAlgebra.mul!(::AbstractVecOrMat,::LinearMap,::Number)
 LinearAlgebra.mul!(::AbstractMatrix,::LinearMap,::Number,::Number,::Number)
 *(::LinearAlgebra.AdjointAbsVec,::LinearMap)

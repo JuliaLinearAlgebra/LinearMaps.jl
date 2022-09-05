@@ -1,5 +1,19 @@
 # Version history
 
+## What's new in v3.8
+
+* A new map called [`InverseMap`](@ref) is introduced. Letting an `InverseMap` act on a
+  vector is equivalent to solving the linear system, i.e. `InverseMap(A) * b` is the same as
+  `A \ b`. The default solver is `ldiv!`, but can be specified with the `solver` keyword
+  argument to the constructor (see the docstring for details). Note that `A` must be
+  compatible with the solver: `A` can, for example, be a factorization, or another
+  `LinearMap` in combination with an iterative solver.
+* New constructors for lazy representations of Kronecker products ([`squarekron`](@ref))
+  and sums ([`sumkronsum`](@ref)) for _square_ factors and summands, respectively, are
+  introduced. They target cases with 3 or more factors/summands, and benchmarking intended
+  use cases for comparison with `KroneckerMap` (constructed via [`Base.kron`](@ref)) and
+  `KroneckerSumMap` (constructed via [`kronsum`](@ref)) is recommended.
+
 ## What's new in v3.7
 
 * `mul!(M::AbstractMatrix, A::LinearMap, s::Number, a, b)` methods are provided, mimicking
@@ -107,7 +121,7 @@
   For custom `LinearMap` subtypes, there are now two options:
   1. In case your type is invariant under adjoint/transposition (i.e.,
      `adjoint(L::MyLinearMap)::MyLinearMap` similar to, for instance,
-     `LinearCombination`s or `CompositeMap`s, `At_mul_B!` and `Ac_mul_B!` do
+     `LinearCombination`s or `CompositeMap`s), `At_mul_B!` and `Ac_mul_B!` do
      not require any replacement! Rather, multiplication by `L'` is, in this case,
      handled by `mul!(y, L::MyLinearMap, x[, α, β])`.
   2. Otherwise, you will need to define `mul!` methods with the signature

@@ -39,3 +39,5 @@ include("nontradaxes.jl")
 include("embeddedmap.jl")
 
 include("getindex.jl")
+
+include("inversemap.jl")

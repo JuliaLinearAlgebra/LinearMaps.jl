@@ -38,7 +38,6 @@ julia> A=LinearMap([1.0 2.0; 3.0 4.0]); x=[1.0, 1.0]; transpose(x)*A
 Base.:(*)(y::LinearAlgebra.TransposeAbsVec, A::LinearMap) = transpose(transpose(A) * transpose(y))
 
 # multiplication with vector/matrix
-const TransposeAbsVecOrMat{T} = Transpose{T,<:AbstractVecOrMat}
 
 # handles both y::AbstractMatrix and y::AdjointAbsVecOrMat
 """
@@ -60,34 +59,45 @@ julia> C
 """
 function mul!(X::AbstractMatrix, Y::AbstractMatrix, A::LinearMap)
     check_dim_mul(X, Y, A)
+    _unsafe_mul!(X, Y, A)
+    return X
+end
+
+function _unsafe_mul!(X, Y::AbstractMatrix, A::LinearMap)
     _unsafe_mul!(X', A', Y')
     return X
 end
-
-function mul!(X::AbstractMatrix, Y::TransposeAbsVecOrMat, A::LinearMap)
-    check_dim_mul(X, Y, A)
+function _unsafe_mul!(X, Y::TransposeAbsVecOrMat, A::LinearMap)
     _unsafe_mul!(transpose(X), transpose(A), transpose(Y))
     return X
 end
+# unwrap WrappedMaps
+_unsafe_mul!(X, Y::AbstractMatrix, A::WrappedMap) = _unsafe_mul!(X, Y, A.lmap)
+# disambiguation
+_unsafe_mul!(X, Y::TransposeAbsVecOrMat, A::WrappedMap) = _unsafe_mul!(X, Y, A.lmap)
 
-# commutative case, handles both the abstract and adjoint case
-function mul!(X::AbstractMatrix{<:RealOrComplex}, Y::AbstractMatrix{<:RealOrComplex}, A::LinearMap{<:RealOrComplex},
-                α::RealOrComplex, β::RealOrComplex)
+"""
+    mul!(C::AbstractMatrix, A::AbstractMatrix, B::LinearMap, α, β) -> C
+
+Combined inplace multiply-add ``A B α + C β``. The result is stored in `C` by overwriting
+it. Note that `C` must not be aliased with either `A` or `B`.
+
+## Examples
+```jldoctest; setup=(using LinearAlgebra, LinearMaps)
+julia> A=[1.0 1.0; 1.0 1.0]; B=LinearMap([1.0 2.0; 3.0 4.0]); C = copy(A);
+
+julia> mul!(C, A, B, 1, 1)
+2×2 Matrix{Float64}:
+ 5.0  7.0
+ 5.0  7.0
+```
+"""
+function mul!(X::AbstractMatrix, Y::AbstractMatrix, A::LinearMap, α, β)
     check_dim_mul(X, Y, A)
-    _unsafe_mul!(X', A', Y', conj(α), conj(β))
-    return X
+    _unsafe_mul!(X, Y, A, α, β)
 end
 
-function mul!(X::AbstractMatrix{<:RealOrComplex}, Y::TransposeAbsVecOrMat{<:RealOrComplex}, A::LinearMap{<:RealOrComplex},
-                α::RealOrComplex, β::RealOrComplex)
-    check_dim_mul(X, Y, A)
-    _unsafe_mul!(transpose(X), transpose(A), transpose(Y), α, β)
-    return X
-end
-
-# non-commutative case
-function mul!(X::AbstractMatrix, Y::AbstractMatrix, A::LinearMap, α::Number, β::Number)
-    check_dim_mul(X, Y, A)
+function _unsafe_mul!(X, Y::AbstractMatrix, A::LinearMap, α, β)
     if iszero(β)
         _unsafe_mul!(X', conj(α)*A', Y')
     else
@@ -96,3 +106,8 @@ function mul!(X::AbstractMatrix, Y::AbstractMatrix, A::LinearMap, α::Number, β
     end
     return X
 end
+# unwrap WrappedMaps
+_unsafe_mul!(X, Y::AbstractMatrix, A::WrappedMap, α, β) = _unsafe_mul!(X, Y, A.lmap, α, β)
+# disambiguation
+_unsafe_mul!(X, Y::TransposeAbsVecOrMat, A::WrappedMap, α, β) =
+    _unsafe_mul!(X, Y, A.lmap, α, β)

@@ -1,8 +1,9 @@
 module LinearMaps
 
 export LinearMap
-export ⊗, kronsum, ⊕
+export ⊗, squarekron, kronsum, ⊕, sumkronsum
 export FillMap
+export InverseMap
 
 using LinearAlgebra
 import LinearAlgebra: mul!
@@ -19,6 +20,7 @@ abstract type LinearMap{T} end
 
 const MapOrVecOrMat{T} = Union{LinearMap{T}, AbstractVecOrMat{T}}
 const MapOrMatrix{T} = Union{LinearMap{T}, AbstractMatrix{T}}
+const TransposeAbsVecOrMat{T} = Transpose{T,<:AbstractVecOrMat}
 const RealOrComplex = Union{Real, Complex}
 
 const LinearMapTuple = Tuple{Vararg{LinearMap}}
@@ -79,10 +81,12 @@ function check_dim_mul(C, A, B)
     return nothing
 end
 
+_issquare(A) = size(A, 1) == size(A, 2)
+
 _front(As::Tuple) = Base.front(As)
-_front(As::AbstractVector) = @inbounds @views As[1:end-1]
+_front(As::AbstractVector) = @inbounds @views As[begin:end-1]
 _tail(As::Tuple) = Base.tail(As)
-_tail(As::AbstractVector) = @inbounds @views As[2:end]
+_tail(As::AbstractVector) = @inbounds @views As[begin+1:end]
 
 _combine(A::LinearMap, B::LinearMap) = tuple(A, B)
 _combine(A::LinearMap, Bs::LinearMapTuple) = tuple(A, Bs...)
@@ -260,15 +264,13 @@ end
 
 _unsafe_mul!(y, A::MapOrVecOrMat, x) = mul!(y, A, x)
 _unsafe_mul!(y, A::AbstractVecOrMat, x, α, β) = mul!(y, A, x, α, β)
-_unsafe_mul!(y::AbstractVecOrMat, A::LinearMap, x::AbstractVector, α, β) =
-    _generic_map_mul!(y, A, x, α, β)
-_unsafe_mul!(y::AbstractMatrix, A::LinearMap, x::AbstractMatrix) =
-    _generic_map_mul!(y, A, x)
-_unsafe_mul!(y::AbstractMatrix, A::LinearMap, x::AbstractMatrix, α::Number, β::Number) =
-    _generic_map_mul!(y, A, x, α, β)
-_unsafe_mul!(Y::AbstractMatrix, A::LinearMap, s::Number) = _generic_map_mul!(Y, A, s)
-_unsafe_mul!(Y::AbstractMatrix, A::LinearMap, s::Number, α::Number, β::Number) =
-    _generic_map_mul!(Y, A, s, α, β)
+_unsafe_mul!(X, Y::AbstractMatrix, A::AbstractVecOrMat) = mul!(X, Y, A)
+_unsafe_mul!(X, Y::AbstractMatrix, A::AbstractVecOrMat, α, β) = mul!(X, Y, A, α, β)
+_unsafe_mul!(y, A::LinearMap, x::AbstractVector, α, β) = _generic_map_mul!(y, A, x, α, β)
+_unsafe_mul!(y, A::LinearMap, x::AbstractMatrix) = _generic_map_mul!(y, A, x)
+_unsafe_mul!(y, A::LinearMap, x::AbstractMatrix, α, β) = _generic_map_mul!(y, A, x, α, β)
+_unsafe_mul!(Y, A::LinearMap, s::Number) = _generic_map_mul!(Y, A, s)
+_unsafe_mul!(Y, A::LinearMap, s::Number, α, β) = _generic_map_mul!(Y, A, s, α, β)
 
 function _generic_map_mul!(y, A, x::AbstractVector, α, β)
     # this function needs to call mul! for, e.g.,  AdjointMap{...,<:CustomMap}
@@ -332,9 +334,9 @@ function _generic_map_mul!(Y, A, s::Number, α, β)
     return Y
 end
 
-include("left.jl") # left multiplication by a transpose or adjoint vector
 include("transpose.jl") # transposing linear maps
 include("wrappedmap.jl") # wrap a matrix of linear map in a new type, thereby allowing to alter its properties
+include("left.jl") # left multiplication by a matrix/transpose or adjoint vector
 include("uniformscalingmap.jl") # the uniform scaling map, to be able to make linear combinations of LinearMap objects and multiples of I
 include("linearcombination.jl") # defining linear combinations of linear maps
 include("scaledmap.jl") # multiply by a (real or complex) scalar
@@ -347,6 +349,7 @@ include("embeddedmap.jl") # embedded linear maps
 include("conversion.jl") # conversion of linear maps to matrices
 include("show.jl") # show methods for LinearMap objects
 include("getindex.jl") # getindex functionality
+include("inversemap.jl")
 include("chainrules.jl") # AD rules through ChainRulesCore
 
 """
