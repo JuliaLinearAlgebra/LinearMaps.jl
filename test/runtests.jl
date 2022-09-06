@@ -4,8 +4,6 @@ using Test, LinearMaps, Aqua
     Aqua.test_all(LinearMaps)
 end
 
-include("rrules.jl")
-
 include("linearmaps.jl")
 
 include("transpose.jl")
@@ -41,3 +39,5 @@ include("embeddedmap.jl")
 include("getindex.jl")
 
 include("inversemap.jl")
+
+include("rrules.jl")

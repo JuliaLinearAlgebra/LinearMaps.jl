@@ -1,21 +1,16 @@
-using Flux, LinearAlgebra
+using Test, LinearMaps, ChainRulesTestUtils
+using ChainRulesCore: NoTangent
 
 @testset "AD rules" begin
-    A = LinearMap(rand(10, 10))
     x = randn(10)
-    g1 = A'*A*x
-    # Multiplication rule
-    g2 = gradient(x -> .5*norm(A*x)^2, x)
-    @test g1 ≈ g2[1]
-    # Call rule
-    g3 = gradient(x -> .5*norm(A(x))^2, x)
-    @test g1 ≈ g3[1]
-
-    g1 = A*A'*x
-    # Multiplication rule
-    g2 = gradient(x -> .5*norm(A'*x)^2, x)
-    @test g1 ≈ g2[1]
-    # Call rule
-    g3 = gradient(x -> .5*norm(A'(x))^2, x)
-    @test g1 ≈ g3[1]
+    for A in (
+        LinearMap(rand(10, 10)),
+        LinearMap(cumsum, reverse∘cumsum∘reverse, 10),
+        LinearMap((y, x) -> cumsum!(y, x), (y, x) -> reverse!(cumsum!(y, reverse!(copyto!(y, x)))), 10)
+    )
+        test_rrule(*, A ⊢ NoTangent(), x)
+        test_rrule(A ⊢ NoTangent(), x)
+        test_rrule(*, A' ⊢ NoTangent(), x)
+        test_rrule(A' ⊢ NoTangent(), x)
+    end
 end

@@ -1,4 +1,4 @@
-function rrule(::typeof(*), A::LinearMap, x::AbstractVecOrMat)
+function rrule(::typeof(*), A::LinearMap, x::AbstractVector)
     y = A*x
     function pullback(dy)
       DY = unthunk(dy)
@@ -8,8 +8,8 @@ function rrule(::typeof(*), A::LinearMap, x::AbstractVecOrMat)
     return y, pullback
 end
 
-function rrule(A::LinearMap, x::AbstractVecOrMat)
-    y = A(x)
+function rrule(A::LinearMap, x::AbstractVector)
+    y = A*x
     function pullback(dy)
       DY = unthunk(dy)
       # Because A is an abstract map, the product is only differentiable w.r.t the input
