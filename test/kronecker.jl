@@ -38,7 +38,7 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
             @test L * v ≈ M * v
         end
         L = ones(3) ⊗ (b = rand(ComplexF64, 4))
-        @test L * [2] ≈ kron(ones(3), b) * 2
+        @test Matrix(L) == kron(ones(3), b)
         L = ones(3) ⊗ ones(ComplexF64, 4)'
         v = rand(4)
         @test Matrix(L) == ones(3,4)
