@@ -2,6 +2,11 @@
 
 ## What's new in v3.8
 
+* Linear Maps are now differentiable w.r.t to the input via Chainrules for integration with
+  machine learning framewiorks such as [Flux.jl]. The reverse differentiation rule is definded such that
+  `A*x` where `A` is the linear map can be differentiated w.r.t to `x` making `A` usable as a static (non trainable) 
+  layer in a network. Future extension will include forward differentiation rules and
+  trainable maps (differentiable w.r.t to A).
 * A new map called [`InverseMap`](@ref) is introduced. Letting an `InverseMap` act on a
   vector is equivalent to solving the linear system, i.e. `InverseMap(A) * b` is the same as
   `A \ b`. The default solver is `ldiv!`, but can be specified with the `solver` keyword
