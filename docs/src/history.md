@@ -3,7 +3,7 @@
 ## What's new in v3.8
 
 * Linear Maps are now differentiable w.r.t to the input via Chainrules for integration with
-  machine learning framewiorks such as [Flux.jl]. The reverse differentiation rule is definded such that
+  machine learning frameworks such as [Flux.jl]. The reverse differentiation rule is defined such that
   `A*x` where `A` is the linear map can be differentiated w.r.t to `x` making `A` usable as a static (non trainable) 
   layer in a network. Future extension will include forward differentiation rules and
   trainable maps (differentiable w.r.t to A).
