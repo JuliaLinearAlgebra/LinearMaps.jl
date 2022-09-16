@@ -1,7 +1,7 @@
 module LinearMaps
 
 export LinearMap
-export ⊗, squarekron, kronsum, ⊕, sumkronsum
+export ⊗, squarekron, kronsum, ⊕, sumkronsum, khatrirao, facesplitting
 export FillMap
 export InverseMap
 
@@ -344,6 +344,7 @@ include("composition.jl") # composition of linear maps
 include("functionmap.jl") # using a function as linear map
 include("blockmap.jl") # block linear maps
 include("kronecker.jl") # Kronecker product of linear maps
+include("khatrirao.jl") # Khatri-Rao and face-splitting products
 include("fillmap.jl") # linear maps representing constantly filled matrices
 include("embeddedmap.jl") # embedded linear maps
 include("conversion.jl") # conversion of linear maps to matrices
