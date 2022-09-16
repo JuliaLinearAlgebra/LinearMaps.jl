@@ -39,3 +39,5 @@ include("embeddedmap.jl")
 include("getindex.jl")
 
 include("inversemap.jl")
+
+include("rrules.jl")
