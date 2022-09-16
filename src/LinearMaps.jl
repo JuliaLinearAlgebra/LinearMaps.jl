@@ -11,7 +11,7 @@ using SparseArrays
 
 import Statistics: mean
 
-using ChainRulesCore
+using ChainRulesCore: unthunk, NoTangent, @thunk
 import ChainRulesCore: rrule
 
 using Base: require_one_based_indexing
