@@ -50,8 +50,8 @@ import Arpack, IterativeSolvers, KrylovKit, TSVD, ArnoldiMethod
 # Example 1, 1-dimensional Laplacian with periodic boundary conditions
 function leftdiff!(y::AbstractVector, x::AbstractVector) # left difference assuming periodic boundary conditions
     N = length(x)
-    length(y) == N || throw(DimensionMismatch())
-    @inbounds for i=1:N
+    axes(y) == axes(x) || throw(DimensionMismatch())
+    @inbounds for i in eachindex(x, y)
         y[i] = x[i] - x[mod1(i-1, N)]
     end
     return y
@@ -59,8 +59,8 @@ end
 
 function mrightdiff!(y::AbstractVector, x::AbstractVector) # minus right difference
     N = length(x)
-    length(y) == N || throw(DimensionMismatch())
-    @inbounds for i=1:N
+    axes(y) == axes(x) || throw(DimensionMismatch())
+    @inbounds for i in eachindex(x, y)
         y[i] = x[i] - x[mod1(i+1, N)]
     end
     return y
@@ -107,9 +107,55 @@ In Julia v1.3 and above, the last line can be simplified to
 
 ```julia
 KrylovKit.eigsolve(Δ, size(Δ, 1), 3, :LR)
-````
+```
 
 leveraging the fact that objects of type `L <: LinearMap` are callable.
+
+### Inverse map with conjugate gradient
+
+The `InverseMap` type can be used to lazily represent the inverse of an operator.
+When this map acts on a vector the linear system is solved. This can be used to solve a
+system of the form ``Sx = (C A^{-1} B) x = b`` without explicitly computing ``A^{-1}``
+(see for example solving a linear system using the
+[Schur complement](https://en.wikipedia.org/wiki/Schur_complement#Application_to_solving_linear_equations)).
+
+```julia
+using LinearMaps, IterativeSolvers
+
+A = [2.0 1.5 0.0
+     1.5 3.0 0.0
+     0.0 0.0 4.0]
+B = [2.0 0.0
+     0.0 1.0
+     0.0 0.0]
+C = B'
+b = [2.0, 3.0]
+
+# Use IterativeSolvers.cg! to solve the system with 0 as the initial guess
+linsolve = (x, A, b) -> IterativeSolvers.cg!(fill!(x, 0), A, b)
+
+# Construct the linear map S
+S = C * InverseMap(A; solver=linsolve) * B
+
+# Solve the system
+IterativeSolvers.cg(S, b)
+```
+
+In every CG iteration the linear map `S` will act on a vector `v`. Since `S` is a composed
+linear map, `S * v` is roughly equivalent to
+
+```julia
+# Apply first linear map B to v
+tmp1 = B * v
+# Apply second linear map: solve linear system with vector tmp1 as RHS
+tmp2 = A \ tmp1
+# Apply third linear map C to tmp2
+result = C * tmp2
+```
+
+i.e. inside the CG solver for solving `Sx = b` we use CG to solve another inner linear
+system.
+
 
 ## Philosophy
 

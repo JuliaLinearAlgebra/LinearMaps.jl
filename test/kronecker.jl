@@ -8,6 +8,12 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
         LA = LinearMap(A)
         LB = LinearMap(B)
         LK = @inferred kron(LA, LB)
+        LKv = @inferred LinearMaps.KroneckerMap{ComplexF64}([LA, LB])
+        @test LK * ones(6) ≈ LKv * ones(6)
+        @test Matrix(LK) ≈ K
+        @test LKv.maps isa Vector
+        LKv = LinearMaps.KroneckerMap{ComplexF64}([LA, LB, LA])
+        @test kron(A, B, A) * ones(18) ≈ LKv * ones(18)
         @test kron(LA, 2LB) isa LinearMaps.ScaledMap
         @test kron(3LA, LB) isa LinearMaps.ScaledMap
         @test kron(3LA, 2LB) isa LinearMaps.ScaledMap
@@ -21,7 +27,16 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
         for i in (1, 2)
             @test @inferred size(LK, i) == size(K, i)
         end
-        @test LK isa LinearMaps.KroneckerMap{ComplexF64}
+        C = randn(3, 4); D = randn(6, 5); v = ones(size(C, 2) * size(D, 2))
+        for (L, M) in (
+            (kron(LinearMap(C), D), kron(C, D)),
+            (kron(LinearMap(LinearMap(C)), D), kron(C, D)),
+            (kron(LinearMap(D), C), kron(D, C)),
+            (kron(LinearMap(LinearMap(D)), C), kron(D, C))
+            )
+            @test Matrix(L) ≈ M
+            @test L * v ≈ M * v
+        end
         L = ones(3) ⊗ ones(ComplexF64, 4)'
         v = rand(4)
         @test Matrix(L) == ones(3,4)
@@ -37,8 +52,10 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
         @test kron(A, A, A) ≈ Matrix(@inferred kron(LA, LA, LA)) ≈ Matrix(@inferred LA^⊗(3)) ≈ Matrix(@inferred A^⊗(3))
         LAs = LinearMap(sparse(A))
         K = @inferred kron(A, A, A, LAs)
+        VERSION > v"1.7" && @inferred squarekron(A, A, LAs)
+        K2 = squarekron(A, A, A, LAs)
         @test K isa LinearMaps.KroneckerMap
-        @test Matrix(K) ≈ kron(A, A, A, A)
+        @test Matrix(K) ≈ Matrix(K2) ≈ kron(A, A, A, A)
         @test convert(AbstractMatrix, K) isa SparseMatrixCSC
         @test convert(AbstractMatrix, K) ≈ kron(A, A, A, A)
         @test sparse(K) ≈ kron(A, A, A, A)
@@ -63,6 +80,8 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
         @test @inferred ishermitian(kron(LA'LA, LB'LB))
         # use mixed-product rule
         K = kron(LA, LB) * kron(LA, LB) * kron(LA, LB)
+        Kv = LinearMaps.CompositeMap{ComplexF64}(fill(LA ⊗ LB, 3))
+        @test kron(A, B)^3 * ones(6) ≈ Kv * ones(6)
         @test Matrix(K) ≈ kron(A, B)^3
         # example that doesn't use mixed-product rule
         A = rand(3, 2); B = rand(2, 3)
@@ -90,31 +109,32 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
     end
 
     @testset "Kronecker sum" begin
-        for elty in (Float64, ComplexF64)
-            A = rand(elty, 3, 3)
-            B = rand(elty, 2, 2)
-            LA = LinearMap(A)
-            LB = LinearMap(B)
-            KS = @inferred kronsum(LA, B)
-            @test occursin("6×6 LinearMaps.KroneckerSumMap{$elty}", sprint((t, s) -> show(t, "text/plain", s), KS))
-            @test_throws ArgumentError kronsum(LA, [B B]) # non-square map
-            KSmat = kron(A, Matrix(I, 2, 2)) + kron(Matrix(I, 3, 3), B)
-            @test Matrix(KS) ≈ Matrix(kron(A, LinearMap(I, 2)) + kron(LinearMap(I, 3), B))
-            @test KS * ones(size(KS, 2)) ≈ KSmat * ones(size(KS, 2))
-            @test size(KS) == size(kron(A, Matrix(I, 2, 2)))
-            for transform in (identity, transpose, adjoint)
-                @test Matrix(transform(KS)) ≈ transform(Matrix(KS)) ≈ transform(KSmat)
-                @test Matrix(kronsum(transform(LA), transform(LB))) ≈ transform(KSmat)
-                @test Matrix(transform(LinearMap(kronsum(LA, LB)))) ≈ Matrix(transform(KS)) ≈ transform(KSmat)
-            end
-            @test @inferred(kronsum(A, A, LB)) == @inferred(⊕(A, A, B))
-            @test Matrix(@inferred LA^⊕(3)) == Matrix(@inferred A^⊕(3)) ≈ Matrix(kronsum(LA, A, A))
-            @test @inferred(kronsum(LA, LA, LB)) == @inferred(kronsum(LA, kronsum(LA, LB))) == @inferred(kronsum(A, A, B))
-            @test Matrix(@inferred kronsum(A, B, A, B, A, B)) ≈ Matrix(@inferred kronsum(LA, LB, LA, LB, LA, LB))
-            T = typeof(kron(Diagonal(rand(elty, 3)), sprand(3, 3, 0.3)))
-            @test convert(AbstractMatrix, kronsum(sparse(A), sparse(B), sparse(A))) isa T
-            @test convert(AbstractMatrix, kronsum(A, B, A)) == Matrix(kronsum(A, B, A))
-            @test sparse(kronsum(sparse(A), B, A)) == Matrix(kronsum(sparse(A), B, A))
+        A = rand(Float64, 3, 3)
+        B = rand(Float64, 2, 2)
+        LA = LinearMap(A)
+        LB = LinearMap(B)
+        KS = @inferred kronsum(LA, B)
+        KS2 = @inferred sumkronsum(LA, B)
+        @test occursin("6×6 LinearMaps.KroneckerSumMap{Float64}", sprint((t, s) -> show(t, "text/plain", s), KS))
+        @test_throws ArgumentError kronsum(LA, [B B]) # non-square map
+        KSmat = kron(A, Matrix(I, 2, 2)) + kron(Matrix(I, 3, 3), B)
+        @test Matrix(KS) ≈ Matrix(KS2) ≈ Matrix(kron(A, LinearMap(I, 2)) + kron(LinearMap(I, 3), B))
+        v = ones(size(KS, 2))
+        @test KS * v ≈ KS2 * v ≈ KSmat * v
+        @test size(KS) == size(kron(A, Matrix(I, 2, 2)))
+        for transform in (identity, transpose, adjoint)
+            @test Matrix(transform(KS)) ≈ transform(Matrix(KS)) ≈ transform(KSmat)
+            @test Matrix(kronsum(transform(LA), transform(LB))) ≈ transform(KSmat)
+            @test Matrix(transform(LinearMap(kronsum(LA, LB)))) ≈ Matrix(transform(KS)) ≈ transform(KSmat)
         end
+        @test @inferred(kronsum(A, A, LB)) == @inferred(⊕(A, A, B))
+        @test Matrix(@inferred LA^⊕(2)) == Matrix(@inferred A^⊕(2)) ≈ Matrix(kronsum(LA, A))
+        @test Matrix(@inferred LA^⊕(3)) == Matrix(@inferred A^⊕(3)) ≈ Matrix(kronsum(LA, A, A))
+        @test @inferred(kronsum(LA, LA, LB)) == @inferred(kronsum(LA, kronsum(LA, LB))) == @inferred(kronsum(A, A, B))
+        @test Matrix(@inferred kronsum(A, B, A, B, A, B)) ≈ Matrix(@inferred kronsum(LA, LB, LA, LB, LA, LB))
+        T = typeof(kron(Diagonal(rand(3)), sprand(3, 3, 0.3)))
+        @test convert(AbstractMatrix, kronsum(sparse(A), sparse(B), sparse(A))) isa T
+        @test convert(AbstractMatrix, kronsum(A, B, A)) == Matrix(kronsum(A, B, A))
+        @test sparse(kronsum(sparse(A), B, A)) == Matrix(kronsum(sparse(A), B, A))
     end
 end

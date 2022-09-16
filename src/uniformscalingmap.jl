@@ -51,34 +51,33 @@ Base.:(*)(xc::LinearAlgebra.AdjointAbsVec, J::UniformScalingMap) = xc * J.λ
 Base.:(*)(xt::LinearAlgebra.TransposeAbsVec, J::UniformScalingMap) = xt * J.λ
 
 # multiplication with vector/matrix
-for (In, Out) in ((AbstractVector, AbstractVecOrMat), (AbstractMatrix, AbstractMatrix))
+for In in (AbstractVector, AbstractMatrix)
     @eval begin
-        function _unsafe_mul!(y::$Out, J::UniformScalingMap, x::$In)
-            _scaling!(y, J.λ, x, true, false)
-            return y
-        end
-        function _unsafe_mul!(y::$Out, J::UniformScalingMap{<:RealOrComplex}, x::$In{<:RealOrComplex},
-                    α::RealOrComplex, β::Number)
-            _scaling!(y, J.λ * α, x, true, β)
-            return y
-        end
-        function _unsafe_mul!(y::$Out, J::UniformScalingMap, x::$In,
-                    α::Number, β::Number)
-            _scaling!(y, J.λ, x, α, β)
-            return y
-        end
+        _unsafe_mul!(y, J::UniformScalingMap, x::$In) = _scaling!(y, J.λ, x, true, false)
+        _unsafe_mul!(y, J::UniformScalingMap{<:RealOrComplex}, x::$In{<:RealOrComplex},
+                    α::RealOrComplex, β) = _scaling!(y, J.λ * α, x, true, β)
+        _unsafe_mul!(y, J::UniformScalingMap, x::$In, α, β) = _scaling!(y, J.λ, x, α, β)
     end
 end
 
+function _unsafe_mul!(M, L::UniformScalingMap, s::Number, α=true, β=false)
+    LinearAlgebra._rmul_or_fill!(M, β)
+    c = L.λ * s * α
+    for (i,j) in zip(axes(L)...)
+        M[i,j] += c
+    end
+    return M
+end
+
 function _scaling!(y, λ, x, α, β)
-    if (iszero(α) || iszero(λ))
-        iszero(β) && return fill!(y, zero(eltype(y)))
-        isone(β) && return y
-        return rmul!(y, β)
-    elseif isone(α) && isone(λ)
+    if isone(α) && isone(λ)
         iszero(β) && return copyto!(y, x)
         isone(β) && return y .+= x
         return y .= y .* β .+ x
+    elseif (iszero(α) || iszero(λ))
+        iszero(β) && return fill!(y, zero(eltype(y)))
+        isone(β) && return y
+        return rmul!(y, β)
     elseif isone(α)
         iszero(β) && return y .= λ .* x
         isone(β) && return y .+= λ .* x

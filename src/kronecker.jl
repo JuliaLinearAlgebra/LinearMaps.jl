@@ -1,7 +1,7 @@
-struct KroneckerMap{T, As<:LinearMapTuple} <: LinearMap{T}
+struct KroneckerMap{T, As<:LinearMapTupleOrVector} <: LinearMap{T}
     maps::As
-    function KroneckerMap{T}(maps::LinearMapTuple) where {T}
-        for TA in Base.Generator(eltype, maps)
+    function KroneckerMap{T}(maps::LinearMapTupleOrVector) where {T}
+        for TA in Base.Iterators.map(eltype, maps)
             promote_type(T, TA) == T ||
                 error("eltype $TA cannot be promoted to $T in KroneckerMap constructor")
         end
@@ -47,11 +47,11 @@ julia> Matrix(Δ)
 Base.kron(A::LinearMap, B::LinearMap) =
     KroneckerMap{promote_type(eltype(A), eltype(B))}((A, B))
 Base.kron(A::LinearMap, B::KroneckerMap) =
-    KroneckerMap{promote_type(eltype(A), eltype(B))}(tuple(A, B.maps...))
+    KroneckerMap{promote_type(eltype(A), eltype(B))}(_combine(A, B.maps))
 Base.kron(A::KroneckerMap, B::LinearMap) =
-    KroneckerMap{promote_type(eltype(A), eltype(B))}(tuple(A.maps..., B))
+    KroneckerMap{promote_type(eltype(A), eltype(B))}(_combine(A.maps, B))
 Base.kron(A::KroneckerMap, B::KroneckerMap) =
-    KroneckerMap{promote_type(eltype(A), eltype(B))}(tuple(A.maps..., B.maps...))
+    KroneckerMap{promote_type(eltype(A), eltype(B))}(_combine(A.maps, B.maps))
 # hoist out scalings
 Base.kron(A::ScaledMap, B::LinearMap) = A.λ * kron(A.lmap, B)
 Base.kron(A::LinearMap, B::ScaledMap) = kron(A, B.lmap) * B.λ
@@ -79,6 +79,45 @@ for k in 3:8 # is 8 sufficient?
         kron($(mapargs...), $(Symbol(:A, k)), convert_to_lmaps(As...)...)
 end
 
+@doc raw"""
+    squarekron(A₁::MapOrMatrix, A₂::MapOrMatrix, A₃::MapOrMatrix, Aᵢ::MapOrMatrix...)::CompositeMap
+
+Construct a (lazy) representation of the Kronecker product `⨂ᵢ₌₁ⁿ Aᵢ` of at least 3 _square_
+Kronecker factors. In contrast to [`kron`](@ref), this function assumes that all Kronecker
+factors are square, and makes use of the following identity[^1]:
+
+```math
+\bigotimes_{i=1}^n A_i = \prod_{i=1}^n I_1 \otimes \ldots \otimes I_{i-1} \otimes A_i \otimes I_{i+1} \otimes \ldots \otimes I_n
+```
+
+where ``I_k`` is an identity matrix of the size of ``A_k``. By associativity, the
+Kronecker product of the identity operators may be combined to larger identity operators
+``I_{1:i-1}`` and ``I_{i+1:n}``, which yields
+
+```math
+\bigotimes_{i=1}^n A_i = \prod_{i=1}^n I_{1:i-1} \otimes A_i \otimes I_{i+1:n}
+```
+
+i.e., a `CompositeMap` where each factor is a Kronecker product consisting of three maps:
+outer `UniformScalingMap`s and the respective Kronecker factor. This representation is
+expected to yield significantly faster multiplication (and reduce memory allocation)
+compared to [`kron`](@ref), but benchmarking intended use cases is highly recommended.
+
+[^1]: Fernandes, P. and Plateau, B. and Stewart, W. J. ["Efficient Descriptor-Vector Multiplications in Stochastic Automata Networks"](https://doi.org/10.1145/278298.278303), _Journal of the ACM_, 45(3), 381–414, 1998.
+"""
+function squarekron(A::MapOrMatrix, B::MapOrMatrix, C::MapOrMatrix, Ds::MapOrMatrix...)
+    maps = (A, B, C, Ds...)
+    T = promote_type(map(eltype, maps)...)
+    all(_issquare, maps) || throw(ArgumentError("operators need to be square in Kronecker sums"))
+    ns = map(a -> size(a, 1), maps)
+    firstmap = first(maps) ⊗ UniformScalingMap(true, prod(ns[2:end]))
+    lastmap  = UniformScalingMap(true, prod(ns[1:end-1])) ⊗ last(maps)
+    middlemaps = prod(enumerate(maps[2:end-1])) do (i, map)
+        UniformScalingMap(true, prod(ns[1:i])) ⊗ map ⊗ UniformScalingMap(true, prod(ns[i+2:end]))
+    end
+    return firstmap * middlemaps * lastmap
+end
+
 struct KronPower{p}
     function KronPower(p::Integer)
         p > 1 || throw(ArgumentError("the Kronecker power is only defined for exponents larger than 1, got $k"))
@@ -97,7 +136,7 @@ Construct a lazy representation of the `k`-th Kronecker power
 ⊗(A, B, Cs...) = kron(convert_to_lmaps(A, B, Cs...)...)
 
 Base.:(^)(A::MapOrMatrix, ::KronPower{p}) where {p} =
-    kron(ntuple(n -> convert_to_lmaps_(A), Val(p))...)
+    kron(ntuple(n -> convert(LinearMap, A), Val(p))...)
 
 Base.size(A::KroneckerMap) = map(*, size.(A.maps)...)
 
@@ -107,87 +146,109 @@ LinearAlgebra.ishermitian(A::KroneckerMap) = all(ishermitian, A.maps)
 LinearAlgebra.adjoint(A::KroneckerMap) = KroneckerMap{eltype(A)}(map(adjoint, A.maps))
 LinearAlgebra.transpose(A::KroneckerMap) = KroneckerMap{eltype(A)}(map(transpose, A.maps))
 
-Base.:(==)(A::KroneckerMap, B::KroneckerMap) = (eltype(A) == eltype(B) && A.maps == B.maps)
+Base.:(==)(A::KroneckerMap, B::KroneckerMap) =
+    (eltype(A) == eltype(B) && all(A.maps .== B.maps))
 
 #################
 # multiplication helper functions
 #################
 
-@inline function _kronmul!(y, B, x, A, T)
-    ma, na = size(A)
-    mb, nb = size(B)
-    X = reshape(x, (nb, na))
-    Y = reshape(y, (mb, ma))
-    if B isa UniformScalingMap
-        _unsafe_mul!(Y, X, transpose(A))
-        lmul!(B.λ, y)
+@inline function _kronmul!(Y, B, X, A)
+    # minimize intermediate memory allocation
+    if size(B, 2) * size(A, 1) <= size(B, 1) * size(A, 2)
+        temp = similar(Y, (size(B, 2), size(A, 1) ))
+        _unsafe_mul!(temp, X, transpose(A))
+        _unsafe_mul!(Y, B, temp)
     else
-        temp = similar(Y, (ma, nb))
-        _unsafe_mul!(temp, A, copy(transpose(X)))
-        _unsafe_mul!(Y, B, transpose(temp))
+        temp = similar(Y, (size(B, 1), size(A, 2)))
+        _unsafe_mul!(temp, B, X)
+        _unsafe_mul!(Y, temp, transpose(A))
     end
-    return y
+    return Y
 end
-@inline function _kronmul!(y, B, x, A::UniformScalingMap, _)
-    ma, na = size(A)
-    mb, nb = size(B)
-    iszero(A.λ) && return fill!(y, zero(eltype(y)))
-    X = reshape(x, (nb, na))
-    Y = reshape(y, (mb, ma))
+@inline function _kronmul!(Y, B::UniformScalingMap, X, A)
+    _unsafe_mul!(Y, X, transpose(A))
+    !isone(B.λ) && lmul!(B.λ, Y)
+    return Y
+end
+@inline function _kronmul!(Y, B, X, A::UniformScalingMap)
     _unsafe_mul!(Y, B, X)
-    !isone(A.λ) && rmul!(y, A.λ)
-    return y
+    !isone(A.λ) && rmul!(Y, A.λ)
+    return Y
 end
-@inline function _kronmul!(y, B, x, A::VecOrMatMap, _)
-    ma, na = size(A)
-    mb, nb = size(B)
-    X = reshape(x, (nb, na))
-    Y = reshape(y, (mb, ma))
+# disambiguation (cannot occur)
+@inline function _kronmul!(Y, B::UniformScalingMap, X, A::UniformScalingMap)
+    mul!(parent(Y), A.λ * B.λ, parent(X))
+    return Y
+end
+@inline function _kronmul!(Y, B, X, A::VecOrMatMap)
     At = transpose(A.lmap)
-    if B isa UniformScalingMap
-        # the following is (perhaps due to the reshape?) faster than
-        # _unsafe_mul!(Y, B * X, At)
-        _unsafe_mul!(Y, X, At)
-        lmul!(B.λ, y)
-    elseif nb*ma <= mb*na
+    if size(B, 2) * size(A, 1) <= size(B, 1) * size(A, 2)
         _unsafe_mul!(Y, B, X * At)
     else
         _unsafe_mul!(Y, Matrix(B * X), At)
     end
-    return y
+    return Y
 end
+@inline function _kronmul!(Y, B::UniformScalingMap, X, A::VecOrMatMap)
+    _unsafe_mul!(Y, X, transpose(A.lmap))
+    !isone(B.λ) && lmul!(B.λ, Y)
+    return Y
+end
+
 const VectorMap{T} = WrappedMap{T,<:AbstractVector}
 const AdjOrTransVectorMap{T} = WrappedMap{T,<:LinearAlgebra.AdjOrTransAbsVec}
-@inline _kronmul!(y, B::AdjOrTransVectorMap, x, a::VectorMap, _) = mul!(y, a.lmap, B.lmap * x)
 
 #################
 # multiplication with vectors
 #################
 
 const KroneckerMap2{T} = KroneckerMap{T, <:Tuple{LinearMap, LinearMap}}
-
-function _unsafe_mul!(y::AbstractVecOrMat, L::KroneckerMap2, x::AbstractVector)
+const OuterProductMap{T} = KroneckerMap{T, <:Tuple{VectorMap, AdjOrTransVectorMap}}
+function _unsafe_mul!(y, L::OuterProductMap, x::AbstractVector)
+    a, bt = L.maps
+    mul!(y, a.lmap, bt.lmap * x)
+end
+function _unsafe_mul!(y, L::KroneckerMap2, x::AbstractVector)
     require_one_based_indexing(y)
     A, B = L.maps
-    _kronmul!(y, B, x, A, eltype(L))
+    ma, na = size(A)
+    mb, nb = size(B)
+    X = reshape(x, (nb, na))
+    Y = reshape(y, (mb, ma))
+    _kronmul!(Y, B, X, A)
     return y
 end
-function _unsafe_mul!(y::AbstractVecOrMat, L::KroneckerMap, x::AbstractVector)
+function _unsafe_mul!(y, L::KroneckerMap, x::AbstractVector)
     require_one_based_indexing(y)
-    A = first(L.maps)
-    B = kron(Base.tail(L.maps)...)
-    _kronmul!(y, B, x, A, eltype(L))
+    maps = L.maps
+    if length(maps) == 2 # reachable only for L.maps::Vector
+        A, B = maps
+        ma, na = size(A)
+        mb, nb = size(B)
+        X = reshape(x, (nb, na))
+        Y = reshape(y, (mb, ma))
+        _kronmul!(Y, B, X, A)
+    else
+        A = first(maps)
+        B = KroneckerMap{eltype(L)}(_tail(maps))
+        ma, na = size(A)
+        mb, nb = size(B)
+        X = reshape(x, (nb, na))
+        Y = reshape(y, (mb, ma))
+        _kronmul!(Y, B, X, A)
+    end
     return y
 end
 # mixed-product rule, prefer the right if possible
 # (A₁ ⊗ A₂ ⊗ ... ⊗ Aᵣ) * (B₁ ⊗ B₂ ⊗ ... ⊗ Bᵣ) = (A₁B₁) ⊗ (A₂B₂) ⊗ ... ⊗ (AᵣBᵣ)
-function _unsafe_mul!(y::AbstractVecOrMat,
+function _unsafe_mul!(y,
                         L::CompositeMap{<:Any,<:Tuple{KroneckerMap,KroneckerMap}},
                         x::AbstractVector)
     require_one_based_indexing(y)
     B, A = L.maps
     if length(A.maps) == length(B.maps) && all(_iscompatible, zip(A.maps, B.maps))
-        _unsafe_mul!(y, kron(map(*, A.maps, B.maps)...), x)
+        _unsafe_mul!(y, KroneckerMap{eltype(L)}(map(*, A.maps, B.maps)), x)
     else
         _unsafe_mul!(y, LinearMap(A)*B, x)
     end
@@ -195,14 +256,14 @@ function _unsafe_mul!(y::AbstractVecOrMat,
 end
 # mixed-product rule, prefer the right if possible
 # (A₁⊗B₁) * (A₂⊗B₂) * ... * (Aᵣ⊗Bᵣ) = (A₁*A₂*...*Aᵣ) ⊗ (B₁*B₂*...*Bᵣ)
-function _unsafe_mul!(y::AbstractVecOrMat,
-                        L::CompositeMap{T, <:Tuple{Vararg{KroneckerMap2}}},
+function _unsafe_mul!(y,
+                        L::CompositeMap{T, <:Union{Tuple{Vararg{KroneckerMap2}},AbstractVector{<:KroneckerMap2}}},
                         x::AbstractVector) where {T}
     require_one_based_indexing(y)
     As = map(AB -> AB.maps[1], L.maps)
     Bs = map(AB -> AB.maps[2], L.maps)
-    As1, As2 = Base.front(As), Base.tail(As)
-    Bs1, Bs2 = Base.front(Bs), Base.tail(Bs)
+    As1, As2 = _front(As), _tail(As)
+    Bs1, Bs2 = _front(Bs), _tail(Bs)
     apply = all(_iscompatible, zip(As1, As2)) && all(_iscompatible, zip(Bs1, Bs2))
     if apply
         _unsafe_mul!(y, kron(prod(As), prod(Bs)), x)
@@ -219,9 +280,9 @@ struct KroneckerSumMap{T, As<:Tuple{LinearMap, LinearMap}} <: LinearMap{T}
     maps::As
     function KroneckerSumMap{T}(maps::Tuple{LinearMap,LinearMap}) where {T}
         A1, A2 = maps
-        (size(A1, 1) == size(A1, 2) && size(A2, 1) == size(A2, 2)) ||
+        (_issquare(A1) && _issquare(A2)) ||
             throw(ArgumentError("operators need to be square in Kronecker sums"))
-        for TA in Base.Generator(eltype, maps)
+        for TA in Base.Iterators.map(eltype, maps)
             promote_type(T, TA) == T ||
                 error("eltype $TA cannot be promoted to $T in KroneckerSumMap constructor")
         end
@@ -263,6 +324,68 @@ kronsum(A::MapOrMatrix, B::MapOrMatrix) =
 kronsum(A::MapOrMatrix, B::MapOrMatrix, C::MapOrMatrix, Ds::MapOrMatrix...) =
     kronsum(A, kronsum(B, C, Ds...))
 
+@doc raw"""
+    sumkronsum(A, B)::LinearCombination
+    sumkronsum(A, B, Cs...)::LinearCombination
+
+Construct a (lazy) representation of the Kronecker sum `A⊕B` of two or more square
+objects of type `LinearMap` or `AbstractMatrix`. This function makes use of the following
+representation of Kronecker sums[^1]:
+
+```math
+\bigoplus_{i=1}^n A_i = \sum_{i=1}^n I_1 \otimes \ldots \otimes I_{i-1} \otimes A_i \otimes I_{i+1} \otimes \ldots \otimes I_n
+```
+
+where ``I_k`` is the identity operator of the size of ``A_k``. By associativity, the
+Kronecker product of the identity operators may be combined to larger identity operators
+``I_{1:i-1}`` and ``I_{i+1:n}``, which yields
+
+```math
+\bigoplus_{i=1}^n A_i = \sum_{i=1}^n I_{1:i-1} \otimes A_i \otimes I_{i+1:n},
+```
+
+i.e., a `LinearCombination` where each summand is a Kronecker product consisting of three
+maps: outer `UniformScalingMap`s and the respective Kronecker factor. This representation is
+expected to yield significantly faster multiplication (and reduce memory allocation)
+compared to [`kronsum`](@ref), especially for 3 or more Kronecker summands, but
+benchmarking intended use cases is highly recommended.
+
+# Examples
+```jldoctest; setup=(using LinearAlgebra, SparseArrays, LinearMaps)
+julia> J = LinearMap(I, 2) # 2×2 identity map
+2×2 LinearMaps.UniformScalingMap{Bool} with scaling factor: true
+
+julia> E = spdiagm(-1 => trues(1)); D = LinearMap(E + E' - 2I);
+
+julia> Δ₁ = kron(D, J) + kron(J, D); # discrete 2D-Laplace operator, Kronecker sum
+
+julia> Δ₂ = sumkronsum(D, D);
+
+julia> Δ₃ = D^⊕(2);
+
+julia> Matrix(Δ₁) == Matrix(Δ₂) == Matrix(Δ₃)
+true
+```
+
+[^1]: Fernandes, P. and Plateau, B. and Stewart, W. J. ["Efficient Descriptor-Vector Multiplications in Stochastic Automata Networks"](https://doi.org/10.1145/278298.278303), _Journal of the ACM_, 45(3), 381–414, 1998.
+"""
+function sumkronsum(A::MapOrMatrix, B::MapOrMatrix)
+    LinearAlgebra.checksquare(A, B)
+    A ⊗ UniformScalingMap(true, size(B,1)) + UniformScalingMap(true, size(A,1)) ⊗ B
+end
+function sumkronsum(A::MapOrMatrix, B::MapOrMatrix, C::MapOrMatrix, Ds::MapOrMatrix...)
+    maps = (A, B, C, Ds...)
+    all(_issquare, maps) || throw(ArgumentError("operators need to be square in Kronecker sums"))
+    ns = map(a -> size(a, 1), maps)
+    n = length(maps)
+    firstmap = first(maps) ⊗ UniformScalingMap(true, prod(ns[2:end]))
+    lastmap  = UniformScalingMap(true, prod(ns[1:end-1])) ⊗ last(maps)
+    middlemaps = sum(enumerate(Base.front(Base.tail(maps)))) do (i, map)
+        UniformScalingMap(true, prod(ns[1:i])) ⊗ map ⊗ UniformScalingMap(true, prod(ns[i+2:end]))
+    end
+    return firstmap + middlemaps + lastmap
+end
+
 struct KronSumPower{p}
     function KronSumPower(p::Integer)
         p > 1 || throw(ArgumentError("the Kronecker sum power is only defined for exponents larger than 1, got $k"))
@@ -274,14 +397,26 @@ end
     ⊕(k::Integer)
 
 Construct a lazy representation of the `k`-th Kronecker sum power `A^⊕(k) = A ⊕ A ⊕ ... ⊕ A`,
-where `A` can be a square `AbstractMatrix` or a `LinearMap`.
+where `A` can be a square `AbstractMatrix` or a `LinearMap`. This calls [`sumkronsum`](@ref)
+on the `k`-tuple `(A, ..., A)` for `k ≥ 3`.
+
+# Example
+```jldoctest
+julia> Matrix([1 0; 0 1]^⊕(2))
+4×4 Matrix{Int64}:
+ 2  0  0  0
+ 0  2  0  0
+ 0  0  2  0
+ 0  0  0  2
 """
 ⊕(k::Integer) = KronSumPower(k)
 
 ⊕(a, b, c...) = kronsum(a, b, c...)
 
+Base.:(^)(A::MapOrMatrix, ::KronSumPower{2}) =
+    kronsum(convert(LinearMap, A), convert(LinearMap, A))
 Base.:(^)(A::MapOrMatrix, ::KronSumPower{p}) where {p} =
-    kronsum(ntuple(n->convert_to_lmaps_(A), Val(p))...)
+    sumkronsum(ntuple(_ -> convert(LinearMap, A), Val(p))...)
 
 Base.size(A::KroneckerSumMap, i) = prod(size.(A.maps, i))
 Base.size(A::KroneckerSumMap) = (size(A, 1), size(A, 2))
@@ -295,14 +430,14 @@ LinearAlgebra.transpose(A::KroneckerSumMap) =
     KroneckerSumMap{eltype(A)}(map(transpose, A.maps))
 
 Base.:(==)(A::KroneckerSumMap, B::KroneckerSumMap) =
-    (eltype(A) == eltype(B) && A.maps == B.maps)
+    (eltype(A) == eltype(B) && all(A.maps .== B.maps))
 
-function _unsafe_mul!(y::AbstractVecOrMat, L::KroneckerSumMap, x::AbstractVector)
+function _unsafe_mul!(y, L::KroneckerSumMap, x::AbstractVector)
     A, B = L.maps
-    ma, na = size(A)
-    mb, nb = size(B)
-    X = reshape(x, (nb, na))
-    Y = reshape(y, (nb, na))
+    a = size(A, 1)
+    b = size(B, 1)
+    X = reshape(x, (b, a))
+    Y = reshape(y, (b, a))
     _unsafe_mul!(Y, X, transpose(A))
     _unsafe_mul!(Y, B, X, true, true)
     return y

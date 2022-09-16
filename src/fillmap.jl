@@ -32,11 +32,18 @@ function Base.:(*)(A::FillMap, x::AbstractVector)
     return fill(iszero(A.λ) ? zero(T) : A.λ*sum(x), A.size[1])
 end
 
-function _unsafe_mul!(y::AbstractVecOrMat, A::FillMap, x::AbstractVector)
+function _unsafe_mul!(y, A::FillMap, x::AbstractVector)
     return fill!(y, iszero(A.λ) ? zero(eltype(y)) : A.λ*sum(x))
 end
 
-function _unsafe_mul!(y::AbstractVecOrMat, A::FillMap, x::AbstractVector, α::Number, β::Number)
+_unsafe_mul!(Y, A::FillMap, x::Number) = fill!(Y, A.λ*x)
+function _unsafe_mul!(Y, A::FillMap, x::Number, α, β)
+    LinearAlgebra._rmul_or_fill!(Y, β)
+    Y .+= A.λ*x*α
+    return Y
+end
+
+function _unsafe_mul!(y, A::FillMap, x::AbstractVector, α, β)
     if iszero(α)
         !isone(β) && rmul!(y, β)
     else

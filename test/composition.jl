@@ -1,4 +1,5 @@
 using Test, LinearMaps, LinearAlgebra, SparseArrays
+using LinearMaps: LinearMapVector, LinearMapTuple
 
 @testset "composition" begin
     F = @inferred LinearMap(cumsum, reverse ∘ cumsum ∘ reverse, 10; ismutating=false)
@@ -23,9 +24,10 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
     F2 = F*F
     FC2 = FC*FC
     F4 = FC2 * F2
+    F4v = @inferred LinearMaps.CompositeMap{ComplexF64}([FC2, F2])
     @test occursin("10×10 LinearMaps.CompositeMap{$(eltype(F4))}", sprint((t, s) -> show(t, "text/plain", s), F4))
     @test length(F4.maps) == 4
-    @test @inferred F4 * v == @inferred F * (F * (F * (F * v)))
+    @test (@inferred F4 * v) == F4v * v == (@inferred F * (F * (F * (F * v))))
     @test @inferred Matrix(M * transpose(M)) ≈ A * transpose(A)
     @test @inferred !isposdef(M * transpose(M))
     @test @inferred isposdef(LinearMap(M * M', isposdef=true))
@@ -36,7 +38,9 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
     @test @inferred issymmetric(F'F)
     @test @inferred issymmetric(F'*S*F)
     @test @inferred ishermitian(F'F)
+    @test @inferred ishermitian(LinearMaps.CompositeMap{ComplexF64}([F, F']))
     @test @inferred ishermitian(F'*H*F)
+    @test @inferred ishermitian(LinearMaps.CompositeMap{ComplexF64}([F, H, F']))
     @test @inferred !issymmetric(FC'FC)
     @test @inferred ishermitian(FC'FC)
     @test @inferred ishermitian(FC'*H*FC)
@@ -55,7 +59,11 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
     R3 = rand(ComplexF64, 10, 10); L3 = LinearMap(R3)
     CompositeR = *(R1, R2, R3)
     CompositeL = prod(LinearMap, [R1, R2, R3])
-    @test @inferred L1 * L2 * L3 == CompositeL
+    @test prod([L1, L2, LinearMap(randn(10, 10))]) isa LinearMaps.CompositeMap{ComplexF64,<:LinearMapVector}
+    @test (@inferred prod([L1, L2, L3])) isa LinearMaps.CompositeMap{<:Any,<:LinearMapVector}
+    @test prod([L1, L2, L3]) == (@inferred L1 * prod([L2, L3])) == (@inferred prod([L1, L2]) * L3)
+    @test (@inferred prod((L1, L2, L3))) isa LinearMaps.CompositeMap{<:Any,<:LinearMapTuple}
+    @test (@inferred L1 * L2 * L3) == CompositeL == prod([L1, L2, L3])
     @test Matrix(L1 * L2) ≈ sparse(L1 * L2) ≈ R1 * R2
     @test Matrix(@inferred((α * L1) * (L2 * L3))::LinearMaps.ScaledMap) ≈ α * CompositeR
     @test Matrix(@inferred((L1 * L2) * (L3 * α))::LinearMaps.ScaledMap) ≈ α * CompositeR
@@ -137,5 +145,14 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
     B = LinearMap([1 0; 0 1], isposdef=true) # isposdef!
     C = B' * B * B * B * B # no B' at end on purpose
     @test @inferred isposdef(C)
+    @test @inferred isposdef(LinearMaps.CompositeMap{Float64}([B, B, B, B, B']))
     @test @inferred isposdef(B * B) # even case for empty tuple test
+    @test @inferred isposdef(LinearMaps.CompositeMap{Float64}([B, B]))
+
+    M = LinearMap(cumsum, 3)
+    for i in 1:4
+        P = prod(fill(M, i))
+        @test P isa LinearMaps.CompositeMap{<:Any,<:LinearMapVector}
+        @test P * ones(3) == (LowerTriangular(ones(3,3))^i) * ones(3)
+    end
 end

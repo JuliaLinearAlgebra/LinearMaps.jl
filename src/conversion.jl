@@ -1,21 +1,22 @@
 # Matrix: create matrix representation of LinearMap
 function Base.Matrix{T}(A::LinearMap) where {T}
-    M, N = size(A)
-    mat = Matrix{T}(undef, (M, N))
-    v = fill(zero(T), N)
-    @inbounds for i in 1:N
-        v[i] = one(T)
-        # need mul!, e.g., for TransposeMap{<:CustomMap}
-        mul!(view(mat, :, i), A, v)
-        v[i] = zero(T)
-    end
-    return mat
+    mat = Matrix{T}(undef, size(A))
+    _unsafe_mul!(mat, A, true)
 end
+
+function Base.AbstractMatrix{T}(A::LinearMap) where {T}
+    mat = similar(Array{T}, axes(A))
+    _unsafe_mul!(mat, A, true)
+end
+
 Base.Matrix(A::LinearMap{T}) where {T} = Matrix{T}(A)
+Base.AbstractMatrix(A::LinearMap{T}) where {T} = AbstractMatrix{T}(A)
+
 Base.Array(A::LinearMap) = Matrix(A)
 Base.convert(::Type{T}, A::LinearMap) where {T<:Matrix} = T(A)
 Base.convert(::Type{Array}, A::LinearMap) = convert(Matrix, A)
-Base.convert(::Type{AbstractMatrix}, A::LinearMap) = convert(Matrix, A)
+# Base.convert(::Type{AbstractMatrix}, A::LinearMap) = convert(Matrix, A)
+Base.convert(::Type{AbstractMatrix}, A::LinearMap) = AbstractMatrix(A)
 Base.convert(::Type{AbstractArray}, A::LinearMap) = convert(AbstractMatrix, A)
 
 # sparse: create sparse matrix representation of LinearMap
@@ -27,7 +28,7 @@ function SparseArrays.sparse(A::LinearMap{T}) where {T}
     v = fill(zero(T), N)
     Av = Vector{T}(undef, M)
 
-    @inbounds for i in 1:N
+    @inbounds for i in eachindex(v)
         v[i] = one(T)
         _unsafe_mul!(Av, A, v)
         js = findall(!iszero, Av)
@@ -48,13 +49,10 @@ SparseArrays.SparseMatrixCSC(A::LinearMap) = sparse(A)
 # special cases
 
 # ScaledMap
-Base.Matrix{T}(A::ScaledMap{<:Any, <:Any, <:VecOrMatMap}) where {T} =
-    convert(Matrix{T}, A.λ * A.lmap.lmap)
 SparseArrays.sparse(A::ScaledMap{<:Any, <:Any, <:VecOrMatMap}) =
     A.λ * sparse(A.lmap.lmap)
 
 # UniformScalingMap
-Base.Matrix{T}(J::UniformScalingMap) where {T} = Matrix{T}(J.λ*I, size(J))
 Base.convert(::Type{AbstractMatrix}, J::UniformScalingMap) = Diagonal(fill(J.λ, J.M))
 
 # WrappedMap
@@ -73,24 +71,18 @@ for (T, t) in ((AdjointMap, adjoint), (TransposeMap, transpose))
 end
 
 # LinearCombination
-function Base.Matrix{T}(ΣA::LinearCombination{<:Any, <:Tuple{Vararg{VecOrMatMap}}}) where {T}
-    maps = ΣA.maps
-    mats = map(A->getfield(A, :lmap), maps)
-    return Matrix{T}(sum(mats))
-end
 function SparseArrays.sparse(ΣA::LinearCombination{<:Any, <:Tuple{Vararg{VecOrMatMap}}})
-    maps = ΣA.maps
-    mats = map(A->getfield(A, :lmap), maps)
-    return convert(SparseMatrixCSC, sum(mats))
+    mats = map(A->getfield(A, :lmap), ΣA.maps)
+    return sum(sparse, mats)
 end
 
 # CompositeMap
 function Base.Matrix{T}(AB::CompositeMap{<:Any, <:Tuple{VecOrMatMap, LinearMap}}) where {T}
     B, A = AB.maps
     require_one_based_indexing(B)
-    Y = Matrix{eltype(AB)}(undef, size(AB))
-    @views for i in 1:size(Y, 2)
-        _unsafe_mul!(Y[:, i], A, B.lmap[:, i])
+    Y = Matrix{T}(undef, size(AB))
+    for (yi, bi) in zip(eachcol(Y), eachcol(B.lmap))
+        _unsafe_mul!(yi, A, bi)
     end
     return Y
 end
@@ -105,41 +97,37 @@ for ((TA, fieldA), (TB, fieldB)) in (((VecOrMatMap, :lmap), (VecOrMatMap, :lmap)
 end
 function Base.Matrix{T}(AB::CompositeMap{<:Any, <:Tuple{VecOrMatMap, VecOrMatMap}}) where {T}
     B, A = AB.maps
-    return convert(Matrix{T}, A.lmap*B.lmap)
+    return mul!(Matrix{T}(undef, size(AB)), A.lmap, B.lmap)
 end
 function SparseArrays.sparse(AB::CompositeMap{<:Any, <:Tuple{VecOrMatMap, VecOrMatMap}})
     B, A = AB.maps
-    return convert(SparseMatrixCSC, A.lmap*B.lmap)
+    return sparse(A.lmap)*sparse(B.lmap)
 end
 function Base.Matrix{T}(λA::CompositeMap{<:Any, <:Tuple{VecOrMatMap, UniformScalingMap}}) where {T}
     A, J = λA.maps
-    return convert(Matrix{T}, J.λ*A.lmap)
+    return mul!(Matrix{T}(undef, size(λA)), J.λ, A.lmap)
 end
 function SparseArrays.sparse(λA::CompositeMap{<:Any, <:Tuple{VecOrMatMap, UniformScalingMap}})
     A, J = λA.maps
-    return convert(SparseMatrixCSC, J.λ*A.lmap)
+    return J.λ*sparse(A.lmap)
 end
 function Base.Matrix{T}(Aλ::CompositeMap{<:Any, <:Tuple{UniformScalingMap, VecOrMatMap}}) where {T}
     J, A = Aλ.maps
-    return convert(Matrix{T}, A.lmap*J.λ)
+    return mul!(Matrix{T}(undef, size(Aλ)), A.lmap, J.λ)
 end
 function SparseArrays.sparse(Aλ::CompositeMap{<:Any, <:Tuple{UniformScalingMap, VecOrMatMap}})
     J, A = Aλ.maps
-    return convert(SparseMatrixCSC, A.lmap*J.λ)
+    return sparse(A.lmap)*J.λ
 end
 
 # BlockMap & BlockDiagonalMap
-Base.Matrix{T}(A::BlockMap) where {T} = hvcat(A.rows, convert.(Matrix{T}, A.maps)...)
-Base.convert(::Type{AbstractMatrix}, A::BlockMap) =
-    hvcat(A.rows, convert.(AbstractMatrix, A.maps)...)
 function SparseArrays.sparse(A::BlockMap)
     return hvcat(
         A.rows,
         convert(SparseMatrixCSC, first(A.maps)),
-        convert.(AbstractMatrix, Base.tail(A.maps))...
+        convert.(AbstractArray, _tail(A.maps))...
     )
 end
-Base.Matrix{T}(A::BlockDiagonalMap) where {T} = Base._cat((1,2), convert.(Matrix{T}, A.maps)...)
 Base.convert(::Type{AbstractMatrix}, A::BlockDiagonalMap) = sparse(A)
 function SparseArrays.sparse(A::BlockDiagonalMap)
     return blockdiag(convert.(SparseMatrixCSC, A.maps)...)
@@ -152,7 +140,7 @@ Base.convert(::Type{AbstractMatrix}, A::KroneckerMap) =
 function SparseArrays.sparse(A::KroneckerMap)
     return kron(
         convert(SparseMatrixCSC, first(A.maps)),
-        convert.(AbstractMatrix, Base.tail(A.maps))...
+        convert.(AbstractMatrix, _tail(A.maps))...
     )
 end
 

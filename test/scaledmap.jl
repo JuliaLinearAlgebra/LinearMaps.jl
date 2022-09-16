@@ -1,4 +1,4 @@
-using Test, LinearMaps, LinearAlgebra, BenchmarkTools
+using Test, LinearMaps, LinearAlgebra
 
 @testset "scaledmap" begin
     N = 7
@@ -17,6 +17,15 @@ using Test, LinearMaps, LinearAlgebra, BenchmarkTools
     @test @inferred ishermitian(B) == ishermitian(A)
     @test @inferred isposdef(B) == isposdef(A)
     @test @inferred transpose(B) == α * transpose(A)
+    A! = LinearMap((y, x) -> cumsum!(y, x), N)
+    L = 0.5A! + 0.5A! + 1.0A!
+    @test LinearMaps.MulStyle(L) === LinearMaps.ThreeArg()
+    L*x; y = similar(x)
+    @test mul!(y, L, x) ≈ 2cumsum(x)
+    LM = 0.5LinearMap(AM) + 0.5LinearMap(AM) + 1.0LinearMap(AM)
+    @test LM*x ≈ 2cumsum(x)
+    @test LinearMaps.MulStyle(LM) === LinearMaps.FiveArg()
+    @test iszero(@allocated mul!(y, LM, x))
 
     @test B == A * α
     @test B * x == α * (A * x)
@@ -94,7 +103,8 @@ using Test, LinearMaps, LinearAlgebra, BenchmarkTools
     for (A, alloc) in ((A0, 1), (A1, 0), (B0, 1), (B1, 0), (A0', 3), (A1', 0), (B0', 3), (B1', 0))
         x = rand(N)
         y = similar(x)
-        b = @benchmarkable mul!($y, $A, $x)
-        @test run(b, samples = 3).allocs <= alloc
+        allocsize = @allocated similar(y)
+        mul!(y, A, x)
+        @test (@allocated mul!(y, A, x)) == alloc*allocsize
     end
 end

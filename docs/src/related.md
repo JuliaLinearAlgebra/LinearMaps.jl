@@ -8,6 +8,7 @@ The following open-source packages provide similar or even extended functionalit
   [`LinearOperators.jl`](https://github.com/JuliaSmoothOptimizers/LinearOperators.jl)
   and the Python package [`PyLops`](https://github.com/equinor/pylops)
 * [`fastmat`: fast linear transforms in Python](https://pypi.org/project/fastmat/)
+* [`JOLI.jl`: Julia Operators LIbrary](https://github.com/slimgroup/JOLI.jl)
 * [`FunctionOperators.jl`](https://github.com/hakkelt/FunctionOperators.jl)
   and [`LinearMapsAA.jl`](https://github.com/JeffFessler/LinearMapsAA.jl)
   also support mappings between `Array`s, inspired by the `fatrix` object type in the
@@ -19,8 +20,10 @@ there exist further related packages in the Julia ecosystem:
 * [`LazyArrays.jl`](https://github.com/JuliaArrays/LazyArrays.jl)
 * [`BlockArrays.jl`](https://github.com/JuliaArrays/BlockArrays.jl)
 * [`BlockDiagonals.jl`](https://github.com/invenia/BlockDiagonals.jl)
+* [`BlockFactorizations.jl`](https://github.com/SebastianAment/BlockFactorizations.jl)
 * [`Kronecker.jl`](https://github.com/MichielStock/Kronecker.jl)
 * [`FillArrays.jl`](https://github.com/JuliaArrays/FillArrays.jl)
+* [`LiftedMaps.jl](https://github.com/krcools/LiftedMaps.jl)
 
 Since these packages provide types that are subtypes of Julia `Base`'s `AbstractMatrix` type,
 objects of those types can be wrapped by a `LinearMap` and freely mixed with, for instance,

@@ -1,17 +1,12 @@
 using Test, LinearMaps, LinearAlgebra, Quaternions
 
-# type piracy because Quaternions.jl doesn't have it right
-Base.:(*)(z::Complex, q::Quaternion) = quat(z) * q
-Base.:(*)(q::Quaternion, z::Complex) = q * quat(z)
-Base.:(+)(q::Quaternion, z::Complex) = q + quat(z)
-
 @testset "noncommutative number type" begin
     x = Quaternion.(rand(10), rand(10), rand(10), rand(10))
     v = rand(10)
     A = Quaternion.(rand(10,10), rand(10,10), rand(10,10), rand(10,10))
     B = rand(ComplexF64, 10, 10)
     C = similar(A)
-    γ = Quaternion.(rand(4)...) # "Number"
+    γ = Quaternion(rand(4)...) # "Number"
     α = UniformScaling(γ)
     β = UniformScaling(Quaternion.(rand(4)...))
     λ = rand(ComplexF64)
@@ -46,6 +41,8 @@ Base.:(+)(q::Quaternion, z::Complex) = q + quat(z)
     @test λ*L isa LinearMaps.CompositeMap
     @test γ * (λ * LinearMap(B)) isa LinearMaps.CompositeMap
     @test (λ * LinearMap(B)) * γ isa LinearMaps.CompositeMap
+    @test ((L*L)*λ) isa LinearMaps.CompositeMap
+    @test (λ*(L*L)) isa LinearMaps.CompositeMap
     @test λ*L * x ≈ λ*A * x
     @test λ*L' * x ≈ λ*A' * x
     @test α * (3L * x) ≈ γ * (3A * x)

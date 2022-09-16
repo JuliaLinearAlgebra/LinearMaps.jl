@@ -18,10 +18,13 @@ ScaledMap(λ::RealOrComplex, lmap::LinearMap{<:RealOrComplex}) =
 
 # basic methods
 Base.size(A::ScaledMap) = size(A.lmap)
+Base.axes(A::ScaledMap) = axes(A.lmap)
 Base.isreal(A::ScaledMap) = isreal(A.λ) && isreal(A.lmap)
 LinearAlgebra.issymmetric(A::ScaledMap) = issymmetric(A.lmap)
 LinearAlgebra.ishermitian(A::ScaledMap) = isreal(A.λ) && ishermitian(A.lmap)
 LinearAlgebra.isposdef(A::ScaledMap) = isposdef(A.λ) && isposdef(A.lmap)
+
+MulStyle(A::ScaledMap) = MulStyle(A.lmap)
 
 Base.transpose(A::ScaledMap) = A.λ * transpose(A.lmap)
 Base.adjoint(A::ScaledMap) = conj(A.λ) * adjoint(A.lmap)
@@ -47,19 +50,17 @@ Base.:(*)(A::ScaledMap, B::LinearMap) = A.λ * (A.lmap * B)
 Base.:(*)(A::LinearMap, B::ScaledMap) = (A * B.lmap) * B.λ
 
 # multiplication with vectors/matrices
-for (In, Out) in ((AbstractVector, AbstractVecOrMat),
-                  (AbstractMatrix, AbstractMatrix))
+for In in (AbstractVector, AbstractMatrix)
     @eval begin
         # commutative case
-        function _unsafe_mul!(y::$Out, A::ScaledMap, x::$In{<:RealOrComplex})
-            return _unsafe_mul!(y, A.lmap, x, A.λ, false)
-        end
-        function _unsafe_mul!(y::$Out, A::ScaledMap, x::$In{<:RealOrComplex}, α::Number, β::Number)
-            return _unsafe_mul!(y, A.lmap, x, A.λ * α, β)
-        end
+        _unsafe_mul!(y, A::ScaledMap, x::$In{<:RealOrComplex}) =
+            _unsafe_mul!(y, A.lmap, x, A.λ, false)
+        _unsafe_mul!(y, A::ScaledMap, x::$In{<:RealOrComplex}, α, β) =
+            _unsafe_mul!(y, A.lmap, x, A.λ * α, β)
         # non-commutative case
-        function _unsafe_mul!(y::$Out, A::ScaledMap, x::$In)
-            return lmul!(A.λ, _unsafe_mul!(y, A.lmap, x))
-        end
+        _unsafe_mul!(y, A::ScaledMap, x::$In) = lmul!(A.λ, _unsafe_mul!(y, A.lmap, x))
     end
 end
+
+_unsafe_mul!(Y, X::ScaledMap, c::Number) = _unsafe_mul!(Y, X.lmap, X.λ*c)
+_unsafe_mul!(Y, X::ScaledMap, c::Number, α, β) = _unsafe_mul!(Y, X.lmap, X.λ*c, α, β)
