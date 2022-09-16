@@ -1,12 +1,15 @@
 # Version history
 
+## What's new in v3.9
+
+* The application of `LinearMap`s to vectors operation, i.e., `(A,x) -> A*x = A(x)`, is now
+  differentiable w.r.t. to the input `x` for integration with machine learning frameworks
+  such as [`Flux.jl`](https://fluxml.ai/Flux.jl/stable/). The reverse differentiation rule
+  makes `A::LinearMap` usable as a static, i.e., non-trainable, layer in a network, and
+  requires the adjoint `A'` of `A` to be defined.
+
 ## What's new in v3.8
 
-* Linear Maps are now differentiable w.r.t to the input via Chainrules for integration with
-  machine learning frameworks such as [Flux.jl]. The reverse differentiation rule is defined such that
-  `A*x` where `A` is the linear map can be differentiated w.r.t to `x` making `A` usable as a static (non trainable) 
-  layer in a network. Future extension will include forward differentiation rules and
-  trainable maps (differentiable w.r.t to A).
 * A new map called [`InverseMap`](@ref) is introduced. Letting an `InverseMap` act on a
   vector is equivalent to solving the linear system, i.e. `InverseMap(A) * b` is the same as
   `A \ b`. The default solver is `ldiv!`, but can be specified with the `solver` keyword
