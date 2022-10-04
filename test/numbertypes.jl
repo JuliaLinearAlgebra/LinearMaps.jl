@@ -1,4 +1,6 @@
-using Test, LinearMaps, LinearAlgebra, Quaternions
+using Test, LinearMaps, LinearAlgebra
+using Quaternions: Quaternion, quat
+using Octonions: Octonion
 
 @testset "noncommutative number type" begin
     x = Quaternion.(rand(10), rand(10), rand(10), rand(10))
