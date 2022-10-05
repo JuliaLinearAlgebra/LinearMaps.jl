@@ -1,9 +1,9 @@
 using Test, LinearMaps, LinearAlgebra
 
 @testset "KhatriRaoMap & FaceSplittingMap" begin
-    for trans in (identity, complex)
+    for trans in (identity, complex), m in (2, 4)
         A = collect(reshape(trans(1:6), 3, 2))
-        B = collect(reshape(trans(1:8), 4, 2))
+        B = collect(reshape(trans(1:2m), m, 2))
         K = @inferred khatrirao(A, B)
         @test facesplitting(A', B')' === K
         M = mapreduce(kron, hcat, eachcol(A), eachcol(B))
@@ -13,6 +13,7 @@ using Test, LinearMaps, LinearAlgebra
         @test size(@inferred transpose(K)) == reverse(size(K))
         @test Matrix(K) == M
         @test Matrix(K') == Mx
+        @test LinearMaps.MulStyle(K) === LinearMaps.MulStyle(K') === LinearMaps.FiveArg()
         @test (K')' === K
         @test transpose(transpose(K)) === K
         x = trans(rand(-10:10, size(K, 2)))
