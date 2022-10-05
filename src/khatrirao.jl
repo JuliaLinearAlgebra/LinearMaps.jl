@@ -24,12 +24,12 @@ FaceSplittingMap{T}(maps::As) where {T, As} = FaceSplittingMap{T, As}(maps)
 facesplitting(A::AbstractMatrix, B::AbstractMatrix) =
     FaceSplittingMap{Base.promote_op(*, eltype(A), eltype(B))}((A, B))
 
-Base.size(K::KhatriRaoMap) = (A, B = K.maps; @inbounds (size(A, 1) * size(B, 1), size(A, 2)))
-Base.size(K::FaceSplittingMap) = (A, B = K.maps; @inbounds (size(A, 2), size(A, 2) * size(B, 2)))
-Base.adjoint(K::KhatriRaoMap) = FaceSplittingMap(map(A -> adjoint(convert(LinearMap, A)), K.maps))
-Base.adjoint(K::FaceSplittingMap) = KhatriRaoMap(map(adjoint, K.maps))
-Base.transpose(K::KhatriRaoMap) = FaceSplittingMap(map(A -> transpose(convert(LinearMap, A)), K.maps))
-Base.transpose(K::FaceSplittingMap) = KhatriRaoMap(map(transpose, K.maps))
+Base.size(K::KhatriRaoMap) = ((A, B) = K.maps; (size(A, 1) * size(B, 1), size(A, 2)))
+Base.size(K::FaceSplittingMap) = ((A, B) = K.maps; (size(A, 1), size(A, 2) * size(B, 2)))
+Base.adjoint(K::KhatriRaoMap) = facesplitting(map(adjoint, K.maps)...)
+Base.adjoint(K::FaceSplittingMap) = khatrirao(map(adjoint, K.maps)...)
+Base.transpose(K::KhatriRaoMap) = facesplitting(map(transpose, K.maps)...)
+Base.transpose(K::FaceSplittingMap) = khatrirao(map(transpose, K.maps)...)
 
 LinearMaps.MulStyle(::Union{KhatriRaoMap,FaceSplittingMap}) = FiveArg()
 
@@ -59,10 +59,10 @@ function _unsafe_mul!(y, K::FaceSplittingMap, x::AbstractVector)
     @inbounds for m in eachindex(y)
         y[m] = zero(eltype(y))
         l = firstindex(x)
-        for i in axes(A, 1)
-            ai = A[i,m]
-            @simd for k in axes(B, 1)
-                y[m] += ai*B[k,m]*x[l]
+        for i in axes(A, 2)
+            ai = A[m,i]
+            @simd for k in axes(B, 2)
+                y[m] += ai*B[m,k]*x[l]
                 l += 1
             end
         end
@@ -74,10 +74,10 @@ function _unsafe_mul!(y, K::FaceSplittingMap, x::AbstractVector, α, β)
     @inbounds for m in eachindex(y)
         y[m] *= β
         l = firstindex(x)
-        for i in axes(A, 1)
-            ai = A[i,m]
-            @simd for k in axes(B, 1)
-                y[m] += ai*B[k,m]*x[l]*α
+        for i in axes(A, 2)
+            ai = A[m,i]
+            @simd for k in axes(B, 2)
+                y[m] += ai*B[m,k]*x[l]*α
                 l += 1
             end
         end
