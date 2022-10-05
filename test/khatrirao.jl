@@ -1,4 +1,3 @@
-using Revise
 using Test, LinearMaps, LinearAlgebra
 
 @testset "KhatriRaoMap & FaceSplittingMap" begin
