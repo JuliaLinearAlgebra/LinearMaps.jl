@@ -41,3 +41,5 @@ include("getindex.jl")
 include("inversemap.jl")
 
 include("rrules.jl")
+
+include("khatrirao.jl")

@@ -209,6 +209,12 @@ function _unsafe_mul!(y, L::OuterProductMap, x::AbstractVector)
     a, bt = L.maps
     mul!(y, a.lmap, bt.lmap * x)
 end
+function _unsafe_mul!(y, L::KroneckerMap{<:Any,<:Tuple{VectorMap,VectorMap}}, x::AbstractVector)
+    a, b = L.maps
+    kron!(y, a.lmap, b.lmap)
+    rmul!(y, first(x))
+    return y
+end
 function _unsafe_mul!(y, L::KroneckerMap2, x::AbstractVector)
     require_one_based_indexing(y)
     A, B = L.maps
