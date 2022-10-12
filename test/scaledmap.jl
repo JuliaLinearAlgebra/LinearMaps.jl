@@ -96,7 +96,7 @@ using Test, LinearMaps, LinearAlgebra
     A0 = LinearMap{T}(cumsum, reverse ∘ cumsum ∘ reverse, N) # out-of-place
     forw! = cumsum!
     back! = (x, y) -> reverse!(cumsum!(x, reverse!(copyto!(x, y))))
-    A1 = @inferred LinearMap{T}(forw!, back!, N) # in-place
+    A1 = @inferred FunctionMap{T,true}(forw!, back!, N) # in-place
     λ = 4.2
     B0 = @inferred λ * A0
     B1 = @inferred λ * A1

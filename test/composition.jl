@@ -2,9 +2,10 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
 using LinearMaps: LinearMapVector, LinearMapTuple
 
 @testset "composition" begin
-    F = @inferred LinearMap(cumsum, reverse ∘ cumsum ∘ reverse, 10; ismutating=false)
-    FC = @inferred LinearMap{ComplexF64}(cumsum, reverse ∘ cumsum ∘ reverse, 10; ismutating=false)
-    FCM = LinearMaps.CompositeMap{ComplexF64}((FC,))
+    F = @inferred FunctionMap{Float64,false}(cumsum, reverse ∘ cumsum ∘ reverse, 10)
+    @test F == LinearMap(cumsum, reverse ∘ cumsum ∘ reverse, 10; ismutating=false)
+    FC = LinearMap{ComplexF64}(cumsum, reverse ∘ cumsum ∘ reverse, 10; ismutating=false)
+    FCM = @inferred LinearMaps.CompositeMap{ComplexF64}((FC,))
     L = LowerTriangular(ones(10,10))
     @test_throws DimensionMismatch F * LinearMap(rand(2,2))
     @test_throws ErrorException LinearMaps.CompositeMap{Float64}((FC, LinearMap(rand(10,10))))

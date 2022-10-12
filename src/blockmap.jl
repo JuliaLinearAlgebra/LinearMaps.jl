@@ -63,7 +63,7 @@ Base.size(A::BlockMap) = (last(last(A.rowranges)), last(last(A.colranges)))
 # hcat
 ############
 """
-    hcat(As::Union{LinearMap,UniformScaling,AbstractVecOrMat}...)::BlockMap
+    hcat(As::Union{LinearMap,UniformScaling,AbstractVecOrMatOrQ}...)::BlockMap
 
 Construct a (lazy) representation of the horizontal concatenation of the arguments.
 All arguments are promoted to `LinearMap`s automatically.
@@ -81,7 +81,7 @@ julia> L * ones(Int, 6)
  6
 ```
 """
-function Base.hcat(As::Union{LinearMap, UniformScaling, AbstractVecOrMat}...)
+function Base.hcat(As::Union{LinearMap, UniformScaling, AbstractVecOrMatOrQ}...)
     T = promote_type(map(eltype, As)...)
     nbc = length(As)
 
@@ -98,7 +98,7 @@ end
 # vcat
 ############
 """
-    vcat(As::Union{LinearMap,UniformScaling,AbstractVecOrMat}...)::BlockMap
+    vcat(As::Union{LinearMap,UniformScaling,AbstractVecOrMatOrQ}...)::BlockMap
 
 Construct a (lazy) representation of the vertical concatenation of the arguments.
 All arguments are promoted to `LinearMap`s automatically.
@@ -119,7 +119,7 @@ julia> L * ones(Int, 3)
  3
 ```
 """
-function Base.vcat(As::Union{LinearMap,UniformScaling,AbstractVecOrMat}...)
+function Base.vcat(As::Union{LinearMap,UniformScaling,AbstractVecOrMatOrQ}...)
     T = promote_type(map(eltype, As)...)
     nbr = length(As)
 
@@ -137,7 +137,7 @@ end
 # hvcat
 ############
 """
-    hvcat(rows::Tuple{Vararg{Int}}, As::Union{LinearMap,UniformScaling,AbstractVecOrMat}...)::BlockMap
+    hvcat(rows::Tuple{Vararg{Int}}, As::Union{LinearMap,UniformScaling,AbstractVecOrMatOrQ}...)::BlockMap
 
 Construct a (lazy) representation of the horizontal-vertical concatenation of the arguments.
 The first argument specifies the number of arguments to concatenate in each block row.
@@ -165,7 +165,7 @@ julia> L * ones(Int, 6)
 Base.hvcat
 
 function Base.hvcat(rows::Tuple{Vararg{Int}},
-                    As::Union{LinearMap, UniformScaling, AbstractVecOrMat}...)
+                    As::Union{LinearMap, UniformScaling, AbstractVecOrMatOrQ}...)
     nr = length(rows)
     T = promote_type(map(eltype, As)...)
     sum(rows) == length(As) ||
@@ -221,7 +221,7 @@ function check_dim(A, dim, n)
     return nothing
 end
 
-promote_to_lmaps_(n::Int, dim, A::AbstractVecOrMat) = (check_dim(A, dim, n); LinearMap(A))
+promote_to_lmaps_(n::Int, dim, A::AbstractVecOrMatOrQ) = (check_dim(A, dim, n); LinearMap(A))
 promote_to_lmaps_(n::Int, dim, J::UniformScaling) = UniformScalingMap(J.λ, n)
 promote_to_lmaps_(n::Int, dim, A::LinearMap) = (check_dim(A, dim, n); A)
 promote_to_lmaps(n, k, dim) = ()
@@ -322,7 +322,7 @@ end
 # provide one global intermediate storage vector if necessary
 __blockmul!(::FiveArg, y, A, x::AbstractVecOrMat, α, β)  = ___blockmul!(y, A, x, α, β, nothing)
 __blockmul!(::ThreeArg, y, A, x::AbstractVecOrMat, α, β) = ___blockmul!(y, A, x, α, β, similar(y))
-function ___blockmul!(y, A, x::AbstractVecOrMat, α, β, ::Nothing)
+function ___blockmul!(y, A, x, α, β, ::Nothing)
     maps, rows, yinds, xinds = A.maps, A.rows, A.rowranges, A.colranges
     mapind = 0
     for (row, yi) in zip(rows, yinds)
@@ -336,7 +336,7 @@ function ___blockmul!(y, A, x::AbstractVecOrMat, α, β, ::Nothing)
     end
     return y
 end
-function ___blockmul!(y, A, x::AbstractVecOrMat, α, β, z)
+function ___blockmul!(y, A, x, α, β, z)
     maps, rows, yinds, xinds = A.maps, A.rows, A.rowranges, A.colranges
     mapind = 0
     for (row, yi) in zip(rows, yinds)
@@ -497,7 +497,7 @@ BlockDiagonalMap(maps::LinearMap...) =
 # since the below methods are more specific than the Base method,
 # they would redefine Base/SparseArrays behavior
 for k in 1:8 # is 8 sufficient?
-    Is = ntuple(n->:($(Symbol(:A, n))::AbstractVecOrMat), Val(k-1))
+    Is = ntuple(n->:($(Symbol(:A, n))::Union{AbstractVecOrMatOrQ}), Val(k-1))
     # yields (:A1, :A2, :A3, ..., :A(k-1))
     L = :($(Symbol(:A, k))::LinearMap)
     # yields :Ak
@@ -524,7 +524,7 @@ for k in 1:8 # is 8 sufficient?
 end
 
 """
-    blockdiag(As::Union{LinearMap,AbstractVecOrMat}...)::BlockDiagonalMap
+    blockdiag(As::Union{LinearMap,AbstractVecOrMatOrQ}...)::BlockDiagonalMap
 
 Construct a (lazy) representation of the diagonal concatenation of the arguments.
 To avoid fallback to the generic `SparseArrays.blockdiag`, there must be a `LinearMap`
@@ -533,7 +533,7 @@ object among the first 8 arguments.
 SparseArrays.blockdiag
 
 """
-    cat(As::Union{LinearMap,AbstractVecOrMat}...; dims=(1,2))::BlockDiagonalMap
+    cat(As::Union{LinearMap,AbstractVecOrMatOrQ}...; dims=(1,2))::BlockDiagonalMap
 
 Construct a (lazy) representation of the diagonal concatenation of the arguments.
 To avoid fallback to the generic `Base.cat`, there must be a `LinearMap`

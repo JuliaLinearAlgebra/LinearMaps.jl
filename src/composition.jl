@@ -242,3 +242,11 @@ function _compositemulN!(y, A::CompositeMap{<:Any,<:LinearMapVector}, x,
     _unsafe_mul!(y, A.maps[N], source)
     return y
 end
+
+function Base.:(*)(A::CompositeMap{<:Any,<:Tuple{Vararg{OOPFunctionMap}}}, x::AbstractVector)
+    foldr(*, reverse(A.maps), init=x)
+end
+
+function _compositemul!(y, A::CompositeMap{<:Any,<:Tuple{Vararg{OOPFunctionMap}}}, x)
+    copyto!(y, A*x)
+end

@@ -8,13 +8,13 @@ end
 Base.show(io::IO, A::LinearMap) = print(io, map_show(io, A, 0))
 
 map_show(io::IO, A::LinearMap, i) = ' '^i * map_summary(A) * _show(io, A, i)
-map_show(io::IO, A::AbstractVecOrMat, i) = ' '^i * summary(A)
+map_show(io::IO, A::AbstractVecOrMatOrQ, i) = ' '^i * summary(A)
 _show(io::IO, ::LinearMap, _) = ""
 function _show(io::IO, A::FunctionMap{T,F,Nothing}, _) where {T,F}
-    "($(A.f); ismutating=$(A._ismutating), issymmetric=$(A._issymmetric), ishermitian=$(A._ishermitian), isposdef=$(A._isposdef))"
+    "($(A.f); issymmetric=$(A._issymmetric), ishermitian=$(A._ishermitian), isposdef=$(A._isposdef))"
 end
 function _show(io::IO, A::FunctionMap, _)
-    "($(A.f), $(A.fc); ismutating=$(A._ismutating), issymmetric=$(A._issymmetric), ishermitian=$(A._ishermitian), isposdef=$(A._isposdef))"
+    "($(A.f), $(A.fc); issymmetric=$(A._issymmetric), ishermitian=$(A._ishermitian), isposdef=$(A._isposdef))"
 end
 function _show(io::IO, A::Union{CompositeMap,LinearCombination,KroneckerMap,KroneckerSumMap}, i)
     n = length(A.maps)
@@ -46,6 +46,9 @@ end
 # helper functions
 function _show_typeof(A::LinearMap{T}) where {T}
     split(string(typeof(A)), '{')[1] * '{' * string(T) * '}'
+end
+function _show_typeof(A::FunctionMap{T,<:Any,<:Any,iip}) where {T,iip}
+    split(string(typeof(A)), '{')[1] * '{' * string(T) * ',' * string(iip) * '}'
 end
 
 function print_maps(io::IO, maps, k)
