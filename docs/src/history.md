@@ -7,6 +7,19 @@
   such as [`Flux.jl`](https://fluxml.ai/Flux.jl/stable/). The reverse differentiation rule
   makes `A::LinearMap` usable as a static, i.e., non-trainable, layer in a network, and
   requires the adjoint `A'` of `A` to be defined.
+* New map types called `KhatriRaoMap` and `FaceSplittingMap` are introduced. These
+  correspond to lazy representations of the [column-wise Kronecker product](https://en.wikipedia.org/wiki/Khatri%E2%80%93Rao_product#Column-wise_Kronecker_product)
+  and the [row-wise Kronecker product](https://en.wikipedia.org/wiki/Khatri%E2%80%93Rao_product#Face-splitting_product)
+  (or "transposed Khatri-Rao product"), respectively. They can be constructed from two
+  matrices `A` and `B` via `khatrirao(A, B)` and `facesplitting(A, B)`, respectively.
+  The first is particularly efficient as it makes use of the vec-trick for Kronecker
+  products and computes `y = khatrirao(A, B) * x` for a vector `x` as
+  `y = vec(B * Diagonal(x) * transpose(A))`. As such, the Khatri-Rao product can actually
+  be built for general `LinearMap`s, including function-based types. Even for moderate
+  sizes of 5 or more columns, this map-vector product is faster than first creating the
+  explicit Khatri-Rao product in memory and then multiplying with the vector; not to
+  mention the memory savings. Unfortunately, similar efficiency cannot be achieved for the
+  face-splitting product.
 
 ## What's new in v3.8
 

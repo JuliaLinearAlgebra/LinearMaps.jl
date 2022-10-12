@@ -8,6 +8,13 @@ struct KhatriRaoMap{T,A<:Tuple{MapOrVecOrMat,MapOrVecOrMat}} <: LinearMap{T}
 end
 KhatriRaoMap{T}(maps::As) where {T, As} = KhatriRaoMap{T, As}(maps)
 
+"""
+    khatrirao(A::MapOrVecOrMat, B::MapOrVecOrMat) -> KhatriRaoMap
+
+Construct a lazy representation of the Khatri-Rao (or column-wise Kronecker) product of two
+maps or arrays `A` and `B`. For the application to vectors, the tranpose action of `A` on
+vectors needs to be defined.
+"""
 khatrirao(A::MapOrVecOrMat, B::MapOrVecOrMat) =
     KhatriRaoMap{Base.promote_op(*, eltype(A), eltype(B))}((A, B))
 
@@ -21,6 +28,12 @@ struct FaceSplittingMap{T,A<:Tuple{AbstractMatrix,AbstractMatrix}} <: LinearMap{
 end
 FaceSplittingMap{T}(maps::As) where {T, As} = FaceSplittingMap{T, As}(maps)
 
+"""
+    facesplitting(A::AbstractMatrix, B::AbstractMatrix) -> FaceSplittingMap
+
+Construct a lazy representation of the face-splitting (or row-wise Kronecker) product of
+two matrices `A` and `B`.
+"""
 facesplitting(A::AbstractMatrix, B::AbstractMatrix) =
     FaceSplittingMap{Base.promote_op(*, eltype(A), eltype(B))}((A, B))
 

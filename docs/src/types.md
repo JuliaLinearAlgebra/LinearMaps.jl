@@ -115,6 +115,18 @@ Type for lazy inverse of another linear map.
 LinearMaps.InverseMap
 ```
 
+### `KhatriRaoMap` and `FaceSplittingMap`
+
+Types for lazy [column-wise](https://en.wikipedia.org/wiki/Khatri%E2%80%93Rao_product#Column-wise_Kronecker_product)
+and [row-wise](https://en.wikipedia.org/wiki/Khatri%E2%80%93Rao_product#Face-splitting_product)
+Kronecker product, respectively, also referrerd to
+as Khatri-Rao and transposed Khatri-Rao (or face-splitting) product.
+
+```@docs
+khatrirao
+facesplitting
+```
+
 ## Methods
 
 ### Multiplication methods
