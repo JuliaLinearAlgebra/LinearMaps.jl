@@ -1,9 +1,7 @@
 module LinearMaps
 
-export LinearMap, FunctionMap
+export LinearMap, FunctionMap, FillMap, InverseMap
 export ⊗, squarekron, kronsum, ⊕, sumkronsum, khatrirao, facesplitting
-export FillMap
-export InverseMap
 
 using LinearAlgebra
 using LinearAlgebra: AbstractQ
@@ -367,25 +365,27 @@ include("chainrules.jl") # AD rules through ChainRulesCore
 Construct a linear map object, either
 
 1. from an existing `LinearMap` or `AbstractVecOrMat`/`AbstractQ` `A`, with the purpose of
-  redefining its properties via the keyword arguments `kwargs`;
+  redefining its properties via the keyword arguments `kwargs`, see below;
 2. a `UniformScaling` object `J` with specified (square) dimension `M`;
 3. from a function or callable object `f`;
-4. from an existing `LinearMap` or `AbstractVecOrMat`/`AbstractQ` `A`, embedded in a larger zero map.
+4. from an existing `LinearMap` or `AbstractVecOrMat`/`AbstractQ` `A`, embedded in a larger
+   zero map.
 
 In the case of item 3, one also needs to specify the size of the equivalent matrix
-representation `(M, N)`, i.e., for functions `f` acting
-on length `N` vectors and producing length `M` vectors (with default value `N=M`).
-Preferably, also the `eltype` `T` of the corresponding matrix representation needs to be
-specified, i.e., whether the action of `f` on a vector will be similar to, e.g., multiplying
-by numbers of type `T`. If not specified, the devault value `T=Float64` will be assumed.
-Optionally, a corresponding function `fc` can be specified that implements the adjoint
-(=transpose in the real case) of `f`.
+representation `(M, N)`, i.e., for functions `f` acting on length `N` vectors and producing
+length `M` vectors (with default value `N=M`). Preferably, also the `eltype` `T` of the
+corresponding matrix representation needs to be specified, i.e., whether the action of `f`
+on a vector will be similar to, e.g., multiplying by numbers of type `T`. If not specified,
+the devault value `T=Float64` will be assumed. Optionally, a corresponding function `fc`
+can be specified that implements the adjoint (or transpose in the real case) of `f`.
 
-The keyword arguments and their default values for the function-based constructor are:
-*   `issymmetric::Bool = false` : whether `A` or `f` act as a symmetric matrix
-*   `ishermitian::Bool = issymmetric & T<:Real` : whether `A` or `f` act as a Hermitian
-    matrix
-*   `isposdef::Bool = false` : whether `A` or `f` act as a positive definite matrix.
+The keyword arguments and their default values are:
+
+* `issymmetric::Bool = false` : whether `A` or `f` act as a symmetric matrix
+* `ishermitian::Bool = issymmetric & T<:Real` : whether `A` or `f` act as a Hermitian
+  matrix
+* `isposdef::Bool = false` : whether `A` or `f` act as a positive definite matrix.
+
 For existing linear maps or matrices `A`, the default values will be taken by calling
 internal functions `_issymmetric`, `_ishermitian` and `_isposdef` on the existing object `A`.
 These in turn dispatch to (overloads of) `LinearAlgebra`'s `issymmetric`, `ishermitian`,
@@ -399,6 +399,11 @@ For the function-based constructor, there is one more keyword argument:
     or as a normal matrix multiplication that is called as `y=f(x)` (in case of `false`).
     The default value is guessed by looking at the number of arguments of the first
     occurrence of `f` in the method table.
+
+!!! compat
+    As of v3.9 the use of the `ismutating` keyword argument is deprecated. Instead, usage
+    of the [`FunctionMap`](@ref) constructor is strongly recommended, which admits a
+    corresponding type parameter.
 
 For the `EmbeddedMap` constructors, `dims` specifies the total dimensions of the map. The
 `index` argument specifies two collections of indices `inds1` and `inds2`, such that for

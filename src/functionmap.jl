@@ -7,7 +7,36 @@ struct FunctionMap{T, F1, F2, iip} <: LinearMap{T}
     _ishermitian::Bool
     _isposdef::Bool
 end
-@inline function FunctionMap{T,iip}(f::F1, fc::F2, M::Int, N::Int;
+
+"""
+    FunctionMap{T,iip}(f, [fc,], M, N = M; kwargs...)
+
+Construct a `FunctionMap` object from a function or callable object `f` that represents a
+linear map of size `(M, N)`, where `N` can be omitted for square operators of size `(M,M)`.
+Furthermore, the `eltype` `T` of the corresponding matrix representation needs to be
+specified, i.e., whether the action of `f` on a vector will be similar to, e.g., multiplying
+by numbers of type `T`. Optionally, a second function `fc` can be specified that implements
+the adjoint (or transpose in the real case) of `f`.
+
+Accepted keyword arguments and their default values are as in the [`LinearMap`](@ref)
+constructor.
+
+# Examples
+```jldoctest
+julia> F = FunctionMap{Int64,false}(cumsum, 2)
+2×2 FunctionMap{Int64,false}(cumsum; issymmetric=false, ishermitian=false, isposdef=false)
+
+julia> F * ones(Int64, 2)
+2-element Vector{Int64}:
+ 1
+ 2
+
+julia> Matrix(F)
+2×2 Matrix{Int64}:
+ 1  0
+ 1  1
+"""
+function FunctionMap{T,iip}(f::F1, fc::F2, M::Int, N::Int;
     issymmetric::Bool = false,
     ishermitian::Bool = (T<:Real && issymmetric),
     isposdef::Bool    = false) where {T, F1, F2, iip}
@@ -15,9 +44,7 @@ end
 end
 
 # additional constructors
-FunctionMap{T,iip}(f, M::Int; kwargs...) where {T, iip} =
-    FunctionMap{T,iip}(f, nothing, M, M; kwargs...)
-FunctionMap{T,iip}(f, M::Int, N::Int; kwargs...) where {T, iip} =
+FunctionMap{T,iip}(f, M::Int, N::Int=M; kwargs...) where {T, iip} =
     FunctionMap{T,iip}(f, nothing, M, N; kwargs...)
 FunctionMap{T,iip}(f, fc, M::Int; kwargs...) where {T, iip} =
     FunctionMap{T,iip}(f, fc, M, M; kwargs...)

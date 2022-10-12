@@ -50,7 +50,7 @@ using Test, LinearMaps, LinearAlgebra
     @test_throws ErrorException transpose(CS!) * v
 
     CS! = LinearMap{ComplexF64}(cumsum!, 10; ismutating=true)
-    @test CS! == FunctionMap{ComplexF64, true}(cumsum!, 10)
+    @test CS! == FunctionMap{ComplexF64, true}(cumsum!, 10, 10)
     v = rand(ComplexF64, 10)
     cv = cumsum(v)
     @test @inferred LinearMaps.ismutating(CS!)

@@ -2,6 +2,7 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays, Statistics
 using LinearMaps: FiveArg, LinearMapTuple, LinearMapVector
 
 @testset "linear combinations" begin
+    CS  = FunctionMap{ComplexF64,false}(cumsum, reverse∘cumsum∘reverse, 10, 10)
     CS! = LinearMap{ComplexF64}(cumsum!,
                                 (y, x) -> (copyto!(y, x); reverse!(cumsum!(y, reverse!(y)))), 10;
                                 ismutating=true)
@@ -10,6 +11,9 @@ using LinearMaps: FiveArg, LinearMapTuple, LinearMapVector
     mul!(u, CS!, v)
     @test (@allocated mul!(u, CS!, v)) == 0
     n = 10
+    Loop = @inferred CS + CS + CS
+    @test Loop * v ≈ 3cumsum(v)
+    @test (@allocated Loop * v) <= 3*(@allocated similar(v))
     L = @inferred sum(ntuple(_ -> CS!, n))
     @test (@inferred sum(L.maps::LinearMapTuple)) == L
     Lv = @inferred LinearMaps.LinearCombination{ComplexF64}(fill(CS!, n))
