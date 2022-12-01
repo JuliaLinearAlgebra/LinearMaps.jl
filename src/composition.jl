@@ -5,10 +5,10 @@ struct CompositeMap{T, As<:LinearMapTupleOrVector} <: LinearMap{T}
         for n in 2:N
             check_dim_mul(maps[n], maps[n-1])
         end
-        Tprod = eltype(prod(m -> oneunit(eltype(m)), maps))
-# todo: why force caller to provide Tprod?  just figure out Tprod in inner constructor?
-        T == Tprod || @warn("eltype $Tprod != $T in CompositeMap constructor")
-#       for TA in Base.Iterators.map(eltype, maps)
+        Tprod = eltype(prod(m -> oneunit(eltype(m)), maps)) # handles units
+        promote_type(T, Tprod) == T ||
+            error("eltype $Tprod and $T incompatible in CompositeMap constructor")
+#       for TA in Base.Iterators.map(eltype, maps) # todo: cut
 #           promote_type(T, TA) == T ||
 #               error("eltype $TA cannot be promoted to $T in CompositeMap constructor")
 #       end
@@ -20,7 +20,7 @@ CompositeMap{T}(maps::As) where {T, As<:LinearMapTupleOrVector} = CompositeMap{T
 
 # constructor with eltype inferred from the product
 function CompositeMap(maps::As) where {As <: LinearMapTupleOrVector}
-    T = eltype(prod(m -> oneunit(eltype(m)), maps))
+    T = eltype(prod(m -> oneunit(eltype(m)), maps)) # todo: can the compiler infer?
     return CompositeMap{T, As}(maps)
 end
 
