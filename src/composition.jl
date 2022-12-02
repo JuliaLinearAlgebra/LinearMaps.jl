@@ -14,15 +14,6 @@ end
 
 CompositeMap{T}(maps::As) where {T, As<:LinearMapTupleOrVector} = CompositeMap{T, As}(maps)
 
-#=
-# constructor with eltype inferred from the product
-# todo - cut?
-function CompositeMap(maps::As) where {As <: LinearMapTupleOrVector}
-    T = typeof(*(map(oneunit∘eltype, maps)...)) # todo: can the compiler infer?
-    return CompositeMap{T, As}(maps)
-end
-=#
-
 function Base.mapreduce(::typeof(identity), ::typeof(Base.mul_prod), maps::LinearMapTupleOrVector)
     Tprod = typeof(*(map(oneunit∘eltype, maps)...)) # handles units
     return CompositeMap{Tprod}(reverse(maps))
