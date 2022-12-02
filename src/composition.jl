@@ -1,3 +1,9 @@
+# appropriate type for product of two (possibly Unitful) quantities:
+_multype(a, b) = typeof(oneunit(eltype(a)) * oneunit(eltype(b)))
+# this variant is needed because reinterpret changes length of complex vectors
+#_multype(a, b, iscomplex::Bool) =
+#    typeof((1+0im) * oneunit(eltype(a)) * oneunit(eltype(b)))
+
 struct CompositeMap{T, As<:LinearMapTupleOrVector} <: LinearMap{T}
     maps::As # stored in order of application to vector
     function CompositeMap{T, As}(maps::As) where {T, As}
@@ -80,11 +86,11 @@ end
 
 # scalar multiplication and division (non-commutative case)
 function Base.:(*)(α::Number, A::LinearMap)
-    T = typeof(oneunit(α) * oneunit(eltype(A)))
+    T = _multype(α, A)
     return CompositeMap{T}(_combine(A, UniformScalingMap(α, size(A, 1))))
 end
 function Base.:(*)(α::Number, A::CompositeMap)
-    T = typeof(oneunit(α) * oneunit(eltype(A)))
+    T = _multype(α, A)
     Alast = last(A.maps)
     if Alast isa UniformScalingMap
         return CompositeMap{T}(_combine(_front(A.maps), α * Alast))
@@ -94,15 +100,15 @@ function Base.:(*)(α::Number, A::CompositeMap)
 end
 # needed for disambiguation
 function Base.:(*)(α::RealOrComplex, A::CompositeMap{<:RealOrComplex})
-    T = typeof(oneunit(α) * oneunit(eltype(A)))
+    T = _multype(α, A)
     return ScaledMap{T}(α, A)
 end
 function Base.:(*)(A::LinearMap, α::Number)
-    T = typeof(oneunit(eltype(A)) * oneunit(α))
+    T = _multype(A, α)
     return CompositeMap{T}(_combine(UniformScalingMap(α, size(A, 2)), A))
 end
 function Base.:(*)(A::CompositeMap, α::Number)
-    T = typeof(oneunit(eltype(A)) * oneunit(α))
+    T = _multype(A, α)
     Afirst = first(A.maps)
     if Afirst isa UniformScalingMap
         return CompositeMap{T}(_combine(Afirst * α, _tail(A.maps)))
@@ -112,7 +118,7 @@ function Base.:(*)(A::CompositeMap, α::Number)
 end
 # needed for disambiguation
 function Base.:(*)(A::CompositeMap{<:RealOrComplex}, α::RealOrComplex)
-    T = typeof(oneunit(eltype(A)) * oneunit(α))
+    T = _multype(A, α)
     return ScaledMap{T}(α, A)
 end
 
@@ -137,19 +143,19 @@ julia> LinearMap(ones(Int, 3, 3)) * CS * I * rand(3, 3);
 ```
 """
 function Base.:(*)(A₁::LinearMap, A₂::LinearMap)
-    T = typeof(oneunit(eltype(A₁)) * oneunit(eltype(A₂)))
+    T = _multype(A₁, A₂)
     return CompositeMap{T}(_combine(A₂, A₁))
 end
 function Base.:(*)(A₁::LinearMap, A₂::CompositeMap)
-    T = typeof(oneunit(eltype(A₁)) * oneunit(eltype(A₂)))
+    T = _multype(A₁, A₂)
     return CompositeMap{T}(_combine(A₂.maps, A₁))
 end
 function Base.:(*)(A₁::CompositeMap, A₂::LinearMap)
-    T = typeof(oneunit(eltype(A₁)) * oneunit(eltype(A₂)))
+    T = _multype(A₁, A₂)
     return CompositeMap{T}(_combine(A₂, A₁.maps))
 end
 function Base.:(*)(A₁::CompositeMap, A₂::CompositeMap)
-    T = typeof(oneunit(eltype(A₁)) * oneunit(eltype(A₂)))
+    T = _multype(A₁, A₂)
     return CompositeMap{T}(_combine(A₂.maps, A₁.maps))
 end
 # needed for disambiguation
@@ -175,9 +181,13 @@ function _compositemul!(y, A::CompositeMap{<:Any,<:Tuple{LinearMap}}, x,
                         dest = nothing)
     return _unsafe_mul!(y, A.maps[1], x)
 end
-function _compositemul!(y, A::CompositeMap{<:Any,<:Tuple{LinearMap,LinearMap}}, x,
-                        source = similar(y, (size(A.maps[1],1), size(x)[2:end]...)),
-                        dest = nothing)
+function _compositemul!(
+    y,
+    A::CompositeMap{<:Any,<:Tuple{LinearMap,LinearMap}},
+    x,
+    source = similar(y, _multype(A.maps[1], x), (size(A.maps[1],1), size(x)[2:end]...)),
+    dest = nothing,
+)
     _unsafe_mul!(source, A.maps[1], x)
     _unsafe_mul!(y, A.maps[2], source)
     return y
@@ -200,15 +210,27 @@ function _resize(dest::AbstractMatrix, sz::Tuple{<:Integer,<:Integer})
     similar(dest, sz)
 end
 
-function _compositemul!(y, A::CompositeMap{<:Any,<:LinearMapTuple}, x,
-                        source = similar(y, (size(A.maps[1],1), size(x)[2:end]...)),
-                        dest = similar(y, (size(A.maps[2],1), size(x)[2:end]...)))
+function _compositemul!(
+    y,
+    A::CompositeMap{<:Any,<:LinearMapTuple},
+    x,
+    source = similar([], _multype(A.maps[1], x), (size(A.maps[1],1), size(x)[2:end]...)),
+    dest = nothing, # similar(y, (size(A.maps[2],1), size(x)[2:end]...)),
+)
     N = length(A.maps)
+    # caution: be careful if y is complex but intermediate products are not
+#   source = reinterpret(_multype(A.maps[1], x, !isreal(y)), source) # for units
+#   resize!(source, size(A.maps[1],1)) # trick due to complex case
+# todo: build reinterpret into _unsafe_mul! instead?
+# only necessary if either source or map has Number type instead of Real|Complex
     _unsafe_mul!(source, A.maps[1], x)
     for n in 2:N-1
-        dest = _resize(dest, (size(A.maps[n],1), size(x)[2:end]...))
+#       dest = _resize(dest, (size(A.maps[n],1), size(x)[2:end]...))
+#       dest = reinterpret(_multype(A.maps[n], source), dest)
+        dest = similar([], _multype(A.maps[n], source), (size(A.maps[n],1), size(source)[2:end]...))
         _unsafe_mul!(dest, A.maps[n], source)
-        dest, source = source, dest # alternate dest and source
+#       dest, source = source, dest # alternate dest and source
+        dest, source = [], dest # reuse source as next dest, but abandon dest
     end
     _unsafe_mul!(y, A.maps[N], source)
     return y

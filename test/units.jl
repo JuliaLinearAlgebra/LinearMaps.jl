@@ -13,14 +13,14 @@ using Unitful: m, s, g
     Ma = @inferred LinearMap(A)
     Mb = @inferred LinearMap(B)
     Mc = Ma * Mb
-    Md = 1f0g * Mc # todo - UniformScalingMap
+    Md = 1f0g * Mc
 
     @test Matrix(Ma) == A
     @test Matrix(Mc) == C
-    @test_throws ArgumentError Matrix(Md) == D
+    @test Matrix(Md) == D
 
     x = randn(2)
     @test B * x == Mb * x
-    @test_broken C * x == Mc * x
-    @test_broken D * x == Md * x
+    @test C * x ≈ Mc * x
+    @test D * x ≈ Md * x
 end
