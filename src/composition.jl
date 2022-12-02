@@ -5,7 +5,7 @@ struct CompositeMap{T, As<:LinearMapTupleOrVector} <: LinearMap{T}
         for n in 2:N
             check_dim_mul(maps[n], maps[n-1])
         end
-        Tprod = eltype(prod(m -> oneunit(eltype(m)), maps)) # handles units
+        Tprod = typeof(*(map(oneunit∘eltype, maps)...)) # handles units
         promote_type(T, Tprod) == T ||
             error("eltype $Tprod and $T incompatible in CompositeMap constructor")
 #       for TA in Base.Iterators.map(eltype, maps) # todo: cut
@@ -88,10 +88,8 @@ end
 
 # scalar multiplication and division (non-commutative case)
 function Base.:(*)(α::Number, A::LinearMap)
-#   T = promote_type(typeof(α), eltype(A))
-#   T = eltype(oneunit(α) * oneunit(eltype(A)))
-#   return CompositeMap{T}(_combine(A, UniformScalingMap(α, size(A, 1))))
-    return CompositeMap(_combine(A, UniformScalingMap(α, size(A, 1))))
+    T = typeof(oneunit(α) * oneunit(eltype(A)))
+    return CompositeMap{T}(_combine(A, UniformScalingMap(α, size(A, 1))))
 end
 function Base.:(*)(α::Number, A::CompositeMap)
 #   T = promote_type(typeof(α), eltype(A))
