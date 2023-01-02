@@ -157,3 +157,6 @@ end
 function Base.:(*)(A::LinearCombination{<:Any,<:Tuple{Vararg{OOPFunctionMap}}}, x::AbstractVector)
     mapreduce(L -> L * x, (x, y) -> x .+= y, A.maps)
 end
+
+_unsafe_mul!(y, A::LinearCombination{<:Any,<:Tuple{Vararg{OOPFunctionMap}}}, x::AbstractVector) =
+    copyto!(y, A*x)
