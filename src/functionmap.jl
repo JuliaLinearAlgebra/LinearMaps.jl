@@ -78,12 +78,12 @@ _ismutating(f) = first(methods(f)).nargs == 3
 const TransposeFunctionMap = TransposeMap{<:Any, <:FunctionMap}
 const AdjointFunctionMap = AdjointMap{<:Any, <:FunctionMap}
 
-function _apply_fun(::Val{true}, f!, x, m, T)
+@inline function _apply_fun(::Val{true}, f!, x, m, T)
     y = similar(x, T, m)
     f!(y, x)
     return y
 end
-function _apply_fun(::Val{false}, f, x, m, _)
+@inline function _apply_fun(::Val{false}, f, x, m, _)
     y = f(x)
     length(y) == m || throw(DimensionMismatch())
     return y

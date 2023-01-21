@@ -155,7 +155,7 @@ function muladd!(::ThreeArg, y, A, x, α, z)
 end
 
 function Base.:(*)(A::LinearCombination{<:Any,<:Tuple{Vararg{OOPFunctionMap}}}, x::AbstractVector)
-    mapreduce(L -> L * x, (x, y) -> x .+= y, A.maps)
+    mapreduce(L -> L * x, Base.add_sum, A.maps)
 end
 
 _unsafe_mul!(y, A::LinearCombination{<:Any,<:Tuple{Vararg{OOPFunctionMap}}}, x::AbstractVector) =

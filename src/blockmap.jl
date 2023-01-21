@@ -497,7 +497,7 @@ BlockDiagonalMap(maps::LinearMap...) =
 # since the below methods are more specific than the Base method,
 # they would redefine Base/SparseArrays behavior
 for k in 1:8 # is 8 sufficient?
-    Is = ntuple(n->:($(Symbol(:A, n))::Union{AbstractVecOrMatOrQ}), Val(k-1))
+    Is = ntuple(n->:($(Symbol(:A, n))::AbstractVecOrMatOrQ), Val(k-1))
     # yields (:A1, :A2, :A3, ..., :A(k-1))
     L = :($(Symbol(:A, k))::LinearMap)
     # yields :Ak
