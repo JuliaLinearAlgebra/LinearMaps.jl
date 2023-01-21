@@ -26,22 +26,22 @@ end</code></pre><p>Again, due to generic fallbacks the following now &quot;just 
  62.0  152.0  242.0</code></pre><h2 id="Multiply-and-add-and-the-MulStyle-trait"><a class="docs-heading-anchor" href="#Multiply-and-add-and-the-MulStyle-trait">Multiply-and-add and the <code>MulStyle</code> trait</a><a id="Multiply-and-add-and-the-MulStyle-trait-1"></a><a class="docs-heading-anchor-permalink" href="#Multiply-and-add-and-the-MulStyle-trait" title="Permalink"></a></h2><p>While the above function calls work out of the box due to generic fallbacks, the latter may be suboptimally implemented for your custom map type. Let&#39;s see some benchmarks.</p><pre><code class="language-julia hljs">using BenchmarkTools
 
 @benchmark mul!($(zeros(3)), $A, $x)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">BenchmarkTools.Trial: 10000 samples with 1000 evaluations.
- Range (min … max):  9.000 ns … 30.800 ns  ┊ GC (min … max): 0.00% … 0.00%
- Time  (median):     9.100 ns              ┊ GC (median):    0.00%
- Time  (mean ± σ):   9.131 ns ±  0.342 ns  ┊ GC (mean ± σ):  0.00% ± 0.00%
+ Range (min … max):  10.800 ns … 37.501 ns  ┊ GC (min … max): 0.00% … 0.00%
+ Time  (median):     10.900 ns              ┊ GC (median):    0.00%
+ Time  (mean ± σ):   10.996 ns ±  0.520 ns  ┊ GC (mean ± σ):  0.00% ± 0.00%
 
-                              █                               
-  ▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁█▃▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▄ ▂
-  9 ns           Histogram: frequency by time         9.2 ns &lt;
+      █    ▄                 ▂   ▄                            ▁
+  █▁▁▁█▁▁▁▁█▁▁▁▅▁▁▁▁▁▁▁▁▄▁▁▁▁█▁▁▁█▁▁▁▁█▁▁▁▆▁▁▁▁▁▁▁▁▁▁▁▁▁▄▁▁▁█ █
+  10.8 ns      Histogram: log(frequency) by time      12.1 ns &lt;
 
- Memory estimate: 0 bytes, allocs estimate: 0.</code></pre><pre><code class="language-julia hljs">@benchmark mul!($(zeros(3)), $A, $x, $(rand()), $(rand()))</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">BenchmarkTools.Trial: 10000 samples with 982 evaluations.
- Range (min … max):  59.064 ns …   4.302 μs  ┊ GC (min … max): 0.00% … 97.89%
- Time  (median):     60.693 ns               ┊ GC (median):    0.00%
- Time  (mean ± σ):   70.344 ns ± 164.522 ns  ┊ GC (mean ± σ):  9.57% ±  4.03%
+ Memory estimate: 0 bytes, allocs estimate: 0.</code></pre><pre><code class="language-julia hljs">@benchmark mul!($(zeros(3)), $A, $x, $(rand()), $(rand()))</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">BenchmarkTools.Trial: 10000 samples with 979 evaluations.
+ Range (min … max):  56.692 ns …   4.388 μs  ┊ GC (min … max): 0.00% … 98.01%
+ Time  (median):     72.014 ns               ┊ GC (median):    0.00%
+ Time  (mean ± σ):   80.978 ns ± 170.589 ns  ┊ GC (mean ± σ):  8.63% ±  4.03%
 
-  ▅█▇▅▄▄▄▃▃▂▂▁                                            ▁▂▁  ▂
-  ██████████████▇▇▇██▇▇▇▇▇▇▆▇▆▆▆▅▅▅▄▅▃▄▄▁▅▃▄▃▄▁▁▄▃▃▁▁▁▄▄▇█████ █
-  59.1 ns       Histogram: log(frequency) by time       105 ns &lt;
+         ▂▃▅▂ ▅▆█▅▃▂▂▁▁▁▁    ▁                             ▂▁▁ ▂
+  ▆▆▃▁▁▁▁███████████████████████▇▆▅▆▅▅▄▁▅▅▄▄▁▃▃▁▁▃▁▄▅▆▅▃▁▃████ █
+  56.7 ns       Histogram: log(frequency) by time       121 ns &lt;
 
  Memory estimate: 80 bytes, allocs estimate: 1.</code></pre><p>The second benchmark indicates the allocation of an intermediate vector <code>z</code> which stores the result of <code>A*x</code> before it gets scaled and added to (the scaled) <code>y = zeros(3)</code>. For that reason, it is beneficial to provide a custom &quot;5-arg <code>_unsafe_mul!</code>&quot; if you can avoid the allocation of an intermediate vector. To indicate that there exists an allocation-free implementation of multiply-and-add, you should set the <code>MulStyle</code> trait, whose default is <code>ThreeArg()</code>, to <code>FiveArg()</code>.</p><pre><code class="language-julia hljs">LinearMaps.MulStyle(A::MyFillMap) = FiveArg()
 
@@ -60,14 +60,14 @@ function LinearMaps._unsafe_mul!(y, A::MyFillMap, x::AbstractVector, α, β)
         end
     end
     return y
-end</code></pre><p>With this function at hand, let&#39;s redo the benchmark.</p><pre><code class="language-julia hljs">@benchmark mul!($(zeros(3)), $A, $x, $(rand()), $(rand()))</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">BenchmarkTools.Trial: 10000 samples with 999 evaluations.
- Range (min … max):  12.112 ns … 31.532 ns  ┊ GC (min … max): 0.00% … 0.00%
- Time  (median):     12.513 ns              ┊ GC (median):    0.00%
- Time  (mean ± σ):   12.507 ns ±  0.461 ns  ┊ GC (mean ± σ):  0.00% ± 0.00%
+end</code></pre><p>With this function at hand, let&#39;s redo the benchmark.</p><pre><code class="language-julia hljs">@benchmark mul!($(zeros(3)), $A, $x, $(rand()), $(rand()))</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">BenchmarkTools.Trial: 10000 samples with 998 evaluations.
+ Range (min … max):  13.727 ns … 52.507 ns  ┊ GC (min … max): 0.00% … 0.00%
+ Time  (median):     15.732 ns              ┊ GC (median):    0.00%
+ Time  (mean ± σ):   15.831 ns ±  1.143 ns  ┊ GC (mean ± σ):  0.00% ± 0.00%
 
-                                      █                        
-  ▂▁▁▁▁▁▁▇▁▁▁▁▁▁▅▁▁▁▁▁▁▁▆▁▁▁▁▁▁▇▁▁▁▁▁▁█▁▁▁▁▁▁▁▂▁▁▁▁▁▁▂▁▁▁▁▁▁▂ ▂
-  12.1 ns         Histogram: frequency by time        12.9 ns &lt;
+                                      ▆     ▁ █                
+  ▂▂▁▁▁▁▁▂▁▂▁▂▂▁▃▁▂▁▂▁▃▁▅▂▁▂▁▅▁█▁▂▁▂▁██▁▂▁▂▁█▁█▁▂▃▁▃▁▄▁▂▁▁▁▂▂ ▃
+  13.7 ns         Histogram: frequency by time        16.9 ns &lt;
 
  Memory estimate: 0 bytes, allocs estimate: 0.</code></pre><p>There you go, the allocation is gone and the computation time is significantly reduced.</p><h2 id="Adjoints-and-transposes"><a class="docs-heading-anchor" href="#Adjoints-and-transposes">Adjoints and transposes</a><a id="Adjoints-and-transposes-1"></a><a class="docs-heading-anchor-permalink" href="#Adjoints-and-transposes" title="Permalink"></a></h2><p>Generically, taking the transpose (or the adjoint) of a (real, resp.) map wraps the linear map by a <code>TransposeMap</code>, taking the adjoint of a complex map wraps it by an <code>AdjointMap</code>.</p><pre><code class="language-julia hljs">typeof(A&#39;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">LinearMaps.TransposeMap{Float64, Main.MyFillMap{Float64}}</code></pre><p>Not surprisingly, without further definitions, multiplying <code>A&#39;</code> by <code>x</code> yields an error.</p><pre><code class="language-julia hljs">try A&#39;x catch e println(e) end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">ErrorException(&quot;transpose not implemented for 3×3 Main.MyFillMap{Float64}&quot;)</code></pre><p>If the operator is symmetric or Hermitian, the transpose and the adjoint, respectively, of the linear map <code>A</code> is given by <code>A</code> itself. So let us define corresponding checks.</p><pre><code class="language-julia hljs">LinearAlgebra.issymmetric(A::MyFillMap) = A.size[1] == A.size[2]
 LinearAlgebra.ishermitian(A::MyFillMap) = isreal(A.λ) &amp;&amp; A.size[1] == A.size[2]
@@ -103,61 +103,61 @@ LinearAlgebra.transpose(A::MyFillMap) = MyFillMap(transpose(A.λ), reverse(A.siz
  15.0  15.0  15.0  15.0</code></pre><p>and <code>transpose(x) * A</code> correspondingly, as well as in-place multiplication</p><pre><code class="language-julia hljs">mul!(similar(x)&#39;, x&#39;, A)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">1×3 adjoint(::Vector{Float64}) with eltype Float64:
  15.0  15.0  15.0</code></pre><p>and <code>mul!(transpose(y), transpose(x), A)</code>.</p><h2 id="Application-to-matrices"><a class="docs-heading-anchor" href="#Application-to-matrices">Application to matrices</a><a id="Application-to-matrices-1"></a><a class="docs-heading-anchor-permalink" href="#Application-to-matrices" title="Permalink"></a></h2><p>By default, applying a <code>LinearMap</code> <code>A</code> to a matrix <code>X</code> via <code>A*X</code> does <em>not</em> apply <code>A</code> to each column of <code>X</code> viewed as a vector, but interprets <code>X</code> as a linear map, wraps it as such and returns <code>(A*X)::CompositeMap</code>. Calling the in-place multiplication function <code>mul!(Y, A, X)</code> for matrices, however, does compute the columnwise action of <code>A</code> on <code>X</code> and stores the result in <code>Y</code>. In case there is a more efficient implementation for the matrix application, you can provide <code>_unsafe_mul!</code> methods with signature <code>_unsafe_mul!(Y, A::MyFillMap, X::AbstractMatrix)</code>, and, depending on the chosen path to handle adjoints/transposes, corresponding methods for wrapped maps of type <code>AdjointMap</code> or <code>TransposeMap</code>, plus potentially corresponding 5-arg <code>mul!</code> methods. This may seem like a lot of methods to be implemented, but note that adding such methods is only necessary/recommended for increased performance.</p><h2 id="Computing-a-matrix-representation"><a class="docs-heading-anchor" href="#Computing-a-matrix-representation">Computing a matrix representation</a><a id="Computing-a-matrix-representation-1"></a><a class="docs-heading-anchor-permalink" href="#Computing-a-matrix-representation" title="Permalink"></a></h2><p>In some cases, it might be necessary to compute a matrix representation of a <code>LinearMap</code>. This is essentially done via the <code>[LinearMaps._unsafe_mul!(::Matrix,::LinearMap,::Number)]</code>(@ref) method, for which a generic fallback exists: it applies the <code>LinearMap</code> successively to the standard unit vectors.</p><pre><code class="language-julia hljs">F = MyFillMap(5, (100,100))
 M = Matrix{eltype(F)}(undef, size(F))
-@benchmark Matrix($F)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">BenchmarkTools.Trial: 10000 samples with 3 evaluations.
- Range (min … max):   6.300 μs … 615.305 μs  ┊ GC (min … max):  0.00% … 97.55%
- Time  (median):     10.934 μs               ┊ GC (median):     0.00%
- Time  (mean ± σ):   15.233 μs ±  31.152 μs  ┊ GC (mean ± σ):  13.70% ±  6.82%
+@benchmark Matrix($F)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">BenchmarkTools.Trial: 10000 samples with 1 evaluation.
+ Range (min … max):   7.400 μs …  1.751 ms  ┊ GC (min … max):  0.00% … 96.50%
+ Time  (median):     10.100 μs              ┊ GC (median):     0.00%
+ Time  (mean ± σ):   14.795 μs ± 55.201 μs  ┊ GC (mean ± σ):  14.79% ±  4.02%
 
-   ▂▂▄▅▆██▆▂                                    ▁▁▂▁▁▁      ▁  ▂
-  ▇██████████▇▇▇▆▆▆▄▆▃▃▁▃▁▃▁▁▁▁▁▁▁▁▁▃▁▁▁▁▁▁▁▁▄▆▇████████▇▇▇███ █
-  6.3 μs        Histogram: log(frequency) by time        47 μs &lt;
+  ▁▅██▇▄▁                                              ▁▁▁▁▁▁ ▂
+  ███████▇▅▆▆▃▃▄▁▃▆▅▄▁▄▄▅▆▅▄▃▁▁▄▁▃▃▁▁▁▁▁▁▁▁▁▁▁▁▃▁▁▄▃▇████████ █
+  7.4 μs       Histogram: log(frequency) by time      55.1 μs &lt;
 
  Memory estimate: 79.05 KiB, allocs estimate: 3.</code></pre><pre><code class="language-julia hljs">@benchmark LinearMaps._unsafe_mul!($(Matrix{Int}(undef, (100,100))), $(MyFillMap(5, (100,100))), true)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">BenchmarkTools.Trial: 10000 samples with 8 evaluations.
- Range (min … max):  3.388 μs … 287.327 μs  ┊ GC (min … max): 0.00% … 97.32%
- Time  (median):     3.487 μs               ┊ GC (median):    0.00%
- Time  (mean ± σ):   3.689 μs ±   3.897 μs  ┊ GC (mean ± σ):  0.76% ±  0.97%
+ Range (min … max):  3.800 μs … 299.120 μs  ┊ GC (min … max): 0.00% … 97.29%
+ Time  (median):     4.163 μs               ┊ GC (median):    0.00%
+ Time  (mean ± σ):   4.401 μs ±   4.018 μs  ┊ GC (mean ± σ):  0.66% ±  0.97%
 
-  ▃▆▆▇█▇██▆▆▃▂▂▁▂    ▁   ▁▃         ▁▁▁▂▂▃▃▂▁ ▂▁              ▃
-  █████████████████▇█████████▇▇▇▅▅▄▆████████████▇▇▇█▇▆▅▅▆▄▅▅▆ █
-  3.39 μs      Histogram: log(frequency) by time      4.28 μs &lt;
+   ▁▁         ▅▇█▆▅▃▁    ▁▂▃▃▁       ▁▃▄▄▂▂   ▁▁▁             ▂
+  ▇███▇▅▃▃▃▁▃▇███████▆▆▆██████▇▆▅▅▇▆▅███████▇█████▇▇▆▅▆▇▆▆▆▅▅ █
+  3.8 μs       Histogram: log(frequency) by time      5.24 μs &lt;
 
  Memory estimate: 896 bytes, allocs estimate: 1.</code></pre><p>If a more performant implementation exists, it is recommended to overwrite this method, for instance (as before, size checks need not be included here since they are handled by the corresponding <code>LinearAlgebra.mul!</code> method):</p><pre><code class="language-julia hljs">LinearMaps._unsafe_mul!(M, A::MyFillMap, s::Number) = fill!(M, A.λ*s)
 @benchmark Matrix($F)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">BenchmarkTools.Trial: 10000 samples with 3 evaluations.
- Range (min … max):   5.667 μs … 462.970 μs  ┊ GC (min … max):  0.00% … 96.93%
- Time  (median):     11.033 μs               ┊ GC (median):     0.00%
- Time  (mean ± σ):   13.090 μs ±  27.204 μs  ┊ GC (mean ± σ):  14.84% ±  6.94%
+ Range (min … max):   6.300 μs … 619.718 μs  ┊ GC (min … max):  0.00% … 92.85%
+ Time  (median):      9.433 μs               ┊ GC (median):     0.00%
+ Time  (mean ± σ):   12.086 μs ±  30.211 μs  ┊ GC (mean ± σ):  17.60% ±  6.96%
 
-                          ▁▄▅▅█▇▅▅▄▄▃▁ ▁                        
-  ▂▂▁▁▁▂▁▂▂▂▂▂▂▂▁▂▂▂▃▃▄▄▆▇██████████████▇▅▄▄▃▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂ ▄
-  5.67 μs         Histogram: frequency by time         16.3 μs &lt;
+  ▁▄▅▇█▇▅▂                                                     ▂
+  █████████▇▇▇▇▆▆▃▄▁▃▁▁▃▄▁▁▁▃▁▁▁▁▁▃▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▃▄▄▅▇▇█ █
+  6.3 μs        Histogram: log(frequency) by time      49.1 μs &lt;
 
  Memory estimate: 78.17 KiB, allocs estimate: 2.</code></pre><pre><code class="language-julia hljs">@benchmark LinearMaps._unsafe_mul!($(Matrix{Int}(undef, (100,100))), $(MyFillMap(5, (100,100))), true)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">BenchmarkTools.Trial: 10000 samples with 10 evaluations.
- Range (min … max):  1.410 μs …  3.460 μs  ┊ GC (min … max): 0.00% … 0.00%
- Time  (median):     1.520 μs              ┊ GC (median):    0.00%
- Time  (mean ± σ):   1.521 μs ± 55.857 ns  ┊ GC (mean ± σ):  0.00% ± 0.00%
+ Range (min … max):  1.590 μs …   4.830 μs  ┊ GC (min … max): 0.00% … 0.00%
+ Time  (median):     1.830 μs               ┊ GC (median):    0.00%
+ Time  (mean ± σ):   1.839 μs ± 123.879 ns  ┊ GC (mean ± σ):  0.00% ± 0.00%
 
-                     ▃  ▆ ▆  █  █  ▆ ▄  ▃  ▁                  
-  ▂▁▂▁▁▃▁▁▃▁▁▅▁▆▁▁█▁▁█▁▁█▁█▁▁█▁▁█▁▁█▁█▁▁█▁▁█▁▁▇▁▆▁▁▅▁▁▄▁▁▃▁▂ ▃
-  1.41 μs        Histogram: frequency by time        1.62 μs &lt;
+                            ▁▂▅ ▆▇█ █▆ ▆▄▃ ▁                   
+  ▂▂▂▁▂▃▂▁▃▃▃▁▃▃▁▃▃▃▁▄▄▄▁▆▇▁███▁███▁██▁███▁█▇▇▁▅▄▁▃▃▃▁▂▂▂▁▂▂▂ ▄
+  1.59 μs         Histogram: frequency by time        2.02 μs &lt;
 
  Memory estimate: 0 bytes, allocs estimate: 0.</code></pre><p>As one can see, the above runtimes are dominated by the allocation of the output matrix, but still overwriting the multiplication kernel yields a speed-up of about factor 3 for the matrix filling part.</p><h2 id="Slicing"><a class="docs-heading-anchor" href="#Slicing">Slicing</a><a id="Slicing-1"></a><a class="docs-heading-anchor-permalink" href="#Slicing" title="Permalink"></a></h2><p>As usual, generic fallbacks for <code>LinearMap</code> slicing exist and are handled by the following method hierarchy, where at least one of <code>I</code> and <code>J</code> has to be a <code>Colon</code>:</p><pre><code class="nohighlight hljs">Base.getindex(::LinearMap, I, J)
--&gt; LinearMaps._getindex(::LinearMap, I, J)</code></pre><p>The method <code>Base.getindex</code> checks the validity of the the requested indices and calls <code>LinearMaps._getindex</code>, which should be overloaded for custom <code>LinearMap</code>s subtypes. For instance:</p><pre><code class="language-julia hljs">@benchmark F[1,:]</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">BenchmarkTools.Trial: 10000 samples with 176 evaluations.
- Range (min … max):  582.960 ns …  13.369 μs  ┊ GC (min … max): 0.00% … 88.33%
- Time  (median):     693.188 ns               ┊ GC (median):    0.00%
- Time  (mean ± σ):   785.161 ns ± 887.104 ns  ┊ GC (mean ± σ):  8.98% ±  7.48%
+-&gt; LinearMaps._getindex(::LinearMap, I, J)</code></pre><p>The method <code>Base.getindex</code> checks the validity of the the requested indices and calls <code>LinearMaps._getindex</code>, which should be overloaded for custom <code>LinearMap</code>s subtypes. For instance:</p><pre><code class="language-julia hljs">@benchmark F[1,:]</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">BenchmarkTools.Trial: 10000 samples with 145 evaluations.
+ Range (min … max):  711.055 ns … 16.679 μs  ┊ GC (min … max): 0.00% … 91.00%
+ Time  (median):     808.293 ns              ┊ GC (median):    0.00%
+ Time  (mean ± σ):   909.979 ns ±  1.081 μs  ┊ GC (mean ± σ):  8.61% ±  6.87%
 
-      ▂▆█▇▅▄▃▂▁▁▁▁                                            ▁ ▂
-  ▆▇▇██████████████▇▆▃▄▅▅▄▁▅▄▃▁▁▄▄▄▃▁▄▃▃▃▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▄▇██ █
-  583 ns        Histogram: log(frequency) by time       1.56 μs &lt;
+   ▂▃▆██▇▄▃▂▂▂▂                                             ▁▁ ▂
+  ███████████████▇▆▅▅▅▅▄▃▃▃▄▁▅▃▁▁▁▁▃▄▃▁▃▁▄▁▃▁▁▁▁▃▁▁▁▁▃▅▄▃▁▁▇██ █
+  711 ns        Histogram: log(frequency) by time      1.81 μs &lt;
 
  Memory estimate: 1.77 KiB, allocs estimate: 3.</code></pre><pre><code class="language-julia hljs">LinearMaps._getindex(A::MyFillMap, ::Integer, J::Base.Slice) = fill(A.λ, axes(J))
-@benchmark F[1,:]</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">BenchmarkTools.Trial: 10000 samples with 200 evaluations.
- Range (min … max):  411.005 ns …  11.668 μs  ┊ GC (min … max): 0.00% … 92.44%
- Time  (median):     434.505 ns               ┊ GC (median):    0.00%
- Time  (mean ± σ):   488.128 ns ± 633.464 ns  ┊ GC (mean ± σ):  8.00% ±  5.93%
+@benchmark F[1,:]</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">BenchmarkTools.Trial: 10000 samples with 194 evaluations.
+ Range (min … max):  422.170 ns …  12.167 μs  ┊ GC (min … max): 0.00% … 93.26%
+ Time  (median):     508.258 ns               ┊ GC (median):    0.00%
+ Time  (mean ± σ):   566.041 ns ± 644.457 ns  ┊ GC (mean ± σ):  6.91% ±  5.82%
 
-   ▆█▇▅▃▂▁                                                   ▁▁ ▂
-  ▆████████████▇▇▆▆▄▄▃▃▄▃▁▃▁▁▃▁▁▁▃▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▆███ █
-  411 ns        Histogram: log(frequency) by time        907 ns &lt;
+      ▃▂ ▆█▄▂▂▁▁▁▁▁                                          ▁▁ ▁
+  ▃▁▁▁███████████████▇▇▆▅▅▄▄▄▃▃▁▁▃▃▁▁▃▁▁▁▁▃▁▁▁▁▁▁▁▁▁▁▁▁▃▁▁▁▄▇██ █
+  422 ns        Histogram: log(frequency) by time       1.06 μs &lt;
 
- Memory estimate: 912 bytes, allocs estimate: 2.</code></pre><p>Note that in <code>Base.getindex</code> <code>Colon</code>s are converted to <code>Base.Slice</code> via <code>Base.to_indices</code>, thus the dispatch must be on <code>Base.Slice</code> rather than on <code>Colon</code>.</p><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../types/">« Types and methods</a><a class="docs-footer-nextpage" href="../../related/">Related packages »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.23 on <span class="colophon-date" title="Tuesday 4 October 2022 19:18">Tuesday 4 October 2022</span>. Using Julia version 1.8.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+ Memory estimate: 912 bytes, allocs estimate: 2.</code></pre><p>Note that in <code>Base.getindex</code> <code>Colon</code>s are converted to <code>Base.Slice</code> via <code>Base.to_indices</code>, thus the dispatch must be on <code>Base.Slice</code> rather than on <code>Colon</code>.</p><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../types/">« Types and methods</a><a class="docs-footer-nextpage" href="../../related/">Related packages »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.23 on <span class="colophon-date" title="Saturday 21 January 2023 19:10">Saturday 21 January 2023</span>. Using Julia version 1.8.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
