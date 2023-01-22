@@ -157,7 +157,7 @@ end
 function Base.:(*)(A::LinearCombination{<:Any,<:Tuple{Vararg{OOPFunctionMap}}}, x::AbstractVector)
     mapreduce(L -> L * x, Base.add_sum, A.maps)
 end
-function Base.:(*)(A::LinearCombination{<:Any,<:Tuple{Vararg{OOPFunctionMap{T}}}}, x::AbstractVector) where {T}
+function Base.:(*)(A::LinearCombination{T,<:Tuple{Vararg{OOPFunctionMap{T}}}}, x::AbstractVector) where {T}
     mapreduce(L -> L * x, (x, y) -> x .+= y, A.maps)
 end
 
