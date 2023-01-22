@@ -10,7 +10,7 @@
 pkg> add LinearMaps
 ```
 
-in package mode, to be entered by typing `]` in the Julia REPL.
+in package mode, which can be entered by typing `]` in the Julia REPL.
 
 ## Examples
 
@@ -100,16 +100,10 @@ KrylovKit.eigsolve(-A, size(A, 1), 3, :SR)
 
 Arpack.eigs(Δ; nev=3, which=:LR)
 ArnoldiMethod.partialeigen(ArnoldiMethod.partialschur(Δ; nev=3, which=ArnoldiMethod.LR())[1])
-KrylovKit.eigsolve(x -> Δ*x, size(Δ, 1), 3, :LR)
-```
-
-In Julia v1.3 and above, the last line can be simplified to
-
-```julia
 KrylovKit.eigsolve(Δ, size(Δ, 1), 3, :LR)
 ```
 
-leveraging the fact that objects of type `L <: LinearMap` are callable.
+In the last line above we leverage the fact that objects of type `L <: LinearMap` are callable.
 
 ### Inverse map with conjugate gradient
 
@@ -155,7 +149,6 @@ result = C * tmp2
 
 i.e. inside the CG solver for solving `Sx = b` we use CG to solve another inner linear
 system.
-
 
 ## Philosophy
 
