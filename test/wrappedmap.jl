@@ -118,6 +118,7 @@ using Test, LinearMaps, LinearAlgebra
     Q = qr(rand(10, 20)).Q
     Qmap = @inferred LinearMap(Q)
     @test size(Qmap) == (10, 10)
+    @test LinearMaps.MulStyle(Qmap) === LinearMaps.ThreeArg()
     @test !issymmetric(Qmap)
     @test !ishermitian(Qmap)
     @test !isposdef(Qmap)
