@@ -113,4 +113,12 @@ using Test, LinearMaps, LinearAlgebra
         @test issymmetric(LinearMap(M)) == issymmetric(M)
         @test ishermitian(LinearMap(M)) == ishermitian(M)
     end
+
+    # AbstractQ
+    Q = qr(rand(10, 20)).Q
+    Qmap = @inferred LinearMap(Q)
+    @test size(Qmap) == (10, 10)
+    @test !issymmetric(Qmap)
+    @test !ishermitian(Qmap)
+    @test !isposdef(Qmap)
 end
