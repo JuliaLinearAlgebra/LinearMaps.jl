@@ -4,7 +4,6 @@ export LinearMap, FunctionMap, FillMap, InverseMap
 export ⊗, squarekron, kronsum, ⊕, sumkronsum, khatrirao, facesplitting
 
 using LinearAlgebra
-using LinearAlgebra: AbstractQ
 import LinearAlgebra: mul!
 using SparseArrays
 
@@ -17,9 +16,8 @@ using Base: require_one_based_indexing
 
 abstract type LinearMap{T} end
 
-const AbstractVecOrMatOrQ{T} = Union{AbstractVecOrMat{T}, AbstractQ{T}}
-const MapOrVecOrMat{T} = Union{LinearMap{T}, AbstractVecOrMatOrQ{T}}
-const MapOrMatrix{T} = Union{LinearMap{T}, AbstractMatrix{T}, AbstractQ{T}}
+const MapOrVecOrMat{T} = Union{LinearMap{T}, AbstractVecOrMat{T}}
+const MapOrMatrix{T} = Union{LinearMap{T}, AbstractMatrix{T}}
 const TransposeAbsVecOrMat{T} = Transpose{T,<:AbstractVecOrMat}
 const RealOrComplex = Union{Real, Complex}
 
@@ -31,7 +29,7 @@ Base.eltype(::LinearMap{T}) where {T} = T
 
 # conversion to LinearMap
 Base.convert(::Type{LinearMap}, A::LinearMap) = A
-Base.convert(::Type{LinearMap}, A::AbstractVecOrMatOrQ) = LinearMap(A)
+Base.convert(::Type{LinearMap}, A::AbstractVecOrMat) = LinearMap(A)
 
 convert_to_lmaps() = ()
 convert_to_lmaps(A) = (convert(LinearMap, A),)
@@ -49,7 +47,6 @@ MulStyle(::FiveArg, ::ThreeArg) = ThreeArg()
 MulStyle(::ThreeArg, ::ThreeArg) = ThreeArg()
 MulStyle(::LinearMap) = ThreeArg() # default
 MulStyle(::AbstractVecOrMat) = FiveArg()
-MulStyle(::AbstractQ) = ThreeArg()
 MulStyle(A::LinearMap, As::LinearMap...) = MulStyle(MulStyle(A), MulStyle(As...))
 
 Base.isreal(A::LinearMap) = eltype(A) <: Real
@@ -356,7 +353,7 @@ include("chainrules.jl") # AD rules through ChainRulesCore
 
 """
     LinearMap(A::LinearMap; kwargs...)::WrappedMap
-    LinearMap(A::AbstractVecOrMatOrQ; kwargs...)::WrappedMap
+    LinearMap(A::AbstractVecOrMat; kwargs...)::WrappedMap
     LinearMap(J::UniformScaling, M::Int)::UniformScalingMap
     LinearMap{T=Float64}(f, [fc,], M::Int, N::Int = M; kwargs...)::FunctionMap
     LinearMap(A::MapOrVecOrMat, dims::Dims{2}, index::NTuple{2, AbstractVector{Int}})::EmbeddedMap
@@ -364,11 +361,11 @@ include("chainrules.jl") # AD rules through ChainRulesCore
 
 Construct a linear map object, either
 
-1. from an existing `LinearMap` or `AbstractVecOrMat`/`AbstractQ` `A`, with the purpose of
+1. from an existing `LinearMap` or `AbstractVecOrMat` `A`, with the purpose of
   redefining its properties via the keyword arguments `kwargs`, see below;
 2. a `UniformScaling` object `J` with specified (square) dimension `M`;
 3. from a function or callable object `f`;
-4. from an existing `LinearMap` or `AbstractVecOrMat`/`AbstractQ` `A`, embedded in a larger
+4. from an existing `LinearMap` or `AbstractVecOrMat` `A`, embedded in a larger
    zero map.
 
 In the case of item 3, one also needs to specify the size of the equivalent matrix
