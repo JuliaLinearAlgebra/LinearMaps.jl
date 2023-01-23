@@ -1,11 +1,10 @@
 module LinearMaps
 
-export LinearMap
+export LinearMap, FillMap, InverseMap
 export ⊗, squarekron, kronsum, ⊕, sumkronsum, khatrirao, facesplitting
-export FillMap
-export InverseMap
 
 using LinearAlgebra
+using LinearAlgebra: AbstractQ
 import LinearAlgebra: mul!
 using SparseArrays
 
@@ -18,8 +17,9 @@ using Base: require_one_based_indexing
 
 abstract type LinearMap{T} end
 
-const MapOrVecOrMat{T} = Union{LinearMap{T}, AbstractVecOrMat{T}}
-const MapOrMatrix{T} = Union{LinearMap{T}, AbstractMatrix{T}}
+const AbstractVecOrMatOrQ{T} = Union{AbstractVecOrMat{T}, AbstractQ{T}}
+const MapOrVecOrMat{T} = Union{LinearMap{T}, AbstractVecOrMatOrQ{T}}
+const MapOrMatrix{T} = Union{LinearMap{T}, AbstractMatrix{T}, AbstractQ{T}}
 const TransposeAbsVecOrMat{T} = Transpose{T,<:AbstractVecOrMat}
 const RealOrComplex = Union{Real, Complex}
 
@@ -31,7 +31,7 @@ Base.eltype(::LinearMap{T}) where {T} = T
 
 # conversion to LinearMap
 Base.convert(::Type{LinearMap}, A::LinearMap) = A
-Base.convert(::Type{LinearMap}, A::AbstractVecOrMat) = LinearMap(A)
+Base.convert(::Type{LinearMap}, A::AbstractVecOrMatOrQ) = LinearMap(A)
 
 convert_to_lmaps() = ()
 convert_to_lmaps(A) = (convert(LinearMap, A),)
@@ -49,6 +49,7 @@ MulStyle(::FiveArg, ::ThreeArg) = ThreeArg()
 MulStyle(::ThreeArg, ::ThreeArg) = ThreeArg()
 MulStyle(::LinearMap) = ThreeArg() # default
 MulStyle(::AbstractVecOrMat) = FiveArg()
+MulStyle(::AbstractQ) = ThreeArg()
 MulStyle(A::LinearMap, As::LinearMap...) = MulStyle(MulStyle(A), MulStyle(As...))
 
 Base.isreal(A::LinearMap) = eltype(A) <: Real
@@ -337,11 +338,11 @@ end
 include("transpose.jl") # transposing linear maps
 include("wrappedmap.jl") # wrap a matrix of linear map in a new type, thereby allowing to alter its properties
 include("left.jl") # left multiplication by a matrix/transpose or adjoint vector
+include("functionmap.jl") # using a function as linear map
 include("uniformscalingmap.jl") # the uniform scaling map, to be able to make linear combinations of LinearMap objects and multiples of I
 include("linearcombination.jl") # defining linear combinations of linear maps
 include("scaledmap.jl") # multiply by a (real or complex) scalar
 include("composition.jl") # composition of linear maps
-include("functionmap.jl") # using a function as linear map
 include("blockmap.jl") # block linear maps
 include("kronecker.jl") # Kronecker product of linear maps
 include("khatrirao.jl") # Khatri-Rao and face-splitting products
@@ -355,7 +356,7 @@ include("chainrules.jl") # AD rules through ChainRulesCore
 
 """
     LinearMap(A::LinearMap; kwargs...)::WrappedMap
-    LinearMap(A::AbstractVecOrMat; kwargs...)::WrappedMap
+    LinearMap(A::AbstractVecOrMatOrQ; kwargs...)::WrappedMap
     LinearMap(J::UniformScaling, M::Int)::UniformScalingMap
     LinearMap{T=Float64}(f, [fc,], M::Int, N::Int = M; kwargs...)::FunctionMap
     LinearMap(A::MapOrVecOrMat, dims::Dims{2}, index::NTuple{2, AbstractVector{Int}})::EmbeddedMap
@@ -363,26 +364,28 @@ include("chainrules.jl") # AD rules through ChainRulesCore
 
 Construct a linear map object, either
 
-1. from an existing `LinearMap` or `AbstractVecOrMat` `A`, with the purpose of redefining
-  its properties via the keyword arguments `kwargs`;
+1. from an existing `LinearMap` or `AbstractVecOrMat`/`AbstractQ` `A`, with the purpose of
+  redefining its properties via the keyword arguments `kwargs`, see below;
 2. a `UniformScaling` object `J` with specified (square) dimension `M`;
 3. from a function or callable object `f`;
-4. from an existing `LinearMap` or `AbstractVecOrMat` `A`, embedded in a larger zero map.
+4. from an existing `LinearMap` or `AbstractVecOrMat`/`AbstractQ` `A`, embedded in a larger
+   zero map.
 
 In the case of item 3, one also needs to specify the size of the equivalent matrix
-representation `(M, N)`, i.e., for functions `f` acting
-on length `N` vectors and producing length `M` vectors (with default value `N=M`).
-Preferably, also the `eltype` `T` of the corresponding matrix representation needs to be
-specified, i.e., whether the action of `f` on a vector will be similar to, e.g., multiplying
-by numbers of type `T`. If not specified, the devault value `T=Float64` will be assumed.
-Optionally, a corresponding function `fc` can be specified that implements the adjoint
-(=transpose in the real case) of `f`.
+representation `(M, N)`, i.e., for functions `f` acting on length `N` vectors and producing
+length `M` vectors (with default value `N=M`). Preferably, also the `eltype` `T` of the
+corresponding matrix representation needs to be specified, i.e., whether the action of `f`
+on a vector will be similar to, e.g., multiplying by numbers of type `T`. If not specified,
+the devault value `T=Float64` will be assumed. Optionally, a corresponding function `fc`
+can be specified that implements the adjoint (or transpose in the real case) of `f`.
 
-The keyword arguments and their default values for the function-based constructor are:
-*   `issymmetric::Bool = false` : whether `A` or `f` act as a symmetric matrix
-*   `ishermitian::Bool = issymmetric & T<:Real` : whether `A` or `f` act as a Hermitian
-    matrix
-*   `isposdef::Bool = false` : whether `A` or `f` act as a positive definite matrix.
+The keyword arguments and their default values are:
+
+* `issymmetric::Bool = false` : whether `A` or `f` act as a symmetric matrix
+* `ishermitian::Bool = issymmetric & T<:Real` : whether `A` or `f` act as a Hermitian
+  matrix
+* `isposdef::Bool = false` : whether `A` or `f` act as a positive definite matrix.
+
 For existing linear maps or matrices `A`, the default values will be taken by calling
 internal functions `_issymmetric`, `_ishermitian` and `_isposdef` on the existing object `A`.
 These in turn dispatch to (overloads of) `LinearAlgebra`'s `issymmetric`, `ishermitian`,
@@ -391,11 +394,11 @@ known at compile time as for certain structured matrices, but return `false` for
 `AbstractMatrix` types.
 
 For the function-based constructor, there is one more keyword argument:
-*   `ismutating::Bool` : flags whether the function acts as a mutating matrix multiplication
-    `f(y,x)` where the result vector `y` is the first argument (in case of `true`),
-    or as a normal matrix multiplication that is called as `y=f(x)` (in case of `false`).
-    The default value is guessed by looking at the number of arguments of the first
-    occurrence of `f` in the method table.
+* `ismutating::Bool` : flags whether the function acts as a mutating matrix multiplication
+  `f(y,x)` where the result vector `y` is the first argument (in case of `true`),
+  or as a normal matrix multiplication that is called as `y=f(x)` (in case of `false`).
+  The default value is guessed by looking at the number of arguments of the first
+  occurrence of `f` in the method table.
 
 For the `EmbeddedMap` constructors, `dims` specifies the total dimensions of the map. The
 `index` argument specifies two collections of indices `inds1` and `inds2`, such that for
