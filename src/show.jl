@@ -8,7 +8,7 @@ end
 Base.show(io::IO, A::LinearMap) = print(io, map_show(io, A, 0))
 
 map_show(io::IO, A::LinearMap, i) = ' '^i * map_summary(A) * _show(io, A, i)
-map_show(io::IO, A::AbstractVecOrMat, i) = ' '^i * summary(A)
+map_show(io::IO, A::AbstractVecOrMatOrQ, i) = ' '^i * summary(A)
 _show(io::IO, ::LinearMap, _) = ""
 function _show(io::IO, A::FunctionMap{T,F,Nothing}, _) where {T,F}
     "($(A.f); issymmetric=$(A._issymmetric), ishermitian=$(A._ishermitian), isposdef=$(A._isposdef))"
