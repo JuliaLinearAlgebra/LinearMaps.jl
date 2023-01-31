@@ -11,9 +11,18 @@ using LinearMaps: FiveArg, LinearMapTuple, LinearMapVector
     mul!(u, CS!, v)
     @test (@allocated mul!(u, CS!, v)) == 0
     n = 10
+    alloc = @allocated similar(v)
     Loop = @inferred CS + CS + CS
     @test Loop * v ≈ 3cumsum(v)
-    @test (@allocated Loop * v) <= 3*(@allocated similar(v))
+    @test (@allocated Loop * v) <= 3alloc
+    Loop = @inferred CS + CS; Loop * v
+    @test (@allocated Loop * v) <= 2alloc
+    Lmix = @inferred CS + CS + CS!; Lmix * v
+    @test (@allocated Lmix * v) <= 3alloc
+    Lmix = @inferred CS + CS + CS!; Lmix * v
+    @test (@allocated Lmix * v) <= 3alloc
+    Lmix = @inferred CS! + (CS + CS); Lmix * v
+    @test (@allocated Lmix * v) <= 3alloc
     L = @inferred sum(ntuple(_ -> CS!, n))
     @test (@inferred sum(L.maps::LinearMapTuple)) == L
     Lv = @inferred LinearMaps.LinearCombination{ComplexF64}(fill(CS!, n))

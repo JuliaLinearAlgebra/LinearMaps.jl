@@ -25,7 +25,8 @@ using Test, LinearMaps, LinearAlgebra
     LM = 0.5LinearMap(AM) + 0.5LinearMap(AM) + 1.0LinearMap(AM)
     @test LM*x ≈ 2cumsum(x)
     @test LinearMaps.MulStyle(LM) === LinearMaps.FiveArg()
-    @test iszero(@allocated mul!(y, LM, x))
+    mul!(y, LM, x)
+    @test (@allocated mul!(y, LM, x)) == 0
 
     @test B == A * α
     @test B * x == α * (A * x)

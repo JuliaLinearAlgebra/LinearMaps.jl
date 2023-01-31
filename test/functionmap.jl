@@ -24,7 +24,7 @@ using Test, LinearMaps, LinearAlgebra
     @test @inferred !issymmetric(CS)
     @test @inferred !ishermitian(CS)
     @test @inferred !isposdef(CS)
-    @test @inferred !(LinearMaps.ismutating(CS))
+    @test (@test_deprecated (@inferred LinearMaps.ismutating(CS))) == false
     @test @inferred Matrix(CS) == [1. 0.; 1. 1.]
     @test @inferred Array(CS) == [1. 0.; 1. 1.]
     CS = @inferred (() -> LinearMap(cumsum, 10; ismutating=false))()
@@ -42,7 +42,7 @@ using Test, LinearMaps, LinearAlgebra
     @test @inferred mul!(similar(v), transpose(CS), v) == reverse!(cumsum(reverse(v)))
 
     CS! = LinearMap(cumsum!, 10; ismutating=true)
-    @test @inferred LinearMaps.ismutating(CS!)
+    @test (@test_deprecated (@inferred LinearMaps.ismutating(CS!)))
     @test @inferred CS! * v == cv
     @test @inferred *(CS!, v) == cv
     @test @inferred mul!(similar(v), CS!, v) == cv
@@ -53,7 +53,7 @@ using Test, LinearMaps, LinearAlgebra
     @test CS! == FunctionMap{ComplexF64, true}(cumsum!, 10, 10)
     v = rand(ComplexF64, 10)
     cv = cumsum(v)
-    @test @inferred LinearMaps.ismutating(CS!)
+    @test (@test_deprecated (@inferred LinearMaps.ismutating(CS!)))
     @test @inferred CS! * v == cv
     @test @inferred *(CS!, v) == cv
     @test @inferred mul!(similar(v), CS!, v) == cv
@@ -64,7 +64,7 @@ using Test, LinearMaps, LinearAlgebra
     CS! = LinearMap{ComplexF64}(cumsum!, (y, x) -> (copyto!(y, x); reverse!(y); cumsum!(y, y); reverse!(y)), 10; ismutating=true)
     M = Matrix(CS!)
     @inferred adjoint(CS!)
-    @test @inferred LinearMaps.ismutating(CS!)
+    @test (@test_deprecated (@inferred LinearMaps.ismutating(CS!)))
     @test @inferred CS! * v == cv
     @test @inferred *(CS!, v) == cv
     @test @inferred mul!(similar(v), CS!, v) == cv
