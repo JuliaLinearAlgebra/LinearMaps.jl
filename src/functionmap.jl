@@ -70,8 +70,9 @@ Base.size(A::FunctionMap) = (A.M, A.N)
 LinearAlgebra.issymmetric(A::FunctionMap) = A._issymmetric
 LinearAlgebra.ishermitian(A::FunctionMap) = A._ishermitian
 LinearAlgebra.isposdef(A::FunctionMap)    = A._isposdef
-ismutating(::OOPFunctionMap) = false
-ismutating(::IIPFunctionMap) = true
+MulStyle(::OOPFunctionMap) = TwoArg()
+MulStyle(::IIPFunctionMap) = ThreeArg()
+@deprecate ismutating(A::FunctionMap) (a -> (MulStyle(a) === ThreeArg()))(A) false
 _ismutating(f) = first(methods(f)).nargs == 3
 
 # multiplication with vector

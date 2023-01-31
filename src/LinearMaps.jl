@@ -40,8 +40,9 @@ convert_to_lmaps(A) = (convert(LinearMap, A),)
 
 abstract type MulStyle end
 
-struct FiveArg <: MulStyle end
-struct ThreeArg <: MulStyle end
+struct FiveArg <: MulStyle end # types admit in-place multiplication and addition
+struct ThreeArg <: MulStyle end # types "only" admit in-place multiplication
+struct TwoArg <: MulStyle end # types "only" admit out-of-place multiplication
 
 MulStyle(::FiveArg, ::FiveArg) = FiveArg()
 MulStyle(::ThreeArg, ::FiveArg) = ThreeArg()
