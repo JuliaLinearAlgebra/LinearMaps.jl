@@ -1,2 +1,5 @@
 build/
 site/
+# Literate.jl generated files
+src/advanced_applications.md
+src/custom.md
