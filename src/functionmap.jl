@@ -49,18 +49,14 @@ FunctionMap{T,iip}(f, M::Int, N::Int=M; kwargs...) where {T, iip} =
 FunctionMap{T,iip}(f, fc, M::Int; kwargs...) where {T, iip} =
     FunctionMap{T,iip}(f, fc, M, M; kwargs...)
 
-@deprecate(FunctionMap{T}(f, fc, M::Int, N::Int; ismutating::Bool = _ismutating(f), kwargs...) where {T},
-    FunctionMap{T, ismutating}(f, fc, M, N; kwargs...),
-    false)
-@deprecate(FunctionMap{T}(f, M::Int; ismutating::Bool = _ismutating(f), kwargs...) where {T},
-    FunctionMap{T, ismutating}(f, nothing, M, M; kwargs...),
-    false)
-@deprecate(FunctionMap{T}(f, M::Int, N::Int; ismutating::Bool = _ismutating(f), kwargs...) where {T},
-    FunctionMap{T, ismutating}(f, nothing, M, N; kwargs...),
-    false)
-@deprecate(FunctionMap{T}(f, fc, M::Int; ismutating::Bool = _ismutating(f), kwargs...) where {T},
-    FunctionMap{T, ismutating}(f, fc, M, M; kwargs...),
-    false)
+FunctionMap{T}(f, fc, M::Int, N::Int; ismutating::Bool = _ismutating(f), kwargs...) where {T} =
+    FunctionMap{T, ismutating}(f, fc, M, N; kwargs...)
+FunctionMap{T}(f, M::Int; ismutating::Bool = _ismutating(f), kwargs...) where {T} =
+    FunctionMap{T, ismutating}(f, nothing, M, M; kwargs...)
+FunctionMap{T}(f, M::Int, N::Int; ismutating::Bool = _ismutating(f), kwargs...) where {T} =
+    FunctionMap{T, ismutating}(f, nothing, M, N; kwargs...)
+FunctionMap{T}(f, fc, M::Int; ismutating::Bool = _ismutating(f), kwargs...) where {T} =
+    FunctionMap{T, ismutating}(f, fc, M, M; kwargs...)
 
 const OOPFunctionMap{T,F1,F2} = FunctionMap{T,F1,F2,false}
 const IIPFunctionMap{T,F1,F2} = FunctionMap{T,F1,F2,true}
@@ -79,12 +75,12 @@ _ismutating(f) = first(methods(f)).nargs == 3
 const TransposeFunctionMap = TransposeMap{<:Any, <:FunctionMap}
 const AdjointFunctionMap = AdjointMap{<:Any, <:FunctionMap}
 
-@inline function _apply_fun(::Val{true}, f!, x, m, T)
+@inline function _apply_fun(::MulStyle, f!, x, m, T)
     y = similar(x, T, m)
     f!(y, x)
     return y
 end
-@inline function _apply_fun(::Val{false}, f, x, m, _)
+@inline function _apply_fun(::TwoArg, f, x, m, _)
     y = f(x)
     length(y) == m || throw(DimensionMismatch())
     return y
@@ -93,7 +89,7 @@ end
 function Base.:(*)(A::FunctionMap, x::AbstractVector)
     length(x) == size(A, 2) || throw(DimensionMismatch())
     T = promote_type(eltype(A), eltype(x))
-    return _apply_fun(Val(ismutating(A)), A.f, x, size(A, 1), T)
+    return _apply_fun(MulStyle(A), A.f, x, size(A, 1), T)
 end
 function Base.:(*)(A::AdjointFunctionMap, x::AbstractVector)
     Afun = A.lmap
@@ -101,9 +97,9 @@ function Base.:(*)(A::AdjointFunctionMap, x::AbstractVector)
     length(x) == size(A, 2) || throw(DimensionMismatch())
     T = promote_type(eltype(A), eltype(x))
     if Afun.fc !== nothing
-        return _apply_fun(Val(ismutating(Afun)), Afun.fc, x, size(A, 1), T)
+        return _apply_fun(MulStyle(Afun), Afun.fc, x, size(A, 1), T)
     elseif issymmetric(Afun) # but !isreal(A), Afun.f can be used
-        y = _apply_fun(Val(ismutating(Afun)), Afun.f, conj(x), size(A, 1), T)
+        y = _apply_fun(MulStyle(Afun), Afun.f, conj(x), size(A, 1), T)
         conj!(y)
         return y
     else
@@ -117,10 +113,10 @@ function Base.:(*)(A::TransposeFunctionMap, x::AbstractVector)
     T = promote_type(eltype(A), eltype(x))
     if Afun.fc !== nothing
         z = !isreal(A) ? conj(x) : x
-        y = _apply_fun(Val(ismutating(Afun)), Afun.fc, z, size(A, 1), T)
+        y = _apply_fun(MulStyle(Afun), Afun.fc, z, size(A, 1), T)
         !isreal(A) && conj!(y)
     elseif ishermitian(Afun) # but !isreal(A), Afun.f can be used
-        y = _apply_fun(Val(ismutating(Afun)), Afun.f, conj(x), size(A, 1), T)
+        y = _apply_fun(MulStyle(Afun), Afun.f, conj(x), size(A, 1), T)
         conj!(y)
     else
         error("transpose not implemented for $(A.lmap)")
@@ -138,7 +134,7 @@ function _unsafe_mul!(y, At::TransposeFunctionMap, x::AbstractVector)
         if !isreal(A)
             x = conj(x)
         end
-        ismutating(A) ? A.fc(y, x) : copyto!(y, A.fc(x))
+        MulStyle(A) === TwoArg() ? copyto!(y, A.fc(x)) : A.fc(y, x)
         if !isreal(A)
             conj!(y)
         end
@@ -156,7 +152,7 @@ function _unsafe_mul!(y, Ac::AdjointFunctionMap, x::AbstractVector)
     A = Ac.lmap
     ishermitian(A) && return _unsafe_mul!(y, A, x)
     if A.fc !== nothing
-        ismutating(A) ? A.fc(y, x) : copyto!(y, A.fc(x))
+        MulStyle(A) === TwoArg() ? copyto!(y, A.fc(x)) : A.fc(y, x)
         return y
     elseif issymmetric(A) # but !isreal(A)
         _unsafe_mul!(y, A, conj(x))

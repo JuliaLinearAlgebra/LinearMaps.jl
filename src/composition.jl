@@ -165,7 +165,18 @@ Base.:(==)(A::CompositeMap, B::CompositeMap) =
     (eltype(A) == eltype(B) && all(A.maps .== B.maps))
 
 # multiplication with vectors/matrices
-_unsafe_mul!(y, A::CompositeMap, x::AbstractVector) = _compositemul!(y, A, x)
+function Base.:(*)(A::CompositeMap, x::AbstractVector)
+    MulStyle(A) === TwoArg() ?
+        foldr(*, reverse(A.maps), init=x) :
+        invoke(*, Tuple{LinearMap, AbstractVector}, A, x)
+end
+
+function _unsafe_mul!(y, A::CompositeMap, x::AbstractVector)
+    MulStyle(A) === TwoArg() ?
+        copyto!(y, foldr(*, reverse(A.maps), init=x)) :
+        _compositemul!(y, A, x)
+    return y
+end
 _unsafe_mul!(y, A::CompositeMap, x::AbstractMatrix) = _compositemul!(y, A, x)
 
 function _compositemul!(y, A::CompositeMap{<:Any,<:Tuple{LinearMap}}, x,
@@ -174,10 +185,50 @@ function _compositemul!(y, A::CompositeMap{<:Any,<:Tuple{LinearMap}}, x,
     return _unsafe_mul!(y, A.maps[1], x)
 end
 function _compositemul!(y, A::CompositeMap{<:Any,<:Tuple{LinearMap,LinearMap}}, x,
-                        source = similar(y, (size(A.maps[1],1), size(x)[2:end]...)),
+                        source = nothing,
                         dest = nothing)
-    _unsafe_mul!(source, A.maps[1], x)
-    _unsafe_mul!(y, A.maps[2], source)
+    if isnothing(source)
+        z = convert(AbstractArray, A.maps[1] * x)
+        _unsafe_mul!(y, A.maps[2], z)
+        return y
+    else
+        _unsafe_mul!(source, A.maps[1], x)
+        _unsafe_mul!(y, A.maps[2], source)
+        return y
+    end
+end
+_compositemul!(y, A::CompositeMap{<:Any,<:LinearMapTuple}, x, s = nothing, d = nothing) =
+    _compositemulN!(y, A, x, s, d)
+function _compositemul!(y, A::CompositeMap{<:Any,<:LinearMapVector}, x,
+                        source = nothing,
+                        dest = nothing)
+    N = length(A.maps)
+    if N == 1
+        return _unsafe_mul!(y, A.maps[1], x)
+    elseif N == 2
+        return _unsafe_mul!(y, A.maps[2] * A.maps[1], x)
+    else
+        return _compositemulN!(y, A, x, source, dest)
+    end
+end
+
+function _compositemulN!(y, A::CompositeMap, x,
+                         src = nothing,
+                         dst = nothing)
+    N = length(A.maps) # ≥ 3
+    source = isnothing(src) ?
+        convert(AbstractArray, A.maps[1] * x) :
+        _unsafe_mul!(src, A.maps[1], x)
+    dest = isnothing(dst) ?
+        convert(AbstractArray, A.maps[2] * source) :
+        _unsafe_mul!(dst, A.maps[2], source)
+    dest, source = source, dest # alternate dest and source
+    for n in 3:N-1
+        dest = _resize(dest, (size(A.maps[n], 1), size(x)[2:end]...))
+        _unsafe_mul!(dest, A.maps[n], source)
+        dest, source = source, dest # alternate dest and source
+    end
+    _unsafe_mul!(y, A.maps[N], source)
     return y
 end
 
@@ -196,57 +247,4 @@ end
 function _resize(dest::AbstractMatrix, sz::Tuple{<:Integer,<:Integer})
     size(dest) == sz && return dest
     similar(dest, sz)
-end
-
-function _compositemul!(y, A::CompositeMap{<:Any,<:LinearMapTuple}, x,
-                        source = similar(y, (size(A.maps[1],1), size(x)[2:end]...)),
-                        dest = similar(y, (size(A.maps[2],1), size(x)[2:end]...)))
-    N = length(A.maps)
-    _unsafe_mul!(source, A.maps[1], x)
-    for n in 2:N-1
-        dest = _resize(dest, (size(A.maps[n],1), size(x)[2:end]...))
-        _unsafe_mul!(dest, A.maps[n], source)
-        dest, source = source, dest # alternate dest and source
-    end
-    _unsafe_mul!(y, A.maps[N], source)
-    return y
-end
-
-function _compositemul!(y, A::CompositeMap{<:Any,<:LinearMapVector}, x)
-    N = length(A.maps)
-    if N == 1
-        return _unsafe_mul!(y, A.maps[1], x)
-    elseif N == 2
-        return _compositemul2!(y, A, x)
-    else
-        return _compositemulN!(y, A, x)
-    end
-end
-
-function _compositemul2!(y, A::CompositeMap{<:Any,<:LinearMapVector}, x,
-                        source = similar(y, (size(A.maps[1],1), size(x)[2:end]...)))
-    _unsafe_mul!(source, A.maps[1], x)
-    _unsafe_mul!(y, A.maps[2], source)
-    return y
-end
-function _compositemulN!(y, A::CompositeMap{<:Any,<:LinearMapVector}, x,
-                            source = similar(y, (size(A.maps[1],1), size(x)[2:end]...)),
-                            dest = similar(y, (size(A.maps[2],1), size(x)[2:end]...)))
-    N = length(A.maps)
-    _unsafe_mul!(source, A.maps[1], x)
-    for n in 2:N-1
-        dest = _resize(dest, (size(A.maps[n],1), size(x)[2:end]...))
-        _unsafe_mul!(dest, A.maps[n], source)
-        dest, source = source, dest # alternate dest and source
-    end
-    _unsafe_mul!(y, A.maps[N], source)
-    return y
-end
-
-function Base.:(*)(A::CompositeMap{<:Any,<:Tuple{Vararg{OOPFunctionMap}}}, x::AbstractVector)
-    foldr(*, reverse(A.maps), init=x)
-end
-
-function _compositemul!(y, A::CompositeMap{<:Any,<:Tuple{Vararg{OOPFunctionMap}}}, x)
-    copyto!(y, A*x)
 end

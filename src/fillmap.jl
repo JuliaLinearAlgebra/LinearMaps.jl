@@ -27,11 +27,6 @@ Base.:(==)(A::FillMap, B::FillMap) = A.λ == B.λ && A.size == B.size
 LinearAlgebra.adjoint(A::FillMap) = FillMap(adjoint(A.λ), reverse(A.size))
 LinearAlgebra.transpose(A::FillMap) = FillMap(transpose(A.λ), reverse(A.size))
 
-function Base.:(*)(A::FillMap, x::AbstractVector)
-    T = typeof(oneunit(eltype(A)) * (zero(eltype(x)) + zero(eltype(x))))
-    return fill(iszero(A.λ) ? zero(T) : A.λ*sum(x), A.size[1])
-end
-
 function _unsafe_mul!(y, A::FillMap, x::AbstractVector)
     return fill!(y, iszero(A.λ) ? zero(eltype(y)) : A.λ*sum(x))
 end

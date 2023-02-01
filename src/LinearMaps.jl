@@ -46,8 +46,13 @@ struct TwoArg <: MulStyle end # types "only" admit out-of-place multiplication
 
 MulStyle(::FiveArg, ::FiveArg) = FiveArg()
 MulStyle(::ThreeArg, ::FiveArg) = ThreeArg()
+MulStyle(::TwoArg, ::FiveArg) = TwoArg()
 MulStyle(::FiveArg, ::ThreeArg) = ThreeArg()
+MulStyle(::FiveArg, ::TwoArg) = TwoArg()
 MulStyle(::ThreeArg, ::ThreeArg) = ThreeArg()
+MulStyle(::ThreeArg, ::TwoArg) = ThreeArg()
+MulStyle(::TwoArg, ::ThreeArg) = ThreeArg()
+MulStyle(::TwoArg, ::TwoArg) = TwoArg()
 MulStyle(::LinearMap) = ThreeArg() # default
 MulStyle(::AbstractVecOrMat) = FiveArg()
 MulStyle(::AbstractQ) = ThreeArg()
@@ -114,10 +119,6 @@ _combine(As::LinearMapVector, Bs::LinearMapVector) = Base.vect(As..., Bs...)
 
 Compute the action of the linear map `A` on the vector `x`.
 
-!!! compat "Julia 1.3"
-    In Julia versions v1.3 and above, objects `L` of any subtype of `LinearMap`
-    are callable in the sense that `L(x) = L*x` for `x::AbstractVector`.
-
 ## Examples
 ```jldoctest; setup=(using LinearAlgebra, LinearMaps)
 julia> A=LinearMap([1.0 2.0; 3.0 4.0]); x=[1.0, 1.0];
@@ -137,7 +138,7 @@ function Base.:(*)(A::LinearMap, x::AbstractVector)
     check_dim_mul(A, x)
     T = promote_type(eltype(A), eltype(x))
     y = similar(x, T, axes(A)[1])
-    return mul!(y, A, x)
+    return @inbounds mul!(y, A, x)
 end
 
 (L::LinearMap)(x::AbstractVector) = L*x
@@ -167,8 +168,8 @@ julia> Y
  7.0  7.0
 ```
 """
-function mul!(y::AbstractVecOrMat, A::LinearMap, x::AbstractVector)
-    check_dim_mul(y, A, x)
+@inline function mul!(y::AbstractVecOrMat, A::LinearMap, x::AbstractVector)
+    @boundscheck check_dim_mul(y, A, x)
     return _unsafe_mul!(y, A, x)
 end
 # the following is of interest in, e.g., subspace-iteration methods
@@ -195,7 +196,7 @@ julia> mul!(Y, A, b)
 ```
 """
 function mul!(y::AbstractVecOrMat, A::LinearMap, s::Number)
-    size(y) == size(A) ||     
+    size(y) == size(A) ||
         throw(
             DimensionMismatch("y has size $(size(y)), A has size $(size(A))."))
     return _unsafe_mul!(y, A, s)
@@ -258,7 +259,7 @@ julia> mul!(Y, A, b, 2, 1)
 ```
 """
 function mul!(y::AbstractMatrix, A::LinearMap, s::Number, α::Number, β::Number)
-    size(y) == size(A) ||     
+    size(y) == size(A) ||
         throw(
             DimensionMismatch("y has size $(size(y)), A has size $(size(A))."))
     return _unsafe_mul!(y, A, s, α, β)
