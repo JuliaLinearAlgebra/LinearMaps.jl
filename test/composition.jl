@@ -7,7 +7,7 @@ using LinearMaps: LinearMapVector, LinearMapTuple
     FC = LinearMap{ComplexF64}(cumsum, reverse ∘ cumsum ∘ reverse, 10; ismutating=false)
     FCM = @inferred LinearMaps.CompositeMap{ComplexF64}((FC,))
     L = LowerTriangular(ones(10,10))
-    @test_throws DimensionMismatch F * LinearMap(rand(2,2))
+    @test_throws DimensionMismatch F * LinearMap(zeros(2,2))
     @test_throws ErrorException LinearMaps.CompositeMap{Float64}((FC, LinearMap(rand(10,10))))
     A = 2 * rand(ComplexF64, (10, 10)) .- 1
     B = rand(size(A)...)
@@ -20,6 +20,7 @@ using LinearMaps: LinearMapVector, LinearMapTuple
     @test FCM * v == F * v
     @test @inferred (F * F) * v == @inferred F * (F * v)
     @test @inferred (F * A) * v == @inferred F * (A * v)
+    @test LinearMaps._compositemul!(zero(F * A * v), F * A, v, zero(A*v)) ≈ (F * A) * v
     @test @inferred (A * F) * v == @inferred A * (F * v)
     @test @inferred A * (F * F) * v == @inferred A * (F * (F * v))
     F2 = F*F

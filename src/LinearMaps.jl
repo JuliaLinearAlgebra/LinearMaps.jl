@@ -45,12 +45,12 @@ struct ThreeArg <: MulStyle end # types "only" admit in-place multiplication
 struct TwoArg <: MulStyle end # types "only" admit out-of-place multiplication
 
 MulStyle(::FiveArg, ::FiveArg) = FiveArg()
-MulStyle(::ThreeArg, ::FiveArg) = ThreeArg()
-MulStyle(::TwoArg, ::FiveArg) = TwoArg()
 MulStyle(::FiveArg, ::ThreeArg) = ThreeArg()
 MulStyle(::FiveArg, ::TwoArg) = TwoArg()
+MulStyle(::ThreeArg, ::FiveArg) = ThreeArg()
 MulStyle(::ThreeArg, ::ThreeArg) = ThreeArg()
 MulStyle(::ThreeArg, ::TwoArg) = ThreeArg()
+MulStyle(::TwoArg, ::FiveArg) = TwoArg()
 MulStyle(::TwoArg, ::ThreeArg) = ThreeArg()
 MulStyle(::TwoArg, ::TwoArg) = TwoArg()
 MulStyle(::LinearMap) = ThreeArg() # default

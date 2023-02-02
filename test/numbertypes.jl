@@ -81,9 +81,11 @@ using Octonions: Octonion
     @test Array(-L) == -A
     @test Array(γ \ L) ≈ γ \ A
     @test Array(L / γ) ≈ A / γ
-    M = rand(Quaternion{Float64}, 10, 10); α = rand(Quaternion{Float64});
-    y = α * M * x; Y = α * M * A
-    @test (α * LinearMap(M)) * x ≈ (quat(α) * LinearMap(M)) * x ≈ y
+    M = randn(10, 10); α = randn();
+    y = α^2 * M * x; Y = α * M * A
+    @test (α^2 * LinearMap(M)) * x ≈ quat(α)*(α * LinearMap(M)) * x ≈ y
+    @test ((α * LinearMap(M))*quat(α)) * x ≈ y
+    @test mul!(copy(y), α * LinearMap(M), x) ≈ α * M * x
     @test mul!(copy(y), α * LinearMap(M), x, α, false) ≈ α * M * x * α
     @test mul!(copy(y), α * LinearMap(M), x, quat(α), false) ≈ α * M * x * α
     @test mul!(copy(Y), α * LinearMap(M), A) ≈ α * M * A
