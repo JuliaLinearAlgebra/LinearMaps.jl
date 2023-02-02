@@ -402,11 +402,6 @@ For the function-based constructor, there is one more keyword argument:
   The default value is guessed by looking at the number of arguments of the first
   occurrence of `f` in the method table.
 
-!!! compat
-    As of v3.9 the use of the `ismutating` keyword argument is deprecated. Instead, usage
-    of the [`FunctionMap`](@ref) constructor is strongly recommended, which admits a
-    corresponding type parameter.
-
 For the `EmbeddedMap` constructors, `dims` specifies the total dimensions of the map. The
 `index` argument specifies two collections of indices `inds1` and `inds2`, such that for
 the big zero map `L` (thought of as a matrix), one has `L[inds1,inds2] == A`. In other

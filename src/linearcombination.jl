@@ -113,7 +113,8 @@ for In in (AbstractVector, AbstractMatrix)
         else
             A1 = first(A.maps)
             if MulStyle(A1) !== ThreeArg() || iszero(β)
-                # this is allocation-free for MulStyle(A1) === FiveArg(), but allocates A1 * x,
+                # this is allocation-free for MulStyle(A1) === FiveArg(), but allocates
+                # A1 * x for MulStyle(A1) === TwoArg()
                 # but I'm afraid to reuse it since it may have too small of an eltype
                 _unsafe_mul!(y, A1, x, α, β)
                 # let _mul! decide whether an intermediate vector needs to be allocated
