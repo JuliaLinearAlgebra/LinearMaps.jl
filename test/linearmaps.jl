@@ -1,4 +1,5 @@
 using Test, LinearMaps, LinearAlgebra, SparseArrays
+using LinearMaps: MulStyle, FiveArg, ThreeArg, TwoArg
 
 @testset "basic functionality" begin
     A = 2 * rand(ComplexF64, (20, 10)) .- 1
@@ -45,6 +46,7 @@ end
     end
     Base.size(A::Union{SimpleFunctionMap,SimpleComplexFunctionMap}) = (A.N, A.N)
     Base.:(*)(A::Union{SimpleFunctionMap,SimpleComplexFunctionMap}, v::AbstractVector) = A.f(v)
+    LinearMaps.MulStyle(::Union{SimpleFunctionMap,SimpleComplexFunctionMap}) = LinearMaps.TwoArg()
     LinearAlgebra.mul!(y::AbstractVector, A::Union{SimpleFunctionMap,SimpleComplexFunctionMap}, x::AbstractVector) = copyto!(y, *(A, x))
 
     F = SimpleFunctionMap(cumsum, 10)
@@ -117,4 +119,16 @@ end
         @test mul!(ones(3, 2), A', [x x], α, β) == fill(β, 3, 2) + fill(15α, 3, 2)
     end
     @test Matrix(A') == Matrix(A)'
+end
+
+@testset "MulStyle" begin
+    A = LinearMap(zeros(2,2))
+    Q = LinearMap(qr(randn(2,2)).Q)
+    F = LinearMap(cumsum, 2)
+    @test MulStyle(A, A) === FiveArg()
+    @test MulStyle(Q, Q) === ThreeArg()
+    @test MulStyle(F, F) === TwoArg()
+    @test MulStyle(A, Q) === MulStyle(Q, A) === ThreeArg()
+    @test MulStyle(A, F) === MulStyle(F, A) === TwoArg()
+    @test MulStyle(Q, F) === MulStyle(F, Q) === ThreeArg()
 end

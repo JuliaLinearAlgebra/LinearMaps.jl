@@ -1,4 +1,5 @@
-using Test, LinearMaps, LinearAlgebra, SparseArrays, Quaternions
+using Test, LinearMaps, LinearAlgebra, SparseArrays
+using Quaternions: Quaternion
 
 @testset "conversion" begin
     A = 2 * rand(ComplexF64, (20, 10)) .- 1

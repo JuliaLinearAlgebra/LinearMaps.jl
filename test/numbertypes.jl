@@ -1,15 +1,17 @@
-using Test, LinearMaps, LinearAlgebra, Quaternions
+using Test, LinearMaps, LinearAlgebra
+using Quaternions: Quaternion, quat
+using Octonions: Octonion
 
 @testset "noncommutative number type" begin
-    x = Quaternion.(rand(10), rand(10), rand(10), rand(10))
+    x = randn(Quaternion{Float64},10)
     v = rand(10)
-    A = Quaternion.(rand(10,10), rand(10,10), rand(10,10), rand(10,10))
-    B = rand(ComplexF64, 10, 10)
+    A = randn(Quaternion{Float64}, 10, 10)
+    B = randn(Quaternion{Float64}, 10, 10)
     C = similar(A)
-    γ = Quaternion(rand(4)...) # "Number"
+    γ = randn(Quaternion{Float64}) # "Number"
     α = UniformScaling(γ)
-    β = UniformScaling(Quaternion.(rand(4)...))
-    λ = rand(ComplexF64)
+    β = UniformScaling(randn(Quaternion{Float64}))
+    λ = randn(Quaternion{Float64})
     L = LinearMap(A)
     F = LinearMap{eltype(A)}(x -> A*x, y -> A'y, 10)
     @test Array(F) == A
@@ -79,9 +81,11 @@ using Test, LinearMaps, LinearAlgebra, Quaternions
     @test Array(-L) == -A
     @test Array(γ \ L) ≈ γ \ A
     @test Array(L / γ) ≈ A / γ
-    M = rand(ComplexF64, 10, 10); α = rand(ComplexF64);
-    y = α * M * x; Y = α * M * A
-    @test (α * LinearMap(M)) * x ≈ (quat(α) * LinearMap(M)) * x ≈ y
+    M = randn(10, 10); α = randn();
+    y = α^2 * M * x; Y = α * M * A
+    @test (α^2 * LinearMap(M)) * x ≈ quat(α)*(α * LinearMap(M)) * x ≈ y
+    @test ((α * LinearMap(M))*quat(α)) * x ≈ y
+    @test mul!(copy(y), α * LinearMap(M), x) ≈ α * M * x
     @test mul!(copy(y), α * LinearMap(M), x, α, false) ≈ α * M * x * α
     @test mul!(copy(y), α * LinearMap(M), x, quat(α), false) ≈ α * M * x * α
     @test mul!(copy(Y), α * LinearMap(M), A) ≈ α * M * A
@@ -89,11 +93,11 @@ using Test, LinearMaps, LinearAlgebra, Quaternions
 end
 
 @testset "nonassociative number type" begin
-    x = Octonion.(rand(10), rand(10), rand(10), rand(10),rand(10), rand(10), rand(10), rand(10))
+    x = randn(Octonion{Float64}, 10)
     v = rand(10)
-    A = Octonion.(rand(10,10), rand(10,10), rand(10,10), rand(10,10),rand(10,10), rand(10,10), rand(10,10), rand(10,10))
-    α = UniformScaling(Octonion.(rand(8)...))
-    β = UniformScaling(Octonion.(rand(8)...))
+    A = randn(Octonion{Float64}, 10, 10)
+    α = randn(Octonion{Float64})*I
+    β = randn(Octonion{Float64})*I
     L = LinearMap(A)
     @test Array(L) == A
     @test Array(α * L) == α * A

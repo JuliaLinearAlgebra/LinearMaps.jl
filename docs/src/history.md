@@ -1,5 +1,20 @@
 # Version history
 
+## What's new in v3.10
+
+* A new `MulStyle` trait called `TwoArg` has been added. It should be used for `LinearMap`s
+  that do not admit a mutating multiplication à la (3-arg or 5-arg) `mul!`, but only
+  out-of-place multiplication à la `A * x`. Products (aka `CompositeMap`s) and sums (aka
+  `LinearCombination`s) of `TwoArg`-`LinearMap`s now have memory-optimized multiplication
+  kernels. For instance, `A*B*C*x` for three `TwoArg`-`LinearMap`s `A`, `B` and `C` now
+  allocates only `y = C*x`, `z = B*y` and the result of `A*z`.
+* The construction of function-based `LinearMap`s, typed `FunctionMap`, has been rearranged.
+  Additionally to the convenience constructor `LinearMap{T=Float64}(f, [fc,] M, N=M; kwargs...)`,
+  the newly exported constructor `FunctionMap{T,iip}(f, [fc], M, N; kwargs...)` is readily
+  available. Here, `iip` is either `true` or `false`, and encodes whether `f` (and `fc` if
+  present) are mutating functions. In the convenience constructor, this is determined via the
+  `Bool` keyword argument `ismutating` and may not be fully inferred.
+
 ## What's new in v3.9
 
 * The application of `LinearMap`s to vectors operation, i.e., `(A,x) -> A*x = A(x)`, is now

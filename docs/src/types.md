@@ -11,13 +11,17 @@ constructor described next.
 Abstract supertype
 
 ```@docs
-LinearMaps.LinearMap
+LinearMap
 ```
 
 ### `FunctionMap`
 
 Type for wrapping an arbitrary function that is supposed to implement the
 matrix-vector product as a `LinearMap`; see above.
+
+```@docs
+FunctionMap
+```
 
 ### `WrappedMap`
 
@@ -99,20 +103,19 @@ SparseArrays.blockdiag
 Type for lazily representing constantly filled matrices.
 
 ```@docs
-LinearMaps.FillMap
+FillMap
 ```
 
 ### `EmbeddedMap`
 
 Type for representing linear maps that are embedded in larger zero maps.
 
-
 ### `InverseMap`
 
 Type for lazy inverse of another linear map.
 
 ```@docs
-LinearMaps.InverseMap
+InverseMap
 ```
 
 ### `KhatriRaoMap` and `FaceSplittingMap`
