@@ -1,7 +1,8 @@
 using Test, LinearMaps, LinearAlgebra, SparseArrays
 
 @testset "transpose/adjoint" begin
-    CS = @inferred LinearMap{ComplexF64}(cumsum, x -> reverse(cumsum(reverse(x))), 10; ismutating=false)
+    ctr() = LinearMap{ComplexF64}(cumsum, x -> reverse(cumsum(reverse(x))), 10; ismutating=false)
+    CS = @inferred ctr()
     for transform in (adjoint, transpose)
         @test transform(CS) != CS
         @test CS != transform(CS)
@@ -38,7 +39,7 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
         @test mul!(copy(M), transform2(transform1(CS)), 2, α, β) ≈ transform2(transform1(M))*(2*α) + M*β
     end
 
-    id = @inferred LinearMap(identity, identity, 10; issymmetric=true, ishermitian=true, isposdef=true)
+    id = @inferred FunctionMap{Float64,false}(identity, identity, 10; issymmetric=true, ishermitian=true, isposdef=true)
     for transform in (adjoint, transpose)
         @test transform(id) == id
         @test id == transform(id)

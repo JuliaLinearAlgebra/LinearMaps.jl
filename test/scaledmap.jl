@@ -25,7 +25,8 @@ using Test, LinearMaps, LinearAlgebra
     LM = 0.5LinearMap(AM) + 0.5LinearMap(AM) + 1.0LinearMap(AM)
     @test LM*x ≈ 2cumsum(x)
     @test LinearMaps.MulStyle(LM) === LinearMaps.FiveArg()
-    @test iszero(@allocated mul!(y, LM, x))
+    mul!(y, LM, x)
+    @test (@allocated mul!(y, LM, x)) == 0
 
     @test B == A * α
     @test B * x == α * (A * x)
@@ -96,7 +97,7 @@ using Test, LinearMaps, LinearAlgebra
     A0 = LinearMap{T}(cumsum, reverse ∘ cumsum ∘ reverse, N) # out-of-place
     forw! = cumsum!
     back! = (x, y) -> reverse!(cumsum!(x, reverse!(copyto!(x, y))))
-    A1 = @inferred LinearMap{T}(forw!, back!, N) # in-place
+    A1 = @inferred FunctionMap{T,true}(forw!, back!, N) # in-place
     λ = 4.2
     B0 = @inferred λ * A0
     B1 = @inferred λ * A1

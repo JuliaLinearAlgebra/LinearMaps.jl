@@ -322,6 +322,7 @@ end
 # provide one global intermediate storage vector if necessary
 __blockmul!(::FiveArg, y, A, x::AbstractVecOrMat, α, β)  = ___blockmul!(y, A, x, α, β, nothing)
 __blockmul!(::ThreeArg, y, A, x::AbstractVecOrMat, α, β) = ___blockmul!(y, A, x, α, β, similar(y))
+__blockmul!(::TwoArg, y, A, x::AbstractVecOrMat, α, β)  = ___blockmul!(y, A, x, α, β, nothing)
 function ___blockmul!(y, A, x, α, β, ::Nothing)
     maps, rows, yinds, xinds = A.maps, A.rows, A.rowranges, A.colranges
     mapind = 0
