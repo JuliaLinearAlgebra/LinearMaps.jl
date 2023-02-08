@@ -157,6 +157,22 @@ using LinearMaps: LinearMapVector, LinearMapTuple
         @test P isa LinearMaps.CompositeMap{<:Any,<:LinearMapVector}
         @test P * ones(3) == (LowerTriangular(ones(3,3))^i) * ones(3)
     end
+    # test product of 2-arg FunctionMaps
+    N = 100
+    function plan()
+        y = zeros(N) # workspace
+        A = LinearMap{Float64}(x -> (y .= x; y), N)
+        return A, y
+    end
+    A, ya = plan()
+    B, yb = plan()
+    x = zeros(N)
+    C = @inferred A*B
+    @test C*x === ya
+    @test (@allocated C*x) == 0
+    mul!(deepcopy(ya), C, x)
+    y = deepcopy(ya)
+    @test (@allocated mul!(y, C, x)) == 0
 end
 
 # test product of 2-arg FunctionMaps
