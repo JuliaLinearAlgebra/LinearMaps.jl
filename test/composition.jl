@@ -157,20 +157,29 @@ using LinearMaps: LinearMapVector, LinearMapTuple
         @test P isa LinearMaps.CompositeMap{<:Any,<:LinearMapVector}
         @test P * ones(3) == (LowerTriangular(ones(3,3))^i) * ones(3)
     end
-    # test product of 2-arg FunctionMaps
-    N = 100
-    function plan()
-        y = zeros(N) # workspace
-        A = LinearMap{Float64}(x -> (y .= x; y), N)
-        return A, y
-    end
-    A, ya = plan()
-    B, yb = plan()
-    x = zeros(N)
-    C = @inferred A*B
-    @test C*x === ya
-    @test (@allocated C*x) == 0
-    mul!(deepcopy(ya), C, x)
-    y = deepcopy(ya)
-    @test (@allocated mul!(y, C, x)) == 0
 end
+
+# test product of 2-arg FunctionMaps
+# the following tests don't work when wrapped in a testset
+N = 100
+function planA()
+    y = zeros(N) # workspace
+    A = LinearMap{Float64}(x -> (y .= x .+ 1; y), N)
+    return A, y
+end
+function planB()
+    y = zeros(N) # workspace
+    A = LinearMap{Float64}(x -> (y .= x ./ 2; y), N)
+    return A, y
+end
+A, ya = planA()
+B, yb = planB()
+x = zeros(N)
+C = @inferred A*B; C*x
+@test C*x === ya == ones(N)
+D = @inferred B*A; D*x
+@test D*x === yb == fill(0.5, N)
+@test (@allocated C*x) == 0
+mul!(deepcopy(ya), C, x)
+y = deepcopy(ya)
+@test (@allocated mul!(y, C, x)) == 0
