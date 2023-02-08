@@ -19,6 +19,8 @@ Base.mapreduce(::typeof(identity), ::typeof(Base.mul_prod), maps::LinearMapTuple
 Base.mapreduce(::typeof(identity), ::typeof(Base.mul_prod), maps::AbstractVector{<:LinearMap{T}}) where {T} =
     CompositeMap{T}(reverse(maps))
 
+MulStyle(A::CompositeMap) = MulStyle(A.maps...) === TwoArg() ? TwoArg() : ThreeArg()
+
 # basic methods
 Base.size(A::CompositeMap) = (size(A.maps[end], 1), size(A.maps[1], 2))
 Base.axes(A::CompositeMap) = (axes(A.maps[end])[1], axes(A.maps[1])[2])
@@ -173,7 +175,7 @@ end
 
 function _unsafe_mul!(y, A::CompositeMap, x::AbstractVector)
     MulStyle(A) === TwoArg() ?
-        copyto!(y, foldr(*, reverse(A.maps), init=x)) :
+        copyto!(y, A*x) :
         _compositemul!(y, A, x)
     return y
 end
