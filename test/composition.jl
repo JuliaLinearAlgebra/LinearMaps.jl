@@ -6,6 +6,10 @@ using LinearMaps: LinearMapVector, LinearMapTuple
     @test F == LinearMap(cumsum, reverse ∘ cumsum ∘ reverse, 10; ismutating=false)
     FC = LinearMap{ComplexF64}(cumsum, reverse ∘ cumsum ∘ reverse, 10; ismutating=false)
     FCM = @inferred LinearMaps.CompositeMap{ComplexF64}((FC,))
+    FCMv = @inferred LinearMaps.CompositeMap{ComplexF64}([FC,])
+    FCiip = LinearMaps.CompositeMap{ComplexF64}((LinearMap{ComplexF64}(cumsum!, 10),))
+    FCM2v = @inferred LinearMaps.CompositeMap{ComplexF64}([FC, FC])
+    FCM2iipv = @inferred LinearMaps.CompositeMap{ComplexF64}([FCiip, FCiip])
     L = LowerTriangular(ones(10,10))
     @test_throws DimensionMismatch F * LinearMap(zeros(2,2))
     @test_throws ErrorException LinearMaps.CompositeMap{Float64}((FC, LinearMap(rand(10,10))))
@@ -17,7 +21,8 @@ using LinearMaps: LinearMapVector, LinearMapTuple
     N = @inferred LinearMap(B)
     v = rand(ComplexF64, 10)
     α = rand(ComplexF64)
-    @test FCM * v == F * v
+    @test FCiip * v == FCM * v == F * v == FCMv * v
+    @test FCM2v * v == F * F * v == FCM2iipv * v
     @test @inferred (F * F) * v == @inferred F * (F * v)
     @test @inferred (F * A) * v == @inferred F * (A * v)
     @test LinearMaps._compositemul!(zero(F * A * v), F * A, v, zero(A*v)) ≈ (F * A) * v
@@ -123,6 +128,7 @@ using LinearMaps: LinearMapVector, LinearMapTuple
     w1 = im.*ones(ComplexF64, prod(sizes[1]))
     for i = N:-1:1
         v2 = prod(Lf[i:N]) * ones(prod(sizes[1]))
+        i < N && (y2 = LinearMaps._compositemul!(zero(v2), prod(Lf[i:N]), ones(prod(sizes[1]))))
         u2 = transpose(LinearMap(prod(Lt[N:-1:i]))) * ones(prod(sizes[1]))
         w2 = adjoint(LinearMap(prod(Lc[N:-1:i]))) * ones(prod(sizes[1]))
 
@@ -131,6 +137,7 @@ using LinearMaps: LinearMapVector, LinearMapTuple
         w1 = adjoint(Lc[i]) * w1
 
         @test v1 == v2
+        i < N && @test v2 == y2
         @test u1 == u2
         @test w1 == w2
     end
