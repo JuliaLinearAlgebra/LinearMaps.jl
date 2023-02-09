@@ -8,6 +8,7 @@ using LinearMaps: LinearMapVector, LinearMapTuple
     FCM = @inferred LinearMaps.CompositeMap{ComplexF64}((FC,))
     FCMv = @inferred LinearMaps.CompositeMap{ComplexF64}([FC,])
     FCiip = LinearMaps.CompositeMap{ComplexF64}((LinearMap{ComplexF64}(cumsum!, 10),))
+    FCiipv = LinearMaps.CompositeMap{ComplexF64}([LinearMap{ComplexF64}(cumsum!, 10),])
     FCM2v = @inferred LinearMaps.CompositeMap{ComplexF64}([FC, FC])
     FCM2iipv = @inferred LinearMaps.CompositeMap{ComplexF64}([FCiip, FCiip])
     L = LowerTriangular(ones(10,10))
@@ -21,8 +22,9 @@ using LinearMaps: LinearMapVector, LinearMapTuple
     N = @inferred LinearMap(B)
     v = rand(ComplexF64, 10)
     α = rand(ComplexF64)
-    @test FCiip * v == FCM * v == F * v == FCMv * v
+    @test FCiip * v == FCM * v == F * v == FCMv * v == FCiipv * v
     @test FCM2v * v == F * F * v == FCM2iipv * v
+    @test mul!(zeros([v v]), FCM, [v v]) == [F*v F*v]
     @test @inferred (F * F) * v == @inferred F * (F * v)
     @test @inferred (F * A) * v == @inferred F * (A * v)
     @test LinearMaps._compositemul!(zero(F * A * v), F * A, v, zero(A*v)) ≈ (F * A) * v
