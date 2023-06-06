@@ -1,3 +1,10 @@
+module LinearMapsChainRulesCoreExt
+
+using ChainRulesCore: unthunk, NoTangent, @thunk, @not_implemented
+import ChainRulesCore: rrule
+
+using LinearMaps
+
 function rrule(::typeof(*), A::LinearMap, x::AbstractVector)
     y = A*x
     function pullback(dy)
@@ -15,3 +22,6 @@ function rrule(A::LinearMap, x::AbstractVector)
     end
     return y, pullback
 end
+
+
+end # module ChainRulesCore
