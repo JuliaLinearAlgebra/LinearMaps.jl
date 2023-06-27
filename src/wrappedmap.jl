@@ -24,14 +24,12 @@ WrappedMap(lmap::MapOrVecOrMat{T}; kwargs...) where {T} = WrappedMap{T}(lmap; kw
 # cheap property checks (usually by type)
 _issymmetric(A::AbstractMatrix) = false
 _issymmetric(A::AbstractQ) = false
-_issymmetric(A::AbstractSparseMatrix) = issymmetric(A)
 _issymmetric(A::LinearMap) = issymmetric(A)
 _issymmetric(A::LinearAlgebra.RealHermSymComplexSym) = issymmetric(A)
 _issymmetric(A::Union{Bidiagonal,Diagonal,SymTridiagonal,Tridiagonal}) = issymmetric(A)
 
 _ishermitian(A::AbstractMatrix) = false
 _ishermitian(A::AbstractQ) = false
-_ishermitian(A::AbstractSparseMatrix) = ishermitian(A)
 _ishermitian(A::LinearMap) = ishermitian(A)
 _ishermitian(A::LinearAlgebra.RealHermSymComplexHerm) = ishermitian(A)
 _ishermitian(A::Union{Bidiagonal,Diagonal,SymTridiagonal,Tridiagonal}) = ishermitian(A)

@@ -505,33 +505,16 @@ for k in 1:8 # is 8 sufficient?
     mapargs = ntuple(n ->:($(Symbol(:A, n))), Val(k-1))
     # yields (:LinearMap(A1), :LinearMap(A2), ..., :LinearMap(A(k-1)))
 
-    @eval begin
-        function SparseArrays.blockdiag($(Is...), $L, As::MapOrVecOrMat...)
+    @eval function Base.cat($(Is...), $L, As::MapOrVecOrMat...; dims::Dims{2})
+        if dims == (1,2)
             return BlockDiagonalMap(convert_to_lmaps($(mapargs...))...,
                                     $(Symbol(:A, k)),
                                     convert_to_lmaps(As...)...)
-        end
-
-        function Base.cat($(Is...), $L, As::MapOrVecOrMat...; dims::Dims{2})
-            if dims == (1,2)
-                return BlockDiagonalMap(convert_to_lmaps($(mapargs...))...,
-                                        $(Symbol(:A, k)),
-                                        convert_to_lmaps(As...)...)
-            else
-                throw(ArgumentError("dims keyword in cat of LinearMaps must be (1,2)"))
-            end
+        else
+            throw(ArgumentError("dims keyword in cat of LinearMaps must be (1,2)"))
         end
     end
 end
-
-"""
-    blockdiag(As::Union{LinearMap,AbstractVecOrMatOrQ}...)::BlockDiagonalMap
-
-Construct a (lazy) representation of the diagonal concatenation of the arguments.
-To avoid fallback to the generic `SparseArrays.blockdiag`, there must be a `LinearMap`
-object among the first 8 arguments.
-"""
-SparseArrays.blockdiag
 
 """
     cat(As::Union{LinearMap,AbstractVecOrMatOrQ}...; dims=(1,2))::BlockDiagonalMap
