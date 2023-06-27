@@ -21,10 +21,6 @@ Base.mapreduce(::typeof(identity), ::typeof(Base.add_sum), maps::LinearMapTupleO
 Base.mapreduce(::typeof(identity), ::typeof(Base.add_sum), maps::AbstractVector{<:LinearMap{T}}) where {T} =
     LinearCombination{T}(maps)
 
-mean(f::F, maps::LinearMapTupleOrVector) where {F} = sum(f, maps) / length(maps)
-mean(maps::LinearMapTupleOrVector) = mean(identity, maps)
-mean(A::LinearCombination) = mean(A.maps)
-
 MulStyle(A::LinearCombination) = MulStyle(A.maps...)
 
 # basic methods

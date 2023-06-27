@@ -6,9 +6,6 @@ export ⊗, squarekron, kronsum, ⊕, sumkronsum, khatrirao, facesplitting
 using LinearAlgebra
 using LinearAlgebra: AbstractQ
 import LinearAlgebra: mul!
-using SparseArrays
-
-import Statistics: mean
 
 using Base: require_one_based_indexing
 
@@ -422,6 +419,8 @@ LinearMap{T}(f, args...; kwargs...) where {T} = FunctionMap{T}(f, args...; kwarg
 
 @static if !isdefined(Base, :get_extension)
     include("../ext/LinearMapsChainRulesCoreExt.jl")
+    include("../ext/LinearMapsSparseArraysExt.jl")
+    include("../ext/LinearMapsStatisticsExt.jl")
 end
 
 end # module
