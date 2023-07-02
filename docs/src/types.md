@@ -179,6 +179,10 @@ as in the usual matrix case: `transpose(A) * x` and `mul!(y, A', x)`, for instan
   a linear map for which you only have a function definition (e.g. to be able
   to use its `transpose` or `adjoint`).
 
+!!! note
+    In Julia versions v1.9 and higher, conversion to spare matrices requires loading
+    `SparseArrays.jl` by the user in advance.
+
 ### Slicing methods
 
 Complete slicing, i.e., `A[:,j]`, `A[:,J]`, `A[i,:]`, `A[I,:]` and `A[:,:]` for `i`, `j`
@@ -188,3 +192,12 @@ slicing) to standard unit vectors of appropriate length. By complete slicing we 
 two-dimensional Cartesian indexing where at least one of the "indices" is a colon. This is
 facilitated by overloads of `Base.getindex`. Partial slicing à la `A[I,J]` and scalar or
 linear indexing are _not_ supported.
+
+### Sum, product, mean and trace
+
+Natural function overloads for `Base.sum`, `Base.prod`, `Statistics.mean` and `LinearAlgebra.tr`
+exist.
+
+!!! note
+    In Julia versions v1.9 and higher, creating the mean linear operator requires loading
+    `Statistics.jl` by the user in advance.
