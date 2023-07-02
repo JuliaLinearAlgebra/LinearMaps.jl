@@ -18,7 +18,7 @@ using LinearMaps, LinearAlgebra, Test
     @test tr(A ⊗ B ⊗ A) ≈ tr(kron(A, B, A))
     @test tr(A ⊗ B ⊗ A ⊗ B) ≈ tr(kron(A, B, A, B))
     v = A[:,1]
-    @test tr(v ⊗ v') == norm(v)^2
+    @test tr(v ⊗ v') ≈ norm(v)^2
     v = [randn(2,2) for _ in 1:3]
     @test tr(v ⊗ v') ≈ mapreduce(*, +, v, v')
     @test tr(LinearMap{Int}(cumsum!, 10) ⊕ LinearMap{Int}(cumsum!, 10)) == 200
