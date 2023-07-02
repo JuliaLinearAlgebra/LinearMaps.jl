@@ -77,7 +77,7 @@ LinearMaps.:⊕
 ```
 
 The common use case of rank-1 matrices/operators with image spanning vector `u` and
-projection vector `v` is readily available as `u ⊗ v'`.
+projection vector `v` is readily available as `u ⊗ v'` or `u ⊗ transpose(v)`.
 
 There exist alternative constructors of Kronecker products and sums for square factors and
 summands, respectively. These are designed for cases of 3 or more arguments, and
