@@ -180,7 +180,7 @@ as in the usual matrix case: `transpose(A) * x` and `mul!(y, A', x)`, for instan
   to use its `transpose` or `adjoint`).
 
 !!! note
-    In Julia versions v1.9 and higher, conversion to spare matrices requires loading
+    In Julia versions v1.9 and higher, conversion to sparse matrices requires loading
     `SparseArrays.jl` by the user in advance.
 
 ### Slicing methods
