@@ -43,3 +43,5 @@ include("inversemap.jl")
 include("rrules.jl")
 
 include("khatrirao.jl")
+
+include("trace.jl")

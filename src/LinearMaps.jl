@@ -5,7 +5,7 @@ export ⊗, squarekron, kronsum, ⊕, sumkronsum, khatrirao, facesplitting
 
 using LinearAlgebra
 using LinearAlgebra: AbstractQ
-import LinearAlgebra: mul!
+import LinearAlgebra: mul!, tr
 
 using Base: require_one_based_indexing
 
@@ -348,6 +348,7 @@ include("conversion.jl") # conversion of linear maps to matrices
 include("show.jl") # show methods for LinearMap objects
 include("getindex.jl") # getindex functionality
 include("inversemap.jl")
+include("trace.jl")
 
 """
     LinearMap(A::LinearMap; kwargs...)::WrappedMap

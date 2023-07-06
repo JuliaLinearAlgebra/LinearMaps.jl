@@ -108,7 +108,7 @@ compared to [`kron`](@ref), but benchmarking intended use cases is highly recomm
 function squarekron(A::MapOrMatrix, B::MapOrMatrix, C::MapOrMatrix, Ds::MapOrMatrix...)
     maps = (A, B, C, Ds...)
     T = promote_type(map(eltype, maps)...)
-    all(_issquare, maps) || throw(ArgumentError("operators need to be square in Kronecker sums"))
+    all(_issquare, maps) || throw(ArgumentError("operators need to be square in squarekron"))
     ns = map(a -> size(a, 1), maps)
     firstmap = first(maps) ⊗ UniformScalingMap(true, prod(ns[2:end]))
     lastmap  = UniformScalingMap(true, prod(ns[1:end-1])) ⊗ last(maps)
@@ -376,7 +376,7 @@ true
 [^1]: Fernandes, P. and Plateau, B. and Stewart, W. J. ["Efficient Descriptor-Vector Multiplications in Stochastic Automata Networks"](https://doi.org/10.1145/278298.278303), _Journal of the ACM_, 45(3), 381–414, 1998.
 """
 function sumkronsum(A::MapOrMatrix, B::MapOrMatrix)
-    LinearAlgebra.checksquare(A, B)
+    (_issquare(A) && _issquare(B)) || throw(ArgumentError("operators need to be square in Kronecker sums"))
     A ⊗ UniformScalingMap(true, size(B,1)) + UniformScalingMap(true, size(A,1)) ⊗ B
 end
 function sumkronsum(A::MapOrMatrix, B::MapOrMatrix, C::MapOrMatrix, Ds::MapOrMatrix...)
