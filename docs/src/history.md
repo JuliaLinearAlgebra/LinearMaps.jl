@@ -1,5 +1,12 @@
 # Version history
 
+## What's new in v3.11
+
+* The `tr` function from `LinearAlgebra.jl` is now overloaded both for generic `LinearMap`
+  types and specialized for most provided `LinearMap` types. In the generic case, this is
+  computationally as expensive as computing the whole matrix representation, though the
+  latter is, of course, not stored.
+
 ## What's new in v3.10
 
 * A new `MulStyle` trait called `TwoArg` has been added. It should be used for `LinearMap`s

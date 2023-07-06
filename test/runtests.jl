@@ -1,7 +1,7 @@
 using Test, LinearMaps, Aqua
 
 @testset "code quality" begin
-    Aqua.test_all(LinearMaps)
+    Aqua.test_all(LinearMaps, project_toml_formatting=VERSION≥v"1.7")
 end
 
 include("linearmaps.jl")
@@ -45,3 +45,5 @@ include("rrules.jl")
 include("units.jl")
 
 include("khatrirao.jl")
+
+include("trace.jl")

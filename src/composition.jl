@@ -27,9 +27,11 @@ end
 Base.mapreduce(::typeof(identity), ::typeof(Base.mul_prod), maps::AbstractVector{<:LinearMap{T}}) where {T} =
     CompositeMap{T}(reverse(maps))
 
+MulStyle(A::CompositeMap) = MulStyle(A.maps...) === TwoArg() ? TwoArg() : ThreeArg()
+
 # basic methods
-Base.size(A::CompositeMap) = (size(A.maps[end], 1), size(A.maps[1], 2))
-Base.axes(A::CompositeMap) = (axes(A.maps[end])[1], axes(A.maps[1])[2])
+Base.size(A::CompositeMap) = (size(last(A.maps), 1), size(first(A.maps), 2))
+Base.axes(A::CompositeMap) = (axes(last(A.maps))[1], axes(first(A.maps))[2])
 Base.isreal(A::CompositeMap) = all(isreal, A.maps) # sufficient but not necessary
 
 # the following rules are sufficient but not necessary
@@ -38,17 +40,17 @@ for (f, _f, g) in ((:issymmetric, :_issymmetric, :transpose),
     @eval begin
         LinearAlgebra.$f(A::CompositeMap) = $_f(A.maps)
         $_f(maps::Tuple{}) = true
-        $_f(maps::Tuple{<:LinearMap}) = $f(maps[1])
+        $_f(maps::Tuple{<:LinearMap}) = $f(first(maps))
         $_f(maps::LinearMapTuple) =
-            maps[end] == $g(maps[1]) && $_f(Base.front(Base.tail(maps)))
+            maps[end] == $g(first(maps)) && $_f(Base.front(Base.tail(maps)))
         function $_f(maps::LinearMapVector)
             n = length(maps)
             if n == 0
                 return true
             elseif n == 1
-                return ($f(maps[1]))::Bool
+                return ($f(first(maps)))::Bool
             else
-                return ((maps[end] == $g(maps[1]))::Bool && $_f(@views maps[2:end-1]))
+                return ((last(maps) == $g(first(maps)))::Bool && $_f(@views maps[begin+1:end-1]))
             end
         end
         # since the introduction of ScaledMap, the following cases cannot occur
@@ -77,10 +79,10 @@ function _isposdef(maps::LinearMapVector)
     if n == 0
         return true
     elseif n == 1
-        return isposdef(maps[1])
+        return isposdef(first(maps))
     else
-        return (maps[end] == adjoint(maps[1]) || maps[end] == maps[1]) &&
-            isposdef(maps[1]) && _isposdef(maps[2:end-1])
+        return (last(maps) == adjoint(first(maps)) || last(maps) == first(maps)) &&
+            isposdef(first(maps)) && _isposdef(maps[begin+1:end-1])
     end
 end
 
@@ -181,17 +183,16 @@ end
 
 function _unsafe_mul!(y, A::CompositeMap, x::AbstractVector)
     MulStyle(A) === TwoArg() ?
-        copyto!(y, foldr(*, reverse(A.maps), init=x)) :
+        copyto!(y, A*x) :
         _compositemul!(y, A, x)
     return y
 end
 _unsafe_mul!(y, A::CompositeMap, x::AbstractMatrix) = _compositemul!(y, A, x)
+_unsafe_mul!(y, A::CompositeMap{<:Any,<:Tuple{LinearMap}}, x::AbstractVector) =
+    _unsafe_mul!(y, A.maps[1], x)
+_unsafe_mul!(y, A::CompositeMap{<:Any,<:Tuple{LinearMap}}, X::AbstractMatrix) =
+    _unsafe_mul!(y, A.maps[1], X)
 
-function _compositemul!(y, A::CompositeMap{<:Any,<:Tuple{LinearMap}}, x,
-                        source = nothing,
-                        dest = nothing)
-    return _unsafe_mul!(y, A.maps[1], x)
-end
 function _compositemul!(y, A::CompositeMap{<:Any,<:Tuple{LinearMap,LinearMap}}, x,
                         source = nothing,
                         dest = nothing)
@@ -212,9 +213,9 @@ function _compositemul!(y, A::CompositeMap{<:Any,<:LinearMapVector}, x,
                         dest = nothing)
     N = length(A.maps)
     if N == 1
-        return _unsafe_mul!(y, A.maps[1], x)
+        return _unsafe_mul!(y, A.maps[begin], x)
     elseif N == 2
-        return _unsafe_mul!(y, A.maps[2] * A.maps[1], x)
+        return _unsafe_mul!(y, A.maps[end] * A.maps[begin], x)
     else
         return _compositemulN!(y, A, x, source, dest)
     end
@@ -229,14 +230,16 @@ function _compositemulN!(y, A::CompositeMap, x,
     #   resize!(source, size(A.maps[1],1)) # trick due to complex case
     # todo: build reinterpret into _unsafe_mul! instead?
     # only necessary if either source or map has Number type instead of Real|Complex
+    n = n0 = firstindex(A.maps)
     source = isnothing(src) ?
-        convert(AbstractArray, A.maps[1] * x) :
-        _unsafe_mul!(src, A.maps[1], x)
+        convert(AbstractArray, A.maps[n] * x) :
+        _unsafe_mul!(src, A.maps[n], x)
+    n += 1
     dest = isnothing(dst) ?
-        convert(AbstractArray, A.maps[2] * source) :
-        _unsafe_mul!(dst, A.maps[2], source)
+        convert(AbstractArray, A.maps[n] * source) :
+        _unsafe_mul!(dst, A.maps[n], source)
     dest, source = source, dest # alternate dest and source
-    for n in 3:N-1
+    for n in (n0+2):N-1
         # dest = _resize(dest, (size(A.maps[n], 1), size(x)[2:end]...))
         # dest = reinterpret(_multype(A.maps[n], source), dest)
         dest = similar([], _multype(A.maps[n], source), (size(A.maps[n], 1), size(source)[2:end]...))
@@ -244,7 +247,7 @@ function _compositemulN!(y, A::CompositeMap, x,
         # dest, source = source, dest # alternate dest and source
         source = dest
     end
-    _unsafe_mul!(y, A.maps[N], source)
+    _unsafe_mul!(y, last(A.maps), source)
     return y
 end
 

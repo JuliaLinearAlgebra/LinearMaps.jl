@@ -6,6 +6,11 @@ using LinearMaps: LinearMapVector, LinearMapTuple
     @test F == LinearMap(cumsum, reverse ∘ cumsum ∘ reverse, 10; ismutating=false)
     FC = LinearMap{ComplexF64}(cumsum, reverse ∘ cumsum ∘ reverse, 10; ismutating=false)
     FCM = @inferred LinearMaps.CompositeMap{ComplexF64}((FC,))
+    FCMv = @inferred LinearMaps.CompositeMap{ComplexF64}([FC,])
+    FCiip = LinearMaps.CompositeMap{ComplexF64}((LinearMap{ComplexF64}(cumsum!, 10),))
+    FCiipv = LinearMaps.CompositeMap{ComplexF64}([LinearMap{ComplexF64}(cumsum!, 10),])
+    FCM2v = @inferred LinearMaps.CompositeMap{ComplexF64}([FC, FC])
+    FCM2iipv = @inferred LinearMaps.CompositeMap{ComplexF64}([FCiip, FCiip])
     L = LowerTriangular(ones(10,10))
     @test_throws DimensionMismatch F * LinearMap(zeros(2,2))
     @test_throws ErrorException LinearMaps.CompositeMap{Float64}((FC, LinearMap(rand(10,10))))
@@ -17,7 +22,9 @@ using LinearMaps: LinearMapVector, LinearMapTuple
     N = @inferred LinearMap(B)
     v = rand(ComplexF64, 10)
     α = rand(ComplexF64)
-    @test FCM * v == F * v
+    @test FCiip * v == FCM * v == F * v == FCMv * v == FCiipv * v
+    @test FCM2v * v == F * F * v == FCM2iipv * v
+    @test mul!(zero([v v]), FCM, [v v]) == [F*v F*v]
     @test @inferred (F * F) * v == @inferred F * (F * v)
     @test @inferred (F * A) * v == @inferred F * (A * v)
     @test LinearMaps._compositemul!(zero(F * A * v), F * A, v, zero(A*v)) ≈ (F * A) * v
@@ -123,6 +130,7 @@ using LinearMaps: LinearMapVector, LinearMapTuple
     w1 = im.*ones(ComplexF64, prod(sizes[1]))
     for i = N:-1:1
         v2 = prod(Lf[i:N]) * ones(prod(sizes[1]))
+        i < N && (y2 = LinearMaps._compositemul!(zero(v2), prod(Lf[i:N]), ones(prod(sizes[1]))))
         u2 = transpose(LinearMap(prod(Lt[N:-1:i]))) * ones(prod(sizes[1]))
         w2 = adjoint(LinearMap(prod(Lc[N:-1:i]))) * ones(prod(sizes[1]))
 
@@ -131,6 +139,7 @@ using LinearMaps: LinearMapVector, LinearMapTuple
         w1 = adjoint(Lc[i]) * w1
 
         @test v1 == v2
+        i < N && @test v2 == y2
         @test u1 == u2
         @test w1 == w2
     end
@@ -158,3 +167,28 @@ using LinearMaps: LinearMapVector, LinearMapTuple
         @test P * ones(3) == (LowerTriangular(ones(3,3))^i) * ones(3)
     end
 end
+
+# test product of 2-arg FunctionMaps
+# the following tests don't work when wrapped in a testset
+N = 100
+function planA()
+    y = zeros(N) # workspace
+    A = LinearMap{Float64}(x -> (y .= x .+ 1; y), N)
+    return A, y
+end
+function planB()
+    y = zeros(N) # workspace
+    A = LinearMap{Float64}(x -> (y .= x ./ 2; y), N)
+    return A, y
+end
+A, ya = planA()
+B, yb = planB()
+x = zeros(N)
+C = @inferred A*B; C*x
+@test C*x === ya == ones(N)
+D = @inferred B*A; D*x
+@test D*x === yb == fill(0.5, N)
+@test (@allocated C*x) == 0
+mul!(deepcopy(ya), C, x)
+y = deepcopy(ya)
+@test (@allocated mul!(y, C, x)) == 0

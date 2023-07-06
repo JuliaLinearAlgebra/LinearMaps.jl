@@ -5,13 +5,7 @@ export ⊗, squarekron, kronsum, ⊕, sumkronsum, khatrirao, facesplitting
 
 using LinearAlgebra
 using LinearAlgebra: AbstractQ
-import LinearAlgebra: mul!
-using SparseArrays
-
-import Statistics: mean
-
-using ChainRulesCore: unthunk, NoTangent, @thunk, @not_implemented
-import ChainRulesCore: rrule
+import LinearAlgebra: mul!, tr
 
 using Base: require_one_based_indexing
 
@@ -352,7 +346,7 @@ include("conversion.jl") # conversion of linear maps to matrices
 include("show.jl") # show methods for LinearMap objects
 include("getindex.jl") # getindex functionality
 include("inversemap.jl")
-include("chainrules.jl") # AD rules through ChainRulesCore
+include("trace.jl")
 
 """
     LinearMap(A::LinearMap; kwargs...)::WrappedMap
@@ -421,5 +415,11 @@ LinearMap(A::MapOrVecOrMat, dims::Dims{2}; offset::Dims{2}) =
 
 LinearMap{T}(A::MapOrVecOrMat; kwargs...) where {T} = WrappedMap{T}(A; kwargs...)
 LinearMap{T}(f, args...; kwargs...) where {T} = FunctionMap{T}(f, args...; kwargs...)
+
+@static if !isdefined(Base, :get_extension)
+    include("../ext/LinearMapsChainRulesCoreExt.jl")
+    include("../ext/LinearMapsSparseArraysExt.jl")
+    include("../ext/LinearMapsStatisticsExt.jl")
+end
 
 end # module
