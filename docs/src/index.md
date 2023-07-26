@@ -14,6 +14,12 @@ in package mode, which can be entered by typing `]` in the Julia REPL.
 
 ## Examples
 
+The examples show how to define `LinearMap`s. For more details refer to the section on
+[Types and their constructors](@ref).
+A linear map is defined by the way it acts on vectors and by its dimensions, potentially
+also by its [adjoint](https://en.wikipedia.org/wiki/Hermitian_adjoint) action on vectors.
+Some properties of the linear map can be defined explicitly or implicitly.
+
 Let
 
 ```julia
@@ -21,8 +27,12 @@ A = LinearMap(rand(10, 10))
 B = LinearMap(cumsum, reverse∘cumsum∘reverse, 10)
 ```
 
-be a matrix- and function-based linear map, respectively. Then the following code just works,
-indistinguishably from the case when `A` and `B` are both `AbstractMatrix`-typed objects.
+be a matrix- and a function-based linear map, respectively. For `A` all properties are
+inferred from the input matrix; for `B` the action, the adjoint action and its dimensions
+(for a single number, the dimension is taken as square) are defined explicitly.
+Given the above the following code just works, indistinguishably from the case when `A` and
+`B` are both `AbstractMatrix`-typed objects, yet giving lazy, `LinearMap`-typed objects
+whose action on vectors corresponds to the otherwise expected matrix-vector multiplication.
 
 ```julia
 3.0A + 2B
