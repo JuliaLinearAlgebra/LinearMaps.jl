@@ -81,7 +81,7 @@ julia> L * ones(Int, 6)
  6
 ```
 """
-function Base.hcat(As::Union{LinearMap, UniformScaling, AbstractVecOrMatOrQ}...)
+function Base.hcat(As::Union{LinearMap, UniformScaling, AbstractArray, AbstractQ}...)
     T = promote_type(map(eltype, As)...)
     nbc = length(As)
 
@@ -119,7 +119,7 @@ julia> L * ones(Int, 3)
  3
 ```
 """
-function Base.vcat(As::Union{LinearMap,UniformScaling,AbstractVecOrMatOrQ}...)
+function Base.vcat(As::Union{LinearMap, UniformScaling, AbstractArray, AbstractQ}...)
     T = promote_type(map(eltype, As)...)
     nbr = length(As)
 
@@ -165,7 +165,7 @@ julia> L * ones(Int, 6)
 Base.hvcat
 
 function Base.hvcat(rows::Tuple{Vararg{Int}},
-                    As::Union{LinearMap, UniformScaling, AbstractVecOrMatOrQ}...)
+                    As::Union{LinearMap, UniformScaling, AbstractArray, AbstractQ}...)
     nr = length(rows)
     T = promote_type(map(eltype, As)...)
     sum(rows) == length(As) ||

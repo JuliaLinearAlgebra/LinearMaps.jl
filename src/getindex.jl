@@ -47,7 +47,7 @@ _getindex(A::LinearMap, I::Indexer, J::Indexer) =
     error("partial two-dimensional slicing of LinearMaps is not supported, consider using A[:,J][I] or A[I,:][J] instead")
 
 _getindex(A::LinearMap, ::Base.Slice, j::Integer) = A*unitvec(A, 2, j)
-function _getindex(A::LinearMap, i::Integer, J::Base.Slice)
+function _getindex(A::LinearMap, i::Integer, ::Base.Slice)
     try
         # requires adjoint action to be defined
         return vec(unitvec(A, 1, i)'A)
