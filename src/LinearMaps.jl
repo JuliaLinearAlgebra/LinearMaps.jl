@@ -118,12 +118,12 @@ Compute the action of the linear map `A` on the vector `x`.
 julia> A=LinearMap([1.0 2.0; 3.0 4.0]); x=[1.0, 1.0];
 
 julia> A*x
-2-element Array{Float64,1}:
+2-element Vector{Float64}:
  3.0
  7.0
 
 julia> A(x)
-2-element Array{Float64,1}:
+2-element Vector{Float64}:
  3.0
  7.0
 ```
@@ -150,14 +150,14 @@ with either `A` or `B`.
 julia> A=LinearMap([1.0 2.0; 3.0 4.0]); B=ones(2); Y = similar(B); mul!(Y, A, B);
 
 julia> Y
-2-element Array{Float64,1}:
+2-element Vector{Float64}:
  3.0
  7.0
 
 julia> A=LinearMap([1.0 2.0; 3.0 4.0]); B=ones(4,4); Y = similar(B); mul!(Y, A, B);
 
 julia> Y
-2×2 Array{Float64,2}:
+2×2 Matrix{Float64}:
  3.0  3.0
  7.0  7.0
 ```
@@ -211,7 +211,7 @@ julia> mul!(C, A, B, 100.0, 10.0) === C
 true
 
 julia> C
-2-element Array{Float64,1}:
+2-element Vector{Float64}:
  310.0
  730.0
 
@@ -221,7 +221,7 @@ julia> mul!(C, A, B, 100.0, 10.0) === C
 true
 
 julia> C
-2×2 Array{Float64,2}:
+2×2 Matrix{Float64}:
  310.0  320.0
  730.0  740.0
 ```
