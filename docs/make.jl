@@ -8,7 +8,6 @@ Literate.markdown(joinpath(@__DIR__, "src", "custom.jl"), joinpath(@__DIR__, "sr
 
 makedocs(
     sitename = "LinearMaps.jl",
-    format = Documenter.HTML(),
     modules = [LinearMaps],
     pages = Any[
         "Home" => "index.md",
