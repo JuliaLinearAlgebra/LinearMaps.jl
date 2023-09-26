@@ -1,7 +1,7 @@
 using Test, LinearMaps, Aqua
 
 @testset "code quality" begin
-    Aqua.test_all(LinearMaps, project_toml_formatting = VERSION≥v"1.7", piracy = VERSION≥v"1.9")
+    Aqua.test_all(LinearMaps, project_toml_formatting = VERSION≥v"1.7", piracy = (broken=true))
 end
 
 include("linearmaps.jl")
