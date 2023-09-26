@@ -147,16 +147,12 @@ with either `A` or `B`.
 
 ## Examples
 ```jldoctest; setup=(using LinearAlgebra, LinearMaps)
-julia> A=LinearMap([1.0 2.0; 3.0 4.0]); B=ones(2); Y = similar(B); mul!(Y, A, B);
-
-julia> Y
+julia> A = LinearMap([1.0 2.0; 3.0 4.0]); B = ones(2); Y = similar(B); mul!(Y, A, B)
 2-element Vector{Float64}:
  3.0
  7.0
 
-julia> A=LinearMap([1.0 2.0; 3.0 4.0]); B=ones(4,4); Y = similar(B); mul!(Y, A, B);
-
-julia> Y
+julia> A = LinearMap([1.0 2.0; 3.0 4.0]); B = ones(2,2); Y = similar(B); mul!(Y, A, B)
 2×2 Matrix{Float64}:
  3.0  3.0
  7.0  7.0
