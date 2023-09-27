@@ -37,7 +37,7 @@ julia> E = spdiagm(-1 => trues(1)); D = E + E' - 2I;
 julia> Δ = kron(D, J) + kron(J, D); # discrete 2D-Laplace operator
 
 julia> Matrix(Δ)
-4×4 Array{Int64,2}:
+4×4 Matrix{Int64}:
  -4   1   1   0
   1  -4   0   1
   1   0  -4   1

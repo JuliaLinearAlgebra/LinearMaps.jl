@@ -1,8 +1,10 @@
-using Test, LinearMaps, Aqua
+using Test, Documenter, LinearMaps, Aqua
 
 @testset "code quality" begin
     Aqua.test_all(LinearMaps, project_toml_formatting = VERSION≥v"1.7", piracy = (broken=true,))
 end
+
+doctest(LinearMaps)
 
 include("linearmaps.jl")
 
