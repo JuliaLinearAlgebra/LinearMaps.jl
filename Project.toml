@@ -20,4 +20,5 @@ LinearMapsStatisticsExt = "Statistics"
 
 [compat]
 ChainRulesCore = "1"
+Statistics = "1.6"
 julia = "1.6"
