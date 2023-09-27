@@ -30,13 +30,13 @@ function _getranges(maps, dim, inds=1:length(maps))
     return UnitRange.(starts, ends)
 end
 
-"""
-    rowcolranges(maps, rows)
+# """
+#     rowcolranges(maps, rows)
 
-Determines the range of rows for each block row and the range of columns for each
-map in `maps`, according to its position in a virtual matrix representation of the
-block linear map obtained from `hvcat(rows, maps...)`.
-"""
+# Determines the range of rows for each block row and the range of columns for each
+# map in `maps`, according to its position in a virtual matrix representation of the
+# block linear map obtained from `hvcat(rows, maps...)`.
+# """
 function rowcolranges(maps, rows)
     # find indices of the row-wise first maps
     firstmapinds = vcat(1, Base.front(rows)...)

@@ -43,6 +43,10 @@ Type for representing a scalar multiple of any `LinearMap` type. A
 objects are multiplied by real or complex scalars from the left or from the
 right.
 
+```@docs
+LinearMaps.ScaledMap
+```
+
 ### `UniformScalingMap`
 
 Type for representing a scalar multiple of the identity map (a.k.a. uniform
@@ -98,6 +102,12 @@ Base.hcat
 Base.vcat
 Base.hvcat
 Base.cat
+```
+
+With `using SparseArrays`, yet another method is available for creating lazy block-diagonal
+maps.
+
+```@docs
 SparseArrays.blockdiag
 ```
 
