@@ -92,7 +92,7 @@ julia> mul!(C, A, B, 1, 1)
  5.0  7.0
 ```
 """
-function mul!(X::AbstractMatrix, Y::AbstractMatrix, A::LinearMap, α, β)
+function mul!(X::AbstractMatrix, Y::AbstractMatrix, A::LinearMap, α::Number, β::Number)
     check_dim_mul(X, Y, A)
     _unsafe_mul!(X, Y, A, α, β)
 end

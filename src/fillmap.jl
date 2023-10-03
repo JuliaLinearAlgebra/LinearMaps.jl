@@ -18,7 +18,7 @@ FillMap(λ, m::Int, n::Int) = FillMap(λ, (m, n))
 
 # properties
 Base.size(A::FillMap) = A.size
-MulStyle(A::FillMap) = FiveArg()
+MulStyle(::FillMap) = FiveArg()
 LinearAlgebra.issymmetric(A::FillMap) = A.size[1] == A.size[2]
 LinearAlgebra.ishermitian(A::FillMap) = isreal(A.λ) && A.size[1] == A.size[2]
 LinearAlgebra.isposdef(A::FillMap) = (size(A, 1) == size(A, 2) == 1 && isposdef(A.λ))
