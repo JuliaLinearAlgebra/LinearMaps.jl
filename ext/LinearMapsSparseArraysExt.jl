@@ -3,12 +3,13 @@ module LinearMapsSparseArraysExt
 import SparseArrays: sparse, blockdiag, SparseMatrixCSC
 using SparseArrays: AbstractSparseMatrix
 
-using LinearAlgebra, LinearMaps
+using LinearMaps
 import LinearMaps: _issymmetric, _ishermitian
 using LinearMaps: WrappedMap, CompositeMap, LinearCombination, ScaledMap, UniformScalingMap,
     AdjointMap, TransposeMap, BlockMap, BlockDiagonalMap, KroneckerMap, KroneckerSumMap,
-    VecOrMatMap, AbstractVecOrMatOrQ, MapOrVecOrMat
-using LinearMaps: convert_to_lmaps, _tail, _unsafe_mul!
+    VecOrMatMap, AbstractVecOrMatOrQ, MapOrVecOrMat, convert_to_lmaps, _tail, _unsafe_mul!
+
+using LinearMaps.LinearAlgebra
 
 _issymmetric(A::AbstractSparseMatrix) = issymmetric(A)
 _ishermitian(A::AbstractSparseMatrix) = ishermitian(A)
@@ -16,7 +17,7 @@ _ishermitian(A::AbstractSparseMatrix) = ishermitian(A)
 # blockdiagonal concatenation via extension of blockdiag
 
 """
-    blockdiag(As::Union{LinearMap,AbstractVecOrMatOrQ}...)::BlockDiagonalMap
+    blockdiag(As::Union{LinearMap,AbstractVecOrMat,AbstractQ}...)::BlockDiagonalMap
 
 Construct a (lazy) representation of the diagonal concatenation of the arguments.
 To avoid fallback to the generic `blockdiag`, there must be a `LinearMap`
