@@ -188,7 +188,7 @@ Base.delete_method(
     )
 )
 
-# The seconnd option is when your class of linear maps that are modelled by your custom
+# The second option is when your class of linear maps that are modelled by your custom
 # `LinearMap` subtype are invariant under taking adjoints and transposes.
 
 LinearAlgebra.adjoint(A::MyFillMap) = MyFillMap(adjoint(A.λ), reverse(A.size))

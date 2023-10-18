@@ -12,7 +12,7 @@ KhatriRaoMap{T}(maps::As) where {T, As} = KhatriRaoMap{T, As}(maps)
     khatrirao(A::MapOrVecOrMat, B::MapOrVecOrMat) -> KhatriRaoMap
 
 Construct a lazy representation of the Khatri-Rao (or column-wise Kronecker) product of two
-maps or arrays `A` and `B`. For the application to vectors, the tranpose action of `A` on
+maps or arrays `A` and `B`. For the application to vectors, the transpose action of `A` on
 vectors needs to be defined.
 """
 khatrirao(A::MapOrVecOrMat, B::MapOrVecOrMat) =

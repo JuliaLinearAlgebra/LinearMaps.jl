@@ -131,7 +131,7 @@
 
 ## What's new in v3.4
 
-* In `WrappedMap` constructors, as implicitly called in addition and mutliplication
+* In `WrappedMap` constructors, as implicitly called in addition and multiplication
   of `LinearMap`s and `AbstractMatrix` objects, (conjugate) symmetry and positive
   definiteness are only determined for matrix types for which these checks are expected
   to be very cheap or even known at compile time based on the concrete type. The default
@@ -160,7 +160,7 @@
 
 ## What's new in v3.0
 
-* BREAKING change: Internally, any dependence on former `A*_mul_B!` methods is abandonned.
+* BREAKING change: Internally, any dependence on former `A*_mul_B!` methods is abandoned.
   For custom `LinearMap` subtypes, there are now two options:
   1. In case your type is invariant under adjoint/transposition (i.e.,
      `adjoint(L::MyLinearMap)::MyLinearMap` similar to, for instance,
