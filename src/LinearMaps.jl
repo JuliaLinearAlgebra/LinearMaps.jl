@@ -368,7 +368,7 @@ representation `(M, N)`, i.e., for functions `f` acting on length `N` vectors an
 length `M` vectors (with default value `N=M`). Preferably, also the `eltype` `T` of the
 corresponding matrix representation needs to be specified, i.e., whether the action of `f`
 on a vector will be similar to, e.g., multiplying by numbers of type `T`. If not specified,
-the devault value `T=Float64` will be assumed. Optionally, a corresponding function `fc`
+the default value `T=Float64` will be assumed. Optionally, a corresponding function `fc`
 can be specified that implements the adjoint (or transpose in the real case) of `f`.
 
 The keyword arguments and their default values are:
