@@ -239,11 +239,7 @@ function _resize(dest::AbstractVector, sz::Tuple{<:Integer})
     try
         resize!(dest, sz[1])
     catch err
-        if err == ErrorException("cannot resize array with shared data")
-            dest = similar(dest, sz)
-        else
-            rethrow(err)
-        end
+        dest = similar(dest, sz)
     end
     dest
 end
