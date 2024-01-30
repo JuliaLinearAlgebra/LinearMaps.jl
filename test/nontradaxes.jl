@@ -74,13 +74,15 @@ using Test, LinearMaps, LinearAlgebra, BlockArrays
     D1 = rand(4,5)
     D2 = rand(5,3)
     D3 = rand(3,6)
+    D4 = rand(6,6)
     A1 = PseudoBlockMatrix(D1, [1,3], [2,3])
     A2 = PseudoBlockMatrix(D2, [2,3], [2,1])
     A3 = PseudoBlockMatrix(D3, [2,1], [3,2,1])
+    A4 = PseudoBlockMatrix(D4, [3,2,1], [3,2,1])
     u = rand(6)
     x = PseudoBlockVector(u, [3,2,1])
-    L = LinearMap(A1) * LinearMap(A2) * LinearMap(A3)
+    L = LinearMap(A1) * LinearMap(A2) * LinearMap(A3) * LinearMap(A4)
     y = L * x
     v = Vector(y)
-    @test v ≈ D1*(D2*(D3*u))
+    @test v ≈ D1*(D2*(D3*(D4*u)))
 end
