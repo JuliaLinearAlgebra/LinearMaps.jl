@@ -149,8 +149,8 @@ facesplitting
 
 ```@docs
 Base.:*(::LinearMap,::AbstractVector)
-Base.:*(::LinearMap,::AbstractMatrix)
-Base.:*(::AbstractMatrix,::LinearMap)
+Base.:*(::LinearMap,::Union{LinearAlgebra.AbstractQ, AbstractMatrix})
+Base.:*(::Union{LinearAlgebra.AbstractQ, AbstractMatrix},::LinearMap)
 LinearAlgebra.mul!(::AbstractVecOrMat,::LinearMap,::AbstractVector)
 LinearAlgebra.mul!(::AbstractVecOrMat,::LinearMap,::AbstractVector,::Number,::Number)
 LinearAlgebra.mul!(::AbstractMatrix,::AbstractMatrix,::LinearMap)
