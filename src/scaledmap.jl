@@ -7,14 +7,16 @@ struct ScaledMap{T, S<:RealOrComplex, L<:LinearMap} <: LinearMap{T}
     λ::S
     lmap::L
     function ScaledMap{T}(λ::S, A::L) where {T, S <: RealOrComplex, L <: LinearMap{<:RealOrComplex}}
-        @assert Base.promote_op(*, S, eltype(A)) == T "target type $T cannot hold products of $S and $(eltype(A)) objects"
+        Tprod = typeof(oneunit(S) * oneunit(eltype(A)))
+        promote_type(T, Tprod) == T ||
+           error("target type $T vs product of $S and $(eltype(A))")
         new{T,S,L}(λ, A)
     end
 end
 
 # constructor
 ScaledMap(λ::RealOrComplex, lmap::LinearMap{<:RealOrComplex}) =
-    ScaledMap{Base.promote_op(*, typeof(λ), eltype(lmap))}(λ, lmap)
+    ScaledMap{typeof(oneunit(λ) * oneunit(eltype(lmap)))}(λ, lmap)
 
 # basic methods
 Base.size(A::ScaledMap) = size(A.lmap)

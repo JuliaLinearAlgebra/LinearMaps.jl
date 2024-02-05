@@ -1,3 +1,9 @@
+# appropriate type for product of two (possibly Unitful) quantities:
+_multype(a, b) = typeof(oneunit(eltype(a)) * oneunit(eltype(b)))
+# this variant is needed because reinterpret changes length of complex vectors
+#_multype(a, b, iscomplex::Bool) =
+#    typeof((1+0im) * oneunit(eltype(a)) * oneunit(eltype(b)))
+
 struct CompositeMap{T, As<:LinearMapTupleOrVector} <: LinearMap{T}
     maps::As # stored in order of application to vector
     function CompositeMap{T, As}(maps::As) where {T, As}
@@ -5,17 +11,19 @@ struct CompositeMap{T, As<:LinearMapTupleOrVector} <: LinearMap{T}
         for n in 2:N
             check_dim_mul(maps[n], maps[n-1])
         end
-        for TA in Base.Iterators.map(eltype, maps)
-            promote_type(T, TA) == T ||
-                error("eltype $TA cannot be promoted to $T in CompositeMap constructor")
-        end
+        Tprod = typeof(*(map(oneunit∘eltype, maps)...)) # handles units
+        promote_type(T, Tprod) == T ||
+            error("eltype $Tprod and $T incompatible in CompositeMap constructor")
         new{T, As}(maps)
     end
 end
+
 CompositeMap{T}(maps::As) where {T, As<:LinearMapTupleOrVector} = CompositeMap{T, As}(maps)
 
-Base.mapreduce(::typeof(identity), ::typeof(Base.mul_prod), maps::LinearMapTupleOrVector) =
-    CompositeMap{promote_type(map(eltype, maps)...)}(reverse(maps))
+function Base.mapreduce(::typeof(identity), ::typeof(Base.mul_prod), maps::LinearMapTupleOrVector)
+    Tprod = typeof(*(map(oneunit∘eltype, maps)...)) # handles units
+    return CompositeMap{Tprod}(reverse(maps))
+end
 Base.mapreduce(::typeof(identity), ::typeof(Base.mul_prod), maps::AbstractVector{<:LinearMap{T}}) where {T} =
     CompositeMap{T}(reverse(maps))
 
@@ -80,11 +88,11 @@ end
 
 # scalar multiplication and division (non-commutative case)
 function Base.:(*)(α::Number, A::LinearMap)
-    T = promote_type(typeof(α), eltype(A))
+    T = _multype(α, A)
     return CompositeMap{T}(_combine(A, UniformScalingMap(α, size(A, 1))))
 end
 function Base.:(*)(α::Number, A::CompositeMap)
-    T = promote_type(typeof(α), eltype(A))
+    T = _multype(α, A)
     Alast = last(A.maps)
     if Alast isa UniformScalingMap
         return CompositeMap{T}(_combine(_front(A.maps), α * Alast))
@@ -94,15 +102,15 @@ function Base.:(*)(α::Number, A::CompositeMap)
 end
 # needed for disambiguation
 function Base.:(*)(α::RealOrComplex, A::CompositeMap{<:RealOrComplex})
-    T = Base.promote_op(*, typeof(α), eltype(A))
+    T = _multype(α, A)
     return ScaledMap{T}(α, A)
 end
 function Base.:(*)(A::LinearMap, α::Number)
-    T = promote_type(typeof(α), eltype(A))
+    T = _multype(A, α)
     return CompositeMap{T}(_combine(UniformScalingMap(α, size(A, 2)), A))
 end
 function Base.:(*)(A::CompositeMap, α::Number)
-    T = promote_type(typeof(α), eltype(A))
+    T = _multype(A, α)
     Afirst = first(A.maps)
     if Afirst isa UniformScalingMap
         return CompositeMap{T}(_combine(Afirst * α, _tail(A.maps)))
@@ -112,7 +120,7 @@ function Base.:(*)(A::CompositeMap, α::Number)
 end
 # needed for disambiguation
 function Base.:(*)(A::CompositeMap{<:RealOrComplex}, α::RealOrComplex)
-    T = Base.promote_op(*, typeof(α), eltype(A))
+    T = _multype(A, α)
     return ScaledMap{T}(α, A)
 end
 
@@ -137,19 +145,19 @@ julia> LinearMap(ones(Int, 3, 3)) * CS * I * rand(3, 3);
 ```
 """
 function Base.:(*)(A₁::LinearMap, A₂::LinearMap)
-    T = promote_type(eltype(A₁), eltype(A₂))
+    T = _multype(A₁, A₂)
     return CompositeMap{T}(_combine(A₂, A₁))
 end
 function Base.:(*)(A₁::LinearMap, A₂::CompositeMap)
-    T = promote_type(eltype(A₁), eltype(A₂))
+    T = _multype(A₁, A₂)
     return CompositeMap{T}(_combine(A₂.maps, A₁))
 end
 function Base.:(*)(A₁::CompositeMap, A₂::LinearMap)
-    T = promote_type(eltype(A₁), eltype(A₂))
+    T = _multype(A₁, A₂)
     return CompositeMap{T}(_combine(A₂, A₁.maps))
 end
 function Base.:(*)(A₁::CompositeMap, A₂::CompositeMap)
-    T = promote_type(eltype(A₁), eltype(A₂))
+    T = _multype(A₁, A₂)
     return CompositeMap{T}(_combine(A₂.maps, A₁.maps))
 end
 # needed for disambiguation
@@ -217,6 +225,11 @@ function _compositemulN!(y, A::CompositeMap, x,
                          src = nothing,
                          dst = nothing)
     N = length(A.maps) # ≥ 3
+    # caution: be careful if y is complex but intermediate products are not
+    #   source = reinterpret(_multype(A.maps[1], x, !isreal(y)), source) # for units
+    #   resize!(source, size(A.maps[1],1)) # trick due to complex case
+    # todo: build reinterpret into _unsafe_mul! instead?
+    # only necessary if either source or map has Number type instead of Real|Complex
     n = n0 = firstindex(A.maps)
     source = isnothing(src) ?
         convert(AbstractArray, A.maps[n] * x) :
@@ -227,9 +240,12 @@ function _compositemulN!(y, A::CompositeMap, x,
         _unsafe_mul!(dst, A.maps[n], source)
     dest, source = source, dest # alternate dest and source
     for n in (n0+2):N-1
-        dest = _resize(dest, (size(A.maps[n], 1), size(x)[2:end]...))
+        # dest = _resize(dest, (size(A.maps[n], 1), size(x)[2:end]...))
+        # dest = reinterpret(_multype(A.maps[n], source), dest)
+        dest = similar([], _multype(A.maps[n], source), (size(A.maps[n], 1), size(source)[2:end]...))
         _unsafe_mul!(dest, A.maps[n], source)
-        dest, source = source, dest # alternate dest and source
+        # dest, source = source, dest # alternate dest and source
+        source = dest
     end
     _unsafe_mul!(y, last(A.maps), source)
     return y

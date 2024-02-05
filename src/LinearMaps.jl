@@ -130,7 +130,7 @@ julia> A(x)
 """
 function Base.:(*)(A::LinearMap, x::AbstractVector)
     check_dim_mul(A, x)
-    T = promote_type(eltype(A), eltype(x))
+    T = typeof(oneunit(eltype(A)) * oneunit(eltype(x)))
     y = similar(x, T, axes(A)[1])
     return @inbounds mul!(y, A, x)
 end
@@ -304,25 +304,23 @@ function _generic_map_mul!(Y, A, X::AbstractMatrix, α, β)
     end
     return Y
 end
-function _generic_map_mul!(Y, A, s::Number)
-    T = promote_type(eltype(A), typeof(s))
+function _generic_map_mul!(Y, A, s::S) where {S <: Number}
     ax2 = axes(A)[2]
-    xi = zeros(T, ax2)
+    xi = zeros(S, ax2)
     @inbounds for (i, Yi) in zip(ax2, eachcol(Y))
         xi[i] = s
         mul!(Yi, A, xi)
-        xi[i] = zero(T)
+        xi[i] = zero(S)
     end
     return Y
 end
-function _generic_map_mul!(Y, A, s::Number, α, β)
-    T = promote_type(eltype(A), typeof(s))
+function _generic_map_mul!(Y, A, s::S, α, β) where {S <: Number}
     ax2 = axes(A)[2]
-    xi = zeros(T, ax2)
+    xi = zeros(S, ax2)
     @inbounds for (i, Yi) in zip(ax2, eachcol(Y))
         xi[i] = s
         mul!(Yi, A, xi, α, β)
-        xi[i] = zero(T)
+        xi[i] = zero(S)
     end
     return Y
 end
