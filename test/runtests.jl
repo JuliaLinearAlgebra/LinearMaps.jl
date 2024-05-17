@@ -44,6 +44,8 @@ include("inversemap.jl")
 
 include("rrules.jl")
 
+include("units.jl")
+
 include("khatrirao.jl")
 
 include("trace.jl")
