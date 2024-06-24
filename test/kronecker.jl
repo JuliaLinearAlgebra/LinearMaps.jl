@@ -86,6 +86,10 @@ using Test, LinearMaps, LinearAlgebra, SparseArrays
         Kv = LinearMaps.CompositeMap{ComplexF64}(fill(LA ⊗ LB, 3))
         @test kron(A, B)^3 * ones(6) ≈ Kv * ones(6)
         @test Matrix(K) ≈ kron(A, B)^3
+        A = [0 1; 0 0]
+        B = [0 0; 1 0]
+        J = LinearMap(I, 1)
+        @test Matrix(kron(J, A*B)) == Matrix(kron(J, A) * kron(J, B))
         # example that doesn't use mixed-product rule
         A = rand(3, 2); B = rand(2, 3)
         K = @inferred kron(A, LinearMap(B))

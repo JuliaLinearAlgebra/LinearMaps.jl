@@ -15,9 +15,9 @@ end
 CompositeMap{T}(maps::As) where {T, As<:LinearMapTupleOrVector} = CompositeMap{T, As}(maps)
 
 Base.mapreduce(::typeof(identity), ::typeof(Base.mul_prod), maps::LinearMapTupleOrVector) =
-    CompositeMap{promote_type(map(eltype, maps)...)}(reverse(maps))
+    CompositeMap{promote_type(map(eltype, maps)...)}(_reverse!(maps))
 Base.mapreduce(::typeof(identity), ::typeof(Base.mul_prod), maps::AbstractVector{<:LinearMap{T}}) where {T} =
-    CompositeMap{T}(reverse(maps))
+    CompositeMap{T}(reverse!(maps))
 
 MulStyle(A::CompositeMap) = MulStyle(A.maps...) === TwoArg() ? TwoArg() : ThreeArg()
 
@@ -158,9 +158,9 @@ Base.:(*)(A₁::CompositeMap, A₂::ScaledMap) = (A₁ * A₂.lmap) * A₂.λ
 
 # special transposition behavior
 LinearAlgebra.transpose(A::CompositeMap{T}) where {T} =
-    CompositeMap{T}(map(transpose, reverse(A.maps)))
+    CompositeMap{T}(map(transpose, _reverse!(A.maps)))
 LinearAlgebra.adjoint(A::CompositeMap{T}) where {T} =
-    CompositeMap{T}(map(adjoint, reverse(A.maps)))
+    CompositeMap{T}(map(adjoint, _reverse!(A.maps)))
 
 # comparison of CompositeMap objects
 Base.:(==)(A::CompositeMap, B::CompositeMap) =
@@ -169,7 +169,7 @@ Base.:(==)(A::CompositeMap, B::CompositeMap) =
 # multiplication with vectors/matrices
 function Base.:(*)(A::CompositeMap, x::AbstractVector)
     MulStyle(A) === TwoArg() ?
-        foldr(*, reverse(A.maps), init=x) :
+        foldr(*, _reverse!(A.maps), init=x) :
         invoke(*, Tuple{LinearMap, AbstractVector}, A, x)
 end
 

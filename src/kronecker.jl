@@ -272,7 +272,7 @@ function _unsafe_mul!(y,
     Bs1, Bs2 = _front(Bs), _tail(Bs)
     apply = all(_iscompatible, zip(As1, As2)) && all(_iscompatible, zip(Bs1, Bs2))
     if apply
-        _unsafe_mul!(y, kron(prod(As), prod(Bs)), x)
+        _unsafe_mul!(y, kron(prod(_reverse!(As)), prod(_reverse!(Bs))), x)
     else
         _unsafe_mul!(y, CompositeMap{T}(map(LinearMap, L.maps)), x)
     end
