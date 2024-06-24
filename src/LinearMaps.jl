@@ -99,6 +99,9 @@ _combine(As::LinearMapVector, Bs::LinearMapTuple) = Base.vect(As..., Bs...)
 _combine(As::LinearMapTuple, Bs::LinearMapVector) = Base.vect(As..., Bs...)
 _combine(As::LinearMapVector, Bs::LinearMapVector) = Base.vect(As..., Bs...)
 
+_reverse!(As::LinearMapTuple) = reverse(As)
+_reverse!(As::LinearMapVector) = reverse!(As)
+
 # The (internal) multiplication logic is as follows:
 #  - `*(A, x)` calls `mul!(y, A, x)` for appropriately-sized y
 #  - `mul!` checks consistency of the sizes, and calls `_unsafe_mul!`,
