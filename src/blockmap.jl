@@ -81,8 +81,10 @@ julia> L * ones(Int, 6)
  6
 ```
 """
-function Base.hcat(As::Union{LinearMap, UniformScaling, AbstractVecOrMatOrQ}...)
-    T = promote_type(map(eltype, As)...)
+Base.hcat
+
+Base.hcat(As::T...) where {T<:LinearMap} = Base._cat_t(Val(2), eltype(T), As...)
+function Base._cat_t(::Val{2}, ::Type{T}, As::Union{LinearMap, UniformScaling, AbstractVecOrMatOrQ}...) where {T}
     nbc = length(As)
 
     # find first non-UniformScaling to detect number of rows
@@ -119,8 +121,10 @@ julia> L * ones(Int, 3)
  3
 ```
 """
-function Base.vcat(As::Union{LinearMap,UniformScaling,AbstractVecOrMatOrQ}...)
-    T = promote_type(map(eltype, As)...)
+Base.vcat
+
+Base.vcat(As::T...) where {T<:LinearMap} = Base._cat_t(Val(1), eltype(T), As...)
+function Base._cat_t(::Val{1}, ::Type{T}, As::Union{LinearMap, UniformScaling, AbstractVecOrMatOrQ}...) where {T}
     nbr = length(As)
 
     # find first non-UniformScaling to detect number of rows
@@ -164,10 +168,8 @@ julia> L * ones(Int, 6)
 """
 Base.hvcat
 
-function Base.hvcat(rows::Tuple{Vararg{Int}},
-                    As::Union{LinearMap, UniformScaling, AbstractVecOrMatOrQ}...)
+function Base.typed_hvcat(::Type{T}, rows::Tuple{Vararg{Int}}, As::Union{LinearMap, UniformScaling, AbstractVecOrMatOrQ}...) where {T}
     nr = length(rows)
-    T = promote_type(map(eltype, As)...)
     sum(rows) == length(As) ||
         throw(ArgumentError("mismatch between row sizes and number of arguments"))
     n = fill(-1, length(As))
@@ -492,6 +494,8 @@ end
 
 BlockDiagonalMap{T}(maps::As) where {T, As<:LinearMapTupleOrVector} =
     BlockDiagonalMap{T,As}(maps)
+BlockDiagonalMap{T}(maps::LinearMap...) where {T} =
+    BlockDiagonalMap{T}(maps)
 BlockDiagonalMap(maps::LinearMap...) =
     BlockDiagonalMap{promote_type(map(eltype, maps)...)}(maps)
 
@@ -509,9 +513,9 @@ for k in 1:8 # is 8 sufficient?
         # Dispatching on `cat` makes compiler hard to infer types and causes invalidations
         # after https://github.com/JuliaLang/julia/pull/45028
         # Here we instead dispatch on _cat
-        @eval function Base._cat(dims, $(Is...), $L, As...)
+        @eval function Base._cat_t(dims::Dims{2}, ::Type{T}, $(Is...), $L, As...) where {T}
             if dims == (1,2)
-                return BlockDiagonalMap(convert_to_lmaps($(mapargs...))...,
+                return BlockDiagonalMap{T}(convert_to_lmaps($(mapargs...))...,
                                         $(Symbol(:A, k)),
                                         convert_to_lmaps(As...)...)
             else
