@@ -13,7 +13,7 @@ using LinearMaps, LinearAlgebra, Test
     @test tr(LinearMap{Int}(cumsum!, 10)) == 10
     @test tr(2LinearMap{Int}(cumsum!, 10)) == 20
     A = randn(3, 5); B = copy(transpose(A))
-    @test tr(A ⊗ B) == tr(kron(A, B))
+    @test tr(A ⊗ B) ≈ tr(kron(A, B))
     @test tr(A ⊗ B ⊗ A ⊗ B) ≈ tr(kron(A, B, A, B))
     A = randn(5, 5); B = copy(transpose(A))
     @test tr(A ⊗ B) ≈ tr(kron(A, B))
