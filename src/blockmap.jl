@@ -83,18 +83,7 @@ julia> L * ones(Int, 6)
 """
 Base.hcat
 
-Base.hcat(As::T...) where {T<:LinearMap} = Base._cat_t(Val(2), eltype(T), As...)
-function Base._cat_t(::Val{2}, ::Type{T}, As::Union{LinearMap, UniformScaling, AbstractArray, AbstractQ}...) where {T}
-    nbc = length(As)
-
-    # find first non-UniformScaling to detect number of rows
-    j = findfirst(A -> !isa(A, UniformScaling), As)
-    # this should not happen, function should only be called with at least one LinearMap
-    @assert !isnothing(j)
-    @inbounds nrows = size(As[j], 1)::Int
-    
-    return BlockMap{T}(promote_to_lmaps(ntuple(_ -> nrows, Val(nbc)), 1, 1, As...), (nbc,))
-end
+Base.hcat(As::T...) where {T<:LinearMap} = Base._cat(Val(2), As...)
 
 ############
 # vcat
@@ -123,18 +112,29 @@ julia> L * ones(Int, 3)
 """
 Base.vcat
 
-Base.vcat(As::T...) where {T<:LinearMap} = Base._cat_t(Val(1), eltype(T), As...)
-function Base._cat_t(::Val{1}, ::Type{T}, As::Union{LinearMap, UniformScaling, AbstractArray, AbstractQ}...) where {T}
-    nbr = length(As)
+Base.vcat(As::T...) where {T<:LinearMap} = Base._cat(Val(1), As...)
+
+function Base._cat(dims, As::Union{LinearMap, UniformScaling, AbstractArray, AbstractQ}...)
+    T = promote_type(map(eltype, As)...)
+    nb = length(As)
 
     # find first non-UniformScaling to detect number of rows
     j = findfirst(A -> !isa(A, UniformScaling), As)
     # this should not happen, function should only be called with at least one LinearMap
     @assert !isnothing(j)
-    @inbounds ncols = size(As[j], 2)::Int
+    if dims isa Val{2}
+        @inbounds nrows = size(As[j], 1)::Int
+        return BlockMap{T}(promote_to_lmaps(ntuple(_ -> nrows, Val(nb)), 1, 1, As...), (nb,))
+    elseif dims isa Val{1}
+        @inbounds ncols = size(As[j], 2)::Int
 
-    rows = ntuple(_ -> 1, Val(nbr))
-    return BlockMap{T}(promote_to_lmaps(ntuple(_ -> ncols, Val(nbr)), 1, 2, As...), rows)
+        rows = ntuple(_ -> 1, Val(nb))
+        return BlockMap{T}(promote_to_lmaps(ntuple(_ -> ncols, Val(nb)), 1, 2, As...), rows)
+    elseif dims isa Dims{2}
+        Base._cat_t(dims, T, As...)
+    else
+        throw(ArgumentError("unhandled dims argument"))
+    end
 end
 
 ############
@@ -225,6 +225,7 @@ end
 
 promote_to_lmaps_(n::Int, dim, A::AbstractVecOrMat) = (check_dim(A, dim, n); LinearMap(A))
 promote_to_lmaps_(n::Int, dim, J::UniformScaling) = UniformScalingMap(J.λ, n)
+promote_to_lmaps_(n::Int, dim, Q::AbstractQ) = (check_dim(Q, dim, n); LinearMap(Q))
 promote_to_lmaps_(n::Int, dim, A::LinearMap) = (check_dim(A, dim, n); A)
 promote_to_lmaps(n, k, dim) = ()
 promote_to_lmaps(n, k, dim, A) = (promote_to_lmaps_(n[k], dim, A),)

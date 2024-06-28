@@ -22,8 +22,9 @@ const LinearMapVector = AbstractVector{<:LinearMap}
 const LinearMapTupleOrVector = Union{LinearMapTuple,LinearMapVector}
 
 Base.eltype(::LinearMap{T}) where {T} = T
-Base.eltype(::Type{L}) where {T,L<:LinearMap{T}} = T
+Base.eltype(::Type{<:LinearMap{T}}) where {T} = T
 Base.eltypeof(x::LinearMap) = eltype(x)
+Base.eltypeof(J::UniformScaling) = eltype(J) # fix upstream
 Base.promote_eltypeof(v1::Union{AbstractVecOrMatOrQ{T},LinearMap{T}}, vs::Union{AbstractVecOrMatOrQ{T},LinearMap{T}}...) where {T} = T
 
 # conversion to LinearMap
