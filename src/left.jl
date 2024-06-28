@@ -16,7 +16,7 @@ and return an adjoint vector.
 ## Examples
 ```jldoctest; setup=(using LinearAlgebra, LinearMaps)
 julia> A=LinearMap([1.0 2.0; 3.0 4.0]); x=[1.0, 1.0]; x'A
-1×2 Adjoint{Float64,Array{Float64,1}}:
+1×2 adjoint(::Vector{Float64}) with eltype Float64:
  4.0  6.0
 ```
 """
@@ -31,7 +31,7 @@ and return a transpose vector.
 ## Examples
 ```jldoctest; setup=(using LinearAlgebra, LinearMaps)
 julia> A=LinearMap([1.0 2.0; 3.0 4.0]); x=[1.0, 1.0]; transpose(x)*A
-1×2 Transpose{Float64,Array{Float64,1}}:
+1×2 transpose(::Vector{Float64}) with eltype Float64:
  4.0  6.0
 ```
 """
@@ -52,7 +52,7 @@ either `A` or `B`. The computation `C = A*B` is performed via `C' = B'A'`.
 julia> A=[1.0 1.0; 1.0 1.0]; B=LinearMap([1.0 2.0; 3.0 4.0]); C = similar(A); mul!(C, A, B);
 
 julia> C
-2×2 Array{Float64,2}:
+2×2 Matrix{Float64}:
  4.0  6.0
  4.0  6.0
 ```
@@ -92,7 +92,7 @@ julia> mul!(C, A, B, 1, 1)
  5.0  7.0
 ```
 """
-function mul!(X::AbstractMatrix, Y::AbstractMatrix, A::LinearMap, α, β)
+function mul!(X::AbstractMatrix, Y::AbstractMatrix, A::LinearMap, α::Number, β::Number)
     check_dim_mul(X, Y, A)
     _unsafe_mul!(X, Y, A, α, β)
 end

@@ -33,7 +33,7 @@ function _tr(A::OOPFunctionMap{T}) where {T}
     end
     return s
 end
-# specialiations
+# specialisations
 _tr(A::AbstractVecOrMat) = tr(A)
 _tr(A::WrappedMap) = _tr(A.lmap)
 _tr(A::TransposeMap) = _tr(A.lmap)

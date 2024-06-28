@@ -102,6 +102,9 @@ _combine(As::LinearMapVector, Bs::LinearMapTuple) = Base.vect(As..., Bs...)
 _combine(As::LinearMapTuple, Bs::LinearMapVector) = Base.vect(As..., Bs...)
 _combine(As::LinearMapVector, Bs::LinearMapVector) = Base.vect(As..., Bs...)
 
+_reverse!(As::LinearMapTuple) = reverse(As)
+_reverse!(As::LinearMapVector) = reverse!(As)
+
 # The (internal) multiplication logic is as follows:
 #  - `*(A, x)` calls `mul!(y, A, x)` for appropriately-sized y
 #  - `mul!` checks consistency of the sizes, and calls `_unsafe_mul!`,
@@ -121,12 +124,12 @@ Compute the action of the linear map `A` on the vector `x`.
 julia> A=LinearMap([1.0 2.0; 3.0 4.0]); x=[1.0, 1.0];
 
 julia> A*x
-2-element Array{Float64,1}:
+2-element Vector{Float64}:
  3.0
  7.0
 
 julia> A(x)
-2-element Array{Float64,1}:
+2-element Vector{Float64}:
  3.0
  7.0
 ```
@@ -150,17 +153,13 @@ with either `A` or `B`.
 
 ## Examples
 ```jldoctest; setup=(using LinearAlgebra, LinearMaps)
-julia> A=LinearMap([1.0 2.0; 3.0 4.0]); B=ones(2); Y = similar(B); mul!(Y, A, B);
-
-julia> Y
-2-element Array{Float64,1}:
+julia> A = LinearMap([1.0 2.0; 3.0 4.0]); B = ones(2); Y = similar(B); mul!(Y, A, B)
+2-element Vector{Float64}:
  3.0
  7.0
 
-julia> A=LinearMap([1.0 2.0; 3.0 4.0]); B=ones(4,4); Y = similar(B); mul!(Y, A, B);
-
-julia> Y
-2×2 Array{Float64,2}:
+julia> A = LinearMap([1.0 2.0; 3.0 4.0]); B = ones(2,2); Y = similar(B); mul!(Y, A, B)
+2×2 Matrix{Float64}:
  3.0  3.0
  7.0  7.0
 ```
@@ -214,7 +213,7 @@ julia> mul!(C, A, B, 100.0, 10.0) === C
 true
 
 julia> C
-2-element Array{Float64,1}:
+2-element Vector{Float64}:
  310.0
  730.0
 
@@ -224,7 +223,7 @@ julia> mul!(C, A, B, 100.0, 10.0) === C
 true
 
 julia> C
-2×2 Array{Float64,2}:
+2×2 Matrix{Float64}:
  310.0  320.0
  730.0  740.0
 ```
@@ -375,7 +374,7 @@ representation `(M, N)`, i.e., for functions `f` acting on length `N` vectors an
 length `M` vectors (with default value `N=M`). Preferably, also the `eltype` `T` of the
 corresponding matrix representation needs to be specified, i.e., whether the action of `f`
 on a vector will be similar to, e.g., multiplying by numbers of type `T`. If not specified,
-the devault value `T=Float64` will be assumed. Optionally, a corresponding function `fc`
+the default value `T=Float64` will be assumed. Optionally, a corresponding function `fc`
 can be specified that implements the adjoint (or transpose in the real case) of `f`.
 
 The keyword arguments and their default values are:

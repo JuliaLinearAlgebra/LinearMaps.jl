@@ -43,6 +43,10 @@ Type for representing a scalar multiple of any `LinearMap` type. A
 objects are multiplied by real or complex scalars from the left or from the
 right.
 
+```@docs
+LinearMaps.ScaledMap
+```
+
 ### `UniformScalingMap`
 
 Type for representing a scalar multiple of the identity map (a.k.a. uniform
@@ -98,6 +102,12 @@ Base.hcat
 Base.vcat
 Base.hvcat
 Base.cat
+```
+
+With `using SparseArrays`, yet another method is available for creating lazy block-diagonal
+maps.
+
+```@docs
 SparseArrays.blockdiag
 ```
 
@@ -125,7 +135,7 @@ InverseMap
 
 Types for lazy [column-wise](https://en.wikipedia.org/wiki/Khatri%E2%80%93Rao_product#Column-wise_Kronecker_product)
 and [row-wise](https://en.wikipedia.org/wiki/Khatri%E2%80%93Rao_product#Face-splitting_product)
-Kronecker product, respectively, also referrerd to
+Kronecker product, respectively, also referred to
 as Khatri-Rao and transposed Khatri-Rao (or face-splitting) product.
 
 ```@docs
@@ -139,8 +149,8 @@ facesplitting
 
 ```@docs
 Base.:*(::LinearMap,::AbstractVector)
-Base.:*(::LinearMap,::AbstractMatrix)
-Base.:*(::AbstractMatrix,::LinearMap)
+Base.:*(::LinearMap,::Union{LinearAlgebra.AbstractQ, AbstractMatrix})
+Base.:*(::Union{LinearAlgebra.AbstractQ, AbstractMatrix},::LinearMap)
 LinearAlgebra.mul!(::AbstractVecOrMat,::LinearMap,::AbstractVector)
 LinearAlgebra.mul!(::AbstractVecOrMat,::LinearMap,::AbstractVector,::Number,::Number)
 LinearAlgebra.mul!(::AbstractMatrix,::AbstractMatrix,::LinearMap)

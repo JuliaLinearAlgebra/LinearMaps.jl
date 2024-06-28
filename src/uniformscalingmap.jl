@@ -42,9 +42,9 @@ Base.:(*)(J::UniformScalingMap, α::RealOrComplex) = UniformScalingMap(J.λ * α
 Base.:(*)(J::UniformScalingMap, x::AbstractVector) =
     length(x) == J.M ? J.λ * x : throw(DimensionMismatch("*"))
 # multiplication with matrix
-Base.:(*)(J::UniformScalingMap, B::AbstractMatrix) =
+Base.:(*)(J::UniformScalingMap, B::Union{AbstractMatrix,AbstractQ}) =
     size(B, 1) == J.M ? J.λ * LinearMap(B) : throw(DimensionMismatch("*"))
-Base.:(*)(A::AbstractMatrix, J::UniformScalingMap) =
+Base.:(*)(A::Union{AbstractMatrix,AbstractQ}, J::UniformScalingMap) =
     size(A, 2) == J.M ? LinearMap(A) * J.λ : throw(DimensionMismatch("*"))
 # disambiguation
 Base.:(*)(xc::LinearAlgebra.AdjointAbsVec, J::UniformScalingMap) = xc * J.λ

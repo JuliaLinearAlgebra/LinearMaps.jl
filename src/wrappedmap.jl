@@ -108,13 +108,13 @@ _unsafe_mul!(Y, A::VecOrMatMap, s::Number) = _unsafe_mul!(Y, A.lmap, s)
 _unsafe_mul!(Y, A::VecOrMatMap, s::Number, α, β) = _unsafe_mul!(Y, A.lmap, s, α, β)
 
 # combine LinearMap and Matrix objects: linear combinations and map composition
-Base.:(+)(A₁::LinearMap, A₂::AbstractMatrix) = +(A₁, WrappedMap(A₂))
-Base.:(+)(A₁::AbstractMatrix, A₂::LinearMap) = +(WrappedMap(A₁), A₂)
-Base.:(-)(A₁::LinearMap, A₂::AbstractMatrix) = -(A₁, WrappedMap(A₂))
-Base.:(-)(A₁::AbstractMatrix, A₂::LinearMap) = -(WrappedMap(A₁), A₂)
+Base.:(+)(A₁::LinearMap, A₂::Union{AbstractMatrix,AbstractQ}) = +(A₁, WrappedMap(A₂))
+Base.:(+)(A₁::Union{AbstractMatrix,AbstractQ}, A₂::LinearMap) = +(WrappedMap(A₁), A₂)
+Base.:(-)(A₁::LinearMap, A₂::Union{AbstractMatrix,AbstractQ}) = -(A₁, WrappedMap(A₂))
+Base.:(-)(A₁::Union{AbstractMatrix,AbstractQ}, A₂::LinearMap) = -(WrappedMap(A₁), A₂)
 
 """
-    *(A::LinearMap, X::AbstractMatrix)::CompositeMap
+    *(A::LinearMap, X::Union{AbstractMatrix,AbstractQ})::CompositeMap
 
 Return the `CompositeMap` `A*LinearMap(X)`, interpreting the matrix `X` as a linear
 operator, rather than a collection of column vectors. To compute the action of `A` on each
@@ -129,10 +129,10 @@ julia> A*X isa LinearMaps.CompositeMap
 true
 ```
 """
-Base.:(*)(A₁::LinearMap, A₂::AbstractMatrix) = *(A₁, WrappedMap(A₂))
+Base.:(*)(A₁::LinearMap, A₂::Union{AbstractMatrix,AbstractQ}) = *(A₁, WrappedMap(A₂))
 
 """
-    *(X::AbstractMatrix, A::LinearMap)::CompositeMap
+    *(X::Union{AbstractMatrix,AbstractQ}, A::LinearMap)::CompositeMap
 
 Return the `CompositeMap` `LinearMap(X)*A`, interpreting the matrix `X` as a linear
 operator. To compute the right-action of `A` on each row of `X`, call `Matrix(X*A)`
@@ -146,4 +146,4 @@ julia> X*A isa LinearMaps.CompositeMap
 true
 ```
 """
-Base.:(*)(A₁::AbstractMatrix, A₂::LinearMap) = *(WrappedMap(A₁), A₂)
+Base.:(*)(A₁::Union{AbstractMatrix,AbstractQ}, A₂::LinearMap) = *(WrappedMap(A₁), A₂)

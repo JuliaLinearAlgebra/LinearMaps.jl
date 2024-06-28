@@ -37,7 +37,7 @@ julia> E = spdiagm(-1 => trues(1)); D = E + E' - 2I;
 julia> Δ = kron(D, J) + kron(J, D); # discrete 2D-Laplace operator
 
 julia> Matrix(Δ)
-4×4 Array{Int64,2}:
+4×4 Matrix{Int64}:
  -4   1   1   0
   1  -4   0   1
   1   0  -4   1
@@ -272,7 +272,7 @@ function _unsafe_mul!(y,
     Bs1, Bs2 = _front(Bs), _tail(Bs)
     apply = all(_iscompatible, zip(As1, As2)) && all(_iscompatible, zip(Bs1, Bs2))
     if apply
-        _unsafe_mul!(y, kron(prod(As), prod(Bs)), x)
+        _unsafe_mul!(y, kron(prod(_reverse!(As)), prod(_reverse!(Bs))), x)
     else
         _unsafe_mul!(y, CompositeMap{T}(map(LinearMap, L.maps)), x)
     end

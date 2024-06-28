@@ -8,8 +8,9 @@ Literate.markdown(joinpath(@__DIR__, "src", "custom.jl"), joinpath(@__DIR__, "sr
 
 makedocs(
     sitename = "LinearMaps.jl",
-    format = Documenter.HTML(),
-    modules = [LinearMaps],
+    modules = [LinearMaps,
+        isdefined(Base, :get_extension) ? Base.get_extension(LinearMaps, :LinearMapsSparseArraysExt) :
+        LinearMaps.LinearMapsSparseArraysExt],
     pages = Any[
         "Home" => "index.md",
         "Version history" => "history.md",

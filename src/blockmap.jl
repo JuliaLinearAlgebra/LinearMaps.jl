@@ -30,13 +30,13 @@ function _getranges(maps, dim, inds=1:length(maps))
     return UnitRange.(starts, ends)
 end
 
-"""
-    rowcolranges(maps, rows)
+# """
+#     rowcolranges(maps, rows)
 
-Determines the range of rows for each block row and the range of columns for each
-map in `maps`, according to its position in a virtual matrix representation of the
-block linear map obtained from `hvcat(rows, maps...)`.
-"""
+# Determines the range of rows for each block row and the range of columns for each
+# map in `maps`, according to its position in a virtual matrix representation of the
+# block linear map obtained from `hvcat(rows, maps...)`.
+# """
 function rowcolranges(maps, rows)
     # find indices of the row-wise first maps
     firstmapinds = vcat(1, Base.front(rows)...)
@@ -75,7 +75,7 @@ julia> CS = LinearMap{Int}(cumsum, 3)::LinearMaps.FunctionMap;
 julia> L = [CS LinearMap(ones(Int, 3, 3))]::LinearMaps.BlockMap;
 
 julia> L * ones(Int, 6)
-3-element Array{Int64,1}:
+3-element Vector{Int64}:
  4
  5
  6
@@ -84,7 +84,7 @@ julia> L * ones(Int, 6)
 Base.hcat
 
 Base.hcat(As::T...) where {T<:LinearMap} = Base._cat_t(Val(2), eltype(T), As...)
-function Base._cat_t(::Val{2}, ::Type{T}, As::Union{LinearMap, UniformScaling, AbstractVecOrMatOrQ}...) where {T}
+function Base._cat_t(::Val{2}, ::Type{T}, As::Union{LinearMap, UniformScaling, AbstractArray, AbstractQ}...) where {T}
     nbc = length(As)
 
     # find first non-UniformScaling to detect number of rows
@@ -112,7 +112,7 @@ julia> CS = LinearMap{Int}(cumsum, 3)::LinearMaps.FunctionMap;
 julia> L = [CS; LinearMap(ones(Int, 3, 3))]::LinearMaps.BlockMap;
 
 julia> L * ones(Int, 3)
-6-element Array{Int64,1}:
+6-element Vector{Int64}:
  1
  2
  3
@@ -124,7 +124,7 @@ julia> L * ones(Int, 3)
 Base.vcat
 
 Base.vcat(As::T...) where {T<:LinearMap} = Base._cat_t(Val(1), eltype(T), As...)
-function Base._cat_t(::Val{1}, ::Type{T}, As::Union{LinearMap, UniformScaling, AbstractVecOrMatOrQ}...) where {T}
+function Base._cat_t(::Val{1}, ::Type{T}, As::Union{LinearMap, UniformScaling, AbstractArray, AbstractQ}...) where {T}
     nbr = length(As)
 
     # find first non-UniformScaling to detect number of rows
@@ -157,7 +157,7 @@ julia> L.rows
 (2, 2)
 
 julia> L * ones(Int, 6)
-6-element Array{Int64,1}:
+6-element Vector{Int64}:
  2
  4
  6
@@ -168,7 +168,7 @@ julia> L * ones(Int, 6)
 """
 Base.hvcat
 
-function Base.typed_hvcat(::Type{T}, rows::Tuple{Vararg{Int}}, As::Union{LinearMap, UniformScaling, AbstractVecOrMatOrQ}...) where {T}
+function Base.typed_hvcat(::Type{T}, rows::Tuple{Vararg{Int}}, As::Union{LinearMap, UniformScaling, AbstractArray, AbstractQ}...) where {T}
     nr = length(rows)
     sum(rows) == length(As) ||
         throw(ArgumentError("mismatch between row sizes and number of arguments"))
