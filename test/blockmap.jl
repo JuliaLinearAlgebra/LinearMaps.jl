@@ -68,6 +68,7 @@ using LinearMaps: FiveArg
             @test Lv.maps isa Vector
             @test L == Lv
             @test [A11; A21] isa AbstractArray
+            @test [A11; qr(A11).Q; I] isa AbstractArray
             A = [A11; A21]
             x = rand(elty, n)
             @test size(L) == size(A)
