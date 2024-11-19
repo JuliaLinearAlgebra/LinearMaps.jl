@@ -81,18 +81,9 @@ julia> L * ones(Int, 6)
  6
 ```
 """
-function Base.hcat(As::Union{LinearMap, UniformScaling, AbstractArray, AbstractQ}...)
-    T = promote_type(map(eltype, As)...)
-    nbc = length(As)
+Base.hcat
 
-    # find first non-UniformScaling to detect number of rows
-    j = findfirst(A -> !isa(A, UniformScaling), As)
-    # this should not happen, function should only be called with at least one LinearMap
-    @assert !isnothing(j)
-    @inbounds nrows = size(As[j], 1)::Int
-    
-    return BlockMap{T}(promote_to_lmaps(ntuple(_ -> nrows, Val(nbc)), 1, 1, As...), (nbc,))
-end
+Base.hcat(As::T...) where {T<:LinearMap} = Base._cat(Val(2), As...)
 
 ############
 # vcat
@@ -119,18 +110,31 @@ julia> L * ones(Int, 3)
  3
 ```
 """
-function Base.vcat(As::Union{LinearMap, UniformScaling, AbstractArray, AbstractQ}...)
+Base.vcat
+
+Base.vcat(As::T...) where {T<:LinearMap} = Base._cat(Val(1), As...)
+
+function Base._cat(dims, As::Union{LinearMap, UniformScaling, AbstractArray, AbstractQ}...)
     T = promote_type(map(eltype, As)...)
-    nbr = length(As)
+    nb = length(As)
 
     # find first non-UniformScaling to detect number of rows
     j = findfirst(A -> !isa(A, UniformScaling), As)
     # this should not happen, function should only be called with at least one LinearMap
     @assert !isnothing(j)
-    @inbounds ncols = size(As[j], 2)::Int
+    if dims isa Val{2}
+        @inbounds nrows = size(As[j], 1)::Int
+        return BlockMap{T}(promote_to_lmaps(ntuple(_ -> nrows, Val(nb)), 1, 1, As...), (nb,))
+    elseif dims isa Val{1}
+        @inbounds ncols = size(As[j], 2)::Int
 
-    rows = ntuple(_ -> 1, Val(nbr))
-    return BlockMap{T}(promote_to_lmaps(ntuple(_ -> ncols, Val(nbr)), 1, 2, As...), rows)
+        rows = ntuple(_ -> 1, Val(nb))
+        return BlockMap{T}(promote_to_lmaps(ntuple(_ -> ncols, Val(nb)), 1, 2, As...), rows)
+    elseif dims isa Dims{2}
+        Base._cat_t(dims, T, As...)
+    else
+        throw(ArgumentError("unhandled dims argument"))
+    end
 end
 
 ############
@@ -162,9 +166,10 @@ julia> L * ones(Int, 6)
  6
 ```
 """
-function Base.hvcat(rows::Tuple{Vararg{Int}}, As::Union{LinearMap, UniformScaling, AbstractArray, AbstractQ}...)
+Base.hvcat
+
+function Base.typed_hvcat(::Type{T}, rows::Tuple{Vararg{Int}}, As::Union{LinearMap, UniformScaling, AbstractArray, AbstractQ}...) where {T}
     nr = length(rows)
-    T = promote_type(map(eltype, As)...)
     sum(rows) == length(As) ||
         throw(ArgumentError("mismatch between row sizes and number of arguments"))
     n = fill(-1, length(As))
@@ -220,6 +225,7 @@ end
 
 promote_to_lmaps_(n::Int, dim, A::AbstractVecOrMat) = (check_dim(A, dim, n); LinearMap(A))
 promote_to_lmaps_(n::Int, dim, J::UniformScaling) = UniformScalingMap(J.λ, n)
+promote_to_lmaps_(n::Int, dim, Q::AbstractQ) = (check_dim(Q, dim, n); LinearMap(Q))
 promote_to_lmaps_(n::Int, dim, A::LinearMap) = (check_dim(A, dim, n); A)
 promote_to_lmaps(n, k, dim) = ()
 promote_to_lmaps(n, k, dim, A) = (promote_to_lmaps_(n[k], dim, A),)
@@ -489,6 +495,8 @@ end
 
 BlockDiagonalMap{T}(maps::As) where {T, As<:LinearMapTupleOrVector} =
     BlockDiagonalMap{T,As}(maps)
+BlockDiagonalMap{T}(maps::LinearMap...) where {T} =
+    BlockDiagonalMap{T}(maps)
 BlockDiagonalMap(maps::LinearMap...) =
     BlockDiagonalMap{promote_type(map(eltype, maps)...)}(maps)
 
@@ -502,13 +510,28 @@ for k in 1:8 # is 8 sufficient?
     mapargs = ntuple(n ->:($(Symbol(:A, n))), Val(k-1))
     # yields (:LinearMap(A1), :LinearMap(A2), ..., :LinearMap(A(k-1)))
 
-    @eval function Base.cat($(Is...), $L, As::MapOrVecOrMat...; dims::Dims{2})
-        if dims == (1,2)
-            return BlockDiagonalMap(convert_to_lmaps($(mapargs...))...,
-                                    $(Symbol(:A, k)),
-                                    convert_to_lmaps(As...)...)
-        else
-            throw(ArgumentError("dims keyword in cat of LinearMaps must be (1,2)"))
+    @static if VERSION >= v"1.8"
+        # Dispatching on `cat` makes compiler hard to infer types and causes invalidations
+        # after https://github.com/JuliaLang/julia/pull/45028
+        # Here we instead dispatch on _cat
+        @eval function Base._cat_t(dims::Dims{2}, ::Type{T}, $(Is...), $L, As...) where {T}
+            if dims == (1,2)
+                return BlockDiagonalMap{T}(convert_to_lmaps($(mapargs...))...,
+                                        $(Symbol(:A, k)),
+                                        convert_to_lmaps(As...)...)
+            else
+                throw(ArgumentError("dims keyword in cat of LinearMaps must be (1,2)"))
+            end
+        end
+    else
+        @eval function Base.cat($(Is...), $L, As...; dims::Dims{2})
+            if dims == (1,2)
+                return BlockDiagonalMap(convert_to_lmaps($(mapargs...))...,
+                                        $(Symbol(:A, k)),
+                                        convert_to_lmaps(As...)...)
+            else
+                throw(ArgumentError("dims keyword in cat of LinearMaps must be (1,2)"))
+            end
         end
     end
 end

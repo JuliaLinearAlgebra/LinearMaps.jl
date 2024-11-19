@@ -1,4 +1,4 @@
-using Test, LinearMaps, LinearAlgebra, SparseArrays, InteractiveUtils
+using Test, LinearMaps, LinearAlgebra, SparseArrays
 using LinearMaps: FiveArg
 
 @testset "block maps" begin
@@ -29,10 +29,9 @@ using LinearMaps: FiveArg
             A = [A11 A12 A11]
             @test Matrix(L) == A == mul!(zero(A), L, 1, true, false)
             A = [I I I A11 A11 A11 a]
-            @test (@which [A11 A11 A11]).module != LinearMaps
-            @test (@which [I I I A11 A11 A11]).module != LinearMaps
-            @test (@which hcat(I, I, I)).module != LinearMaps
-            @test (@which hcat(I, I, I, LinearMap(A11), A11, A11)).module == LinearMaps
+            @test [A11 A11 A11] isa AbstractArray
+            @test [I I I A11 A11 A11 qr(A11).Q a] isa AbstractArray
+            @test [I I I A11 A11 A11 qr(A11).Q LinearMap(a)] isa LinearMap
             maps = @inferred LinearMaps.promote_to_lmaps(ntuple(i->m, 7), 1, 1, I, I, I, LinearMap(A11), A11, A11, a)
             @inferred LinearMaps.rowcolranges(maps, (7,))
             L = @inferred hcat(I, I, I, LinearMap(A11), A11, A11, a)
@@ -68,7 +67,8 @@ using LinearMaps: FiveArg
             Lv = LinearMaps.BlockMap{elty}([LinearMap(A11), LinearMap(A21)], (1,1))
             @test Lv.maps isa Vector
             @test L == Lv
-            @test (@which [A11; A21]).module != LinearMaps
+            @test [A11; A21] isa AbstractArray
+            @test [A11; qr(A11).Q; I] isa AbstractArray
             A = [A11; A21]
             x = rand(elty, n)
             @test size(L) == size(A)
@@ -76,7 +76,7 @@ using LinearMaps: FiveArg
             @test Matrix(Lv) == A == mul!(copy(A), Lv, 1, true, false)
             @test L * x ≈ Lv * x ≈ A * x
             A = [I; I; I; A11; A11; A11; reduce(hcat, fill(v, n))]
-            @test (@which [I; I; I; A11; A11; A11; v v v v v v v v v v]).module != LinearMaps
+            @test [I; I; I; A11; A11; A11; v v v] isa AbstractArray
             L = @inferred vcat(I, I, I, LinearMap(A11), LinearMap(A11), LinearMap(A11), reduce(hcat, fill(v, n)))
             @test L == [I; I; I; LinearMap(A11); LinearMap(A11); LinearMap(A11); reduce(hcat, fill(v, n))]
             @test L isa LinearMaps.BlockMap{elty}
@@ -97,7 +97,7 @@ using LinearMaps: FiveArg
             A21 = rand(elty, m2, m1)
             A22 = ones(elty, m2, m2)
             A = [A11 A12; A21 A22]
-            @test (@which [A11 A12; A21 A22]).module != LinearMaps
+            @test [A11 A12; A21 A22] isa AbstractArray
             @inferred hvcat((2,2), LinearMap(A11), LinearMap(A12), LinearMap(A21), LinearMap(A22))
             L = [LinearMap(A11) LinearMap(A12); LinearMap(A21) LinearMap(A22)]
             @test L.maps isa Tuple
@@ -116,7 +116,7 @@ using LinearMaps: FiveArg
             end
             @test convert(AbstractMatrix, L) == A
             A = [I A12; A21 I]
-            @test (@which [I A12; A21 I]).module != LinearMaps
+            @test [I A12; A21 I] isa AbstractArray
             @inferred hvcat((2,2), I, LinearMap(A12), LinearMap(A21), I)
             L = @inferred hvcat((2,2), I, LinearMap(A12), LinearMap(A21), I)
             @test L isa LinearMaps.BlockMap{elty}
@@ -222,8 +222,9 @@ using LinearMaps: FiveArg
             end
             # Md = diag(M1, M2, M3, M2, M1) # unsupported so use sparse:
             Md = Matrix(blockdiag(sparse.((M1, M2, M3, M2, M1))...))
-            @test (@which blockdiag(sparse.((M1, M2, M3, M2, M1))...)).module != LinearMaps
-            @test (@which cat(M1, M2, M3, M2, M1; dims=(1,2))).module != LinearMaps
+            @test blockdiag(sparse.((M1, M2, M3, M2, M1))...) isa AbstractArray
+            @test cat(M1, M2, M3, M2, M1; dims=(1,2)) isa AbstractArray
+            @test cat(M2, M2, qr(M3).Q, M3[:,1]; dims=(1,2)) isa AbstractArray
             x = randn(elty, size(Md, 2))
             Bd = @inferred blockdiag(L1, L2, L3, L2, L1)
             @test Bd.maps isa Tuple
