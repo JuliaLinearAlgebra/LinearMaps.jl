@@ -3,7 +3,7 @@ using Test, LinearMaps, LinearAlgebra, BlockArrays
 @testset "Non-traditional axes" begin
 
     A = rand(ComplexF64,2,4)
-    B = PseudoBlockMatrix{ComplexF64}(undef, [2,3], [3,4])
+    B = BlockMatrix{ComplexF64}(undef, [2,3], [3,4])
 
     ax1 = axes(B)[1]
     ax2 = axes(B)[2]
@@ -19,7 +19,7 @@ using Test, LinearMaps, LinearAlgebra, BlockArrays
     @test eltype(N) == eltype(B)
 
     u = similar(Array{ComplexF64}, ax2)
-    v = PseudoBlockVector{ComplexF64}(undef, [3,5])
+    v = BlockVector{ComplexF64}(undef, [3,5])
     w = similar(Array{ComplexF64}, ax1)
 
     for i in eachindex(u) u[i] = rand(ComplexF64) end
@@ -54,7 +54,7 @@ using Test, LinearMaps, LinearAlgebra, BlockArrays
     @test blocklengths(axes(C)[1]) == blocklengths(ax1)
 
     A = rand(ComplexF64,2,2)
-    B = PseudoBlockMatrix{ComplexF64}(undef, [2,2], [2,2])
+    B = BlockMatrix{ComplexF64}(undef, [2,2], [2,2])
     ax1 = axes(B)[1]
     ax2 = axes(B)[2]
     fill!(B,0)
@@ -75,12 +75,12 @@ using Test, LinearMaps, LinearAlgebra, BlockArrays
     D2 = rand(5,3)
     D3 = rand(3,6)
     D4 = rand(6,6)
-    A1 = PseudoBlockMatrix(D1, [1,3], [2,3])
-    A2 = PseudoBlockMatrix(D2, [2,3], [2,1])
-    A3 = PseudoBlockMatrix(D3, [2,1], [3,2,1])
-    A4 = PseudoBlockMatrix(D4, [3,2,1], [3,2,1])
+    A1 = BlockMatrix(D1, [1,3], [2,3])
+    A2 = BlockMatrix(D2, [2,3], [2,1])
+    A3 = BlockMatrix(D3, [2,1], [3,2,1])
+    A4 = BlockMatrix(D4, [3,2,1], [3,2,1])
     u = rand(6)
-    x = PseudoBlockVector(u, [3,2,1])
+    x = BlockVector(u, [3,2,1])
     L = LinearMap(A1) * LinearMap(A2) * LinearMap(A3) * LinearMap(A4)
     y = L * x
     v = Vector(y)
