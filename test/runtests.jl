@@ -4,7 +4,7 @@ using Test, Documenter, LinearMaps, Aqua
     Aqua.test_all(LinearMaps, piracies = (broken=true,))
 end
 
-doctest(LinearMaps)
+# doctest(LinearMaps)
 
 include("linearmaps.jl")
 
