@@ -1,4 +1,4 @@
-using Test, LinearMaps, LinearAlgebra
+using Test, LinearMaps, LinearAlgebra, SparseArrays
 
 @testset "wrapped maps" begin
     A = rand(10, 20)

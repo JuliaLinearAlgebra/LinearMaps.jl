@@ -4,36 +4,30 @@ struct WrappedMap{T, A<:MapOrVecOrMat} <: LinearMap{T}
     _ishermitian::Bool
     _isposdef::Bool
 end
-function WrappedMap{T}(lmap::MapOrMatrix;
+function WrappedMap{T}(lmap::MapOrVecOrMat;
                         issymmetric::Bool = _issymmetric(lmap),
                         ishermitian::Bool = _ishermitian(lmap),
                         isposdef::Bool = _isposdef(lmap)) where {T}
     WrappedMap{T, typeof(lmap)}(lmap, issymmetric, ishermitian, isposdef)
 end
-function WrappedMap{T}(lmap::AbstractVector;
-                        issym::Bool = false,
-                        isherm::Bool = false,
-                        ispd::Bool = false) where {T}
-    WrappedMap{T, typeof(lmap)}(lmap,
-                                length(lmap) == 1 && issymmetric(first(lmap)),
-                                length(lmap) == 1 && ishermitian(first(lmap)),
-                                length(lmap) == 1 && isposdef(first(lmap)))
-end
 WrappedMap(lmap::MapOrVecOrMat{T}; kwargs...) where {T} = WrappedMap{T}(lmap; kwargs...)
 
 # cheap property checks (usually by type)
+_issymmetric(A::AbstractVector) = length(A) == 1 && issymmetric(first(A))
 _issymmetric(A::AbstractMatrix) = false
 _issymmetric(A::AbstractQ) = false
 _issymmetric(A::LinearMap) = issymmetric(A)
 _issymmetric(A::LinearAlgebra.RealHermSymComplexSym) = issymmetric(A)
 _issymmetric(A::Union{Bidiagonal,Diagonal,SymTridiagonal,Tridiagonal}) = issymmetric(A)
 
+_ishermitian(A::AbstractVector) = length(A) == 1 && ishermitian(first(A))
 _ishermitian(A::AbstractMatrix) = false
 _ishermitian(A::AbstractQ) = false
 _ishermitian(A::LinearMap) = ishermitian(A)
 _ishermitian(A::LinearAlgebra.RealHermSymComplexHerm) = ishermitian(A)
 _ishermitian(A::Union{Bidiagonal,Diagonal,SymTridiagonal,Tridiagonal}) = ishermitian(A)
 
+_isposdef(A::AbstractVector) = length(A) == 1 && isposdef(first(A))
 _isposdef(A::AbstractMatrix) = false
 _isposdef(A::AbstractQ) = false
 _isposdef(A::LinearMap) = isposdef(A)
