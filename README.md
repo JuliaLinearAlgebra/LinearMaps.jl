@@ -30,11 +30,11 @@ julia> import Pkg; Pkg.add("LinearMaps")
 [docs-stable-img]: https://img.shields.io/badge/docs-stable-blue.svg
 [docs-stable-url]: https://JuliaLinearAlgebra.github.io/LinearMaps.jl/stable
 
-[build-img]: https://github.com/JuliaLinearAlgebra/LinearMaps.jl/workflows/CI/badge.svg?branch=master
-[build-url]: https://github.com/JuliaLinearAlgebra/LinearMaps.jl/actions?query=workflow%3ACI+branch%3Amaster
+[build-img]: https://github.com/JuliaLinearAlgebra/LinearMaps.jl/workflows/CI/badge.svg
+[build-url]: https://github.com/JuliaLinearAlgebra/LinearMaps.jl/actions
 
-[codecov-img]: http://codecov.io/github/JuliaLinearAlgebra/LinearMaps.jl/coverage.svg?branch=master
-[codecov-url]: http://codecov.io/github/JuliaLinearAlgebra/LinearMaps.jl?branch=master
+[codecov-img]: https://codecov.io/gh/JuliaLinearAlgebra/LinearMaps.jl/branch/master/graph/badge.svg
+[codecov-url]: https://codecov.io/gh/JuliaLinearAlgebra/LinearMaps.jl
 
 [license-img]: http://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat
 [license-url]: LICENSE.md
