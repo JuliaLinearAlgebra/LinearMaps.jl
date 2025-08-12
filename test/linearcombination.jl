@@ -12,7 +12,7 @@ using LinearMaps: FiveArg, LinearMapTuple, LinearMapVector, FunctionMap
     mul!(u, CS!, v)
     @test (@allocated mul!(u, CS!, v)) == 0
     n = 10
-    alloc = @allocated similar(v)
+    alloc = sizeof(v) + 64
     Loop = @inferred CS + CS + CS
     @test Loop * v ≈ 3cumsum(v)
     @test (CS + CR + CS) * v ≈ 3cumsum(v)
@@ -60,7 +60,7 @@ using LinearMaps: FiveArg, LinearMapTuple, LinearMapVector, FunctionMap
     @test occursin("10×10 $LinearMaps.LinearCombination{$(eltype(L))}", sprint((t, s) -> show(t, "text/plain", s), L+CS!))
     @test mul!(u, L, v) ≈ n * cumsum(v)
     @test mul!(u, Lv, v) ≈ n * cumsum(v)
-    alloc = @allocated similar(u)
+    alloc = sizeof(u) + 64
     mul!(u, L, v, 2, 2)
     @test (@allocated mul!(u, L, v, 2, 2)) <= alloc
     mul!(u, Lv, v, 2, 2)

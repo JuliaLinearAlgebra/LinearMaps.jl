@@ -104,7 +104,7 @@ using Test, LinearMaps, LinearAlgebra
     for (A, alloc) in ((A0, 1), (A1, 0), (B0, 1), (B1, 0), (A0', 3), (A1', 0), (B0', 3), (B1', 0))
         x = rand(N)
         y = similar(x)
-        allocsize = @allocated similar(y)
+        allocsize = sizeof(y)+72
         mul!(y, A, x)
         @test (@allocated mul!(y, A, x)) == alloc*allocsize
     end
