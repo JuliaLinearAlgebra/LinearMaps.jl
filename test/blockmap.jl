@@ -290,12 +290,9 @@ using LinearMaps: FiveArg
                 @test mul!(copy(v), LinearMap(transform(L)), u, α, β) ≈ transform(M)*u*α + v*β
                 if transform != adjoint
                     transL = transform(L)
-                    alloc = @allocated similar(v)
-                    if L == L2 && α != false
-                        @test_broken (@allocated mul!(v, transL, u, α, β)) <= alloc
-                    else
-                        @test (@allocated mul!(v, transL, u, α, β)) <= alloc
-                    end
+                    similar(v)
+                    alloc = @allocations similar(v)
+                    @test (@allocations mul!(v, transL, u, α, β)) <= alloc broken=(L == L2 && α != false)
                 end
             end
         end

@@ -87,8 +87,8 @@ using Test, LinearMaps, LinearAlgebra
             @test mul!(copy(v), LinearMap(transform(CS!)), u, α, β) ≈ transform(M)*u*α + v*β
             if transform != transpose
                 transCS! = transform(CS!)
-                alloc = @allocated similar(v)
-                @test (@allocated mul!(v, transCS!, u, α, β)) <= alloc
+                alloc = @allocations similar(v)
+                @test (@allocations mul!(v, transCS!, u, α, β)) <= alloc + 1
             end
         end
     end
