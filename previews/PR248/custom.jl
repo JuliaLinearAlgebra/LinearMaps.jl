@@ -118,6 +118,11 @@ end
 
 # There you go, the allocation is gone and the computation time is significantly reduced.
 
+# !!! note
+#     Unlike in the standard library `LinearAlgebra.jl`, there is no automatic forwarding
+#     of 3-arg `mul!` methods to those with 5 arguments, so you need to define the basic
+#     3-arg `_unsafe_mul!` method in any case.
+
 # ## Adjoints and transposes
 
 # Generically, taking the transpose (or the adjoint) of a (real, resp.) map wraps the
@@ -176,11 +181,6 @@ MyFillMap(5.0, (3, 4))' * ones(3)
 # If you have set the `MulStyle` trait to `FiveArg()`, you should provide corresponding
 # 5-arg `_unsafe_mul!` methods for `LinearMaps.TransposeMap{<:Any,<:MyFillMap}` and
 # `LinearMaps.AdjointMap{<:Any,<:MyFillMap}`.
-
-# !!! note
-#     Note that unlike in the standard library `LinearAlgebra.jl`, there is no automatic
-#     forwarding of 3-arg `mul!` methods to those with 5 arguments, so you need to define
-#     the basic 3-arg `_unsafe_mul!` method in any case.
 
 # ### Path 2: Invariant `LinearMap` subtypes
 
