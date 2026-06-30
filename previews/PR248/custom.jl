@@ -121,7 +121,8 @@ end
 # !!! note
 #     Unlike in the standard library `LinearAlgebra.jl`, there is no automatic forwarding
 #     of 3-arg `mul!` methods to those with 5 arguments, so you need to define the basic
-#     3-arg `_unsafe_mul!` method in any case.
+#     3-arg `_unsafe_mul!` method in any case. This is to prevent the allocation of
+#     temporary arrays in `A*x` for non-trivial `LinearMap`s `A`.
 
 # ## Adjoints and transposes
 
