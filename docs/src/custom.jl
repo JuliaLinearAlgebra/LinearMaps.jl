@@ -90,7 +90,8 @@ using BenchmarkTools
 # `y = zeros(3)`. For that reason, it is beneficial to provide a custom "5-arg
 # `_unsafe_mul!`" if you can avoid the allocation of an intermediate vector. To indicate
 # that there exists an allocation-free implementation of multiply-and-add, you should set
-# the `MulStyle` trait, whose default is `ThreeArg()`, to `FiveArg()`.
+# the `MulStyle` trait, whose default is `ThreeArg()`, to `FiveArg()`. The corresponding
+# implementation should then be provided with a 5-argument `LinearMaps._unsafe_mul!`.
 
 LinearMaps.MulStyle(A::MyFillMap) = FiveArg()
 
@@ -116,6 +117,12 @@ end
 @benchmark mul!($(zeros(3)), $A, $x, $(rand()), $(rand()))
 
 # There you go, the allocation is gone and the computation time is significantly reduced.
+
+# !!! note
+#     Unlike in the standard library `LinearAlgebra.jl`, there is no automatic forwarding
+#     of 3-arg `mul!` methods to those with 5 arguments, so you need to define the basic
+#     3-arg `_unsafe_mul!` method in any case. This is to prevent the allocation of
+#     temporary arrays in `A*x` for non-trivial `LinearMap`s `A`.
 
 # ## Adjoints and transposes
 
@@ -172,8 +179,8 @@ end
 
 MyFillMap(5.0, (3, 4))' * ones(3)
 
-# If you have set the `MulStyle` trait to `FiveArg()`, you should provide a corresponding
-# 5-arg `mul!` method for `LinearMaps.TransposeMap{<:Any,<:MyFillMap}` and
+# If you have set the `MulStyle` trait to `FiveArg()`, you should provide corresponding
+# 5-arg `_unsafe_mul!` methods for `LinearMaps.TransposeMap{<:Any,<:MyFillMap}` and
 # `LinearMaps.AdjointMap{<:Any,<:MyFillMap}`.
 
 # ### Path 2: Invariant `LinearMap` subtypes
@@ -227,7 +234,7 @@ mul!(similar(x)', x', A)
 # `_unsafe_mul!(Y, A::MyFillMap, X::AbstractMatrix)`, and, depending
 # on the chosen path to handle adjoints/transposes, corresponding methods
 # for wrapped maps of type `AdjointMap` or `TransposeMap`, plus potentially
-# corresponding 5-arg `mul!` methods. This may seem like a lot of methods to
+# corresponding 5-arg `_unsafe_mul!` methods. This may seem like a lot of methods to
 # be implemented, but note that adding such methods is only necessary/recommended
 # for increased performance.
 
