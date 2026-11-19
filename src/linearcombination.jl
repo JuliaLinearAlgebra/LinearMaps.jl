@@ -15,7 +15,7 @@ end
 LinearCombination{T}(maps::As) where {T, As} = LinearCombination{T, As}(maps)
 
 # this method avoids the afoldl-mechanism even for LinearMapTuple
-Base.mapreduce(::typeof(identity), ::typeof(Base.add_sum), maps::LinearMapTupleOrVector) =
+Base.mapreduce(::typeof(identity), ::typeof(Base.add_sum), maps::NonEmptyLinearMapTupleOrVector) =
     LinearCombination{promote_type(map(eltype, maps)...)}(maps)
 # this method is required for type stability in the mixed-map-equal-eltype case
 Base.mapreduce(::typeof(identity), ::typeof(Base.add_sum), maps::AbstractVector{<:LinearMap{T}}) where {T} =

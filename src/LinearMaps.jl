@@ -20,6 +20,11 @@ const RealOrComplex = Union{Real, Complex}
 const LinearMapTuple = Tuple{Vararg{LinearMap}}
 const LinearMapVector = AbstractVector{<:LinearMap}
 const LinearMapTupleOrVector = Union{LinearMapTuple,LinearMapVector}
+# The empty tuple is a subtype of `LinearMapTuple`, so methods of Base functions with
+# `LinearMapTuple` arguments would intersect, e.g., `Tuple{Vararg{Int}}` and invalidate
+# compiled code. Such methods use the non-empty variant below instead.
+const NonEmptyLinearMapTuple = Tuple{LinearMap,Vararg{LinearMap}}
+const NonEmptyLinearMapTupleOrVector = Union{NonEmptyLinearMapTuple,LinearMapVector}
 
 Base.eltype(::LinearMap{T}) where {T} = T
 
