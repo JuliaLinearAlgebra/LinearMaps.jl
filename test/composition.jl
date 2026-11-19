@@ -72,6 +72,10 @@ using LinearMaps: LinearMapVector, LinearMapTuple
     @test (@inferred prod([L1, L2, L3])) isa LinearMaps.CompositeMap{<:Any,<:LinearMapVector}
     @test prod([L1, L2, L3]) == (@inferred L1 * prod([L2, L3])) == (@inferred prod([L1, L2]) * L3)
     @test (@inferred prod((L1, L2, L3))) isa LinearMaps.CompositeMap{<:Any,<:LinearMapTuple}
+    # the methods for tuples of maps must not intersect tuples of other types (invalidations)
+    @test !any(m -> m.module === LinearMaps,
+        methods(mapreduce, Tuple{typeof(identity), typeof(Base.mul_prod), Tuple{Vararg{Int}}}))
+    @test which(mapreduce, Tuple{typeof(identity), typeof(Base.mul_prod), Tuple{}}).module === Base
     @test (@inferred L1 * L2 * L3) == CompositeL == prod([L1, L2, L3])
     @test Matrix(L1 * L2) ≈ sparse(L1 * L2) ≈ R1 * R2
     @test Matrix(@inferred((α * L1) * (L2 * L3))::LinearMaps.ScaledMap) ≈ α * CompositeR

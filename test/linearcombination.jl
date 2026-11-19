@@ -27,6 +27,9 @@ using LinearMaps: FiveArg, LinearMapTuple, LinearMapVector, FunctionMap
     # @test (@allocations Lmix * v) <= 3alloc
     L = @inferred sum(ntuple(_ -> CS!, n))
     @test (@inferred sum(L.maps::LinearMapTuple)) == L
+    # the methods for tuples of maps must not intersect tuples of other types (invalidations)
+    @test !any(m -> m.module === LinearMaps,
+        methods(mapreduce, Tuple{typeof(identity), typeof(Base.add_sum), Tuple{Vararg{Int}}}))
     Lv = @inferred LinearMaps.LinearCombination{ComplexF64}(fill(CS!, n))
     @test (@inferred sum(Lv.maps::LinearMapVector)) == Lv
     @test isa((@inferred mean(Lv.maps)),

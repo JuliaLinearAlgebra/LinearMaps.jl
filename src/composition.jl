@@ -14,7 +14,7 @@ struct CompositeMap{T, As<:LinearMapTupleOrVector} <: LinearMap{T}
 end
 CompositeMap{T}(maps::As) where {T, As<:LinearMapTupleOrVector} = CompositeMap{T, As}(maps)
 
-Base.mapreduce(::typeof(identity), ::typeof(Base.mul_prod), maps::LinearMapTupleOrVector) =
+Base.mapreduce(::typeof(identity), ::typeof(Base.mul_prod), maps::NonEmptyLinearMapTupleOrVector) =
     CompositeMap{promote_type(map(eltype, maps)...)}(_reverse!(maps))
 Base.mapreduce(::typeof(identity), ::typeof(Base.mul_prod), maps::AbstractVector{<:LinearMap{T}}) where {T} =
     CompositeMap{T}(reverse!(maps))
